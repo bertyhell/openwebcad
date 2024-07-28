@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+canvas {
+  display: block;
+  background-color: black;
+  cursor: none;
+}

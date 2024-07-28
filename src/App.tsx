@@ -26,14 +26,11 @@ function App() {
   const [activeTool, setActiveTool] = useState(Tool.Line);
   const [entities, setEntities] = useState<Entity[]>([]);
   const [activeEntity, setActiveEntity] = useState<Entity | null>(null);
+  const [shouldDrawCursor, setShouldDrawCursor] = useState(false);
 
   const handleWindowResize = () => {
     setCanvasSize(new Point(window.innerWidth, window.innerHeight));
   };
-
-  function handleMouseMove(evt: MouseEvent<HTMLCanvasElement>) {
-    setMouseLocation(new Point(evt.clientX, evt.clientY));
-  }
 
   function handleMouseUpPoint(
     mousePoint: Point,
@@ -170,6 +167,19 @@ function App() {
     }
   }
 
+  function handleMouseEnter() {
+    setShouldDrawCursor(true);
+  }
+
+  function handleMouseMove(evt: MouseEvent<HTMLCanvasElement>) {
+    setShouldDrawCursor(true);
+    setMouseLocation(new Point(evt.clientX, evt.clientY));
+  }
+
+  function handleMouseOut() {
+    setShouldDrawCursor(false);
+  }
+
   function handleMouseUp(evt: MouseEvent<HTMLCanvasElement>) {
     console.log('mouse up', {
       activeTool,
@@ -191,7 +201,9 @@ function App() {
     if (evt.key === 'Escape') {
       setActiveEntity(null);
     } else if (evt.key === 'Delete') {
-      setEntities(entities.filter(entity => !entity.isSelected));
+      setEntities(oldEntities =>
+        oldEntities.filter(entity => !entity.isSelected),
+      );
     }
   }
 
@@ -304,6 +316,8 @@ function App() {
 
   const drawCursor = useCallback(
     (context: CanvasRenderingContext2D) => {
+      if (!shouldDrawCursor) return;
+
       setLineStyles(context, false, false);
 
       context.beginPath();
@@ -313,7 +327,7 @@ function App() {
       context.lineTo(mouseLocation.x + CURSOR_SIZE, mouseLocation.y);
       context.stroke();
     },
-    [mouseLocation.x, mouseLocation.y],
+    [mouseLocation.x, mouseLocation.y, shouldDrawCursor],
   );
 
   const setLineStyles = (
@@ -335,6 +349,7 @@ function App() {
   };
 
   const draw = useCallback(() => {
+    console.log('draw', { entities, activeEntity, mouseLocation });
     const context: CanvasRenderingContext2D | null | undefined =
       canvasRef.current?.getContext('2d');
     if (!context) return;
@@ -401,6 +416,8 @@ function App() {
         ref={canvasRef}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
+        onMouseOut={handleMouseOut}
+        onMouseEnter={handleMouseEnter}
       ></canvas>
       <div className="controls absolute top-0 left-0 flex flex-col gap-1 m-1">
         <Button

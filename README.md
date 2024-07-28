@@ -1,30 +1,72 @@
-# React + TypeScript + Vite
+# Canvas Drawing Application
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This is a React-based canvas drawing application that allows users to draw various shapes, such as lines, rectangles, and circles, on a fullscreen canvas. The application also includes features for selecting and erasing shapes, as well as exporting the drawing as an SVG file.
 
-Currently, two official plugins are available:
+![Application Screenshot](readme/screen.jpg)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## Expanding the ESLint configuration
+- Fullscreen canvas with a black background
+- Drawing tools: Line, Rectangle, Circle
+- Selection tool to highlight and modify shapes
+  - Use CTRL to toggle selection
+  - Use shift to add to the current selection
+  - drag left, to select by intersecting
+  - drag right, to select by containing
+- Eraser tool to delete segments (TODO)
+- Export drawing as an SVG file
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
 
-- Configure the top-level `parserOptions` property like this:
+## Technologies Used
 
-```js
-export default {
-  // other rules...
-  parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json', './tsconfig.app.json'],
-    tsconfigRootDir: __dirname,
-  },
-}
-```
+- TypeScript
+- JavaScript
+- React
+- NPM
 
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+
+## Demo
+Visit https://bertyhell.github.io/openwebcad
+
+
+## Installation
+
+1. Clone the repository:
+   ```sh
+   git clone <repository-url>
+   cd <repository-directory>
+    ```
+   
+2. Install dependencies:
+   ```sh
+   npm install
+   ```
+
+## Usage
+Start the development server:
+    ```sh
+    npm dev
+    ```
+
+Open your browser and navigate to http://localhost:5173
+
+
+## Development
+Available Scripts
+* npm dev: Runs the app in development mode.
+* npm run build: Builds the app for production.
+* npm preview: Runs the production build in a local server.
+
+
+## Project Structure
+* src/: Contains the source code of the application.
+* docs/: Contains the github pages site.
+* public/: Contains assets that need to be accessible from the url. Like favicon.
+
+
+## Contributing
+Contributions are welcome! Please open an issue or submit a pull request for any changes.  
+
+
+## License
+This project is licensed under the MIT License.

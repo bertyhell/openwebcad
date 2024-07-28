@@ -401,7 +401,10 @@ function App() {
   useEffect(() => {
     if (activeTool === Tool.Select) {
       const closestEntityInfo = findClosestEntity(mouseLocation);
-      if (!closestEntityInfo) return;
+      if (!closestEntityInfo) {
+        deHighlightEntities();
+        return;
+      }
 
       const [distance, , closestEntity] = closestEntityInfo;
       closestEntity.isHighlighted = distance < SNAP_DISTANCE;

@@ -1,11 +1,12 @@
 import { Entity } from './Entitity.ts';
-import { DrawInfo } from '../App.types.ts';
-import { Box, circle, Circle, point, Point, Shape } from '@flatten-js/core';
+import { DrawInfo, Shape } from '../App.types.ts';
+import { Box, circle, Circle, point, Point, Segment } from '@flatten-js/core';
 
 export class CircleEntity implements Entity {
   private circle: Circle | null = null;
   private centerPoint: Point | null = null;
   public isSelected: boolean = false;
+  public isHighlighted: boolean = false;
 
   public send(newPoint: Point): boolean {
     if (!this.centerPoint) {
@@ -69,6 +70,13 @@ export class CircleEntity implements Entity {
 
   public getShape(): Shape | null {
     return this.circle;
+  }
+
+  public distanceTo(shape: Shape): [number, Segment] | null {
+    if (!this.circle) {
+      return null;
+    }
+    return this.circle.distanceTo(shape);
   }
 
   public getSvgString(): string | null {

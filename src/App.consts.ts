@@ -6,3 +6,4 @@ export const CURSOR_SIZE = 30;
 
 export const CANVAS_BACKGROUND_COLOR = '#111';
 export const CANVAS_FOREGROUND_COLOR = '#fff';
+export const SNAP_DISTANCE = 10;

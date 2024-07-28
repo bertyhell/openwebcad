@@ -8,13 +8,14 @@ import { IconName } from './components/icon.tsx';
 import { RectangleEntity } from './entities/RectangleEntity.ts';
 import { CircleEntity } from './entities/CircleEntity.ts';
 import { SelectionRectangleEntity } from './entities/SelectionRectangleEntity.ts';
-import { Box, Point, Vector } from '@flatten-js/core';
+import { Box, Point, Segment, Vector } from '@flatten-js/core';
 import { DrawInfo, Shape } from './App.types.ts';
 import { saveAs } from 'file-saver';
 import {
   CANVAS_BACKGROUND_COLOR,
   CANVAS_FOREGROUND_COLOR,
   CURSOR_SIZE,
+  SNAP_DISTANCE,
   SVG_MARGIN,
 } from './App.consts.ts';
 
@@ -34,7 +35,11 @@ function App() {
     setMouseLocation(new Point(evt.clientX, evt.clientY));
   }
 
-  function handleMouseUpPoint(mousePoint: Point) {
+  function handleMouseUpPoint(
+    mousePoint: Point,
+    holdingCtrl: boolean,
+    holdingShift: boolean,
+  ) {
     if (activeTool === Tool.Line) {
       let activeLine = activeEntity as LineEntity | null;
       if (!activeLine) {
@@ -93,6 +98,21 @@ function App() {
     if (activeTool === Tool.Select) {
       let activeSelectionRectangle =
         activeEntity as SelectionRectangleEntity | null;
+      const highlightedEntity = entities.find(entity => entity.isHighlighted);
+
+      if (highlightedEntity && !activeSelectionRectangle) {
+        deHighlightEntities();
+        if (!holdingCtrl && !holdingShift) {
+          deSelectEntities();
+        }
+        if (holdingCtrl) {
+          highlightedEntity.isSelected = !highlightedEntity.isSelected;
+        } else {
+          highlightedEntity.isSelected = true;
+        }
+        draw();
+        return;
+      }
       if (!activeSelectionRectangle) {
         // Start a new selection rectangle
         activeSelectionRectangle = new SelectionRectangleEntity();
@@ -104,6 +124,7 @@ function App() {
 
       if (completed) {
         // Finish the selection
+        deHighlightEntities();
         const intersectionSelection =
           activeSelectionRectangle.isIntersectionSelection();
         entities.forEach(entity => {
@@ -116,9 +137,15 @@ function App() {
                 activeSelectionRectangle.getBoundingBox() as Box,
               )
             ) {
-              entity.isSelected = true;
+              if (holdingCtrl) {
+                entity.isSelected = !entity.isSelected;
+              } else {
+                entity.isSelected = true;
+              }
             } else {
-              entity.isSelected = false;
+              if (!holdingCtrl && !holdingShift) {
+                entity.isSelected = false;
+              }
             }
           } else {
             if (
@@ -126,9 +153,15 @@ function App() {
                 activeSelectionRectangle.getBoundingBox() as Box,
               )
             ) {
-              entity.isSelected = true;
+              if (holdingCtrl) {
+                entity.isSelected = !entity.isSelected;
+              } else {
+                entity.isSelected = true;
+              }
             } else {
-              entity.isSelected = false;
+              if (!holdingCtrl && !holdingShift) {
+                entity.isSelected = false;
+              }
             }
           }
         });
@@ -147,7 +180,11 @@ function App() {
         y: evt.clientY,
       },
     });
-    handleMouseUpPoint(new Point(evt.clientX, evt.clientY));
+    handleMouseUpPoint(
+      new Point(evt.clientX, evt.clientY),
+      evt.ctrlKey,
+      evt.shiftKey,
+    );
   }
 
   function handleKeyUp(evt: KeyboardEvent) {
@@ -158,11 +195,49 @@ function App() {
     }
   }
 
-  const handleToolClick = useCallback((tool: Tool) => {
-    console.log('set active tool: ', tool);
-    setActiveTool(tool);
-    setActiveEntity(null);
-  }, []);
+  const deHighlightEntities = useCallback(() => {
+    entities.forEach(entity => {
+      entity.isHighlighted = false;
+    });
+  }, [entities]);
+
+  const deSelectEntities = useCallback(() => {
+    entities.forEach(entity => {
+      entity.isSelected = false;
+    });
+  }, [entities]);
+
+  const findClosestEntity = useCallback(
+    (point: Point): [number, Segment, Entity] | null => {
+      let closestEntity = null;
+      let closestDistanceInfo: [number, Segment | null] = [
+        Number.MAX_SAFE_INTEGER,
+        null,
+      ];
+      entities.forEach(entity => {
+        const distanceInfo = entity.distanceTo(point);
+        if (!distanceInfo) return;
+        if (distanceInfo[0] < closestDistanceInfo[0]) {
+          closestDistanceInfo = distanceInfo;
+          closestEntity = entity;
+        }
+      });
+      if (!closestEntity) return null;
+      if (!closestDistanceInfo[1]) return null;
+      return [closestDistanceInfo[0], closestDistanceInfo[1], closestEntity];
+    },
+    [entities],
+  );
+
+  const handleToolClick = useCallback(
+    (tool: Tool) => {
+      console.log('set active tool: ', tool);
+      setActiveTool(tool);
+      setActiveEntity(null);
+      deSelectEntities();
+    },
+    [deSelectEntities],
+  );
 
   const handleExportClick = useCallback(() => {
     let boundingBoxMinX = canvasSize.x;
@@ -229,7 +304,7 @@ function App() {
 
   const drawCursor = useCallback(
     (context: CanvasRenderingContext2D) => {
-      setLineStyles(context, false);
+      setLineStyles(context, false, false);
 
       context.beginPath();
       context.moveTo(mouseLocation.x, mouseLocation.y - CURSOR_SIZE);
@@ -243,16 +318,19 @@ function App() {
 
   const setLineStyles = (
     context: CanvasRenderingContext2D,
+    isHighlighted: boolean,
     isSelected: boolean,
   ) => {
+    context.strokeStyle = CANVAS_FOREGROUND_COLOR;
+    context.lineWidth = 1;
+    context.setLineDash([]);
+
+    if (isHighlighted) {
+      context.lineWidth = 2;
+    }
+
     if (isSelected) {
-      context.strokeStyle = CANVAS_FOREGROUND_COLOR;
-      context.lineWidth = 1;
       context.setLineDash([5, 5]);
-    } else {
-      context.strokeStyle = CANVAS_FOREGROUND_COLOR;
-      context.lineWidth = 1;
-      context.setLineDash([]);
     }
   };
 
@@ -270,11 +348,11 @@ function App() {
       mouse: new Point(mouseLocation.x, mouseLocation.y),
     };
     entities.forEach(entity => {
-      setLineStyles(context, entity.isSelected);
+      setLineStyles(context, entity.isHighlighted, entity.isSelected);
       entity.draw(drawInfo);
     });
 
-    setLineStyles(context, false);
+    setLineStyles(context, false, false);
     activeEntity?.draw(drawInfo);
   }, [
     activeEntity,
@@ -304,6 +382,16 @@ function App() {
   useEffect(() => {
     draw();
   }, [canvasSize.x, canvasSize.y, mouseLocation.x, mouseLocation.y, draw]);
+
+  useEffect(() => {
+    if (activeTool === Tool.Select) {
+      const closestEntityInfo = findClosestEntity(mouseLocation);
+      if (!closestEntityInfo) return;
+
+      const [distance, , closestEntity] = closestEntityInfo;
+      closestEntity.isHighlighted = distance < SNAP_DISTANCE;
+    }
+  }, [activeTool, findClosestEntity, mouseLocation]);
 
   return (
     <div>
@@ -338,6 +426,13 @@ function App() {
           icon={IconName.Circle}
           onClick={() => handleToolClick(Tool.Circle)}
           active={activeTool === Tool.Circle}
+        />
+        <Button
+          className="mt-2"
+          title="Delete segments"
+          icon={IconName.LayersDifference}
+          onClick={() => handleToolClick(Tool.Eraser)}
+          active={activeTool === Tool.Eraser}
         />
         <Button
           className="mt-2"

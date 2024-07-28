@@ -1,11 +1,12 @@
 import { Entity } from './Entitity.ts';
-import { DrawInfo } from '../App.types.ts';
-import { Box, Point, Relations, Shape } from '@flatten-js/core';
+import { DrawInfo, Shape } from '../App.types.ts';
+import { Box, Point, Relations, Segment } from '@flatten-js/core';
 
 export class RectangleEntity implements Entity {
   private rectangle: Box | null = null;
   private startPoint: Point | null = null;
   public isSelected: boolean = false;
+  public isHighlighted: boolean = false;
 
   public send(point: Point): boolean {
     if (!this.startPoint) {
@@ -61,6 +62,23 @@ export class RectangleEntity implements Entity {
       return false;
     }
     return selectionBox.contains(this.rectangle);
+  }
+
+  public distanceTo(shape: Shape): [number, Segment] | null {
+    if (!this.rectangle) return null;
+    const distanceInfos: [number, Segment][] = this.rectangle
+      .toSegments()
+      .map(segment => segment.distanceTo(shape));
+    let shortestDistanceInfo: [number, Segment | null] = [
+      Number.MAX_SAFE_INTEGER,
+      null,
+    ];
+    distanceInfos.forEach(distanceInfo => {
+      if (distanceInfo[0] < shortestDistanceInfo[0]) {
+        shortestDistanceInfo = distanceInfo;
+      }
+    });
+    return shortestDistanceInfo as [number, Segment];
   }
 
   public getBoundingBox(): Box | null {

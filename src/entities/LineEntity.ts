@@ -1,11 +1,12 @@
 import { Entity } from './Entitity.ts';
-import { DrawInfo } from '../App.types.ts';
-import { Box, Point, Segment, Shape } from '@flatten-js/core';
+import { DrawInfo, Shape } from '../App.types.ts';
+import { Box, Point, Segment } from '@flatten-js/core';
 
 export class LineEntity implements Entity {
   private segment: Segment | null = null;
   private startPoint: Point | null = null;
   public isSelected: boolean = false;
+  public isHighlighted: boolean = false;
 
   public send(point: Point): boolean {
     if (!this.startPoint) {
@@ -64,6 +65,11 @@ export class LineEntity implements Entity {
 
   public getShape(): Shape | null {
     return this.segment;
+  }
+
+  public distanceTo(shape: Shape): [number, Segment] | null {
+    if (!this.segment) return null;
+    return this.segment.distanceTo(shape);
   }
 
   public getSvgString(): string | null {

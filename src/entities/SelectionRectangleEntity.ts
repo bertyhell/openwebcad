@@ -1,12 +1,13 @@
 import { Entity } from './Entitity.ts';
 import { DrawInfo } from '../App.types.ts';
-import { Box, Point } from '@flatten-js/core';
+import { Box, Point, Segment } from '@flatten-js/core';
 import { EPSILON } from '../App.consts.ts';
 
 export class SelectionRectangleEntity implements Entity {
   private rectangle: Box | null = null;
   private startPoint: Point | null = null;
   public isSelected: boolean = false;
+  public isHighlighted: boolean = false;
 
   public send(point: Point): boolean {
     if (!this.startPoint) {
@@ -90,6 +91,10 @@ export class SelectionRectangleEntity implements Entity {
 
   public getShape(): Box | null {
     return this.rectangle;
+  }
+
+  public distanceTo(): [number, Segment] | null {
+    return null; // Not implemented
   }
 
   public getSvgString(): string | null {

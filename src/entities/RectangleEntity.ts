@@ -1,6 +1,6 @@
 import { Entity } from './Entitity.ts';
 import { DrawInfo } from '../App.types.ts';
-import { Box, Point, Shape } from '@flatten-js/core';
+import { Box, Point, Relations, Shape } from '@flatten-js/core';
 
 export class RectangleEntity implements Entity {
   private rectangle: Box | null = null;
@@ -49,18 +49,18 @@ export class RectangleEntity implements Entity {
     );
   }
 
-  public intersectsWithBox(box: Box): boolean {
+  public intersectsWithBox(selectionBox: Box): boolean {
     if (!this.rectangle) {
       return false;
     }
-    return this.rectangle.intersect(box);
+    return Relations.relate(this.rectangle, selectionBox).B2B.length > 0;
   }
 
-  public isContainedInBox(box: Box): boolean {
+  public isContainedInBox(selectionBox: Box): boolean {
     if (!this.rectangle) {
       return false;
     }
-    return box.contains(this.rectangle);
+    return selectionBox.contains(this.rectangle);
   }
 
   public getBoundingBox(): Box | null {

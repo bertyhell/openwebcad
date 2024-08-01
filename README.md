@@ -2,7 +2,7 @@
 
 This is a React-based canvas drawing application that allows users to draw various shapes, such as lines, rectangles, and circles, on a fullscreen canvas. The application also includes features for selecting and erasing shapes, as well as exporting the drawing as an SVG file.
 
-![Application Screenshot](readme/screen.png)
+![Application Screenshot](readme/screen1.png)
 
 ## Features
 

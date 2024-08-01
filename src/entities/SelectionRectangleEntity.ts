@@ -93,6 +93,10 @@ export class SelectionRectangleEntity implements Entity {
     return this.rectangle;
   }
 
+  public getFirstPoint(): Point | null {
+    return this.startPoint;
+  }
+
   public distanceTo(): [number, Segment] | null {
     return null; // Not implemented
   }

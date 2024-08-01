@@ -6,4 +6,7 @@ export const CURSOR_SIZE = 30;
 
 export const CANVAS_BACKGROUND_COLOR = '#111';
 export const CANVAS_FOREGROUND_COLOR = '#fff';
-export const SNAP_DISTANCE = 10;
+export const ANGLE_GUIDES_COLOR = '#666666';
+export const SNAP_POINT_COLOR = '#FFFF00';
+export const SNAP_DISTANCE = 15;
+export const SNAP_POINT_SIZE = 10;

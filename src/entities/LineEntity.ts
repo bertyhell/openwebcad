@@ -8,6 +8,15 @@ export class LineEntity implements Entity {
   public isSelected: boolean = false;
   public isHighlighted: boolean = false;
 
+  constructor(p1?: Point, p2?: Point) {
+    if (p1 && p2) {
+      this.startPoint = p1;
+      this.segment = new Segment(p1, p2);
+    } else if (p1) {
+      this.startPoint = p1;
+    }
+  }
+
   public send(point: Point): boolean {
     if (!this.startPoint) {
       this.startPoint = point;
@@ -65,6 +74,10 @@ export class LineEntity implements Entity {
 
   public getShape(): Shape | null {
     return this.segment;
+  }
+
+  public getFirstPoint(): Point | null {
+    return this.startPoint;
   }
 
   public distanceTo(shape: Shape): [number, Segment] | null {

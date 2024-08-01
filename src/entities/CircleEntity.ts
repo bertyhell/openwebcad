@@ -72,6 +72,10 @@ export class CircleEntity implements Entity {
     return this.circle;
   }
 
+  public getFirstPoint(): Point | null {
+    return this.centerPoint;
+  }
+
   public distanceTo(shape: Shape): [number, Segment] | null {
     if (!this.circle) {
       return null;

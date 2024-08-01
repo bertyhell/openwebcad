@@ -36,6 +36,10 @@ export class PointEntity implements Entity {
     return this.point;
   }
 
+  public getFirstPoint(): Point | null {
+    return this.point;
+  }
+
   public distanceTo(shape: Shape): [number, Segment] | null {
     if (!this.point) {
       return null;

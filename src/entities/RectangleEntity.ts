@@ -92,6 +92,10 @@ export class RectangleEntity implements Entity {
     return this.rectangle;
   }
 
+  public getFirstPoint(): Point | null {
+    return this.startPoint;
+  }
+
   public getSvgString(): string | null {
     const svgString = this.rectangle?.svg();
 

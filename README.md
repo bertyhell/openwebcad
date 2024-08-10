@@ -8,13 +8,23 @@ This is a React-based canvas drawing application that allows users to draw vario
 
 - Fullscreen canvas with a black background
 - Drawing tools: Line, Rectangle, Circle
+- Choose angle guides
+- Draw with snap points for
+  - endpoints
+  - midpoints
+  - intersections
+  - circle centers
+  - circle quadrants
+  - circle tangents (TODO)
+  - nearest point on line (TODO)
 - Selection tool to highlight and modify shapes
   - Use CTRL to toggle selection
   - Use shift to add to the current selection
   - drag left, to select by intersecting
   - drag right, to select by containing
-- Eraser tool to delete segments (TODO)
 - Export drawing as an SVG file
+- Eraser tool to delete segments (TODO)
+- Zoom and pan (TODO)
 
 
 ## Technologies Used
@@ -23,6 +33,10 @@ This is a React-based canvas drawing application that allows users to draw vario
 - JavaScript
 - React
 - NPM
+- HTML canvas
+- SVG
+- SCSS
+- Tailwind CSS
 
 
 ## Demo

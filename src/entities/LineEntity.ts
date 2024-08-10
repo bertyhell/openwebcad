@@ -1,5 +1,5 @@
 import { Entity } from './Entitity.ts';
-import { DrawInfo, Shape } from '../App.types.ts';
+import { DrawInfo, Shape, SnapPoint } from '../App.types.ts';
 import { Box, Point, Segment } from '@flatten-js/core';
 
 export class LineEntity implements Entity {
@@ -74,6 +74,10 @@ export class LineEntity implements Entity {
 
   public getShape(): Shape | null {
     return this.segment;
+  }
+
+  public getSnapPoints(): SnapPoint[] {
+    return []; // TODO
   }
 
   public getFirstPoint(): Point | null {

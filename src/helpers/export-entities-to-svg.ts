@@ -48,9 +48,7 @@ export function convertEntitiesToSvgString(
       <svg width="${boundingBoxWidth}" height="${boundingBoxHeight}" xmlns="http://www.w3.org/2000/svg">
         <rect x="0" y="0" width="${boundingBoxWidth}" height="${boundingBoxHeight}" fill="white" />
         ${svgStrings
-          .join('')
-          ?.replace(/width=([0-9]+)/g, 'width="$1"')
-          ?.replace(/height=([0-9]+)/g, 'height="$1"')}
+          .join('')}
       </svg>
     `;
 }

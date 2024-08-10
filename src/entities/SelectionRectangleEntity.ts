@@ -1,5 +1,5 @@
 import { Entity } from './Entitity.ts';
-import { DrawInfo } from '../App.types.ts';
+import { DrawInfo, SnapPoint } from '../App.types.ts';
 import { Box, Point, Segment } from '@flatten-js/core';
 import { EPSILON } from '../App.consts.ts';
 
@@ -91,6 +91,10 @@ export class SelectionRectangleEntity implements Entity {
 
   public getShape(): Box | null {
     return this.rectangle;
+  }
+
+  public getSnapPoints(): SnapPoint[] {
+    return []; // TODO
   }
 
   public getFirstPoint(): Point | null {

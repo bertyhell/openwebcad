@@ -7,7 +7,7 @@ import { RectangleEntity } from './entities/RectangleEntity.ts';
 import { CircleEntity } from './entities/CircleEntity.ts';
 import { SelectionRectangleEntity } from './entities/SelectionRectangleEntity.ts';
 import { Box, Point } from '@flatten-js/core';
-import { DrawInfo } from './App.types.ts';
+import { DrawInfo, SnapPoint, SnapPointType } from './App.types.ts';
 import { SNAP_DISTANCE } from './App.consts.ts';
 import {
   clearCanvas,
@@ -23,6 +23,7 @@ import { findClosestEntity } from './helpers/find-closest-entity.ts';
 import { convertEntitiesToSvgString } from './helpers/export-entities-to-svg.ts';
 import { saveAs } from 'file-saver';
 import { getAngleGuideLines } from './helpers/get-angle-guide-lines.ts';
+import { getClosestSnapPoint } from './helpers/snap-points.ts';
 
 function App() {
   const [canvasSize, setCanvasSize] = useState<Point>(new Point(0, 0));
@@ -35,7 +36,7 @@ function App() {
   const [helperEntities, setHelperEntities] = useState<Entity[]>([]);
   const [debugEntities] = useState<Entity[]>([]);
   const [angleStep, setAngleStep] = useState(45);
-  const [snapPoint, setSnapPoint] = useState<Point | null>(null);
+  const [snapPointInfos, setSnapPointInfos] = useState<SnapPoint[]>([]);
 
   const handleWindowResize = () => {
     setCanvasSize(new Point(window.innerWidth, window.innerHeight));
@@ -221,8 +222,9 @@ function App() {
         y: evt.clientY,
       },
     });
+    const closestSnapPoint = getClosestSnapPoint(snapPointInfos);
     handleMouseUpPoint(
-      snapPoint ? snapPoint : new Point(evt.clientX, evt.clientY),
+      closestSnapPoint ? closestSnapPoint : new Point(evt.clientX, evt.clientY),
       evt.ctrlKey,
       evt.shiftKey,
     );
@@ -231,6 +233,8 @@ function App() {
   function handleKeyUp(evt: KeyboardEvent) {
     if (evt.key === 'Escape') {
       setActiveEntity(null);
+      deSelectEntities();
+      deHighlightEntities();
     } else if (evt.key === 'Delete') {
       setEntities(oldEntities =>
         oldEntities.filter(entity => !entity.isSelected),
@@ -239,15 +243,21 @@ function App() {
   }
 
   const deHighlightEntities = useCallback(() => {
-    entities.forEach(entity => {
-      entity.isHighlighted = false;
-    });
+    setEntities(
+      entities.map(entity => {
+        entity.isHighlighted = false;
+        return entity;
+      }),
+    );
   }, [entities]);
 
   const deSelectEntities = useCallback(() => {
-    entities.forEach(entity => {
-      entity.isSelected = false;
-    });
+    setEntities(
+      entities.map(entity => {
+        entity.isSelected = false;
+        return entity;
+      }),
+    );
   }, [entities]);
 
   const handleToolClick = useCallback(
@@ -286,13 +296,18 @@ function App() {
 
         if (closestLineInfo[0] < SNAP_DISTANCE) {
           setHelperEntities([closestLineInfo[2]!]);
-          setSnapPoint(closestLineInfo[1]!.start);
+          setSnapPointInfos([
+            {
+              point: closestLineInfo[1]!.start,
+              type: SnapPointType.AngleGuide,
+            },
+          ]); // TODO
           return;
         }
       }
 
       setHelperEntities([]);
-      setSnapPoint(null);
+      setSnapPointInfos([]);
     }
   }, [angleStep, activeEntity, activeTool, mouseLocation]);
 
@@ -313,7 +328,7 @@ function App() {
     drawEntities(drawInfo, entities);
     drawDebugEntities(drawInfo, debugEntities);
     drawActiveEntity(drawInfo, activeEntity);
-    drawSnapPoint(drawInfo, snapPoint);
+    drawSnapPoint(drawInfo, getClosestSnapPoint(snapPointInfos));
     drawCursor(drawInfo, shouldDrawCursor);
   }, [
     activeEntity,
@@ -325,7 +340,7 @@ function App() {
     mouseLocation.x,
     mouseLocation.y,
     shouldDrawCursor,
-    snapPoint,
+    snapPointInfos,
   ]);
 
   useEffect(() => {
@@ -353,18 +368,16 @@ function App() {
 
   useEffect(() => {
     if (activeTool === Tool.Select) {
+      deHighlightEntities();
+
       const closestEntityInfo = findClosestEntity(mouseLocation, entities);
-      if (!closestEntityInfo) {
-        deHighlightEntities();
-        return;
-      }
 
       const [distance, , closestEntity] = closestEntityInfo;
       if (distance < SNAP_DISTANCE) {
         closestEntity.isHighlighted = true;
       }
     }
-  }, [activeTool, deHighlightEntities, debugEntities, mouseLocation]);
+  }, [activeTool, deHighlightEntities, debugEntities, entities, mouseLocation]);
 
   return (
     <div>

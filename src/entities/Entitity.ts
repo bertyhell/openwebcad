@@ -1,4 +1,4 @@
-import { DrawInfo, Shape } from '../App.types.ts';
+import { DrawInfo, Shape, SnapPoint } from '../App.types.ts';
 import { Box, Point, Segment } from '@flatten-js/core';
 
 export interface Entity {
@@ -10,6 +10,7 @@ export interface Entity {
   isContainedInBox(box: Box): boolean;
   getFirstPoint(): Point | null;
   getShape(): Shape | null;
+  getSnapPoints(): SnapPoint[];
   distanceTo(shape: Shape): [number, Segment] | null;
   getSvgString(): string | null;
 }

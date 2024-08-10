@@ -27,7 +27,6 @@ import { Toolbar } from './components/Toolbar.tsx';
 import { findClosestEntity } from './helpers/find-closest-entity.ts';
 import { convertEntitiesToSvgString } from './helpers/export-entities-to-svg.ts';
 import { saveAs } from 'file-saver';
-import { getDrawHelpers } from './helpers/get-draw-guides.ts';
 import { pointDistance } from './helpers/distance-between-points.ts';
 import { compact } from './helpers/compact.ts';
 import {
@@ -35,6 +34,7 @@ import {
   getClosestSnapPointWithinRadius,
 } from './helpers/get-closest-snap-point.ts';
 import { isPointEqual } from './helpers/is-point-equal.ts';
+import { getDrawHelpers } from './helpers/get-draw-guides.ts';
 
 function App() {
   const [canvasSize, setCanvasSize] = useState<Point>(new Point(0, 0));
@@ -372,7 +372,11 @@ function App() {
     let newHoverSnapPoints: HoverPoint[];
 
     // Angle guide points should never be marked
-    console.log('snap point: ', JSON.stringify(snapPoint));
+    console.log('snap point: ', JSON.stringify(snapPoint), {
+      distance: lastHoveredPoint
+        ? pointDistance(snapPoint.point, lastHoveredPoint.snapPoint.point)
+        : undefined,
+    });
 
     if (lastHoveredPoint) {
       if (
@@ -458,14 +462,15 @@ function App() {
     setHoveredSnapPoints(newHoverSnapPointsTruncated);
   }, [snapPoint, hoveredSnapPoints]);
 
+  /**
+   * Init the canvas and add event listeners
+   */
   useEffect(() => {
     console.log('init app');
     window.document.addEventListener('keyup', handleKeyUp);
     window.document.addEventListener('resize', handleWindowResize);
 
     handleWindowResize();
-
-    setActiveTool(Tool.Line);
 
     return () => {
       window.document.removeEventListener('keyup', handleKeyUp);
@@ -474,6 +479,9 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /**
+   * Keep track of the hovered snap points
+   */
   useEffect(() => {
     const watchSnapPointTimerId = setInterval(() => {
       watchSnapPoint();
@@ -483,10 +491,16 @@ function App() {
     };
   }, [watchSnapPoint]);
 
+  /**
+   * Redraw the canvas when the mouse moves or the window resizes
+   */
   useEffect(() => {
     draw();
   }, [canvasSize.x, canvasSize.y, mouseLocation.x, mouseLocation.y, draw]);
 
+  /**
+   * Show the angle guides and closest snap point when drawing a shape
+   */
   useEffect(() => {
     if ([Tool.Line, Tool.Rectangle, Tool.Circle].includes(activeTool)) {
       // If you're in the progress of drawing a shape, show the angle guides and closest snap point
@@ -522,18 +536,28 @@ function App() {
     mouseLocation,
   ]);
 
+  /**
+   * Highlight the entity closest to the mouse when the select tool is active
+   */
   useEffect(() => {
     if (activeTool === Tool.Select) {
-      deHighlightEntities();
+      setEntities(oldEntities => {
+        const newEntities = [...oldEntities];
+        newEntities.forEach(entity => {
+          entity.isHighlighted = false;
+        });
+        const [distance, , closestEntity] = findClosestEntity(
+          mouseLocation,
+          oldEntities,
+        );
 
-      const closestEntityInfo = findClosestEntity(mouseLocation, entities);
-
-      const [distance, , closestEntity] = closestEntityInfo;
-      if (distance < HIGHLIGHT_ENTITY_DISTANCE) {
-        closestEntity.isHighlighted = true;
-      }
+        if (distance < HIGHLIGHT_ENTITY_DISTANCE) {
+          closestEntity.isHighlighted = true;
+        }
+        return newEntities;
+      });
     }
-  }, [activeTool, deHighlightEntities, debugEntities, entities, mouseLocation]);
+  }, [activeTool, setEntities, mouseLocation]);
 
   return (
     <div>

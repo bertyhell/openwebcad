@@ -222,7 +222,6 @@ function App() {
 
           console.log('Set active entity to null');
           setActiveEntity(null);
-          return newEntities;
         }
         return newEntities;
       });
@@ -285,18 +284,29 @@ function App() {
     });
   }, []);
 
+  const deSelectAndDeHighlightEntities = useCallback(
+    (entitiesTemp: Entity[]): Entity[] => {
+      return entitiesTemp.map(entity => {
+        entity.isHighlighted = false;
+        entity.isSelected = false;
+        return entity;
+      });
+    },
+    [],
+  );
+
   const handleKeyUp = useCallback(
     (evt: KeyboardEvent) => {
       if (evt.key === 'Escape') {
         setActiveEntity(null);
-        setEntities(deSelectEntities(deHighlightEntities(entities)));
+        setEntities(oldEntities => deSelectAndDeHighlightEntities(oldEntities));
       } else if (evt.key === 'Delete') {
         setEntities(oldEntities =>
           oldEntities.filter(entity => !entity.isSelected),
         );
       }
     },
-    [deHighlightEntities, deSelectEntities, entities],
+    [deSelectAndDeHighlightEntities],
   );
 
   const handleToolClick = useCallback(
@@ -487,7 +497,7 @@ function App() {
   useEffect(() => {
     const watchSnapPointTimerId = setInterval(() => {
       watchSnapPoint();
-    }, 1000);
+    }, 100);
     return () => {
       clearInterval(watchSnapPointTimerId);
     };

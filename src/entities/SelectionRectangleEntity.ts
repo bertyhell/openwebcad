@@ -3,6 +3,7 @@ import { DrawInfo, SnapPoint } from '../App.types.ts';
 import { Box, Point, Segment } from '@flatten-js/core';
 import { EPSILON } from '../App.consts.ts';
 
+// TODO move the selection rectangle to its own thing, not part of the entities logic
 export class SelectionRectangleEntity implements Entity {
   private rectangle: Box | null = null;
   private startPoint: Point | null = null;
@@ -94,7 +95,11 @@ export class SelectionRectangleEntity implements Entity {
   }
 
   public getSnapPoints(): SnapPoint[] {
-    return []; // TODO
+    return []; // Not implemented
+  }
+
+  public getIntersections(): Point[] {
+    return []; // Not implemented
   }
 
   public getFirstPoint(): Point | null {

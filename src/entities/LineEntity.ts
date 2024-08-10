@@ -1,5 +1,5 @@
 import { Entity } from './Entitity.ts';
-import { DrawInfo, Shape, SnapPoint } from '../App.types.ts';
+import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
 import { Box, Point, Segment } from '@flatten-js/core';
 
 export class LineEntity implements Entity {
@@ -8,8 +8,11 @@ export class LineEntity implements Entity {
   public isSelected: boolean = false;
   public isHighlighted: boolean = false;
 
-  constructor(p1?: Point, p2?: Point) {
-    if (p1 && p2) {
+  constructor(p1?: Point | Segment, p2?: Point) {
+    if (p1 instanceof Segment) {
+      this.startPoint = p1.start;
+      this.segment = p1;
+    } else if (p1 && p2) {
       this.startPoint = p1;
       this.segment = new Segment(p1, p2);
     } else if (p1) {
@@ -77,7 +80,31 @@ export class LineEntity implements Entity {
   }
 
   public getSnapPoints(): SnapPoint[] {
-    return []; // TODO
+    if (!this.segment?.start || !this.segment?.end) {
+      return [];
+    }
+    return [
+      {
+        point: this.segment.start,
+        type: SnapPointType.LineEndPoint,
+      },
+      {
+        point: this.segment.end,
+        type: SnapPointType.LineEndPoint,
+      },
+      {
+        point: this.segment.middle(),
+        type: SnapPointType.LineMidPoint,
+      },
+    ];
+  }
+
+  public getIntersections(entity: Entity): Point[] {
+    const otherShape = entity.getShape();
+    if (!this.segment || !otherShape) {
+      return [];
+    }
+    return this.segment.intersect(otherShape);
   }
 
   public getFirstPoint(): Point | null {

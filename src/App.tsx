@@ -7,8 +7,8 @@ import { RectangleEntity } from './entities/RectangleEntity.ts';
 import { CircleEntity } from './entities/CircleEntity.ts';
 import { SelectionRectangleEntity } from './entities/SelectionRectangleEntity.ts';
 import { Box, Point } from '@flatten-js/core';
-import { DrawInfo, SnapPoint, SnapPointType } from './App.types.ts';
-import { SNAP_DISTANCE } from './App.consts.ts';
+import { DrawInfo, SnapPoint } from './App.types.ts';
+import { HIGHLIGHT_ENTITY_DISTANCE } from './App.consts.ts';
 import {
   clearCanvas,
   drawActiveEntity,
@@ -22,8 +22,7 @@ import { Toolbar } from './components/Toolbar.tsx';
 import { findClosestEntity } from './helpers/find-closest-entity.ts';
 import { convertEntitiesToSvgString } from './helpers/export-entities-to-svg.ts';
 import { saveAs } from 'file-saver';
-import { getAngleGuideLines } from './helpers/get-angle-guide-lines.ts';
-import { getClosestSnapPoint } from './helpers/snap-points.ts';
+import { getDrawHelpers } from './helpers/get-draw-guides.ts';
 
 function App() {
   const [canvasSize, setCanvasSize] = useState<Point>(new Point(0, 0));
@@ -36,7 +35,7 @@ function App() {
   const [helperEntities, setHelperEntities] = useState<Entity[]>([]);
   const [debugEntities] = useState<Entity[]>([]);
   const [angleStep, setAngleStep] = useState(45);
-  const [snapPointInfos, setSnapPointInfos] = useState<SnapPoint[]>([]);
+  const [snapPoint, setSnapPoint] = useState<SnapPoint | null>(null);
 
   const handleWindowResize = () => {
     setCanvasSize(new Point(window.innerWidth, window.innerHeight));
@@ -115,7 +114,7 @@ function App() {
       // Mouse is close to entity and is not dragging a rectangle
       if (
         closestEntityInfo &&
-        closestEntityInfo[0] < SNAP_DISTANCE &&
+        closestEntityInfo[0] < HIGHLIGHT_ENTITY_DISTANCE &&
         !activeSelectionRectangle
       ) {
         // Select the entity close to the mouse
@@ -141,7 +140,7 @@ function App() {
         );
         // Start a new selection rectangle drag
         activeSelectionRectangle = new SelectionRectangleEntity();
-        setActiveEntity(activeSelectionRectangle);
+        setActiveEntity(activeSelectionRectangle); // TODO make selection a separate concept from entities
       }
 
       const completed = activeSelectionRectangle.send(
@@ -222,24 +221,11 @@ function App() {
         y: evt.clientY,
       },
     });
-    const closestSnapPoint = getClosestSnapPoint(snapPointInfos);
     handleMouseUpPoint(
-      closestSnapPoint ? closestSnapPoint : new Point(evt.clientX, evt.clientY),
+      snapPoint ? snapPoint.point : new Point(evt.clientX, evt.clientY),
       evt.ctrlKey,
       evt.shiftKey,
     );
-  }
-
-  function handleKeyUp(evt: KeyboardEvent) {
-    if (evt.key === 'Escape') {
-      setActiveEntity(null);
-      deSelectEntities();
-      deHighlightEntities();
-    } else if (evt.key === 'Delete') {
-      setEntities(oldEntities =>
-        oldEntities.filter(entity => !entity.isSelected),
-      );
-    }
   }
 
   const deHighlightEntities = useCallback(() => {
@@ -260,6 +246,21 @@ function App() {
     );
   }, [entities]);
 
+  const handleKeyUp = useCallback(
+    (evt: KeyboardEvent) => {
+      if (evt.key === 'Escape') {
+        setActiveEntity(null);
+        deSelectEntities();
+        deHighlightEntities();
+      } else if (evt.key === 'Delete') {
+        setEntities(oldEntities =>
+          oldEntities.filter(entity => !entity.isSelected),
+        );
+      }
+    },
+    [deHighlightEntities, deSelectEntities],
+  );
+
   const handleToolClick = useCallback(
     (tool: Tool) => {
       console.log('set active tool: ', tool);
@@ -276,40 +277,6 @@ function App() {
     const blob = new Blob([svgFileContent], { type: 'text/svg;charset=utf-8' });
     saveAs(blob, 'open-web-cad--drawing.svg');
   }, [canvasSize, entities]);
-
-  const calculateHelpers = useCallback(() => {
-    if ([Tool.Line, Tool.Rectangle, Tool.Circle].includes(activeTool)) {
-      // If you're in the progress of drawing a shape, show the guides
-      if (
-        activeEntity &&
-        !activeEntity.getShape() &&
-        activeEntity.getFirstPoint()
-      ) {
-        const firstPoint: Point = activeEntity.getFirstPoint() as Point;
-
-        const angleGuideLines = getAngleGuideLines(firstPoint, angleStep);
-
-        const closestLineInfo = findClosestEntity(
-          mouseLocation,
-          angleGuideLines,
-        );
-
-        if (closestLineInfo[0] < SNAP_DISTANCE) {
-          setHelperEntities([closestLineInfo[2]!]);
-          setSnapPointInfos([
-            {
-              point: closestLineInfo[1]!.start,
-              type: SnapPointType.AngleGuide,
-            },
-          ]); // TODO
-          return;
-        }
-      }
-
-      setHelperEntities([]);
-      setSnapPointInfos([]);
-    }
-  }, [angleStep, activeEntity, activeTool, mouseLocation]);
 
   const draw = useCallback(() => {
     const context: CanvasRenderingContext2D | null | undefined =
@@ -328,7 +295,7 @@ function App() {
     drawEntities(drawInfo, entities);
     drawDebugEntities(drawInfo, debugEntities);
     drawActiveEntity(drawInfo, activeEntity);
-    drawSnapPoint(drawInfo, getClosestSnapPoint(snapPointInfos));
+    drawSnapPoint(drawInfo, snapPoint);
     drawCursor(drawInfo, shouldDrawCursor);
   }, [
     activeEntity,
@@ -340,7 +307,7 @@ function App() {
     mouseLocation.x,
     mouseLocation.y,
     shouldDrawCursor,
-    snapPointInfos,
+    snapPoint,
   ]);
 
   useEffect(() => {
@@ -356,15 +323,33 @@ function App() {
       window.document.removeEventListener('keyup', handleKeyUp);
       window.document.removeEventListener('resize', handleWindowResize);
     };
-  }, []);
+  }, [handleKeyUp]);
 
   useEffect(() => {
     draw();
   }, [canvasSize.x, canvasSize.y, mouseLocation.x, mouseLocation.y, draw]);
 
   useEffect(() => {
-    calculateHelpers();
-  }, [calculateHelpers]);
+    if ([Tool.Line, Tool.Rectangle, Tool.Circle].includes(activeTool)) {
+      // If you're in the progress of drawing a shape, show the angle guides and closest snap point
+      let firstPoint: Point | null = null;
+      if (
+        activeEntity &&
+        !activeEntity.getShape() &&
+        activeEntity.getFirstPoint()
+      ) {
+        firstPoint = activeEntity.getFirstPoint();
+      }
+      const { angleGuide, snapPoint } = getDrawHelpers(
+        entities,
+        firstPoint,
+        mouseLocation,
+        angleStep,
+      );
+      setHelperEntities(angleGuide ? [angleGuide] : []);
+      setSnapPoint(snapPoint);
+    }
+  }, [activeEntity, activeTool, angleStep, entities, mouseLocation]);
 
   useEffect(() => {
     if (activeTool === Tool.Select) {
@@ -373,7 +358,7 @@ function App() {
       const closestEntityInfo = findClosestEntity(mouseLocation, entities);
 
       const [distance, , closestEntity] = closestEntityInfo;
-      if (distance < SNAP_DISTANCE) {
+      if (distance < HIGHLIGHT_ENTITY_DISTANCE) {
         closestEntity.isHighlighted = true;
       }
     }

@@ -9,18 +9,19 @@ export interface DrawInfo {
 export type Shape = Box | Segment | Point | Circle;
 
 export enum SnapPointType {
-    AngleGuide = 'AngleGuide',
-    LineEndPoint = 'LineEndPoint',
-    LineIntersection = 'LineIntersection',
-    CircleCenter = 'CircleCenter',
-    CircleCardinal = 'CircleCardinal',
-    CircleTangent = 'CircleTangent',
-    MiddlePoint = 'MiddlePoint'
+  AngleGuide = 'AngleGuide',
+  LineEndPoint = 'LineEndPoint',
+  Intersection = 'Intersection',
+  CircleCenter = 'CircleCenter',
+  CircleCardinal = 'CircleCardinal',
+  CircleTangent = 'CircleTangent',
+  LineMidPoint = 'LineMidPoint',
+  Point = 'Point',
 }
 
 export interface SnapPoint {
-    point: Point;
-    type: SnapPointType;
+  point: Point;
+  type: SnapPointType;
 }
 
 export type SnapPointConfig = Record<SnapPointType, boolean>;

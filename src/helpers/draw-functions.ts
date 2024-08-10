@@ -1,4 +1,4 @@
-import { DrawInfo } from '../App.types.ts';
+import { DrawInfo, SnapPoint, SnapPointType } from '../App.types.ts';
 import { Entity } from '../entities/Entitity.ts';
 import {
   ANGLE_GUIDES_COLOR,
@@ -8,7 +8,6 @@ import {
   SNAP_POINT_COLOR,
   SNAP_POINT_SIZE,
 } from '../App.consts.ts';
-import { Point } from '@flatten-js/core';
 
 export function setLineStyles(
   context: CanvasRenderingContext2D,
@@ -49,17 +48,122 @@ export function drawDebugEntities(drawInfo: DrawInfo, debugEntities: Entity[]) {
   });
 }
 
-export function drawSnapPoint(drawInfo: DrawInfo, snapPoint: Point | null) {
+export function drawSnapPoint(drawInfo: DrawInfo, snapPoint: SnapPoint | null) {
   if (!snapPoint) return;
 
   setLineStyles(drawInfo.context, false, false, SNAP_POINT_COLOR);
 
-  drawInfo.context.strokeRect(
-    snapPoint.x - SNAP_POINT_SIZE / 2,
-    snapPoint.y - SNAP_POINT_SIZE / 2,
-    SNAP_POINT_SIZE,
-    SNAP_POINT_SIZE,
-  );
+  switch (snapPoint.type) {
+    case SnapPointType.LineEndPoint:
+      // Endpoint is marked with a square
+      drawInfo.context.strokeRect(
+        snapPoint.point.x - SNAP_POINT_SIZE / 2,
+        snapPoint.point.y - SNAP_POINT_SIZE / 2,
+        SNAP_POINT_SIZE,
+        SNAP_POINT_SIZE,
+      );
+      break;
+
+    case SnapPointType.LineMidPoint:
+      // Midpoint is shown with a triangle
+      drawInfo.context.beginPath();
+      drawInfo.context.moveTo(
+        snapPoint.point.x,
+        snapPoint.point.y - SNAP_POINT_SIZE / 2,
+      );
+      drawInfo.context.lineTo(
+        snapPoint.point.x - SNAP_POINT_SIZE / 2,
+        snapPoint.point.y + SNAP_POINT_SIZE / 2,
+      );
+      drawInfo.context.lineTo(
+        snapPoint.point.x + SNAP_POINT_SIZE / 2,
+        snapPoint.point.y + SNAP_POINT_SIZE / 2,
+      );
+      drawInfo.context.closePath();
+      drawInfo.context.stroke();
+      break;
+
+    case SnapPointType.AngleGuide:
+      // Angle guide is shown with an hourglass
+      drawInfo.context.beginPath();
+      drawInfo.context.moveTo(
+        snapPoint.point.x - SNAP_POINT_SIZE / 2,
+        snapPoint.point.y - SNAP_POINT_SIZE / 2,
+      );
+      drawInfo.context.lineTo(
+        snapPoint.point.x + SNAP_POINT_SIZE / 2,
+        snapPoint.point.y - SNAP_POINT_SIZE / 2,
+      );
+      drawInfo.context.lineTo(
+        snapPoint.point.x - SNAP_POINT_SIZE / 2,
+        snapPoint.point.y + SNAP_POINT_SIZE / 2,
+      );
+      drawInfo.context.lineTo(
+        snapPoint.point.x + SNAP_POINT_SIZE / 2,
+        snapPoint.point.y + SNAP_POINT_SIZE / 2,
+      );
+      drawInfo.context.closePath();
+      drawInfo.context.stroke();
+      break;
+
+    case SnapPointType.Intersection:
+      // Intersection is shown with a cross
+      drawInfo.context.beginPath();
+      drawInfo.context.moveTo(
+        snapPoint.point.x - SNAP_POINT_SIZE / 2,
+        snapPoint.point.y - SNAP_POINT_SIZE / 2,
+      );
+      drawInfo.context.lineTo(
+        snapPoint.point.x + SNAP_POINT_SIZE / 2,
+        snapPoint.point.y + SNAP_POINT_SIZE / 2,
+      );
+      drawInfo.context.moveTo(
+        snapPoint.point.x + SNAP_POINT_SIZE / 2,
+        snapPoint.point.y - SNAP_POINT_SIZE / 2,
+      );
+      drawInfo.context.lineTo(
+        snapPoint.point.x - SNAP_POINT_SIZE / 2,
+        snapPoint.point.y + SNAP_POINT_SIZE / 2,
+      );
+      drawInfo.context.stroke();
+      break;
+
+    case SnapPointType.CircleCenter:
+      // Circle center is shown with a circle
+      drawInfo.context.beginPath();
+      drawInfo.context.arc(
+        snapPoint.point.x,
+        snapPoint.point.y,
+        SNAP_POINT_SIZE / 2,
+        0,
+        2 * Math.PI,
+      );
+      drawInfo.context.stroke();
+      break;
+
+    case SnapPointType.CircleCardinal:
+      // Circle cardinal is shown with a diamond
+      drawInfo.context.beginPath();
+      drawInfo.context.moveTo(
+        snapPoint.point.x,
+        snapPoint.point.y - SNAP_POINT_SIZE / 2,
+      );
+      drawInfo.context.lineTo(
+        snapPoint.point.x - SNAP_POINT_SIZE / 2,
+        snapPoint.point.y,
+      );
+      drawInfo.context.lineTo(
+        snapPoint.point.x,
+        snapPoint.point.y + SNAP_POINT_SIZE / 2,
+      );
+      drawInfo.context.lineTo(
+        snapPoint.point.x + SNAP_POINT_SIZE / 2,
+        snapPoint.point.y,
+      );
+      drawInfo.context.closePath();
+      drawInfo.context.stroke();
+      break;
+  }
 }
 
 export function drawHelpers(drawInfo: DrawInfo, helperEntities: Entity[]) {

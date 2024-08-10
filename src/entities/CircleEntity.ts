@@ -1,5 +1,5 @@
 import { Entity } from './Entitity.ts';
-import { DrawInfo, Shape, SnapPoint } from '../App.types.ts';
+import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
 import { Box, circle, Circle, point, Point, Segment } from '@flatten-js/core';
 
 export class CircleEntity implements Entity {
@@ -73,7 +73,52 @@ export class CircleEntity implements Entity {
   }
 
   public getSnapPoints(): SnapPoint[] {
-    return []; // TODO
+    if (this.centerPoint === null || this.circle === null) {
+      return [];
+    }
+    return [
+      {
+        point: this.centerPoint,
+        type: SnapPointType.CircleCenter,
+      },
+      {
+        point: new Point(
+          this.centerPoint.x + this.circle.r,
+          this.centerPoint.y,
+        ),
+        type: SnapPointType.CircleCardinal,
+      },
+      {
+        point: new Point(
+          this.centerPoint.x - this.circle.r,
+          this.centerPoint.y,
+        ),
+        type: SnapPointType.CircleCardinal,
+      },
+      {
+        point: new Point(
+          this.centerPoint.x,
+          this.centerPoint.y + this.circle.r,
+        ),
+        type: SnapPointType.CircleCardinal,
+      },
+      {
+        point: new Point(
+          this.centerPoint.x,
+          this.centerPoint.y - this.circle.r,
+        ),
+        type: SnapPointType.CircleCardinal,
+      },
+      // TODO add tangent points from mouse location to circle
+    ];
+  }
+
+  public getIntersections(entity: Entity): Point[] {
+    const otherShape = entity.getShape();
+    if (!this.circle || !otherShape) {
+      return [];
+    }
+    return this.circle.intersect(otherShape);
   }
 
   public getFirstPoint(): Point | null {

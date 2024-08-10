@@ -11,6 +11,7 @@ export interface Entity {
   getFirstPoint(): Point | null;
   getShape(): Shape | null;
   getSnapPoints(): SnapPoint[];
+  getIntersections(entity: Entity): Point[];
   distanceTo(shape: Shape): [number, Segment] | null;
   getSvgString(): string | null;
 }

@@ -10,13 +10,7 @@ export function getAngleGuideLines(
   // so we only need to fill half a circle to fill the complete circle
   return times(180 / angleStep + 1, i => {
     const angle = i * angleStep;
-    console.log({ angle });
     const angleRad = angle * (Math.PI / 180);
-    console.log({
-      angleRad,
-      cos: Math.cos(angleRad),
-      sin: Math.sin(angleRad),
-    });
     const x = firstPoint.x + Math.cos(angleRad);
     const y = firstPoint.y + Math.sin(angleRad);
     return new LineEntity(

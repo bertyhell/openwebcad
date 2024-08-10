@@ -1,5 +1,5 @@
 import { Entity } from './Entitity.ts';
-import { DrawInfo, Shape, SnapPoint } from '../App.types.ts';
+import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
 import { Box, Point, Relations, Segment } from '@flatten-js/core';
 
 export class RectangleEntity implements Entity {
@@ -93,7 +93,55 @@ export class RectangleEntity implements Entity {
   }
 
   public getSnapPoints(): SnapPoint[] {
-    return []; // TODO
+    if (!this.rectangle) {
+      return [];
+    }
+    const corners = this.rectangle.toPoints();
+    const edges = this.rectangle.toSegments();
+    return [
+      {
+        point: corners[0],
+        type: SnapPointType.LineEndPoint,
+      },
+      {
+        point: corners[1],
+        type: SnapPointType.LineEndPoint,
+      },
+      {
+        point: corners[2],
+        type: SnapPointType.LineEndPoint,
+      },
+      {
+        point: corners[3],
+        type: SnapPointType.LineEndPoint,
+      },
+      {
+        point: edges[0].middle(),
+        type: SnapPointType.LineMidPoint,
+      },
+      {
+        point: edges[1].middle(),
+        type: SnapPointType.LineMidPoint,
+      },
+      {
+        point: edges[2].middle(),
+        type: SnapPointType.LineMidPoint,
+      },
+      {
+        point: edges[3].middle(),
+        type: SnapPointType.LineMidPoint,
+      },
+    ];
+  }
+
+  public getIntersections(entity: Entity): Point[] {
+    const otherShape = entity.getShape();
+    if (!this.rectangle || !otherShape) {
+      return [];
+    }
+    return this.rectangle.toSegments().flatMap(segment => {
+      return segment.intersect(otherShape);
+    });
   }
 
   public getFirstPoint(): Point | null {

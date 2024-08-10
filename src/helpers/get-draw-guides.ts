@@ -10,25 +10,30 @@ import { LineEntity } from '../entities/LineEntity.ts';
 import { compact } from './compact.ts';
 
 /**
- * Gets the angle guide from the start point to the mouse if the mouse is close to one of the angle steps and also returns the closest snap point
- * @param entities
- * @param firstPoint
- * @param mouseLocation
- * @param angleStep
+ * Gets the angle guides from the angle point to the mouse if the mouse is close to one of the angle steps and also returns the closest snap point
+ * @param entities entities that are drawn on the canvas
+ * @param anglePoints the points that should get angle guides
+ * @param mouseLocation the current mouse location
+ * @param angleStep the angle in degrees at which the angle guides should be drawn
  */
 export function getDrawHelpers(
   entities: Entity[],
-  firstPoint: Point | null,
+  anglePoints: Point[],
   mouseLocation: Point,
   angleStep: number,
-): { angleGuide: LineEntity | null; snapPoint: SnapPoint | null } {
-  let snapPoint: SnapPoint | null = null;
+): {
+  angleGuides: LineEntity[];
+  entitySnapPoint: SnapPoint | null;
+  angleSnapPoint: SnapPoint | null;
+} {
+  let entitySnapPoint: SnapPoint | null = null;
   let angleSnapPoint: SnapPoint | null = null;
-  let angleGuide: LineEntity | null = null;
+  const nearestAngleSnapPoints: SnapPoint[] = [];
+  const angleGuides: LineEntity[] = [];
 
   // draw angle guide
-  if (firstPoint) {
-    const angleGuideLines = getAngleGuideLines(firstPoint, angleStep);
+  anglePoints.forEach(anglePoint => {
+    const angleGuideLines = getAngleGuideLines(anglePoint, angleStep);
 
     const closestLineInfo = findClosestEntity<LineEntity>(
       mouseLocation,
@@ -36,33 +41,53 @@ export function getDrawHelpers(
     );
 
     if (closestLineInfo[0] < SNAP_ANGLE_DISTANCE) {
-      angleGuide = closestLineInfo[2];
-      angleSnapPoint = {
+      angleGuides.push(closestLineInfo[2]);
+      nearestAngleSnapPoints.push({
         point: closestLineInfo[1].start,
         type: SnapPointType.AngleGuide,
-      };
+      });
     }
-  }
+  });
 
   // Calculate snap points
-  const snapPoints = [
+  const entitySnapPoints = [
     ...entities.flatMap(entity => {
       return entity.getSnapPoints();
     }),
-    ...getIntersectionPoints(compact([...entities, angleGuide])).map(point => ({
+    ...getIntersectionPoints(compact(entities)).map(point => ({
       point,
       type: SnapPointType.Intersection,
     })),
   ];
 
   const [closestSnapPointDistance, closestSnapPoint] = getClosestSnapPoint(
-    snapPoints,
+    entitySnapPoints,
     mouseLocation,
   );
 
   if (closestSnapPoint && closestSnapPointDistance < SNAP_POINT_DISTANCE) {
-    snapPoint = closestSnapPoint;
+    entitySnapPoint = closestSnapPoint;
   }
 
-  return { angleGuide, snapPoint: snapPoint || angleSnapPoint };
+  const angleSnapPoints = [
+    ...nearestAngleSnapPoints,
+    // TODO only search for intersections between angle guides and other angle guides and between angle guides and entities, but not between entities
+    ...getIntersectionPoints([...compact(entities), ...angleGuides]).map(
+      point => ({
+        point,
+        type: SnapPointType.Intersection,
+      }),
+    ),
+  ];
+  const [closestAngleSnapPointDistance, closestAngleSnapPoint] =
+    getClosestSnapPoint(angleSnapPoints, mouseLocation);
+
+  if (
+    closestAngleSnapPoint &&
+    closestAngleSnapPointDistance < SNAP_POINT_DISTANCE
+  ) {
+    angleSnapPoint = closestAngleSnapPoint;
+  }
+
+  return { angleGuides, entitySnapPoint, angleSnapPoint };
 }

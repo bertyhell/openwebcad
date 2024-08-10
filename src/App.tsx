@@ -7,8 +7,12 @@ import { RectangleEntity } from './entities/RectangleEntity.ts';
 import { CircleEntity } from './entities/CircleEntity.ts';
 import { SelectionRectangleEntity } from './entities/SelectionRectangleEntity.ts';
 import { Box, Point } from '@flatten-js/core';
-import { DrawInfo, SnapPoint } from './App.types.ts';
-import { HIGHLIGHT_ENTITY_DISTANCE } from './App.consts.ts';
+import { DrawInfo, HoverPoint, SnapPoint } from './App.types.ts';
+import {
+  HIGHLIGHT_ENTITY_DISTANCE,
+  HOVERED_SNAP_POINT_TIME,
+  SNAP_POINT_DISTANCE,
+} from './App.consts.ts';
 import {
   clearCanvas,
   drawActiveEntity,
@@ -23,6 +27,9 @@ import { findClosestEntity } from './helpers/find-closest-entity.ts';
 import { convertEntitiesToSvgString } from './helpers/export-entities-to-svg.ts';
 import { saveAs } from 'file-saver';
 import { getDrawHelpers } from './helpers/get-draw-guides.ts';
+import { pointDistance } from './helpers/distance-between-points.ts';
+import { compact } from './helpers/compact.ts';
+import { getClosestSnapPoint } from './helpers/get-closest-snap-point.ts';
 
 function App() {
   const [canvasSize, setCanvasSize] = useState<Point>(new Point(0, 0));
@@ -35,7 +42,22 @@ function App() {
   const [helperEntities, setHelperEntities] = useState<Entity[]>([]);
   const [debugEntities] = useState<Entity[]>([]);
   const [angleStep, setAngleStep] = useState(45);
+
+  /**
+   * Entity snap point or intersection
+   */
   const [snapPoint, setSnapPoint] = useState<SnapPoint | null>(null);
+
+  /**
+   * Snap point on angle guide
+   */
+  const [snapPointOnAngleGuide, setSnapPointOnAngleGuide] =
+    useState<SnapPoint | null>(null);
+
+  /**
+   * Snap points that are hovered for a certain amount of time
+   */
+  const [hoveredSnapPoints, setHoveredSnapPoints] = useState<HoverPoint[]>([]);
 
   const handleWindowResize = () => {
     setCanvasSize(new Point(window.innerWidth, window.innerHeight));
@@ -221,30 +243,38 @@ function App() {
         y: evt.clientY,
       },
     });
+
+    const [, closestSnapPoint] = getClosestSnapPoint(
+      compact([snapPoint, snapPointOnAngleGuide]),
+      mouseLocation,
+    );
+
     handleMouseUpPoint(
-      snapPoint ? snapPoint.point : new Point(evt.clientX, evt.clientY),
+      closestSnapPoint
+        ? closestSnapPoint.point
+        : new Point(evt.clientX, evt.clientY),
       evt.ctrlKey,
       evt.shiftKey,
     );
   }
 
   const deHighlightEntities = useCallback(() => {
-    setEntities(
-      entities.map(entity => {
+    setEntities((oldEntities: Entity[]) => {
+      return oldEntities.map(entity => {
         entity.isHighlighted = false;
         return entity;
-      }),
-    );
-  }, [entities]);
+      });
+    });
+  }, []);
 
   const deSelectEntities = useCallback(() => {
-    setEntities(
-      entities.map(entity => {
+    setEntities(oldEntities => {
+      return oldEntities.map(entity => {
         entity.isSelected = false;
         return entity;
-      }),
-    );
-  }, [entities]);
+      });
+    });
+  }, []);
 
   const handleKeyUp = useCallback(
     (evt: KeyboardEvent) => {
@@ -295,7 +325,15 @@ function App() {
     drawEntities(drawInfo, entities);
     drawDebugEntities(drawInfo, debugEntities);
     drawActiveEntity(drawInfo, activeEntity);
-    drawSnapPoint(drawInfo, snapPoint);
+
+    const [, closestSnapPoint] = getClosestSnapPoint(
+      compact([snapPoint, snapPointOnAngleGuide]),
+      mouseLocation,
+    );
+    console.log('drawing snap point: ', snapPoint);
+    console.log('drawing snap point angle: ', snapPointOnAngleGuide);
+    drawSnapPoint(drawInfo, closestSnapPoint);
+
     drawCursor(drawInfo, shouldDrawCursor);
   }, [
     activeEntity,
@@ -304,11 +342,107 @@ function App() {
     debugEntities,
     entities,
     helperEntities,
-    mouseLocation.x,
-    mouseLocation.y,
+    mouseLocation,
     shouldDrawCursor,
     snapPoint,
+    snapPointOnAngleGuide,
   ]);
+
+  /**
+   * Checks the current snap point every 100ms to mark certain snap points when they are hovered for a certain amount of time (marked)
+   * So we can show extra angle guides for the ones that are marked
+   */
+  const watchSnapPoint = useCallback(() => {
+    if (!snapPoint) {
+      return;
+    }
+
+    const lastHoveredPoint = hoveredSnapPoints.at(-1);
+    let newHoverSnapPoints: HoverPoint[];
+
+    // Angle guide points should never be marked
+    console.log('snap point: ', JSON.stringify(snapPoint));
+
+    if (lastHoveredPoint) {
+      if (
+        pointDistance(snapPoint.point, lastHoveredPoint.snapPoint.point) <
+        SNAP_POINT_DISTANCE
+      ) {
+        console.log(
+          'INCREASE HOVER TIME: ',
+          JSON.stringify({
+            ...lastHoveredPoint,
+            milliSecondsHovered: lastHoveredPoint.milliSecondsHovered + 100,
+          }),
+        );
+        // Last hovered snap point is still the current closest snap point
+        // Increase the hover time
+        newHoverSnapPoints = [
+          ...hoveredSnapPoints.slice(0, hoveredSnapPoints.length - 1),
+          {
+            ...lastHoveredPoint,
+            milliSecondsHovered: lastHoveredPoint.milliSecondsHovered + 100,
+          },
+        ];
+      } else {
+        // The closest snap point has changed
+        // Check if the last snap point was hovered for long enough to be considered a marked snap point
+        if (lastHoveredPoint.milliSecondsHovered >= HOVERED_SNAP_POINT_TIME) {
+          console.log(
+            'NEW HOVERED SNAP POINT: ',
+            JSON.stringify({
+              snapPoint,
+              milliSecondsHovered: 100,
+            }),
+          );
+          // Append the new point to the list
+          newHoverSnapPoints = [
+            ...hoveredSnapPoints,
+            {
+              snapPoint,
+              milliSecondsHovered: 100,
+            },
+          ];
+        } else {
+          console.log(
+            'REPLACE HOVERED SNAP POINT: ',
+            JSON.stringify({
+              snapPoint,
+              milliSecondsHovered: 100,
+            }),
+          );
+          // Replace the last point with the new point
+          newHoverSnapPoints = [
+            ...hoveredSnapPoints.slice(0, hoveredSnapPoints.length - 1),
+            {
+              snapPoint,
+              milliSecondsHovered: 100,
+            },
+          ];
+        }
+      }
+    } else {
+      console.log(
+        'BRAND NEW HOVERED SNAP POINT: ',
+        JSON.stringify({
+          snapPoint,
+          milliSecondsHovered: 100,
+        }),
+        lastHoveredPoint,
+      );
+      // No snap points were hovered before
+      newHoverSnapPoints = [
+        {
+          snapPoint,
+          milliSecondsHovered: 100,
+        },
+      ];
+    }
+
+    const newHoverSnapPointsTruncated = newHoverSnapPoints.slice(0, 3);
+    console.log('hovered snap points: ', newHoverSnapPointsTruncated);
+    setHoveredSnapPoints(newHoverSnapPointsTruncated);
+  }, [snapPoint, hoveredSnapPoints]);
 
   useEffect(() => {
     console.log('init app');
@@ -323,7 +457,17 @@ function App() {
       window.document.removeEventListener('keyup', handleKeyUp);
       window.document.removeEventListener('resize', handleWindowResize);
     };
-  }, [handleKeyUp]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const watchSnapPointTimerId = setInterval(() => {
+      watchSnapPoint();
+    }, 1000);
+    return () => {
+      clearInterval(watchSnapPointTimerId);
+    };
+  }, [watchSnapPoint]);
 
   useEffect(() => {
     draw();
@@ -340,16 +484,29 @@ function App() {
       ) {
         firstPoint = activeEntity.getFirstPoint();
       }
-      const { angleGuide, snapPoint } = getDrawHelpers(
+      const { angleGuides, entitySnapPoint, angleSnapPoint } = getDrawHelpers(
         entities,
-        firstPoint,
+        compact([
+          firstPoint,
+          ...hoveredSnapPoints.map(
+            hoveredSnapPoint => hoveredSnapPoint.snapPoint.point,
+          ),
+        ]),
         mouseLocation,
         angleStep,
       );
-      setHelperEntities(angleGuide ? [angleGuide] : []);
-      setSnapPoint(snapPoint);
+      setHelperEntities(angleGuides);
+      setSnapPoint(entitySnapPoint);
+      setSnapPointOnAngleGuide(angleSnapPoint);
     }
-  }, [activeEntity, activeTool, angleStep, entities, mouseLocation]);
+  }, [
+    activeEntity,
+    activeTool,
+    angleStep,
+    entities,
+    hoveredSnapPoints,
+    mouseLocation,
+  ]);
 
   useEffect(() => {
     if (activeTool === Tool.Select) {

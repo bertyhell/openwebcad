@@ -25,3 +25,8 @@ export interface SnapPoint {
 }
 
 export type SnapPointConfig = Record<SnapPointType, boolean>;
+
+export interface HoverPoint {
+  snapPoint: SnapPoint;
+  milliSecondsHovered: number;
+}

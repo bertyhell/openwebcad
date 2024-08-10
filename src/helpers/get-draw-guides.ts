@@ -1,7 +1,7 @@
 import { Point } from '@flatten-js/core';
 import { getIntersectionPoints } from './get-intersection-points.ts';
 import { SnapPoint, SnapPointType } from '../App.types.ts';
-import { getClosestSnapPoint } from './get-closest-snap-point.ts';
+import { getClosestSnapPointWithinRadius } from './get-closest-snap-point.ts';
 import { SNAP_ANGLE_DISTANCE, SNAP_POINT_DISTANCE } from '../App.consts.ts';
 import { getAngleGuideLines } from './get-angle-guide-lines.ts';
 import { findClosestEntity } from './find-closest-entity.ts';
@@ -60,12 +60,13 @@ export function getDrawHelpers(
     })),
   ];
 
-  const [closestSnapPointDistance, closestSnapPoint] = getClosestSnapPoint(
+  const closestSnapPoint = getClosestSnapPointWithinRadius(
     entitySnapPoints,
     mouseLocation,
+    SNAP_POINT_DISTANCE,
   );
 
-  if (closestSnapPoint && closestSnapPointDistance < SNAP_POINT_DISTANCE) {
+  if (closestSnapPoint) {
     entitySnapPoint = closestSnapPoint;
   }
 
@@ -79,13 +80,13 @@ export function getDrawHelpers(
       }),
     ),
   ];
-  const [closestAngleSnapPointDistance, closestAngleSnapPoint] =
-    getClosestSnapPoint(angleSnapPoints, mouseLocation);
+  const closestAngleSnapPoint = getClosestSnapPointWithinRadius(
+    angleSnapPoints,
+    mouseLocation,
+    SNAP_POINT_DISTANCE,
+  );
 
-  if (
-    closestAngleSnapPoint &&
-    closestAngleSnapPointDistance < SNAP_POINT_DISTANCE
-  ) {
+  if (closestAngleSnapPoint) {
     angleSnapPoint = closestAngleSnapPoint;
   }
 

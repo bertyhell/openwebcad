@@ -48,10 +48,42 @@ export function drawDebugEntities(drawInfo: DrawInfo, debugEntities: Entity[]) {
   });
 }
 
-export function drawSnapPoint(drawInfo: DrawInfo, snapPoint: SnapPoint | null) {
+/**
+ * Draw the point to which the mouse will snap when the user clicks to draw the next point
+ * @param drawInfo
+ * @param snapPoint
+ * @param isMarked indicates that the point has been hovered lang enough to draw guides from this point
+ */
+export function drawSnapPoint(
+  drawInfo: DrawInfo,
+  snapPoint: SnapPoint | null,
+  isMarked: boolean,
+) {
   if (!snapPoint) return;
 
   setLineStyles(drawInfo.context, false, false, SNAP_POINT_COLOR);
+
+  if (isMarked) {
+    // We will draw a plus sign inside the current snap point to indicate that it is marked
+    drawInfo.context.beginPath();
+    drawInfo.context.moveTo(
+      snapPoint.point.x - SNAP_POINT_SIZE / 2,
+      snapPoint.point.y,
+    );
+    drawInfo.context.lineTo(
+      snapPoint.point.x + SNAP_POINT_SIZE / 2,
+      snapPoint.point.y,
+    );
+    drawInfo.context.moveTo(
+      snapPoint.point.x,
+      snapPoint.point.y - SNAP_POINT_SIZE / 2,
+    );
+    drawInfo.context.lineTo(
+      snapPoint.point.x,
+      snapPoint.point.y + SNAP_POINT_SIZE / 2,
+    );
+    drawInfo.context.stroke();
+  }
 
   switch (snapPoint.type) {
     case SnapPointType.LineEndPoint:

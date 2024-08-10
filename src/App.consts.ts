@@ -54,13 +54,13 @@ export const HIGHLIGHT_ENTITY_DISTANCE = 15;
 /**
  * The size of the snap point indicator shapes that are shown on active snap points
  */
-export const SNAP_POINT_SIZE = 10;
+export const SNAP_POINT_SIZE = 15;
 
 /**
  * How long you need to hover over a snap point to make it a marked snap point that will show angle guides
  * in milliseconds
  */
-export const HOVERED_SNAP_POINT_TIME = 500;
+export const HOVERED_SNAP_POINT_TIME = 300;
 
 /**
  * Maximum number of snap points that can be marked at the same time

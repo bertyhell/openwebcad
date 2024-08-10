@@ -11,6 +11,7 @@ import { DrawInfo, HoverPoint, SnapPoint } from './App.types.ts';
 import {
   HIGHLIGHT_ENTITY_DISTANCE,
   HOVERED_SNAP_POINT_TIME,
+  MAX_MARKED_SNAP_POINTS,
   SNAP_POINT_DISTANCE,
 } from './App.consts.ts';
 import {
@@ -29,7 +30,11 @@ import { saveAs } from 'file-saver';
 import { getDrawHelpers } from './helpers/get-draw-guides.ts';
 import { pointDistance } from './helpers/distance-between-points.ts';
 import { compact } from './helpers/compact.ts';
-import { getClosestSnapPoint } from './helpers/get-closest-snap-point.ts';
+import {
+  getClosestSnapPoint,
+  getClosestSnapPointWithinRadius,
+} from './helpers/get-closest-snap-point.ts';
+import { isPointEqual } from './helpers/is-point-equal.ts';
 
 function App() {
   const [canvasSize, setCanvasSize] = useState<Point>(new Point(0, 0));
@@ -244,9 +249,10 @@ function App() {
       },
     });
 
-    const [, closestSnapPoint] = getClosestSnapPoint(
+    const closestSnapPoint = getClosestSnapPointWithinRadius(
       compact([snapPoint, snapPointOnAngleGuide]),
       mouseLocation,
+      SNAP_POINT_DISTANCE,
     );
 
     handleMouseUpPoint(
@@ -330,9 +336,13 @@ function App() {
       compact([snapPoint, snapPointOnAngleGuide]),
       mouseLocation,
     );
-    console.log('drawing snap point: ', snapPoint);
-    console.log('drawing snap point angle: ', snapPointOnAngleGuide);
-    drawSnapPoint(drawInfo, closestSnapPoint);
+    const isMarked =
+      !!closestSnapPoint &&
+      hoveredSnapPoints.some(hoveredSnapPoint =>
+        isPointEqual(hoveredSnapPoint.snapPoint.point, closestSnapPoint.point),
+      );
+    // console.log('isMarked: ', isMarked);
+    drawSnapPoint(drawInfo, closestSnapPoint, isMarked);
 
     drawCursor(drawInfo, shouldDrawCursor);
   }, [
@@ -342,6 +352,7 @@ function App() {
     debugEntities,
     entities,
     helperEntities,
+    hoveredSnapPoints,
     mouseLocation,
     shouldDrawCursor,
     snapPoint,
@@ -439,7 +450,10 @@ function App() {
       ];
     }
 
-    const newHoverSnapPointsTruncated = newHoverSnapPoints.slice(0, 3);
+    const newHoverSnapPointsTruncated = newHoverSnapPoints.slice(
+      0,
+      MAX_MARKED_SNAP_POINTS,
+    );
     console.log('hovered snap points: ', newHoverSnapPointsTruncated);
     setHoveredSnapPoints(newHoverSnapPointsTruncated);
   }, [snapPoint, hoveredSnapPoints]);

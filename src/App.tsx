@@ -92,6 +92,7 @@ function App() {
         activeLine.send(new Point(mousePoint.x, mousePoint.y));
       }
     }
+
     if (activeTool === Tool.Rectangle) {
       let activeRectangle = activeEntity as RectangleEntity | null;
       if (!activeRectangle) {
@@ -129,99 +130,102 @@ function App() {
     }
 
     if (activeTool === Tool.Select) {
-      deHighlightEntities();
+      setEntities(oldEntities => {
+        let newEntities: Entity[] = [...oldEntities];
 
-      let activeSelectionRectangle = null;
-      if (activeEntity instanceof SelectionRectangleEntity) {
-        activeSelectionRectangle = activeEntity as SelectionRectangleEntity;
-      }
-
-      const closestEntityInfo = findClosestEntity(mousePoint, entities);
-
-      // Mouse is close to entity and is not dragging a rectangle
-      if (
-        closestEntityInfo &&
-        closestEntityInfo[0] < HIGHLIGHT_ENTITY_DISTANCE &&
-        !activeSelectionRectangle
-      ) {
-        // Select the entity close to the mouse
-        const closestEntity = closestEntityInfo[2];
-        console.log('selecting entity close to the mouse: ', closestEntity);
-        if (!holdingCtrl && !holdingShift) {
-          deSelectEntities();
+        let activeSelectionRectangle = null;
+        if (activeEntity instanceof SelectionRectangleEntity) {
+          activeSelectionRectangle = activeEntity as SelectionRectangleEntity;
         }
-        if (holdingCtrl) {
-          closestEntity.isSelected = !closestEntity.isSelected;
-        } else {
-          closestEntity.isSelected = true;
-        }
-        draw();
-        return;
-      }
 
-      // No elements are close to the mouse and no selection dragging is in progress
-      if (!activeSelectionRectangle) {
-        console.log(
-          'Start a new selection rectangle drag: ',
-          activeSelectionRectangle,
-        );
-        // Start a new selection rectangle drag
-        activeSelectionRectangle = new SelectionRectangleEntity();
-        setActiveEntity(activeSelectionRectangle); // TODO make selection a separate concept from entities
-      }
+        const closestEntityInfo = findClosestEntity(mousePoint, newEntities);
 
-      const completed = activeSelectionRectangle.send(
-        new Point(mousePoint.x, mousePoint.y),
-      );
-
-      deHighlightEntities();
-      if (completed) {
-        // Finish the selection
-        console.log('Finish selection: ', activeSelectionRectangle);
-        const intersectionSelection =
-          activeSelectionRectangle.isIntersectionSelection();
-        entities.forEach(entity => {
-          if (intersectionSelection) {
-            if (
-              entity.intersectsWithBox(
-                activeSelectionRectangle.getBoundingBox() as Box,
-              ) ||
-              entity.isContainedInBox(
-                activeSelectionRectangle.getBoundingBox() as Box,
-              )
-            ) {
-              if (holdingCtrl) {
-                entity.isSelected = !entity.isSelected;
-              } else {
-                entity.isSelected = true;
-              }
-            } else {
-              if (!holdingCtrl && !holdingShift) {
-                entity.isSelected = false;
-              }
-            }
-          } else {
-            if (
-              entity.isContainedInBox(
-                activeSelectionRectangle.getBoundingBox() as Box,
-              )
-            ) {
-              if (holdingCtrl) {
-                entity.isSelected = !entity.isSelected;
-              } else {
-                entity.isSelected = true;
-              }
-            } else {
-              if (!holdingCtrl && !holdingShift) {
-                entity.isSelected = false;
-              }
-            }
+        // Mouse is close to entity and is not dragging a rectangle
+        if (
+          closestEntityInfo &&
+          closestEntityInfo[0] < HIGHLIGHT_ENTITY_DISTANCE &&
+          !activeSelectionRectangle
+        ) {
+          // Select the entity close to the mouse
+          const closestEntity = closestEntityInfo[2];
+          console.log('selecting entity close to the mouse: ', closestEntity);
+          if (!holdingCtrl && !holdingShift) {
+            newEntities = deSelectEntities(newEntities);
           }
-        });
+          if (holdingCtrl) {
+            closestEntity.isSelected = !closestEntity.isSelected;
+          } else {
+            closestEntity.isSelected = true;
+          }
+          return newEntities;
+        }
 
-        console.log('Set active entity to null');
-        setActiveEntity(null);
-      }
+        // No elements are close to the mouse and no selection dragging is in progress
+        if (!activeSelectionRectangle) {
+          console.log(
+            'Start a new selection rectangle drag: ',
+            activeSelectionRectangle,
+          );
+          // Start a new selection rectangle drag
+          activeSelectionRectangle = new SelectionRectangleEntity();
+          setActiveEntity(activeSelectionRectangle); // TODO make selection a separate concept from entities
+        }
+
+        const completed = activeSelectionRectangle.send(
+          new Point(mousePoint.x, mousePoint.y),
+        );
+
+        newEntities = deHighlightEntities(newEntities);
+        if (completed) {
+          // Finish the selection
+          console.log('Finish selection: ', activeSelectionRectangle);
+          const intersectionSelection =
+            activeSelectionRectangle.isIntersectionSelection();
+          newEntities.forEach(entity => {
+            if (intersectionSelection) {
+              if (
+                entity.intersectsWithBox(
+                  activeSelectionRectangle.getBoundingBox() as Box,
+                ) ||
+                entity.isContainedInBox(
+                  activeSelectionRectangle.getBoundingBox() as Box,
+                )
+              ) {
+                if (holdingCtrl) {
+                  entity.isSelected = !entity.isSelected;
+                } else {
+                  entity.isSelected = true;
+                }
+              } else {
+                if (!holdingCtrl && !holdingShift) {
+                  entity.isSelected = false;
+                }
+              }
+            } else {
+              if (
+                entity.isContainedInBox(
+                  activeSelectionRectangle.getBoundingBox() as Box,
+                )
+              ) {
+                if (holdingCtrl) {
+                  entity.isSelected = !entity.isSelected;
+                } else {
+                  entity.isSelected = true;
+                }
+              } else {
+                if (!holdingCtrl && !holdingShift) {
+                  entity.isSelected = false;
+                }
+              }
+            }
+          });
+
+          console.log('Set active entity to null');
+          setActiveEntity(null);
+          return newEntities;
+        }
+        return newEntities;
+      });
     }
   }
 
@@ -264,21 +268,20 @@ function App() {
     );
   }
 
-  const deHighlightEntities = useCallback(() => {
-    setEntities((oldEntities: Entity[]) => {
-      return oldEntities.map(entity => {
+  const deHighlightEntities = useCallback(
+    (entitiesTemp: Entity[]): Entity[] => {
+      return entitiesTemp.map(entity => {
         entity.isHighlighted = false;
         return entity;
       });
-    });
-  }, []);
+    },
+    [],
+  );
 
-  const deSelectEntities = useCallback(() => {
-    setEntities(oldEntities => {
-      return oldEntities.map(entity => {
-        entity.isSelected = false;
-        return entity;
-      });
+  const deSelectEntities = useCallback((entitiesTemp: Entity[]): Entity[] => {
+    return entitiesTemp.map(entity => {
+      entity.isSelected = false;
+      return entity;
     });
   }, []);
 
@@ -286,15 +289,14 @@ function App() {
     (evt: KeyboardEvent) => {
       if (evt.key === 'Escape') {
         setActiveEntity(null);
-        deSelectEntities();
-        deHighlightEntities();
+        setEntities(deSelectEntities(deHighlightEntities(entities)));
       } else if (evt.key === 'Delete') {
         setEntities(oldEntities =>
           oldEntities.filter(entity => !entity.isSelected),
         );
       }
     },
-    [deHighlightEntities, deSelectEntities],
+    [deHighlightEntities, deSelectEntities, entities],
   );
 
   const handleToolClick = useCallback(
@@ -302,9 +304,9 @@ function App() {
       console.log('set active tool: ', tool);
       setActiveTool(tool);
       setActiveEntity(null);
-      deSelectEntities();
+      setEntities(deSelectEntities(entities));
     },
-    [deSelectEntities],
+    [deSelectEntities, entities],
   );
 
   const handleExportClick = useCallback(() => {

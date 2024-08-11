@@ -1,11 +1,19 @@
-import { createRef, MouseEvent, useCallback, useEffect, useState } from 'react';
+import {
+  createRef,
+  MouseEvent,
+  useCallback,
+  useEffect,
+  useState,
+  WheelEvent,
+} from 'react';
 import './App.scss';
 import { Tool } from './tools.ts';
 import { Entity } from './entities/Entitity.ts';
 import { Point } from '@flatten-js/core';
-import { DrawInfo, HoverPoint, SnapPoint } from './App.types.ts';
+import { DrawInfo, HoverPoint, MouseButton, SnapPoint } from './App.types.ts';
 import {
   HIGHLIGHT_ENTITY_DISTANCE,
+  MOUSE_ZOOM_MULTIPLIER,
   SNAP_POINT_DISTANCE,
 } from './App.consts.ts';
 import {
@@ -37,18 +45,37 @@ import {
 import { handleCircleToolClick } from './helpers/tools/circle-tool.ts';
 import { handleRectangleToolClick } from './helpers/tools/rectangle-tool.ts';
 import { handleLineToolClick } from './helpers/tools/line-tool.ts';
+import { screenToWorld } from './helpers/world-screen-conversion.ts';
+import { LineEntity } from './entities/LineEntity.ts';
 
 function App() {
   const [canvasSize, setCanvasSize] = useState<Point>(new Point(0, 0));
-  const [mouseLocation, setMouseLocation] = useState<Point>(new Point(0, 0));
+  const [screenMouseLocation, setScreenMouseLocation] = useState<Point>(
+    new Point(0, 0),
+  );
   const canvasRef = createRef<HTMLCanvasElement>();
   const [activeTool, setActiveTool] = useState(Tool.Line);
   const [entities, setEntities] = useState<Entity[]>([]);
   const [activeEntity, setActiveEntity] = useState<Entity | null>(null);
   const [shouldDrawCursor, setShouldDrawCursor] = useState(false);
-  const [helperEntities, setHelperEntities] = useState<Entity[]>([]);
+  const [helperEntities, setHelperEntities] = useState<Entity[]>([
+    new LineEntity(new Point(0, 0), new Point(0, 1000)),
+    new LineEntity(new Point(0, 0), new Point(1000, 0)),
+    new LineEntity(new Point(100, 0), new Point(100, 1000)),
+    new LineEntity(new Point(0, 100), new Point(1000, 100)),
+  ]);
   const [debugEntities] = useState<Entity[]>([]);
   const [angleStep, setAngleStep] = useState(45);
+  const [screenOffset, setScreenOffset] = useState<Point>(new Point(0, 0));
+  const [screenScale, setScreenScale] = useState<number>(1);
+  const [panStartLocation, setPanStartLocation] = useState<Point | null>(null);
+
+  // computed
+  const worldMouseLocation = screenToWorld(
+    screenMouseLocation,
+    screenOffset,
+    screenScale,
+  );
 
   /**
    * Entity snap point or intersection
@@ -75,7 +102,7 @@ function App() {
   };
 
   function handleMouseUpPoint(
-    mousePoint: Point,
+    worldClickPoint: Point,
     holdingCtrl: boolean,
     holdingShift: boolean,
   ) {
@@ -85,7 +112,7 @@ function App() {
         setActiveEntity,
         entities,
         setEntities,
-        mousePoint,
+        worldClickPoint,
       );
     }
 
@@ -95,7 +122,7 @@ function App() {
         setActiveEntity,
         entities,
         setEntities,
-        mousePoint,
+        worldClickPoint,
       );
     }
 
@@ -105,13 +132,13 @@ function App() {
         setActiveEntity,
         entities,
         setEntities,
-        mousePoint,
+        worldClickPoint,
       );
     }
 
     if (activeTool === Tool.Select) {
       handleSelectToolClick(
-        mousePoint,
+        worldClickPoint,
         holdingCtrl,
         holdingShift,
         setEntities,
@@ -127,37 +154,132 @@ function App() {
 
   function handleMouseMove(evt: MouseEvent<HTMLCanvasElement>) {
     setShouldDrawCursor(true);
-    setMouseLocation(new Point(evt.clientX, evt.clientY));
+    setScreenMouseLocation(new Point(evt.clientX, evt.clientY));
+
+    setScreenOffset(oldOffset => {
+      // If we are not dragging with the middle mouse button => do not pan the screen
+      if (!panStartLocation) return oldOffset;
+
+      // Pan the screen by the last mouse movement
+      const newOffset = new Point(
+        oldOffset.x - (evt.clientX - panStartLocation.x) / screenScale,
+        oldOffset.y - (evt.clientY - panStartLocation.y) / screenScale,
+      );
+      console.log('mouse move middle mouse button', {
+        x: evt.clientX,
+        y: evt.clientY,
+        newOffset,
+      });
+      setPanStartLocation(new Point(evt.clientX, evt.clientY));
+      return newOffset;
+    });
   }
 
   function handleMouseOut() {
     setShouldDrawCursor(false);
   }
 
+  /**
+   * Change the zoom level of screen space
+   * @param evt
+   */
+  function handleMouseWheel(evt: WheelEvent<HTMLCanvasElement>) {
+    console.log('mouse wheel', {
+      deltaY: evt.deltaY,
+      multiplier:
+        1 - MOUSE_ZOOM_MULTIPLIER * (evt.deltaY / Math.abs(evt.deltaY)),
+    });
+    const worldMouseLocationBeforeZoom = worldMouseLocation;
+    const newZoom =
+      screenScale *
+      (1 - MOUSE_ZOOM_MULTIPLIER * (evt.deltaY / Math.abs(evt.deltaY)));
+    setScreenScale(
+      oldZoom =>
+        oldZoom *
+        (1 - MOUSE_ZOOM_MULTIPLIER * (evt.deltaY / Math.abs(evt.deltaY))),
+    );
+
+    // ...now get the location of the cursor in world space again - It will have changed
+    // because the scale has changed, but we can offset our world now to fix the zoom
+    // location in screen space, because we know how much it changed laterally between
+    // the two spatial scales. Neat huh? ;-)
+    const worldMouseLocationAfterZoom = screenToWorld(
+      screenMouseLocation,
+      screenOffset,
+      newZoom,
+    );
+    setScreenOffset(oldScreenOffset => {
+      console.log('mouse wheel', {
+        deltaY: evt.deltaY,
+        multiplier:
+          1 - MOUSE_ZOOM_MULTIPLIER * (evt.deltaY / Math.abs(evt.deltaY)),
+        worldMouseLocationBeforeZoom,
+        worldMouseLocationAfterZoom,
+        oldScreenOffset,
+        newScreenOffset: new Point(
+          oldScreenOffset.x +
+            worldMouseLocationBeforeZoom.x -
+            worldMouseLocationAfterZoom.x,
+          oldScreenOffset.y +
+            worldMouseLocationBeforeZoom.y -
+            worldMouseLocationAfterZoom.y,
+        ),
+      });
+      return new Point(
+        oldScreenOffset.x +
+          (worldMouseLocationBeforeZoom.x - worldMouseLocationAfterZoom.x),
+        oldScreenOffset.y +
+          (worldMouseLocationBeforeZoom.y - worldMouseLocationAfterZoom.y),
+      );
+    });
+  }
+
+  function handleMouseDown(evt: MouseEvent<HTMLCanvasElement>) {
+    if (evt.button !== MouseButton.Middle) return;
+
+    console.log('middle mouse button down', {
+      x: evt.clientX,
+      y: evt.clientY,
+    });
+    setPanStartLocation(new Point(evt.clientX, evt.clientY));
+  }
+
   function handleMouseUp(evt: MouseEvent<HTMLCanvasElement>) {
-    console.log('mouse up', {
-      activeTool,
-      activeEntity,
-      entities,
-      mouse: {
+    if (evt.button === MouseButton.Middle) {
+      console.log('middle mouse button up', {
         x: evt.clientX,
         y: evt.clientY,
-      },
-    });
+      });
+      setPanStartLocation(null);
+    }
+    if (evt.button === MouseButton.Left) {
+      console.log('mouse up', {
+        activeTool,
+        activeEntity,
+        entities,
+        mouse: {
+          x: evt.clientX,
+          y: evt.clientY,
+        },
+      });
 
-    const closestSnapPoint = getClosestSnapPointWithinRadius(
-      compact([snapPoint, snapPointOnAngleGuide]),
-      mouseLocation,
-      SNAP_POINT_DISTANCE,
-    );
+      const closestSnapPoint = getClosestSnapPointWithinRadius(
+        compact([snapPoint, snapPointOnAngleGuide]),
+        worldMouseLocation,
+        SNAP_POINT_DISTANCE / screenScale,
+      );
 
-    handleMouseUpPoint(
-      closestSnapPoint
+      const worldMouseLocationTemp = screenToWorld(
+        new Point(evt.clientX, evt.clientY),
+        screenOffset,
+        screenScale,
+      );
+      const worldClickPoint = closestSnapPoint
         ? closestSnapPoint.point
-        : new Point(evt.clientX, evt.clientY),
-      evt.ctrlKey,
-      evt.shiftKey,
-    );
+        : worldMouseLocationTemp;
+
+      handleMouseUpPoint(worldClickPoint, evt.ctrlKey, evt.shiftKey);
+    }
   }
 
   const handleKeyUp = useCallback((evt: KeyboardEvent) => {
@@ -188,50 +310,57 @@ function App() {
     saveAs(blob, 'open-web-cad--drawing.svg');
   }, [canvasSize, entities]);
 
-  const draw = useCallback(() => {
-    const context: CanvasRenderingContext2D | null | undefined =
-      canvasRef.current?.getContext('2d');
-    if (!context) return;
+  const draw = useCallback(
+    (context: CanvasRenderingContext2D) => {
+      const drawInfo: DrawInfo = {
+        context,
+        canvasSize,
+        worldMouseLocation: worldMouseLocation,
+        screenMouseLocation: screenMouseLocation,
+        screenOffset,
+        screenZoom: screenScale,
+      };
 
-    const drawInfo: DrawInfo = {
-      context,
-      canvasSize,
-      mouse: new Point(mouseLocation.x, mouseLocation.y),
-    };
+      clearCanvas(drawInfo);
 
-    clearCanvas(drawInfo);
+      drawHelpers(drawInfo, helperEntities);
+      drawEntities(drawInfo, entities);
+      drawDebugEntities(drawInfo, debugEntities);
+      drawActiveEntity(drawInfo, activeEntity);
 
-    drawHelpers(drawInfo, helperEntities);
-    drawEntities(drawInfo, entities);
-    drawDebugEntities(drawInfo, debugEntities);
-    drawActiveEntity(drawInfo, activeEntity);
-
-    const [, closestSnapPoint] = getClosestSnapPoint(
-      compact([snapPoint, snapPointOnAngleGuide]),
-      mouseLocation,
-    );
-    const isMarked =
-      !!closestSnapPoint &&
-      hoveredSnapPoints.some(hoveredSnapPoint =>
-        isPointEqual(hoveredSnapPoint.snapPoint.point, closestSnapPoint.point),
+      const [, closestSnapPoint] = getClosestSnapPoint(
+        compact([snapPoint, snapPointOnAngleGuide]),
+        worldMouseLocation,
       );
-    // console.log('isMarked: ', isMarked);
-    drawSnapPoint(drawInfo, closestSnapPoint, isMarked);
+      const isMarked =
+        !!closestSnapPoint &&
+        hoveredSnapPoints.some(hoveredSnapPoint =>
+          isPointEqual(
+            hoveredSnapPoint.snapPoint.point,
+            closestSnapPoint.point,
+          ),
+        );
+      // console.log('isMarked: ', isMarked);
+      drawSnapPoint(drawInfo, closestSnapPoint, isMarked);
 
-    drawCursor(drawInfo, shouldDrawCursor);
-  }, [
-    activeEntity,
-    canvasRef,
-    canvasSize,
-    debugEntities,
-    entities,
-    helperEntities,
-    hoveredSnapPoints,
-    mouseLocation,
-    shouldDrawCursor,
-    snapPoint,
-    snapPointOnAngleGuide,
-  ]);
+      drawCursor(drawInfo, shouldDrawCursor);
+    },
+    [
+      activeEntity,
+      canvasSize,
+      debugEntities,
+      entities,
+      helperEntities,
+      hoveredSnapPoints,
+      screenMouseLocation,
+      screenOffset,
+      screenScale,
+      shouldDrawCursor,
+      snapPoint,
+      snapPointOnAngleGuide,
+      worldMouseLocation,
+    ],
+  );
 
   /**
    * Init the canvas and add event listeners
@@ -255,7 +384,12 @@ function App() {
    */
   useEffect(() => {
     const watchSnapPointTimerId = setInterval(() => {
-      trackHoveredSnapPoint(snapPoint, hoveredSnapPoints, setHoveredSnapPoints);
+      trackHoveredSnapPoint(
+        snapPoint,
+        hoveredSnapPoints,
+        setHoveredSnapPoints,
+        SNAP_POINT_DISTANCE / screenScale,
+      );
     }, 100);
     return () => {
       clearInterval(watchSnapPointTimerId);
@@ -266,8 +400,19 @@ function App() {
    * Redraw the canvas when the mouse moves or the window resizes
    */
   useEffect(() => {
-    draw();
-  }, [canvasSize.x, canvasSize.y, mouseLocation.x, mouseLocation.y, draw]);
+    const context: CanvasRenderingContext2D | null | undefined =
+      canvasRef.current?.getContext('2d');
+    if (!context) return;
+
+    draw(context);
+  }, [
+    canvasSize.x,
+    canvasSize.y,
+    screenMouseLocation.x,
+    screenMouseLocation.y,
+    draw,
+    canvasRef,
+  ]);
 
   /**
    * Show the angle guides and closest snap point when drawing a shape
@@ -291,8 +436,9 @@ function App() {
             hoveredSnapPoint => hoveredSnapPoint.snapPoint.point,
           ),
         ]),
-        mouseLocation,
+        worldMouseLocation,
         angleStep,
+        SNAP_POINT_DISTANCE / screenScale,
       );
       setHelperEntities(angleGuides);
       setSnapPoint(entitySnapPoint);
@@ -304,7 +450,10 @@ function App() {
     angleStep,
     entities,
     hoveredSnapPoints,
-    mouseLocation,
+    screenMouseLocation,
+    screenOffset,
+    screenScale,
+    worldMouseLocation,
   ]);
 
   /**
@@ -318,7 +467,7 @@ function App() {
           entity.isHighlighted = false;
         });
         const [distance, , closestEntity] = findClosestEntity(
-          mouseLocation,
+          screenToWorld(screenMouseLocation, screenOffset, screenScale),
           oldEntities,
         );
 
@@ -328,7 +477,7 @@ function App() {
         return newEntities;
       });
     }
-  }, [activeTool, setEntities, mouseLocation]);
+  }, [activeTool, setEntities, screenMouseLocation, screenOffset, screenScale]);
 
   return (
     <div>
@@ -336,8 +485,10 @@ function App() {
         width={canvasSize.x}
         height={canvasSize.y}
         ref={canvasRef}
+        onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
+        onWheel={handleMouseWheel}
         onMouseOut={handleMouseOut}
         onMouseEnter={handleMouseEnter}
       ></canvas>

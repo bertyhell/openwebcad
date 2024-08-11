@@ -7,7 +7,7 @@ import { HIGHLIGHT_ENTITY_DISTANCE } from '../../App.consts.ts';
 import { deHighlightEntities, deSelectEntities } from '../select-entities.ts';
 
 export function handleSelectToolClick(
-  mousePoint: Point,
+  worldClickPoint: Point,
   holdingCtrl: boolean,
   holdingShift: boolean,
   setEntities: Dispatch<SetStateAction<Entity[]>>,
@@ -22,7 +22,7 @@ export function handleSelectToolClick(
       activeSelectionRectangle = activeEntity as SelectionRectangleEntity;
     }
 
-    const closestEntityInfo = findClosestEntity(mousePoint, newEntities);
+    const closestEntityInfo = findClosestEntity(worldClickPoint, newEntities);
 
     // Mouse is close to entity and is not dragging a rectangle
     if (
@@ -56,7 +56,7 @@ export function handleSelectToolClick(
     }
 
     const completed = activeSelectionRectangle.send(
-      new Point(mousePoint.x, mousePoint.y),
+      new Point(worldClickPoint.x, worldClickPoint.y),
     );
 
     newEntities = deHighlightEntities(newEntities);

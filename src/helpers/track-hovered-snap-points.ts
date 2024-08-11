@@ -3,7 +3,6 @@ import { pointDistance } from './distance-between-points.ts';
 import {
   HOVERED_SNAP_POINT_TIME,
   MAX_MARKED_SNAP_POINTS,
-  SNAP_POINT_DISTANCE,
 } from '../App.consts.ts';
 
 /**
@@ -11,28 +10,29 @@ import {
  * So we can show extra angle guides for the ones that are marked
  */
 export function trackHoveredSnapPoint(
-  snapPoint: SnapPoint | null,
-  hoveredSnapPoints: HoverPoint[],
+  worldSnapPoint: SnapPoint | null,
+  worldHoveredSnapPoints: HoverPoint[],
   setHoveredSnapPoints: (hoveredSnapPoints: HoverPoint[]) => void,
+  maxHoverDistance: number,
 ) {
-  if (!snapPoint) {
+  if (!worldSnapPoint) {
     return;
   }
 
-  const lastHoveredPoint = hoveredSnapPoints.at(-1);
+  const lastHoveredPoint = worldHoveredSnapPoints.at(-1);
   let newHoverSnapPoints: HoverPoint[];
 
   // Angle guide points should never be marked
-  console.log('track hovered snap points: ', JSON.stringify(snapPoint), {
+  console.log('track hovered snap points: ', JSON.stringify(worldSnapPoint), {
     distance: lastHoveredPoint
-      ? pointDistance(snapPoint.point, lastHoveredPoint.snapPoint.point)
+      ? pointDistance(worldSnapPoint.point, lastHoveredPoint.snapPoint.point)
       : undefined,
   });
 
   if (lastHoveredPoint) {
     if (
-      pointDistance(snapPoint.point, lastHoveredPoint.snapPoint.point) <
-      SNAP_POINT_DISTANCE
+      pointDistance(worldSnapPoint.point, lastHoveredPoint.snapPoint.point) <
+      maxHoverDistance
     ) {
       console.log(
         'INCREASE HOVER TIME: ',
@@ -44,7 +44,7 @@ export function trackHoveredSnapPoint(
       // Last hovered snap point is still the current closest snap point
       // Increase the hover time
       newHoverSnapPoints = [
-        ...hoveredSnapPoints.slice(0, hoveredSnapPoints.length - 1),
+        ...worldHoveredSnapPoints.slice(0, worldHoveredSnapPoints.length - 1),
         {
           ...lastHoveredPoint,
           milliSecondsHovered: lastHoveredPoint.milliSecondsHovered + 100,
@@ -57,15 +57,15 @@ export function trackHoveredSnapPoint(
         console.log(
           'NEW HOVERED SNAP POINT: ',
           JSON.stringify({
-            snapPoint,
+            snapPoint: worldSnapPoint,
             milliSecondsHovered: 100,
           }),
         );
         // Append the new point to the list
         newHoverSnapPoints = [
-          ...hoveredSnapPoints,
+          ...worldHoveredSnapPoints,
           {
-            snapPoint,
+            snapPoint: worldSnapPoint,
             milliSecondsHovered: 100,
           },
         ];
@@ -73,15 +73,15 @@ export function trackHoveredSnapPoint(
         console.log(
           'REPLACE HOVERED SNAP POINT: ',
           JSON.stringify({
-            snapPoint,
+            snapPoint: worldSnapPoint,
             milliSecondsHovered: 100,
           }),
         );
         // Replace the last point with the new point
         newHoverSnapPoints = [
-          ...hoveredSnapPoints.slice(0, hoveredSnapPoints.length - 1),
+          ...worldHoveredSnapPoints.slice(0, worldHoveredSnapPoints.length - 1),
           {
-            snapPoint,
+            snapPoint: worldSnapPoint,
             milliSecondsHovered: 100,
           },
         ];
@@ -91,7 +91,7 @@ export function trackHoveredSnapPoint(
     console.log(
       'BRAND NEW HOVERED SNAP POINT: ',
       JSON.stringify({
-        snapPoint,
+        snapPoint: worldSnapPoint,
         milliSecondsHovered: 100,
       }),
       lastHoveredPoint,
@@ -99,7 +99,7 @@ export function trackHoveredSnapPoint(
     // No snap points were hovered before
     newHoverSnapPoints = [
       {
-        snapPoint,
+        snapPoint: worldSnapPoint,
         milliSecondsHovered: 100,
       },
     ];

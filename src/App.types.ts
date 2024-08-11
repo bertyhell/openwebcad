@@ -3,7 +3,10 @@ import { Box, Circle, Point, Segment } from '@flatten-js/core';
 export interface DrawInfo {
   context: CanvasRenderingContext2D;
   canvasSize: { x: number; y: number };
-  mouse: Point;
+  worldMouseLocation: Point;
+  screenMouseLocation: Point;
+  screenOffset: Point;
+  screenZoom: number;
 }
 
 export type Shape = Box | Segment | Point | Circle;
@@ -29,4 +32,12 @@ export type SnapPointConfig = Record<SnapPointType, boolean>;
 export interface HoverPoint {
   snapPoint: SnapPoint;
   milliSecondsHovered: number;
+}
+
+export enum MouseButton {
+  Left = 0, // Main button pressed, usually the left button or the un-initialized state
+  Middle = 1, // Auxiliary button pressed, usually the wheel button or the middle button (if present)
+  Right = 2, // Secondary button pressed, usually the right button
+  Back = 3, // Fourth button, typically the Browser Back button
+  Forward = 4, // Fifth button, typically the Browser Forward button
 }

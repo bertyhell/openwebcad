@@ -18,18 +18,18 @@ import { pointDistance } from './distance-between-points.ts';
 
 /**
  * Finds the closest snap point to the target point
- * @param snapPoints
- * @param mouseLocation
+ * @param worldSnapPoints
+ * @param worldMouseLocation
  */
 export function getClosestSnapPoint(
-  snapPoints: SnapPoint[],
-  mouseLocation: Point,
+  worldSnapPoints: SnapPoint[],
+  worldMouseLocation: Point,
 ): [number, SnapPoint | null] {
   let closestSnapPoint: SnapPoint | null = null;
   let closestDistance: number = Infinity;
 
-  snapPoints.forEach(snapPoint => {
-    const distance = pointDistance(snapPoint.point, mouseLocation);
+  worldSnapPoints.forEach(snapPoint => {
+    const distance = pointDistance(snapPoint.point, worldMouseLocation);
 
     if (distance < closestDistance) {
       closestDistance = distance;
@@ -42,18 +42,20 @@ export function getClosestSnapPoint(
 
 /**
  * First checks non angle guide snap points, then checks angle guide snap points
- * @param snapPoints
- * @param mouseLocation
+ * @param worldSnapPoints
+ * @param worldMouseLocation
  * @param maxDistance
  */
 export function getClosestSnapPointWithinRadius(
-  snapPoints: SnapPoint[],
-  mouseLocation: Point,
+  worldSnapPoints: SnapPoint[],
+  worldMouseLocation: Point,
   maxDistance: number,
 ): SnapPoint | null {
   const [closestDistance, closestSnapPoint] = getClosestSnapPoint(
-    snapPoints.filter(snapPoint => snapPoint.type !== SnapPointType.AngleGuide),
-    mouseLocation,
+    worldSnapPoints.filter(
+      snapPoint => snapPoint.type !== SnapPointType.AngleGuide,
+    ),
+    worldMouseLocation,
   );
 
   if (closestDistance < maxDistance) {
@@ -61,8 +63,10 @@ export function getClosestSnapPointWithinRadius(
   }
 
   const [angleGuideDistance, angleGuideSnapPoint] = getClosestSnapPoint(
-    snapPoints.filter(snapPoint => snapPoint.type === SnapPointType.AngleGuide),
-    mouseLocation,
+    worldSnapPoints.filter(
+      snapPoint => snapPoint.type === SnapPointType.AngleGuide,
+    ),
+    worldMouseLocation,
   );
 
   if (angleGuideDistance < maxDistance) {

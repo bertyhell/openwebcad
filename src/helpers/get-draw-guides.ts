@@ -2,7 +2,7 @@ import { Point } from '@flatten-js/core';
 import { getIntersectionPoints } from './get-intersection-points.ts';
 import { SnapPoint, SnapPointType } from '../App.types.ts';
 import { getClosestSnapPointWithinRadius } from './get-closest-snap-point.ts';
-import { SNAP_ANGLE_DISTANCE, SNAP_POINT_DISTANCE } from '../App.consts.ts';
+import { SNAP_ANGLE_DISTANCE } from '../App.consts.ts';
 import { getAngleGuideLines } from './get-angle-guide-lines.ts';
 import { findClosestEntity } from './find-closest-entity.ts';
 import { Entity } from '../entities/Entitity.ts';
@@ -13,14 +13,16 @@ import { compact } from './compact.ts';
  * Gets the angle guides from the angle point to the mouse if the mouse is close to one of the angle steps and also returns the closest snap point
  * @param entities entities that are drawn on the canvas
  * @param anglePoints the points that should get angle guides
- * @param mouseLocation the current mouse location
+ * @param worldMouseLocation the current mouse location
  * @param angleStep the angle in degrees at which the angle guides should be drawn
+ * @param maxSnapDistance The distance that the mouse can snap to a snap point or angle guide
  */
 export function getDrawHelpers(
   entities: Entity[],
   anglePoints: Point[],
-  mouseLocation: Point,
+  worldMouseLocation: Point,
   angleStep: number,
+  maxSnapDistance: number,
 ): {
   angleGuides: LineEntity[];
   entitySnapPoint: SnapPoint | null;
@@ -36,7 +38,7 @@ export function getDrawHelpers(
     const angleGuideLines = getAngleGuideLines(anglePoint, angleStep);
 
     const closestLineInfo = findClosestEntity<LineEntity>(
-      mouseLocation,
+      worldMouseLocation,
       angleGuideLines,
     );
 
@@ -62,8 +64,8 @@ export function getDrawHelpers(
 
   const closestSnapPoint = getClosestSnapPointWithinRadius(
     entitySnapPoints,
-    mouseLocation,
-    SNAP_POINT_DISTANCE,
+    worldMouseLocation,
+    maxSnapDistance,
   );
 
   if (closestSnapPoint) {
@@ -82,8 +84,8 @@ export function getDrawHelpers(
   ];
   const closestAngleSnapPoint = getClosestSnapPointWithinRadius(
     angleSnapPoints,
-    mouseLocation,
-    SNAP_POINT_DISTANCE,
+    worldMouseLocation,
+    maxSnapDistance,
   );
 
   if (closestAngleSnapPoint) {

@@ -1,6 +1,7 @@
 import { Entity } from './Entitity.ts';
 import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
 import { Box, circle, Circle, point, Point, Segment } from '@flatten-js/core';
+import { worldToScreen } from '../helpers/world-screen-conversion.ts';
 
 export class CircleEntity implements Entity {
   private circle: Circle | null = null;
@@ -33,14 +34,20 @@ export class CircleEntity implements Entity {
       radiusTemp = this.circle.r;
     } else {
       // Draw the circle with the center point and the distance between the center and the mouse as the radius
-      radiusTemp = this.centerPoint.distanceTo(drawInfo.mouse)[0];
+      radiusTemp = this.centerPoint.distanceTo(drawInfo.worldMouseLocation)[0];
     }
 
+    const screenCenterPoint = worldToScreen(
+      this.centerPoint,
+      drawInfo.screenOffset,
+      drawInfo.screenZoom,
+    );
+    const screenRadius = radiusTemp * drawInfo.screenZoom;
     drawInfo.context.beginPath();
     drawInfo.context.arc(
-      this.centerPoint.x,
-      this.centerPoint.y,
-      radiusTemp,
+      screenCenterPoint.x,
+      screenCenterPoint.y,
+      screenRadius,
       0,
       2 * Math.PI,
     );

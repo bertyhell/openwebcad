@@ -67,3 +67,14 @@ export const HOVERED_SNAP_POINT_TIME = 300;
  * Marked snap points also get angle guides
  */
 export const MAX_MARKED_SNAP_POINTS = 3;
+
+/**
+ * Colors for the selection rectangle
+ */
+export const SELECTION_RECTANGLE_COLOR_INTERSECTION = '#b6ff9a';
+export const SELECTION_RECTANGLE_COLOR_CONTAINS = '#6899f3';
+
+/**
+ * Mouse zoom multiplier. Higher zooms faster for each mouse scroll
+ */
+export const MOUSE_ZOOM_MULTIPLIER = 0.1;

@@ -1,6 +1,7 @@
 import { Entity } from './Entitity.ts';
 import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
 import { Box, Point, Segment } from '@flatten-js/core';
+import { worldToScreen } from '../helpers/world-screen-conversion.ts';
 
 export class PointEntity implements Entity {
   public point: Point;
@@ -12,8 +13,14 @@ export class PointEntity implements Entity {
   }
 
   public draw(drawInfo: DrawInfo): void {
+    const screenPoint = worldToScreen(
+      this.point,
+      drawInfo.screenOffset,
+      drawInfo.screenZoom,
+    );
+
     drawInfo.context.beginPath();
-    drawInfo.context.arc(this.point.x, this.point.y, 1, 0, Math.PI * 2);
+    drawInfo.context.arc(screenPoint.x, screenPoint.y, 1, 0, Math.PI * 2);
     drawInfo.context.fill();
   }
 

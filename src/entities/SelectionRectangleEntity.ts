@@ -1,7 +1,12 @@
 import { Entity } from './Entitity.ts';
 import { DrawInfo, SnapPoint } from '../App.types.ts';
 import { Box, Point, Segment } from '@flatten-js/core';
-import { EPSILON } from '../App.consts.ts';
+import {
+  EPSILON,
+  SELECTION_RECTANGLE_COLOR_CONTAINS,
+  SELECTION_RECTANGLE_COLOR_INTERSECTION,
+} from '../App.consts.ts';
+import { worldToScreen } from '../helpers/world-screen-conversion.ts';
 
 // TODO move the selection rectangle to its own thing, not part of the entities logic
 export class SelectionRectangleEntity implements Entity {
@@ -40,21 +45,37 @@ export class SelectionRectangleEntity implements Entity {
     } else {
       // Draw the line between the start point and the mouse
       startPointTemp = this.startPoint as Point;
-      endPointTemp = new Point(drawInfo.mouse.x, drawInfo.mouse.y);
+      endPointTemp = new Point(
+        drawInfo.worldMouseLocation.x,
+        drawInfo.worldMouseLocation.y,
+      );
     }
 
     const selectionToTheLeft = startPointTemp.x > endPointTemp.x;
 
+    const screenStartPoint = worldToScreen(
+      startPointTemp,
+      drawInfo.screenOffset,
+      drawInfo.screenZoom,
+    );
+    const screenEndPoint = worldToScreen(
+      endPointTemp,
+      drawInfo.screenOffset,
+      drawInfo.screenZoom,
+    );
+
     drawInfo.context.setLineDash([5, 5]);
-    drawInfo.context.strokeStyle = selectionToTheLeft ? '#b6ff9a' : '#6899f3';
+    drawInfo.context.strokeStyle = selectionToTheLeft
+      ? SELECTION_RECTANGLE_COLOR_INTERSECTION
+      : SELECTION_RECTANGLE_COLOR_CONTAINS;
     drawInfo.context.lineWidth = 1;
 
     drawInfo.context.beginPath();
     drawInfo.context.strokeRect(
-      startPointTemp.x,
-      startPointTemp.y,
-      endPointTemp.x - startPointTemp.x,
-      endPointTemp.y - startPointTemp.y,
+      screenStartPoint.x,
+      screenStartPoint.y,
+      screenEndPoint.x - screenStartPoint.x,
+      screenEndPoint.y - screenStartPoint.y,
     );
   }
 

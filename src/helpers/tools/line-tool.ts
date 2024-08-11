@@ -8,7 +8,7 @@ export function handleLineToolClick(
   setActiveEntity: Dispatch<SetStateAction<Entity | null>>,
   entities: Entity[],
   setEntities: Dispatch<SetStateAction<Entity[]>>,
-  mousePoint: Point,
+  worldClickPoint: Point,
 ) {
   let activeLine = activeEntity as LineEntity | null;
   if (!activeLine) {
@@ -16,7 +16,8 @@ export function handleLineToolClick(
     activeLine = new LineEntity();
     setActiveEntity(activeLine);
   }
-  const completed = activeLine.send(mousePoint);
+  console.log('send line point: ', JSON.stringify(worldClickPoint));
+  const completed = activeLine.send(worldClickPoint);
 
   if (completed) {
     // Finish the line
@@ -25,6 +26,6 @@ export function handleLineToolClick(
     // Start a new line from the endpoint of the last line
     activeLine = new LineEntity();
     setActiveEntity(activeLine);
-    activeLine.send(new Point(mousePoint.x, mousePoint.y));
+    activeLine.send(worldClickPoint);
   }
 }

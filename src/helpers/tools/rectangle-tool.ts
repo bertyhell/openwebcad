@@ -8,7 +8,7 @@ export function handleRectangleToolClick(
   setActiveEntity: Dispatch<SetStateAction<Entity | null>>,
   entities: Entity[],
   setEntities: Dispatch<SetStateAction<Entity[]>>,
-  mousePoint: Point,
+  worldClickPoint: Point,
 ) {
   let activeRectangle = activeEntity as RectangleEntity | null;
   if (!activeRectangle) {
@@ -16,7 +16,9 @@ export function handleRectangleToolClick(
     activeRectangle = new RectangleEntity();
     setActiveEntity(activeRectangle);
   }
-  const completed = activeRectangle.send(new Point(mousePoint.x, mousePoint.y));
+  const completed = activeRectangle.send(
+    new Point(worldClickPoint.x, worldClickPoint.y),
+  );
 
   if (completed) {
     // Finish the rectangle

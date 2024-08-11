@@ -2,7 +2,7 @@ import { Point, Segment } from '@flatten-js/core';
 import { Entity } from '../entities/Entitity.ts';
 
 export function findClosestEntity<EntityType = Entity>(
-  point: Point,
+  worldPoint: Point,
   entities: Entity[],
 ): [number, Segment, EntityType] {
   let closestEntity = null;
@@ -11,7 +11,7 @@ export function findClosestEntity<EntityType = Entity>(
     null,
   ];
   entities.forEach(entity => {
-    const distanceInfo = entity.distanceTo(point);
+    const distanceInfo = entity.distanceTo(worldPoint);
     if (!distanceInfo) return;
     if (distanceInfo[0] < closestDistanceInfo[0]) {
       closestDistanceInfo = distanceInfo;

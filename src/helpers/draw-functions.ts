@@ -8,6 +8,7 @@ import {
   SNAP_POINT_COLOR,
   SNAP_POINT_SIZE,
 } from '../App.consts.ts';
+import { worldToScreen } from './world-screen-conversion.ts';
 
 export function setLineStyles(
   context: CanvasRenderingContext2D,
@@ -51,46 +52,41 @@ export function drawDebugEntities(drawInfo: DrawInfo, debugEntities: Entity[]) {
 /**
  * Draw the point to which the mouse will snap when the user clicks to draw the next point
  * @param drawInfo
- * @param snapPoint
+ * @param worldSnapPoint
  * @param isMarked indicates that the point has been hovered lang enough to draw guides from this point
  */
 export function drawSnapPoint(
   drawInfo: DrawInfo,
-  snapPoint: SnapPoint | null,
+  worldSnapPoint: SnapPoint | null,
   isMarked: boolean,
 ) {
-  if (!snapPoint) return;
+  if (!worldSnapPoint) return;
+
+  const screenSnapPoint = worldToScreen(
+    worldSnapPoint.point,
+    drawInfo.screenOffset,
+    drawInfo.screenZoom,
+  );
 
   setLineStyles(drawInfo.context, false, false, SNAP_POINT_COLOR);
+  const context = drawInfo.context;
 
   if (isMarked) {
     // We will draw a plus sign inside the current snap point to indicate that it is marked
-    drawInfo.context.beginPath();
-    drawInfo.context.moveTo(
-      snapPoint.point.x - SNAP_POINT_SIZE / 2,
-      snapPoint.point.y,
-    );
-    drawInfo.context.lineTo(
-      snapPoint.point.x + SNAP_POINT_SIZE / 2,
-      snapPoint.point.y,
-    );
-    drawInfo.context.moveTo(
-      snapPoint.point.x,
-      snapPoint.point.y - SNAP_POINT_SIZE / 2,
-    );
-    drawInfo.context.lineTo(
-      snapPoint.point.x,
-      snapPoint.point.y + SNAP_POINT_SIZE / 2,
-    );
-    drawInfo.context.stroke();
+    context.beginPath();
+    context.moveTo(screenSnapPoint.x - SNAP_POINT_SIZE / 2, screenSnapPoint.y);
+    context.lineTo(screenSnapPoint.x + SNAP_POINT_SIZE / 2, screenSnapPoint.y);
+    context.moveTo(screenSnapPoint.x, screenSnapPoint.y - SNAP_POINT_SIZE / 2);
+    context.lineTo(screenSnapPoint.x, screenSnapPoint.y + SNAP_POINT_SIZE / 2);
+    context.stroke();
   }
 
-  switch (snapPoint.type) {
+  switch (worldSnapPoint.type) {
     case SnapPointType.LineEndPoint:
       // Endpoint is marked with a square
-      drawInfo.context.strokeRect(
-        snapPoint.point.x - SNAP_POINT_SIZE / 2,
-        snapPoint.point.y - SNAP_POINT_SIZE / 2,
+      context.strokeRect(
+        screenSnapPoint.x - SNAP_POINT_SIZE / 2,
+        screenSnapPoint.y - SNAP_POINT_SIZE / 2,
         SNAP_POINT_SIZE,
         SNAP_POINT_SIZE,
       );
@@ -98,102 +94,102 @@ export function drawSnapPoint(
 
     case SnapPointType.LineMidPoint:
       // Midpoint is shown with a triangle
-      drawInfo.context.beginPath();
-      drawInfo.context.moveTo(
-        snapPoint.point.x,
-        snapPoint.point.y - SNAP_POINT_SIZE / 2,
+      context.beginPath();
+      context.moveTo(
+        screenSnapPoint.x,
+        screenSnapPoint.y - SNAP_POINT_SIZE / 2,
       );
-      drawInfo.context.lineTo(
-        snapPoint.point.x - SNAP_POINT_SIZE / 2,
-        snapPoint.point.y + SNAP_POINT_SIZE / 2,
+      context.lineTo(
+        screenSnapPoint.x - SNAP_POINT_SIZE / 2,
+        screenSnapPoint.y + SNAP_POINT_SIZE / 2,
       );
-      drawInfo.context.lineTo(
-        snapPoint.point.x + SNAP_POINT_SIZE / 2,
-        snapPoint.point.y + SNAP_POINT_SIZE / 2,
+      context.lineTo(
+        screenSnapPoint.x + SNAP_POINT_SIZE / 2,
+        screenSnapPoint.y + SNAP_POINT_SIZE / 2,
       );
-      drawInfo.context.closePath();
-      drawInfo.context.stroke();
+      context.closePath();
+      context.stroke();
       break;
 
     case SnapPointType.AngleGuide:
       // Angle guide is shown with an hourglass
-      drawInfo.context.beginPath();
-      drawInfo.context.moveTo(
-        snapPoint.point.x - SNAP_POINT_SIZE / 2,
-        snapPoint.point.y - SNAP_POINT_SIZE / 2,
+      context.beginPath();
+      context.moveTo(
+        screenSnapPoint.x - SNAP_POINT_SIZE / 2,
+        screenSnapPoint.y - SNAP_POINT_SIZE / 2,
       );
-      drawInfo.context.lineTo(
-        snapPoint.point.x + SNAP_POINT_SIZE / 2,
-        snapPoint.point.y - SNAP_POINT_SIZE / 2,
+      context.lineTo(
+        screenSnapPoint.x + SNAP_POINT_SIZE / 2,
+        screenSnapPoint.y - SNAP_POINT_SIZE / 2,
       );
-      drawInfo.context.lineTo(
-        snapPoint.point.x - SNAP_POINT_SIZE / 2,
-        snapPoint.point.y + SNAP_POINT_SIZE / 2,
+      context.lineTo(
+        screenSnapPoint.x - SNAP_POINT_SIZE / 2,
+        screenSnapPoint.y + SNAP_POINT_SIZE / 2,
       );
-      drawInfo.context.lineTo(
-        snapPoint.point.x + SNAP_POINT_SIZE / 2,
-        snapPoint.point.y + SNAP_POINT_SIZE / 2,
+      context.lineTo(
+        screenSnapPoint.x + SNAP_POINT_SIZE / 2,
+        screenSnapPoint.y + SNAP_POINT_SIZE / 2,
       );
-      drawInfo.context.closePath();
-      drawInfo.context.stroke();
+      context.closePath();
+      context.stroke();
       break;
 
     case SnapPointType.Intersection:
       // Intersection is shown with a cross
-      drawInfo.context.beginPath();
-      drawInfo.context.moveTo(
-        snapPoint.point.x - SNAP_POINT_SIZE / 2,
-        snapPoint.point.y - SNAP_POINT_SIZE / 2,
+      context.beginPath();
+      context.moveTo(
+        screenSnapPoint.x - SNAP_POINT_SIZE / 2,
+        screenSnapPoint.y - SNAP_POINT_SIZE / 2,
       );
-      drawInfo.context.lineTo(
-        snapPoint.point.x + SNAP_POINT_SIZE / 2,
-        snapPoint.point.y + SNAP_POINT_SIZE / 2,
+      context.lineTo(
+        screenSnapPoint.x + SNAP_POINT_SIZE / 2,
+        screenSnapPoint.y + SNAP_POINT_SIZE / 2,
       );
-      drawInfo.context.moveTo(
-        snapPoint.point.x + SNAP_POINT_SIZE / 2,
-        snapPoint.point.y - SNAP_POINT_SIZE / 2,
+      context.moveTo(
+        screenSnapPoint.x + SNAP_POINT_SIZE / 2,
+        screenSnapPoint.y - SNAP_POINT_SIZE / 2,
       );
-      drawInfo.context.lineTo(
-        snapPoint.point.x - SNAP_POINT_SIZE / 2,
-        snapPoint.point.y + SNAP_POINT_SIZE / 2,
+      context.lineTo(
+        screenSnapPoint.x - SNAP_POINT_SIZE / 2,
+        screenSnapPoint.y + SNAP_POINT_SIZE / 2,
       );
-      drawInfo.context.stroke();
+      context.stroke();
       break;
 
     case SnapPointType.CircleCenter:
       // Circle center is shown with a circle
-      drawInfo.context.beginPath();
-      drawInfo.context.arc(
-        snapPoint.point.x,
-        snapPoint.point.y,
+      context.beginPath();
+      context.arc(
+        screenSnapPoint.x,
+        screenSnapPoint.y,
         SNAP_POINT_SIZE / 2,
         0,
         2 * Math.PI,
       );
-      drawInfo.context.stroke();
+      context.stroke();
       break;
 
     case SnapPointType.CircleCardinal:
       // Circle cardinal is shown with a diamond
-      drawInfo.context.beginPath();
-      drawInfo.context.moveTo(
-        snapPoint.point.x,
-        snapPoint.point.y - SNAP_POINT_SIZE / 2,
+      context.beginPath();
+      context.moveTo(
+        screenSnapPoint.x,
+        screenSnapPoint.y - SNAP_POINT_SIZE / 2,
       );
-      drawInfo.context.lineTo(
-        snapPoint.point.x - SNAP_POINT_SIZE / 2,
-        snapPoint.point.y,
+      context.lineTo(
+        screenSnapPoint.x - SNAP_POINT_SIZE / 2,
+        screenSnapPoint.y,
       );
-      drawInfo.context.lineTo(
-        snapPoint.point.x,
-        snapPoint.point.y + SNAP_POINT_SIZE / 2,
+      context.lineTo(
+        screenSnapPoint.x,
+        screenSnapPoint.y + SNAP_POINT_SIZE / 2,
       );
-      drawInfo.context.lineTo(
-        snapPoint.point.x + SNAP_POINT_SIZE / 2,
-        snapPoint.point.y,
+      context.lineTo(
+        screenSnapPoint.x + SNAP_POINT_SIZE / 2,
+        screenSnapPoint.y,
       );
-      drawInfo.context.closePath();
-      drawInfo.context.stroke();
+      context.closePath();
+      context.stroke();
       break;
   }
 }
@@ -225,10 +221,22 @@ export function drawCursor(drawInfo: DrawInfo, drawCursor: boolean) {
   setLineStyles(drawInfo.context, false, false);
 
   drawInfo.context.beginPath();
-  drawInfo.context.moveTo(drawInfo.mouse.x, drawInfo.mouse.y - CURSOR_SIZE);
-  drawInfo.context.lineTo(drawInfo.mouse.x, drawInfo.mouse.y + CURSOR_SIZE);
-  drawInfo.context.moveTo(drawInfo.mouse.x - CURSOR_SIZE, drawInfo.mouse.y);
-  drawInfo.context.lineTo(drawInfo.mouse.x + CURSOR_SIZE, drawInfo.mouse.y);
+  drawInfo.context.moveTo(
+    drawInfo.screenMouseLocation.x,
+    drawInfo.screenMouseLocation.y - CURSOR_SIZE,
+  );
+  drawInfo.context.lineTo(
+    drawInfo.screenMouseLocation.x,
+    drawInfo.screenMouseLocation.y + CURSOR_SIZE,
+  );
+  drawInfo.context.moveTo(
+    drawInfo.screenMouseLocation.x - CURSOR_SIZE,
+    drawInfo.screenMouseLocation.y,
+  );
+  drawInfo.context.lineTo(
+    drawInfo.screenMouseLocation.x + CURSOR_SIZE,
+    drawInfo.screenMouseLocation.y,
+  );
   drawInfo.context.stroke();
 }
 

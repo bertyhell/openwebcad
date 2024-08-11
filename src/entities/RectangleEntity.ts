@@ -1,6 +1,7 @@
 import { Entity } from './Entitity.ts';
 import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
 import { Box, Point, Relations, Segment } from '@flatten-js/core';
+import { worldToScreen } from '../helpers/world-screen-conversion.ts';
 
 export class RectangleEntity implements Entity {
   private rectangle: Box | null = null;
@@ -38,15 +39,29 @@ export class RectangleEntity implements Entity {
     } else {
       // Draw the line between the start point and the mouse
       startPointTemp = this.startPoint as Point;
-      endPointTemp = new Point(drawInfo.mouse.x, drawInfo.mouse.y);
+      endPointTemp = new Point(
+        drawInfo.worldMouseLocation.x,
+        drawInfo.worldMouseLocation.y,
+      );
     }
+
+    const screenStartPoint = worldToScreen(
+      startPointTemp,
+      drawInfo.screenOffset,
+      drawInfo.screenZoom,
+    );
+    const screenEndPoint = worldToScreen(
+      endPointTemp,
+      drawInfo.screenOffset,
+      drawInfo.screenZoom,
+    );
 
     drawInfo.context.beginPath();
     drawInfo.context.strokeRect(
-      startPointTemp.x,
-      startPointTemp.y,
-      endPointTemp.x - startPointTemp.x,
-      endPointTemp.y - startPointTemp.y,
+      screenStartPoint.x,
+      screenStartPoint.y,
+      screenEndPoint.x - screenStartPoint.x,
+      screenEndPoint.y - screenStartPoint.y,
     );
   }
 

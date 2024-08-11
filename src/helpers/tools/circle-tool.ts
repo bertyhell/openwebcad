@@ -8,7 +8,7 @@ export function handleCircleToolClick(
   setActiveEntity: Dispatch<SetStateAction<Entity | null>>,
   entities: Entity[],
   setEntities: Dispatch<SetStateAction<Entity[]>>,
-  mousePoint: Point,
+  worldClickPoint: Point,
 ) {
   let activeCircle = activeEntity as CircleEntity | null;
   if (!activeCircle) {
@@ -16,7 +16,7 @@ export function handleCircleToolClick(
     activeCircle = new CircleEntity();
     setActiveEntity(activeCircle);
   }
-  const completed = activeCircle.send(new Point(mousePoint.x, mousePoint.y));
+  const completed = activeCircle.send(worldClickPoint);
 
   if (completed) {
     // Finish the rectangle

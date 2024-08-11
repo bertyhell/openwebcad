@@ -15,16 +15,34 @@ This is a React-based canvas drawing application that allows users to draw vario
   - intersections
   - circle centers
   - circle quadrants
-  - circle tangents (TODO)
-  - nearest point on line (TODO)
 - Selection tool to highlight and modify shapes
   - Use CTRL to toggle selection
   - Use shift to add to the current selection
   - drag left, to select by intersecting
   - drag right, to select by containing
 - Export drawing as an SVG file
-- Eraser tool to delete segments (TODO)
-- Zoom and pan (TODO)
+
+### Possible future feature ideas (TODO) in order of likelihood
+- Eraser tool to delete segments
+- Draw with snap points for
+  - circle tangents
+  - nearest point on line
+- Zoom and pan
+- Edit existing lines and circles by dragging endpoints/middle points
+- Move, rotate, scale shapes
+- Undo and redo
+- Select line color and thickness
+- Layers for drawing shapes in different layers that can be toggled on or off
+- Array copy shapes
+- Array radial copy shapes
+- Hatching and fill areas
+- Import SVG files
+- Import images
+- Export to dwg
+- Export to dxf
+- Save and load drawings
+- Import DXF files
+- Import DWG files
 
 
 ## Technologies Used

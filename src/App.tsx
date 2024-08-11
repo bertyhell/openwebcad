@@ -156,19 +156,16 @@ function App() {
     );
   }
 
-  const handleKeyUp = useCallback(
-    (evt: KeyboardEvent) => {
-      if (evt.key === 'Escape') {
-        setActiveEntity(null);
-        setEntities(oldEntities => deSelectAndDeHighlightEntities(oldEntities));
-      } else if (evt.key === 'Delete') {
-        setEntities(oldEntities =>
-          oldEntities.filter(entity => !entity.isSelected),
-        );
-      }
-    },
-    [deSelectAndDeHighlightEntities],
-  );
+  const handleKeyUp = useCallback((evt: KeyboardEvent) => {
+    if (evt.key === 'Escape') {
+      setActiveEntity(null);
+      setEntities(oldEntities => deSelectAndDeHighlightEntities(oldEntities));
+    } else if (evt.key === 'Delete') {
+      setEntities(oldEntities =>
+        oldEntities.filter(entity => !entity.isSelected),
+      );
+    }
+  }, []);
 
   const handleToolClick = useCallback(
     (tool: Tool) => {

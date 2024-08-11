@@ -2,16 +2,10 @@ import { createRef, MouseEvent, useCallback, useEffect, useState } from 'react';
 import './App.scss';
 import { Tool } from './tools.ts';
 import { Entity } from './entities/Entitity.ts';
-import { LineEntity } from './entities/LineEntity.ts';
-import { RectangleEntity } from './entities/RectangleEntity.ts';
-import { CircleEntity } from './entities/CircleEntity.ts';
-import { SelectionRectangleEntity } from './entities/SelectionRectangleEntity.ts';
-import { Box, Point } from '@flatten-js/core';
+import { Point } from '@flatten-js/core';
 import { DrawInfo, HoverPoint, SnapPoint } from './App.types.ts';
 import {
   HIGHLIGHT_ENTITY_DISTANCE,
-  HOVERED_SNAP_POINT_TIME,
-  MAX_MARKED_SNAP_POINTS,
   SNAP_POINT_DISTANCE,
 } from './App.consts.ts';
 import {
@@ -27,7 +21,6 @@ import { Toolbar } from './components/Toolbar.tsx';
 import { findClosestEntity } from './helpers/find-closest-entity.ts';
 import { convertEntitiesToSvgString } from './helpers/export-entities-to-svg.ts';
 import { saveAs } from 'file-saver';
-import { pointDistance } from './helpers/distance-between-points.ts';
 import { compact } from './helpers/compact.ts';
 import {
   getClosestSnapPoint,
@@ -35,6 +28,15 @@ import {
 } from './helpers/get-closest-snap-point.ts';
 import { isPointEqual } from './helpers/is-point-equal.ts';
 import { getDrawHelpers } from './helpers/get-draw-guides.ts';
+import { trackHoveredSnapPoint } from './helpers/track-hovered-snap-points.ts';
+import { handleSelectToolClick } from './helpers/tools/select-tool.ts';
+import {
+  deSelectAndDeHighlightEntities,
+  deSelectEntities,
+} from './helpers/select-entities.ts';
+import { handleCircleToolClick } from './helpers/tools/circle-tool.ts';
+import { handleRectangleToolClick } from './helpers/tools/rectangle-tool.ts';
+import { handleLineToolClick } from './helpers/tools/line-tool.ts';
 
 function App() {
   const [canvasSize, setCanvasSize] = useState<Point>(new Point(0, 0));
@@ -74,157 +76,44 @@ function App() {
     holdingShift: boolean,
   ) {
     if (activeTool === Tool.Line) {
-      let activeLine = activeEntity as LineEntity | null;
-      if (!activeLine) {
-        // Start a new line
-        activeLine = new LineEntity();
-        setActiveEntity(activeLine);
-      }
-      const completed = activeLine.send(mousePoint);
-
-      if (completed) {
-        // Finish the line
-        setEntities([...entities, activeLine]);
-
-        // Start a new line from the endpoint of the last line
-        activeLine = new LineEntity();
-        setActiveEntity(activeLine);
-        activeLine.send(new Point(mousePoint.x, mousePoint.y));
-      }
+      handleLineToolClick(
+        activeEntity,
+        setActiveEntity,
+        entities,
+        setEntities,
+        mousePoint,
+      );
     }
 
     if (activeTool === Tool.Rectangle) {
-      let activeRectangle = activeEntity as RectangleEntity | null;
-      if (!activeRectangle) {
-        // Start a new rectangle
-        activeRectangle = new RectangleEntity();
-        setActiveEntity(activeRectangle);
-      }
-      const completed = activeRectangle.send(
-        new Point(mousePoint.x, mousePoint.y),
+      handleRectangleToolClick(
+        activeEntity,
+        setActiveEntity,
+        entities,
+        setEntities,
+        mousePoint,
       );
-
-      if (completed) {
-        // Finish the rectangle
-        setEntities([...entities, activeRectangle]);
-        setActiveEntity(null);
-      }
     }
 
     if (activeTool === Tool.Circle) {
-      let activeCircle = activeEntity as CircleEntity | null;
-      if (!activeCircle) {
-        // Start a new rectangle
-        activeCircle = new CircleEntity();
-        setActiveEntity(activeCircle);
-      }
-      const completed = activeCircle.send(
-        new Point(mousePoint.x, mousePoint.y),
+      handleCircleToolClick(
+        activeEntity,
+        setActiveEntity,
+        entities,
+        setEntities,
+        mousePoint,
       );
-
-      if (completed) {
-        // Finish the rectangle
-        setEntities([...entities, activeCircle]);
-        setActiveEntity(null);
-      }
     }
 
     if (activeTool === Tool.Select) {
-      setEntities(oldEntities => {
-        let newEntities: Entity[] = [...oldEntities];
-
-        let activeSelectionRectangle = null;
-        if (activeEntity instanceof SelectionRectangleEntity) {
-          activeSelectionRectangle = activeEntity as SelectionRectangleEntity;
-        }
-
-        const closestEntityInfo = findClosestEntity(mousePoint, newEntities);
-
-        // Mouse is close to entity and is not dragging a rectangle
-        if (
-          closestEntityInfo &&
-          closestEntityInfo[0] < HIGHLIGHT_ENTITY_DISTANCE &&
-          !activeSelectionRectangle
-        ) {
-          // Select the entity close to the mouse
-          const closestEntity = closestEntityInfo[2];
-          console.log('selecting entity close to the mouse: ', closestEntity);
-          if (!holdingCtrl && !holdingShift) {
-            newEntities = deSelectEntities(newEntities);
-          }
-          if (holdingCtrl) {
-            closestEntity.isSelected = !closestEntity.isSelected;
-          } else {
-            closestEntity.isSelected = true;
-          }
-          return newEntities;
-        }
-
-        // No elements are close to the mouse and no selection dragging is in progress
-        if (!activeSelectionRectangle) {
-          console.log(
-            'Start a new selection rectangle drag: ',
-            activeSelectionRectangle,
-          );
-          // Start a new selection rectangle drag
-          activeSelectionRectangle = new SelectionRectangleEntity();
-          setActiveEntity(activeSelectionRectangle); // TODO make selection a separate concept from entities
-        }
-
-        const completed = activeSelectionRectangle.send(
-          new Point(mousePoint.x, mousePoint.y),
-        );
-
-        newEntities = deHighlightEntities(newEntities);
-        if (completed) {
-          // Finish the selection
-          console.log('Finish selection: ', activeSelectionRectangle);
-          const intersectionSelection =
-            activeSelectionRectangle.isIntersectionSelection();
-          newEntities.forEach(entity => {
-            if (intersectionSelection) {
-              if (
-                entity.intersectsWithBox(
-                  activeSelectionRectangle.getBoundingBox() as Box,
-                ) ||
-                entity.isContainedInBox(
-                  activeSelectionRectangle.getBoundingBox() as Box,
-                )
-              ) {
-                if (holdingCtrl) {
-                  entity.isSelected = !entity.isSelected;
-                } else {
-                  entity.isSelected = true;
-                }
-              } else {
-                if (!holdingCtrl && !holdingShift) {
-                  entity.isSelected = false;
-                }
-              }
-            } else {
-              if (
-                entity.isContainedInBox(
-                  activeSelectionRectangle.getBoundingBox() as Box,
-                )
-              ) {
-                if (holdingCtrl) {
-                  entity.isSelected = !entity.isSelected;
-                } else {
-                  entity.isSelected = true;
-                }
-              } else {
-                if (!holdingCtrl && !holdingShift) {
-                  entity.isSelected = false;
-                }
-              }
-            }
-          });
-
-          console.log('Set active entity to null');
-          setActiveEntity(null);
-        }
-        return newEntities;
-      });
+      handleSelectToolClick(
+        mousePoint,
+        holdingCtrl,
+        holdingShift,
+        setEntities,
+        activeEntity,
+        setActiveEntity,
+      );
     }
   }
 
@@ -267,34 +156,6 @@ function App() {
     );
   }
 
-  const deHighlightEntities = useCallback(
-    (entitiesTemp: Entity[]): Entity[] => {
-      return entitiesTemp.map(entity => {
-        entity.isHighlighted = false;
-        return entity;
-      });
-    },
-    [],
-  );
-
-  const deSelectEntities = useCallback((entitiesTemp: Entity[]): Entity[] => {
-    return entitiesTemp.map(entity => {
-      entity.isSelected = false;
-      return entity;
-    });
-  }, []);
-
-  const deSelectAndDeHighlightEntities = useCallback(
-    (entitiesTemp: Entity[]): Entity[] => {
-      return entitiesTemp.map(entity => {
-        entity.isHighlighted = false;
-        entity.isSelected = false;
-        return entity;
-      });
-    },
-    [],
-  );
-
   const handleKeyUp = useCallback(
     (evt: KeyboardEvent) => {
       if (evt.key === 'Escape') {
@@ -316,7 +177,7 @@ function App() {
       setActiveEntity(null);
       setEntities(deSelectEntities(entities));
     },
-    [deSelectEntities, entities],
+    [entities],
   );
 
   const handleExportClick = useCallback(() => {
@@ -372,109 +233,6 @@ function App() {
   ]);
 
   /**
-   * Checks the current snap point every 100ms to mark certain snap points when they are hovered for a certain amount of time (marked)
-   * So we can show extra angle guides for the ones that are marked
-   */
-  const watchSnapPoint = useCallback(() => {
-    if (!snapPoint) {
-      return;
-    }
-
-    const lastHoveredPoint = hoveredSnapPoints.at(-1);
-    let newHoverSnapPoints: HoverPoint[];
-
-    // Angle guide points should never be marked
-    console.log('snap point: ', JSON.stringify(snapPoint), {
-      distance: lastHoveredPoint
-        ? pointDistance(snapPoint.point, lastHoveredPoint.snapPoint.point)
-        : undefined,
-    });
-
-    if (lastHoveredPoint) {
-      if (
-        pointDistance(snapPoint.point, lastHoveredPoint.snapPoint.point) <
-        SNAP_POINT_DISTANCE
-      ) {
-        console.log(
-          'INCREASE HOVER TIME: ',
-          JSON.stringify({
-            ...lastHoveredPoint,
-            milliSecondsHovered: lastHoveredPoint.milliSecondsHovered + 100,
-          }),
-        );
-        // Last hovered snap point is still the current closest snap point
-        // Increase the hover time
-        newHoverSnapPoints = [
-          ...hoveredSnapPoints.slice(0, hoveredSnapPoints.length - 1),
-          {
-            ...lastHoveredPoint,
-            milliSecondsHovered: lastHoveredPoint.milliSecondsHovered + 100,
-          },
-        ];
-      } else {
-        // The closest snap point has changed
-        // Check if the last snap point was hovered for long enough to be considered a marked snap point
-        if (lastHoveredPoint.milliSecondsHovered >= HOVERED_SNAP_POINT_TIME) {
-          console.log(
-            'NEW HOVERED SNAP POINT: ',
-            JSON.stringify({
-              snapPoint,
-              milliSecondsHovered: 100,
-            }),
-          );
-          // Append the new point to the list
-          newHoverSnapPoints = [
-            ...hoveredSnapPoints,
-            {
-              snapPoint,
-              milliSecondsHovered: 100,
-            },
-          ];
-        } else {
-          console.log(
-            'REPLACE HOVERED SNAP POINT: ',
-            JSON.stringify({
-              snapPoint,
-              milliSecondsHovered: 100,
-            }),
-          );
-          // Replace the last point with the new point
-          newHoverSnapPoints = [
-            ...hoveredSnapPoints.slice(0, hoveredSnapPoints.length - 1),
-            {
-              snapPoint,
-              milliSecondsHovered: 100,
-            },
-          ];
-        }
-      }
-    } else {
-      console.log(
-        'BRAND NEW HOVERED SNAP POINT: ',
-        JSON.stringify({
-          snapPoint,
-          milliSecondsHovered: 100,
-        }),
-        lastHoveredPoint,
-      );
-      // No snap points were hovered before
-      newHoverSnapPoints = [
-        {
-          snapPoint,
-          milliSecondsHovered: 100,
-        },
-      ];
-    }
-
-    const newHoverSnapPointsTruncated = newHoverSnapPoints.slice(
-      0,
-      MAX_MARKED_SNAP_POINTS,
-    );
-    console.log('hovered snap points: ', newHoverSnapPointsTruncated);
-    setHoveredSnapPoints(newHoverSnapPointsTruncated);
-  }, [snapPoint, hoveredSnapPoints]);
-
-  /**
    * Init the canvas and add event listeners
    */
   useEffect(() => {
@@ -496,12 +254,12 @@ function App() {
    */
   useEffect(() => {
     const watchSnapPointTimerId = setInterval(() => {
-      watchSnapPoint();
+      trackHoveredSnapPoint(snapPoint, hoveredSnapPoints, setHoveredSnapPoints);
     }, 100);
     return () => {
       clearInterval(watchSnapPointTimerId);
     };
-  }, [watchSnapPoint]);
+  }, [hoveredSnapPoints, snapPoint]);
 
   /**
    * Redraw the canvas when the mouse moves or the window resizes

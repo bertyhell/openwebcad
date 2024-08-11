@@ -67,6 +67,10 @@ function App() {
   const [hoveredSnapPoints, setHoveredSnapPoints] = useState<HoverPoint[]>([]);
 
   const handleWindowResize = () => {
+    console.log('handle window resize', {
+      width: window.innerWidth,
+      height: window.innerHeight,
+    });
     setCanvasSize(new Point(window.innerWidth, window.innerHeight));
   };
 
@@ -234,14 +238,14 @@ function App() {
    */
   useEffect(() => {
     console.log('init app');
-    window.document.addEventListener('keyup', handleKeyUp);
-    window.document.addEventListener('resize', handleWindowResize);
+    document.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('resize', handleWindowResize);
 
     handleWindowResize();
 
     return () => {
-      window.document.removeEventListener('keyup', handleKeyUp);
-      window.document.removeEventListener('resize', handleWindowResize);
+      document.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('resize', handleWindowResize);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

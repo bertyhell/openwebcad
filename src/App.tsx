@@ -3,6 +3,7 @@ import {
   MouseEvent,
   useCallback,
   useEffect,
+  useMemo,
   useState,
   WheelEvent,
 } from 'react';
@@ -16,27 +17,11 @@ import {
   MOUSE_ZOOM_MULTIPLIER,
   SNAP_POINT_DISTANCE,
 } from './App.consts.ts';
-import {
-  clearCanvas,
-  drawActiveEntity,
-  drawCursor,
-  drawDebugEntities,
-  drawEntities,
-  drawHelpers,
-  drawSnapPoint,
-} from './helpers/draw-functions.ts';
 import { Toolbar } from './components/Toolbar.tsx';
-import { findClosestEntity } from './helpers/find-closest-entity.ts';
 import { convertEntitiesToSvgString } from './helpers/export-entities-to-svg.ts';
 import { saveAs } from 'file-saver';
 import { compact } from './helpers/compact.ts';
-import {
-  getClosestSnapPoint,
-  getClosestSnapPointWithinRadius,
-} from './helpers/get-closest-snap-point.ts';
-import { isPointEqual } from './helpers/is-point-equal.ts';
-import { getDrawHelpers } from './helpers/get-draw-guides.ts';
-import { trackHoveredSnapPoint } from './helpers/track-hovered-snap-points.ts';
+import { getClosestSnapPointWithinRadius } from './helpers/get-closest-snap-point.ts';
 import { handleSelectToolClick } from './helpers/tools/select-tool.ts';
 import {
   deSelectAndDeHighlightEntities,
@@ -46,7 +31,9 @@ import { handleCircleToolClick } from './helpers/tools/circle-tool.ts';
 import { handleRectangleToolClick } from './helpers/tools/rectangle-tool.ts';
 import { handleLineToolClick } from './helpers/tools/line-tool.ts';
 import { screenToWorld } from './helpers/world-screen-conversion.ts';
-import { LineEntity } from './entities/LineEntity.ts';
+import { findClosestEntity } from './helpers/find-closest-entity.ts';
+import { draw } from './helpers/draw.ts';
+import { getDrawHelpers } from './helpers/get-draw-guides.ts';
 
 function App() {
   const [canvasSize, setCanvasSize] = useState<Point>(new Point(0, 0));
@@ -57,13 +44,7 @@ function App() {
   const [activeTool, setActiveTool] = useState(Tool.Line);
   const [entities, setEntities] = useState<Entity[]>([]);
   const [activeEntity, setActiveEntity] = useState<Entity | null>(null);
-  const [shouldDrawCursor, setShouldDrawCursor] = useState(false);
-  const [helperEntities, setHelperEntities] = useState<Entity[]>([
-    new LineEntity(new Point(0, 0), new Point(0, 1000)),
-    new LineEntity(new Point(0, 0), new Point(1000, 0)),
-    new LineEntity(new Point(100, 0), new Point(100, 1000)),
-    new LineEntity(new Point(0, 100), new Point(1000, 100)),
-  ]);
+  const [shouldDrawCursor, setShouldDrawCursor] = useState(true);
   const [debugEntities] = useState<Entity[]>([]);
   const [angleStep, setAngleStep] = useState(45);
   const [screenOffset, setScreenOffset] = useState<Point>(new Point(0, 0));
@@ -99,6 +80,10 @@ function App() {
       height: window.innerHeight,
     });
     setCanvasSize(new Point(window.innerWidth, window.innerHeight));
+    if (canvasRef.current) {
+      canvasRef.current.width = window.innerWidth;
+      canvasRef.current.height = window.innerHeight;
+    }
   };
 
   function handleMouseUpPoint(
@@ -176,7 +161,7 @@ function App() {
   }
 
   function handleMouseOut() {
-    setShouldDrawCursor(false);
+    // setShouldDrawCursor(false);
   }
 
   /**
@@ -310,58 +295,6 @@ function App() {
     saveAs(blob, 'open-web-cad--drawing.svg');
   }, [canvasSize, entities]);
 
-  const draw = useCallback(
-    (context: CanvasRenderingContext2D) => {
-      const drawInfo: DrawInfo = {
-        context,
-        canvasSize,
-        worldMouseLocation: worldMouseLocation,
-        screenMouseLocation: screenMouseLocation,
-        screenOffset,
-        screenZoom: screenScale,
-      };
-
-      clearCanvas(drawInfo);
-
-      drawHelpers(drawInfo, helperEntities);
-      drawEntities(drawInfo, entities);
-      drawDebugEntities(drawInfo, debugEntities);
-      drawActiveEntity(drawInfo, activeEntity);
-
-      const [, closestSnapPoint] = getClosestSnapPoint(
-        compact([snapPoint, snapPointOnAngleGuide]),
-        worldMouseLocation,
-      );
-      const isMarked =
-        !!closestSnapPoint &&
-        hoveredSnapPoints.some(hoveredSnapPoint =>
-          isPointEqual(
-            hoveredSnapPoint.snapPoint.point,
-            closestSnapPoint.point,
-          ),
-        );
-      // console.log('isMarked: ', isMarked);
-      drawSnapPoint(drawInfo, closestSnapPoint, isMarked);
-
-      drawCursor(drawInfo, shouldDrawCursor);
-    },
-    [
-      activeEntity,
-      canvasSize,
-      debugEntities,
-      entities,
-      helperEntities,
-      hoveredSnapPoints,
-      screenMouseLocation,
-      screenOffset,
-      screenScale,
-      shouldDrawCursor,
-      snapPoint,
-      snapPointOnAngleGuide,
-      worldMouseLocation,
-    ],
-  );
-
   /**
    * Init the canvas and add event listeners
    */
@@ -371,6 +304,13 @@ function App() {
     window.addEventListener('resize', handleWindowResize);
 
     handleWindowResize();
+
+    // const context = canvasRef?.current?.getContext('2d');
+    // if (!context) {
+    //   console.error('No canvas context');
+    //   return;
+    // }
+    // startDrawLoop(context);
 
     return () => {
       document.removeEventListener('keyup', handleKeyUp);
@@ -382,19 +322,19 @@ function App() {
   /**
    * Keep track of the hovered snap points
    */
-  useEffect(() => {
-    const watchSnapPointTimerId = setInterval(() => {
-      trackHoveredSnapPoint(
-        snapPoint,
-        hoveredSnapPoints,
-        setHoveredSnapPoints,
-        SNAP_POINT_DISTANCE / screenScale,
-      );
-    }, 100);
-    return () => {
-      clearInterval(watchSnapPointTimerId);
-    };
-  }, [hoveredSnapPoints, snapPoint]);
+  // useEffect(() => {
+  //   const watchSnapPointTimerId = setInterval(() => {
+  //     trackHoveredSnapPoint(
+  //       snapPoint,
+  //       hoveredSnapPoints,
+  //       setHoveredSnapPoints,
+  //       SNAP_POINT_DISTANCE / screenScale,
+  //     );
+  //   }, 100);
+  //   return () => {
+  //     clearInterval(watchSnapPointTimerId);
+  //   };
+  // }, [hoveredSnapPoints, snapPoint]);
 
   /**
    * Redraw the canvas when the mouse moves or the window resizes
@@ -404,20 +344,17 @@ function App() {
       canvasRef.current?.getContext('2d');
     if (!context) return;
 
-    draw(context);
-  }, [
-    canvasSize.x,
-    canvasSize.y,
-    screenMouseLocation.x,
-    screenMouseLocation.y,
-    draw,
-    canvasRef,
-  ]);
-
-  /**
-   * Show the angle guides and closest snap point when drawing a shape
-   */
-  useEffect(() => {
+    const drawInfo: DrawInfo = {
+      context,
+      canvasSize,
+      worldMouseLocation: worldMouseLocation,
+      screenMouseLocation: screenMouseLocation,
+      screenOffset,
+      screenZoom: screenScale,
+    };
+    let helperEntitiesTemp: Entity[] = [];
+    let snapPointTemp: SnapPoint | null = null;
+    let snapPointOnAngleGuideTemp: SnapPoint | null = null;
     if ([Tool.Line, Tool.Rectangle, Tool.Circle].includes(activeTool)) {
       // If you're in the progress of drawing a shape, show the angle guides and closest snap point
       let firstPoint: Point | null = null;
@@ -440,21 +377,57 @@ function App() {
         angleStep,
         SNAP_POINT_DISTANCE / screenScale,
       );
-      setHelperEntities(angleGuides);
-      setSnapPoint(entitySnapPoint);
-      setSnapPointOnAngleGuide(angleSnapPoint);
+      helperEntitiesTemp = angleGuides;
+      snapPointTemp = entitySnapPoint;
+      snapPointOnAngleGuideTemp = angleSnapPoint;
+      // setHelperEntities(angleGuides);
+      // setSnapPoint(entitySnapPoint);
+      // setSnapPointOnAngleGuide(angleSnapPoint);
     }
+    draw(
+      drawInfo,
+      entities,
+      debugEntities,
+      helperEntitiesTemp,
+      activeEntity,
+      snapPointTemp,
+      snapPointOnAngleGuideTemp,
+      hoveredSnapPoints,
+      worldMouseLocation,
+      shouldDrawCursor,
+    );
   }, [
     activeEntity,
     activeTool,
     angleStep,
+    canvasRef,
+    canvasSize,
+    debugEntities,
     entities,
     hoveredSnapPoints,
     screenMouseLocation,
     screenOffset,
     screenScale,
+    shouldDrawCursor,
     worldMouseLocation,
   ]);
+
+  /**
+   * Show the angle guides and closest snap point when drawing a shape
+   */
+  // useEffect(() => {
+  //
+  // }, [
+  //   // activeEntity,
+  //   activeTool,
+  //   angleStep,
+  //   // entities,
+  //   // hoveredSnapPoints,
+  //   // screenMouseLocation,
+  //   // screenOffset,
+  //   // screenScale,
+  //   worldMouseLocation,
+  // ]);
 
   /**
    * Highlight the entity closest to the mouse when the select tool is active
@@ -479,11 +452,9 @@ function App() {
     }
   }, [activeTool, setEntities, screenMouseLocation, screenOffset, screenScale]);
 
-  return (
-    <div>
+  const renderedCanvas = useMemo(() => {
+    return (
       <canvas
-        width={canvasSize.x}
-        height={canvasSize.y}
         ref={canvasRef}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -492,6 +463,12 @@ function App() {
         onMouseOut={handleMouseOut}
         onMouseEnter={handleMouseEnter}
       ></canvas>
+    );
+  }, [canvasRef, handleMouseMove, handleMouseUp, handleMouseWheel]);
+
+  return (
+    <div>
+      {renderedCanvas}
       <Toolbar
         activeTool={activeTool}
         onToolClick={handleToolClick}

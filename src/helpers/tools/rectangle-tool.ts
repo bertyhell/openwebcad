@@ -1,15 +1,16 @@
-import { Entity } from '../../entities/Entitity.ts';
-import { Dispatch, SetStateAction } from 'react';
 import { Point } from '@flatten-js/core';
 import { RectangleEntity } from '../../entities/RectangleEntity.ts';
+import {
+  getActiveEntity,
+  getEntities,
+  setActiveEntity,
+  setEntities,
+} from '../../state.ts';
 
-export function handleRectangleToolClick(
-  activeEntity: Entity | null,
-  setActiveEntity: Dispatch<SetStateAction<Entity | null>>,
-  entities: Entity[],
-  setEntities: Dispatch<SetStateAction<Entity[]>>,
-  worldClickPoint: Point,
-) {
+export function handleRectangleToolClick(worldClickPoint: Point) {
+  const entities = getEntities();
+  const activeEntity = getActiveEntity();
+
   let activeRectangle = activeEntity as RectangleEntity | null;
   if (!activeRectangle) {
     // Start a new rectangle

@@ -1,15 +1,16 @@
 import { CircleEntity } from '../../entities/CircleEntity.ts';
 import { Point } from '@flatten-js/core';
-import { Entity } from '../../entities/Entitity.ts';
-import { Dispatch, SetStateAction } from 'react';
+import {
+  getActiveEntity,
+  getEntities,
+  setActiveEntity,
+  setEntities,
+} from '../../state.ts';
 
-export function handleCircleToolClick(
-  activeEntity: Entity | null,
-  setActiveEntity: Dispatch<SetStateAction<Entity | null>>,
-  entities: Entity[],
-  setEntities: Dispatch<SetStateAction<Entity[]>>,
-  worldClickPoint: Point,
-) {
+export function handleCircleToolClick(worldClickPoint: Point) {
+  const entities = getEntities();
+  const activeEntity = getActiveEntity();
+
   let activeCircle = activeEntity as CircleEntity | null;
   if (!activeCircle) {
     // Start a new rectangle

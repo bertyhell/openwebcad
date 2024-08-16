@@ -1,15 +1,16 @@
-import { Entity } from '../../entities/Entitity.ts';
-import { Dispatch, SetStateAction } from 'react';
 import { Point } from '@flatten-js/core';
 import { LineEntity } from '../../entities/LineEntity.ts';
+import {
+  getActiveEntity,
+  getEntities,
+  setActiveEntity,
+  setEntities,
+} from '../../state.ts';
 
-export function handleLineToolClick(
-  activeEntity: Entity | null,
-  setActiveEntity: Dispatch<SetStateAction<Entity | null>>,
-  entities: Entity[],
-  setEntities: Dispatch<SetStateAction<Entity[]>>,
-  worldClickPoint: Point,
-) {
+export function handleLineToolClick(worldClickPoint: Point) {
+  const entities = getEntities();
+  const activeEntity = getActiveEntity();
+
   let activeLine = activeEntity as LineEntity | null;
   if (!activeLine) {
     // Start a new line

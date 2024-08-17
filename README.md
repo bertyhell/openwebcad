@@ -8,6 +8,7 @@ This is a React-based canvas drawing application that allows users to draw vario
 
 - Fullscreen canvas with a black background
 - Drawing tools: Line, Rectangle, Circle
+- Zoom and pan
 - Choose angle guides
 - Draw with snap points for
   - endpoints
@@ -27,7 +28,6 @@ This is a React-based canvas drawing application that allows users to draw vario
 - Draw with snap points for
   - circle tangents
   - nearest point on line
-- Zoom and pan
 - Edit existing lines and circles by dragging endpoints/middle points
 - Move, rotate, scale shapes
 - Undo and redo

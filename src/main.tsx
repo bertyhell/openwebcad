@@ -10,7 +10,9 @@ import {
   getCanvasSize,
   getDebugEntities,
   getEntities,
+  getHelperEntities,
   getHoveredSnapPoints,
+  getLastDrawTimestamp,
   getPanStartLocation,
   getScreenMouseLocation,
   getScreenOffset,
@@ -24,20 +26,25 @@ import {
   setCanvasSize,
   setContext,
   setEntities,
+  setHelperEntities,
+  setHoveredSnapPoints,
+  setLastDrawTimestamp,
   setPanStartLocation,
   setScreenMouseLocation,
   setScreenOffset,
   setScreenScale,
   setShouldDrawCursor,
+  setSnapPoint,
+  setSnapPointOnAngleGuide,
 } from './state.ts';
-import { DrawInfo, MouseButton, SnapPoint } from './App.types.ts';
-import { Entity } from './entities/Entitity.ts';
+import { DrawInfo, MouseButton } from './App.types.ts';
 import { Tool } from './tools.ts';
 import { Point } from '@flatten-js/core';
 import { getDrawHelpers } from './helpers/get-draw-guides.ts';
 import { compact } from './helpers/compact.ts';
 import {
   HIGHLIGHT_ENTITY_DISTANCE,
+  HOVERED_SNAP_POINT_TIME,
   MOUSE_ZOOM_MULTIPLIER,
   SNAP_POINT_DISTANCE,
 } from './App.consts.ts';
@@ -50,6 +57,7 @@ import { handleSelectToolClick } from './helpers/tools/select-tool.ts';
 import { getClosestSnapPointWithinRadius } from './helpers/get-closest-snap-point.ts';
 import { deSelectAndDeHighlightEntities } from './helpers/select-entities.ts';
 import { findClosestEntity } from './helpers/find-closest-entity.ts';
+import { trackHoveredSnapPoint } from './helpers/track-hovered-snap-points.ts';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -69,25 +77,22 @@ function handleMouseMove(evt: MouseEvent) {
 
   const panStartLocation = getPanStartLocation();
   const screenScale = getScreenScale();
-  // If we are not dragging with the middle mouse button => do not pan the screen
-  if (!panStartLocation) return screenOffset;
 
-  // Pan the screen by the last mouse movement
-  const newOffset = new Point(
-    screenOffset.x - (evt.clientX - panStartLocation.x) / screenScale,
-    screenOffset.y - (evt.clientY - panStartLocation.y) / screenScale,
-  );
-  console.log('mouse move middle mouse button', {
-    x: evt.clientX,
-    y: evt.clientY,
-    newOffset,
-  });
-  setPanStartLocation(new Point(evt.clientX, evt.clientY));
-  setScreenOffset(newOffset);
+  if (panStartLocation) {
+    // Pan the screen by the last mouse movement
+    const newOffset = new Point(
+      screenOffset.x - (evt.clientX - panStartLocation.x) / screenScale,
+      screenOffset.y - (evt.clientY - panStartLocation.y) / screenScale,
+    );
+    setPanStartLocation(new Point(evt.clientX, evt.clientY));
+    setScreenOffset(newOffset);
+  }
+
+  calculateAngleGuidesAndSnapPoints();
 }
 
 function handleMouseOut() {
-  // setShouldDrawCursor(false);
+  setShouldDrawCursor(false);
 }
 
 /**
@@ -95,10 +100,6 @@ function handleMouseOut() {
  * @param evt
  */
 function handleMouseWheel(evt: WheelEvent) {
-  console.log('mouse wheel', {
-    deltaY: evt.deltaY,
-    multiplier: 1 - MOUSE_ZOOM_MULTIPLIER * (evt.deltaY / Math.abs(evt.deltaY)),
-  });
   const screenOffset = getScreenOffset();
   const screenScale = getScreenScale();
   const worldMouseLocationBeforeZoom = getWorldMouseLocation();
@@ -117,21 +118,6 @@ function handleMouseWheel(evt: WheelEvent) {
     newScreenScale,
   );
 
-  console.log('mouse wheel', {
-    deltaY: evt.deltaY,
-    multiplier: 1 - MOUSE_ZOOM_MULTIPLIER * (evt.deltaY / Math.abs(evt.deltaY)),
-    worldMouseLocationBeforeZoom,
-    worldMouseLocationAfterZoom,
-    screenOffset,
-    newScreenOffset: new Point(
-      screenOffset.x +
-        worldMouseLocationBeforeZoom.x -
-        worldMouseLocationAfterZoom.x,
-      screenOffset.y +
-        worldMouseLocationBeforeZoom.y -
-        worldMouseLocationAfterZoom.y,
-    ),
-  });
   setScreenOffset(
     new Point(
       screenOffset.x +
@@ -145,19 +131,11 @@ function handleMouseWheel(evt: WheelEvent) {
 function handleMouseDown(evt: MouseEvent) {
   if (evt.button !== MouseButton.Middle) return;
 
-  console.log('middle mouse button down', {
-    x: evt.clientX,
-    y: evt.clientY,
-  });
   setPanStartLocation(new Point(evt.clientX, evt.clientY));
 }
 
 function handleMouseUp(evt: MouseEvent) {
   if (evt.button === MouseButton.Middle) {
-    console.log('middle mouse button up', {
-      x: evt.clientX,
-      y: evt.clientY,
-    });
     setPanStartLocation(null);
   }
   if (evt.button === MouseButton.Left) {
@@ -194,7 +172,21 @@ function handleMouseUp(evt: MouseEvent) {
       ? closestSnapPoint.point
       : worldMouseLocationTemp;
 
-    handleMouseUpPoint(worldClickPoint, evt.ctrlKey, evt.shiftKey);
+    if (getActiveTool() === Tool.Line) {
+      handleLineToolClick(worldClickPoint);
+    }
+
+    if (getActiveTool() === Tool.Rectangle) {
+      handleRectangleToolClick(worldClickPoint);
+    }
+
+    if (getActiveTool() === Tool.Circle) {
+      handleCircleToolClick(worldClickPoint);
+    }
+
+    if (getActiveTool() === Tool.Select) {
+      handleSelectToolClick(worldClickPoint, evt.ctrlKey, evt.shiftKey);
+    }
   }
 }
 
@@ -209,11 +201,56 @@ function handleKeyUp(evt: KeyboardEvent) {
   }
 }
 
-function startDrawLoop(context: CanvasRenderingContext2D) {
+/**
+ * Calculate angle guides and snap points
+ */
+function calculateAngleGuidesAndSnapPoints() {
   const activeTool = getActiveTool();
   const angleStep = getAngleStep();
   const activeEntity = getActiveEntity();
-  let entities = getEntities();
+  const entities = getEntities();
+  const screenScale = getScreenScale();
+  const worldMouseLocation = getWorldMouseLocation();
+  const hoveredSnapPoints = getHoveredSnapPoints();
+
+  const eligibleHoveredSnapPoints = hoveredSnapPoints.filter(
+    hoveredSnapPoint =>
+      hoveredSnapPoint.milliSecondsHovered > HOVERED_SNAP_POINT_TIME,
+  );
+
+  const eligibleHoveredPoints = eligibleHoveredSnapPoints.map(
+    hoveredSnapPoint => hoveredSnapPoint.snapPoint.point,
+  );
+
+  if ([Tool.Line, Tool.Rectangle, Tool.Circle].includes(activeTool)) {
+    // If you're in the progress of drawing a shape, show the angle guides and closest snap point
+    let firstPoint: Point | null = null;
+    if (
+      activeEntity &&
+      !activeEntity.getShape() &&
+      activeEntity.getFirstPoint()
+    ) {
+      firstPoint = activeEntity.getFirstPoint();
+    }
+    const { angleGuides, entitySnapPoint, angleSnapPoint } = getDrawHelpers(
+      entities,
+      compact([firstPoint, ...eligibleHoveredPoints]),
+      worldMouseLocation,
+      angleStep,
+      SNAP_POINT_DISTANCE / screenScale,
+    );
+    setHelperEntities(angleGuides);
+    setSnapPoint(entitySnapPoint);
+    setSnapPointOnAngleGuide(angleSnapPoint);
+  }
+}
+
+function startDrawLoop(
+  context: CanvasRenderingContext2D,
+  timestamp: DOMHighResTimeStamp,
+) {
+  const activeTool = getActiveTool();
+  const entities = getEntities();
   const canvasSize = getCanvasSize();
   const screenMouseLocation = getScreenMouseLocation();
   const hoveredSnapPoints = getHoveredSnapPoints();
@@ -222,6 +259,10 @@ function startDrawLoop(context: CanvasRenderingContext2D) {
   const screenOffset = getScreenOffset();
   const shouldDrawCursor = getShouldDrawCursor();
   const debugEntities = getDebugEntities();
+  const lastDrawTimestamp = getLastDrawTimestamp();
+
+  const elapsedTime = timestamp - lastDrawTimestamp;
+  setLastDrawTimestamp(timestamp);
 
   const drawInfo: DrawInfo = {
     context,
@@ -231,9 +272,6 @@ function startDrawLoop(context: CanvasRenderingContext2D) {
     screenOffset,
     screenZoom: screenScale,
   };
-  let helperEntitiesTemp: Entity[] = [];
-  let snapPointTemp: SnapPoint | null = null;
-  let snapPointOnAngleGuideTemp: SnapPoint | null = null;
 
   /**
    * Highlight the entity closest to the mouse when the select tool is active
@@ -253,59 +291,36 @@ function startDrawLoop(context: CanvasRenderingContext2D) {
     }
     setEntities(newEntities);
   }
-  entities = getEntities();
 
   /**
-   * Calculate angle guides and snap points
+   * Track hovered snap points
    */
-  if ([Tool.Line, Tool.Rectangle, Tool.Circle].includes(activeTool)) {
-    // If you're in the progress of drawing a shape, show the angle guides and closest snap point
-    let firstPoint: Point | null = null;
-    if (
-      activeEntity &&
-      !activeEntity.getShape() &&
-      activeEntity.getFirstPoint()
-    ) {
-      firstPoint = activeEntity.getFirstPoint();
-    }
-    const { angleGuides, entitySnapPoint, angleSnapPoint } = getDrawHelpers(
-      entities,
-      compact([
-        firstPoint,
-        ...hoveredSnapPoints.map(
-          hoveredSnapPoint => hoveredSnapPoint.snapPoint.point,
-        ),
-      ]),
-      worldMouseLocation,
-      angleStep,
-      SNAP_POINT_DISTANCE / screenScale,
-    );
-    helperEntitiesTemp = angleGuides;
-    snapPointTemp = entitySnapPoint;
-    snapPointOnAngleGuideTemp = angleSnapPoint;
-    // setHelperEntities(angleGuides);
-    // setSnapPoint(entitySnapPoint);
-    // setSnapPointOnAngleGuide(angleSnapPoint);
-  }
+  trackHoveredSnapPoint(
+    getSnapPoint(),
+    getHoveredSnapPoints(),
+    setHoveredSnapPoints,
+    SNAP_POINT_DISTANCE / getScreenScale(),
+    elapsedTime,
+  );
 
   /**
    * Draw everything on the canvas
    */
   draw(
     drawInfo,
-    entities,
+    getEntities(),
     debugEntities,
-    helperEntitiesTemp,
+    getHelperEntities(),
     getActiveEntity(),
-    snapPointTemp,
-    snapPointOnAngleGuideTemp,
+    getSnapPoint(),
+    getSnapPointOnAngleGuide(),
     hoveredSnapPoints,
     worldMouseLocation,
     shouldDrawCursor,
   );
 
-  requestAnimationFrame(() => {
-    startDrawLoop(context);
+  requestAnimationFrame((newTimestamp: DOMHighResTimeStamp) => {
+    startDrawLoop(context, newTimestamp);
   });
 }
 
@@ -319,28 +334,6 @@ function handleWindowResize() {
   if (canvas) {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-  }
-}
-
-function handleMouseUpPoint(
-  worldClickPoint: Point,
-  holdingCtrl: boolean,
-  holdingShift: boolean,
-) {
-  if (getActiveTool() === Tool.Line) {
-    handleLineToolClick(worldClickPoint);
-  }
-
-  if (getActiveTool() === Tool.Rectangle) {
-    handleRectangleToolClick(worldClickPoint);
-  }
-
-  if (getActiveTool() === Tool.Circle) {
-    handleCircleToolClick(worldClickPoint);
-  }
-
-  if (getActiveTool() === Tool.Select) {
-    handleSelectToolClick(worldClickPoint, holdingCtrl, holdingShift);
   }
 }
 
@@ -366,7 +359,7 @@ function initApplication() {
 
     setContext(context);
 
-    startDrawLoop(context);
+    startDrawLoop(context, 0);
   }
 }
 

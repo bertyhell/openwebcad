@@ -17,7 +17,6 @@ export function handleLineToolClick(worldClickPoint: Point) {
     activeLine = new LineEntity();
     setActiveEntity(activeLine);
   }
-  console.log('send line point: ', JSON.stringify(worldClickPoint));
   const completed = activeLine.send(worldClickPoint);
 
   if (completed) {

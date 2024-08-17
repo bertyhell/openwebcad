@@ -39,6 +39,10 @@ let snapPointOnAngleGuide: SnapPoint | null = null;
  * Snap points that are hovered for a certain amount of time
  */
 let hoveredSnapPoints: HoverPoint[] = [];
+/**
+ * Timestamp of the last draw call
+ */
+let lastDrawTimestamp: DOMHighResTimeStamp = 0;
 
 // getters
 export const getCanvasSize = () => canvasSize;
@@ -59,6 +63,7 @@ export const getPanStartLocation = () => panStartLocation;
 export const getSnapPoint = () => snapPoint;
 export const getSnapPointOnAngleGuide = () => snapPointOnAngleGuide;
 export const getHoveredSnapPoints = () => hoveredSnapPoints;
+export const getLastDrawTimestamp = () => lastDrawTimestamp;
 
 // computed getters
 export const getWorldMouseLocation = () =>
@@ -89,9 +94,12 @@ export const setScreenOffset = (newOffset: Point) => (screenOffset = newOffset);
 export const setScreenScale = (newScale: number) => (screenScale = newScale);
 export const setPanStartLocation = (newLocation: Point | null) =>
   (panStartLocation = newLocation);
-export const setSnapPoint = (newSnapPoint: SnapPoint) =>
+export const setSnapPoint = (newSnapPoint: SnapPoint | null) =>
   (snapPoint = newSnapPoint);
-export const setSnapPointOnAngleGuide = (newSnapPointOnAngleGuide: SnapPoint) =>
-  (snapPointOnAngleGuide = newSnapPointOnAngleGuide);
+export const setSnapPointOnAngleGuide = (
+  newSnapPointOnAngleGuide: SnapPoint | null,
+) => (snapPointOnAngleGuide = newSnapPointOnAngleGuide);
 export const setHoveredSnapPoints = (newHoveredSnapPoints: HoverPoint[]) =>
   (hoveredSnapPoints = newHoveredSnapPoints);
+export const setLastDrawTimestamp = (newTimestamp: DOMHighResTimeStamp) =>
+  (lastDrawTimestamp = newTimestamp);

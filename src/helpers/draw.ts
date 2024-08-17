@@ -13,6 +13,7 @@ import { compact } from './compact.ts';
 import { isPointEqual } from './is-point-equal.ts';
 import { Entity } from '../entities/Entitity.ts';
 import { Point } from '@flatten-js/core';
+import { HOVERED_SNAP_POINT_TIME } from '../App.consts.ts';
 
 export function draw(
   drawInfo: DrawInfo,
@@ -39,10 +40,11 @@ export function draw(
   );
   const isMarked =
     !!closestSnapPoint &&
-    hoveredSnapPoints.some(hoveredSnapPoint =>
-      isPointEqual(hoveredSnapPoint.snapPoint.point, closestSnapPoint.point),
+    hoveredSnapPoints.some(
+      hoveredSnapPoint =>
+        hoveredSnapPoint.milliSecondsHovered > HOVERED_SNAP_POINT_TIME &&
+        isPointEqual(hoveredSnapPoint.snapPoint.point, closestSnapPoint.point),
     );
-  // console.log('isMarked: ', isMarked);
   drawSnapPoint(drawInfo, closestSnapPoint, isMarked);
 
   drawCursor(drawInfo, shouldDrawCursor);

@@ -8,7 +8,7 @@ export function getAngleGuideLines(
 ): LineEntity[] {
   // Only for 180 degrees since we draw lines that are infinite in both directions,
   // so we only need to fill half a circle to fill the complete circle
-  return times(180 / angleStep + 1, i => {
+  return times(180 / angleStep, i => {
     const angle = i * angleStep;
     const angleRad = angle * (Math.PI / 180);
     const x = firstPoint.x + Math.cos(angleRad);

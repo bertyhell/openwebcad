@@ -24,7 +24,7 @@ import { pointDistance } from './distance-between-points.ts';
 export function getClosestSnapPoint(
   worldSnapPoints: SnapPoint[],
   worldMouseLocation: Point,
-): [number, SnapPoint | null] {
+): { distance: number; snapPoint: SnapPoint | null } {
   let closestSnapPoint: SnapPoint | null = null;
   let closestDistance: number = Infinity;
 
@@ -37,7 +37,10 @@ export function getClosestSnapPoint(
     }
   });
 
-  return [closestDistance, closestSnapPoint];
+  return {
+    distance: closestDistance,
+    snapPoint: closestSnapPoint,
+  };
 }
 
 /**
@@ -51,23 +54,25 @@ export function getClosestSnapPointWithinRadius(
   worldMouseLocation: Point,
   maxDistance: number,
 ): SnapPoint | null {
-  const [closestDistance, closestSnapPoint] = getClosestSnapPoint(
-    worldSnapPoints.filter(
-      snapPoint => snapPoint.type !== SnapPointType.AngleGuide,
-    ),
-    worldMouseLocation,
-  );
+  const { distance: closestDistance, snapPoint: closestSnapPoint } =
+    getClosestSnapPoint(
+      worldSnapPoints.filter(
+        snapPoint => snapPoint.type !== SnapPointType.AngleGuide,
+      ),
+      worldMouseLocation,
+    );
 
   if (closestDistance < maxDistance) {
     return closestSnapPoint;
   }
 
-  const [angleGuideDistance, angleGuideSnapPoint] = getClosestSnapPoint(
-    worldSnapPoints.filter(
-      snapPoint => snapPoint.type === SnapPointType.AngleGuide,
-    ),
-    worldMouseLocation,
-  );
+  const { distance: angleGuideDistance, snapPoint: angleGuideSnapPoint } =
+    getClosestSnapPoint(
+      worldSnapPoints.filter(
+        snapPoint => snapPoint.type === SnapPointType.AngleGuide,
+      ),
+      worldMouseLocation,
+    );
 
   if (angleGuideDistance < maxDistance) {
     return angleGuideSnapPoint;

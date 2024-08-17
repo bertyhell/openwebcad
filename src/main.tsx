@@ -8,9 +8,7 @@ import {
   getAngleStep,
   getCanvas,
   getCanvasSize,
-  getDebugEntities,
   getEntities,
-  getHelperEntities,
   getHoveredSnapPoints,
   getLastDrawTimestamp,
   getNotSelectedEntities,
@@ -18,7 +16,6 @@ import {
   getScreenMouseLocation,
   getScreenOffset,
   getScreenScale,
-  getShouldDrawCursor,
   getSnapPoint,
   getSnapPointOnAngleGuide,
   getWorldMouseLocation,
@@ -75,14 +72,13 @@ function handleMouseEnter() {
 }
 
 function handleMouseMove(evt: MouseEvent) {
-  const screenOffset = getScreenOffset();
-
   setShouldDrawCursor(true);
   setScreenMouseLocation(new Point(evt.clientX, evt.clientY));
 
+  // If the middle mouse button is pressed, pan the screen
   const panStartLocation = getPanStartLocation();
+  const screenOffset = getScreenOffset();
   const screenScale = getScreenScale();
-
   if (panStartLocation) {
     // Pan the screen by the last mouse movement
     const newOffset = new Point(
@@ -93,7 +89,21 @@ function handleMouseMove(evt: MouseEvent) {
     setScreenOffset(newOffset);
   }
 
+  // Calculate angle guides and snap points
   calculateAngleGuidesAndSnapPoints();
+
+  // Highlight the entity closest to the mouse when the select tool is active
+  if (getActiveTool() === Tool.Select) {
+    const closestEntityInfo = findClosestEntity(
+      getWorldMouseLocation(),
+      getEntities(),
+    );
+    if (closestEntityInfo.distance < HIGHLIGHT_ENTITY_DISTANCE) {
+      setHighlightedEntityIds([closestEntityInfo.entity.id]);
+    } else {
+      setHighlightedEntityIds([]);
+    }
+  }
 }
 
 function handleMouseOut() {
@@ -117,11 +127,7 @@ function handleMouseWheel(evt: WheelEvent) {
   // because the scale has changed, but we can offset our world now to fix the zoom
   // location in screen space, because we know how much it changed laterally between
   // the two spatial scales. Neat huh? ;-)
-  const worldMouseLocationAfterZoom = screenToWorld(
-    getScreenMouseLocation(),
-    screenOffset,
-    newScreenScale,
-  );
+  const worldMouseLocationAfterZoom = screenToWorld(getScreenMouseLocation());
 
   setScreenOffset(
     new Point(
@@ -144,34 +150,14 @@ function handleMouseUp(evt: MouseEvent) {
     setPanStartLocation(null);
   }
   if (evt.button === MouseButton.Left) {
-    const activeTool = getActiveTool();
-    const entities = getEntities();
-    const activeEntity = getActiveEntity();
-    const snapPoint = getSnapPoint();
-    const snapPointOnAngleGuide = getSnapPointOnAngleGuide();
-    const worldMouseLocation = getWorldMouseLocation();
-    const screenScale = getScreenScale();
-    const screenOffset = getScreenOffset();
-    console.log('mouse up', {
-      activeTool,
-      activeEntity,
-      entities,
-      mouse: {
-        x: evt.clientX,
-        y: evt.clientY,
-      },
-    });
-
     const closestSnapPoint = getClosestSnapPointWithinRadius(
-      compact([snapPoint, snapPointOnAngleGuide]),
-      worldMouseLocation,
-      SNAP_POINT_DISTANCE / screenScale,
+      compact([getSnapPoint(), getSnapPointOnAngleGuide()]),
+      getWorldMouseLocation(),
+      SNAP_POINT_DISTANCE / getScreenScale(),
     );
 
     const worldMouseLocationTemp = screenToWorld(
       new Point(evt.clientX, evt.clientY),
-      screenOffset,
-      screenScale,
     );
     const worldClickPoint = closestSnapPoint
       ? closestSnapPoint.point
@@ -274,16 +260,11 @@ function startDrawLoop(
   context: CanvasRenderingContext2D,
   timestamp: DOMHighResTimeStamp,
 ) {
-  const activeTool = getActiveTool();
-  const entities = getEntities();
   const canvasSize = getCanvasSize();
   const screenMouseLocation = getScreenMouseLocation();
-  const hoveredSnapPoints = getHoveredSnapPoints();
   const worldMouseLocation = getWorldMouseLocation();
   const screenScale = getScreenScale();
   const screenOffset = getScreenOffset();
-  const shouldDrawCursor = getShouldDrawCursor();
-  const debugEntities = getDebugEntities();
   const lastDrawTimestamp = getLastDrawTimestamp();
 
   const elapsedTime = timestamp - lastDrawTimestamp;
@@ -301,14 +282,14 @@ function startDrawLoop(
   /**
    * Highlight the entity closest to the mouse when the select tool is active
    */
-  if (activeTool === Tool.Select) {
-    const [distance, , closestEntity] = findClosestEntity(
-      screenToWorld(screenMouseLocation, screenOffset, screenScale),
-      entities,
+  if (getActiveTool() === Tool.Select) {
+    const { distance, entity: closestEntity } = findClosestEntity(
+      screenToWorld(screenMouseLocation),
+      getEntities(),
     );
 
     if (distance < HIGHLIGHT_ENTITY_DISTANCE) {
-      setSelectedEntityIds([closestEntity.id]);
+      setHighlightedEntityIds([closestEntity.id]);
     }
   }
 
@@ -326,18 +307,7 @@ function startDrawLoop(
   /**
    * Draw everything on the canvas
    */
-  draw(
-    drawInfo,
-    getEntities(),
-    debugEntities,
-    getHelperEntities(),
-    getActiveEntity(),
-    getSnapPoint(),
-    getSnapPointOnAngleGuide(),
-    hoveredSnapPoints,
-    worldMouseLocation,
-    shouldDrawCursor,
-  );
+  draw(drawInfo);
 
   requestAnimationFrame((newTimestamp: DOMHighResTimeStamp) => {
     startDrawLoop(context, newTimestamp);

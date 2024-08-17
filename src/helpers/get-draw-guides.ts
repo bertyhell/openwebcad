@@ -42,10 +42,10 @@ export function getDrawHelpers(
       angleGuideLines,
     );
 
-    if (closestLineInfo[0] < SNAP_ANGLE_DISTANCE) {
-      angleGuides.push(closestLineInfo[2]);
+    if (closestLineInfo.distance < SNAP_ANGLE_DISTANCE) {
+      angleGuides.push(closestLineInfo.entity);
       nearestAngleSnapPoints.push({
-        point: closestLineInfo[1].start,
+        point: closestLineInfo.segment.start,
         type: SnapPointType.AngleGuide,
       });
     }

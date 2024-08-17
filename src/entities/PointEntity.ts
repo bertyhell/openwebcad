@@ -12,11 +12,7 @@ export class PointEntity implements Entity {
   }
 
   public draw(drawInfo: DrawInfo): void {
-    const screenPoint = worldToScreen(
-      this.point,
-      drawInfo.screenOffset,
-      drawInfo.screenZoom,
-    );
+    const screenPoint = worldToScreen(this.point);
 
     drawInfo.context.beginPath();
     drawInfo.context.arc(screenPoint.x, screenPoint.y, 1, 0, Math.PI * 2);

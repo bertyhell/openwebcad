@@ -30,16 +30,15 @@ export function handleSelectToolClick(
   // Mouse is close to entity and is not dragging a rectangle
   if (
     closestEntityInfo &&
-    closestEntityInfo[0] < HIGHLIGHT_ENTITY_DISTANCE &&
+    closestEntityInfo.distance < HIGHLIGHT_ENTITY_DISTANCE &&
     !activeSelectionRectangle
   ) {
     // Select the entity close to the mouse
-    const closestEntity = closestEntityInfo[2];
+    const closestEntity = closestEntityInfo.entity;
     console.log('selecting entity close to the mouse: ', closestEntity);
     if (!holdingCtrl && !holdingShift) {
-      setSelectedEntityIds([]);
-    }
-    if (holdingCtrl) {
+      setSelectedEntityIds([closestEntity.id]);
+    } else if (holdingCtrl) {
       // ctrl => toggle selection
       if (isEntitySelected(closestEntity)) {
         // Remove the entity from the selection
@@ -54,6 +53,7 @@ export function handleSelectToolClick(
       // shift => add to selection
       setSelectedEntityIds([...getSelectedEntityIds(), closestEntity.id]);
     }
+    return;
   }
 
   // No elements are close to the mouse and no selection dragging is in progress

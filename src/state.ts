@@ -132,8 +132,7 @@ export const getHoveredSnapPoints = () => hoveredSnapPoints;
 export const getLastDrawTimestamp = () => lastDrawTimestamp;
 
 // computed getters
-export const getWorldMouseLocation = () =>
-  screenToWorld(screenMouseLocation, screenOffset, screenScale);
+export const getWorldMouseLocation = () => screenToWorld(screenMouseLocation);
 
 export const getSelectedEntities = (): Entity[] => {
   return entities.filter(e => selectedEntityIds.includes(e.id));

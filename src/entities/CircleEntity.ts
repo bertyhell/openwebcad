@@ -36,11 +36,7 @@ export class CircleEntity implements Entity {
       radiusTemp = this.centerPoint.distanceTo(drawInfo.worldMouseLocation)[0];
     }
 
-    const screenCenterPoint = worldToScreen(
-      this.centerPoint,
-      drawInfo.screenOffset,
-      drawInfo.screenZoom,
-    );
+    const screenCenterPoint = worldToScreen(this.centerPoint);
     const screenRadius = radiusTemp * drawInfo.screenZoom;
     drawInfo.context.beginPath();
     drawInfo.context.arc(

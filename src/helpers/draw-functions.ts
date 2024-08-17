@@ -67,11 +67,7 @@ export function drawSnapPoint(
 ) {
   if (!worldSnapPoint) return;
 
-  const screenSnapPoint = worldToScreen(
-    worldSnapPoint.point,
-    drawInfo.screenOffset,
-    drawInfo.screenZoom,
-  );
+  const screenSnapPoint = worldToScreen(worldSnapPoint.point);
 
   setLineStyles(drawInfo.context, false, false, SNAP_POINT_COLOR);
   const context = drawInfo.context;

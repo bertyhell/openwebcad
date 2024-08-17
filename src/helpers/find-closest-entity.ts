@@ -4,7 +4,7 @@ import { Entity } from '../entities/Entitity.ts';
 export function findClosestEntity<EntityType = Entity>(
   worldPoint: Point,
   entities: Entity[],
-): [number, Segment, EntityType] {
+): { distance: number; segment: Segment; entity: EntityType } {
   let closestEntity = null;
   let closestDistanceInfo: [number, Segment | null] = [
     Number.MAX_SAFE_INTEGER,
@@ -19,9 +19,9 @@ export function findClosestEntity<EntityType = Entity>(
     }
   });
 
-  return [
-    closestDistanceInfo[0],
-    closestDistanceInfo[1] as Segment,
-    closestEntity! as EntityType,
-  ];
+  return {
+    distance: closestDistanceInfo[0],
+    segment: closestDistanceInfo[1] as Segment,
+    entity: closestEntity! as EntityType,
+  };
 }

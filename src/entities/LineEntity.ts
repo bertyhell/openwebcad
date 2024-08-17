@@ -51,16 +51,8 @@ export class LineEntity implements Entity {
       );
     }
 
-    const screenStartPoint = worldToScreen(
-      startPointTemp,
-      drawInfo.screenOffset,
-      drawInfo.screenZoom,
-    );
-    const screenEndPoint = worldToScreen(
-      endPointTemp,
-      drawInfo.screenOffset,
-      drawInfo.screenZoom,
-    );
+    const screenStartPoint = worldToScreen(startPointTemp);
+    const screenEndPoint = worldToScreen(endPointTemp);
 
     drawInfo.context.beginPath();
     drawInfo.context.moveTo(screenStartPoint.x, screenStartPoint.y);

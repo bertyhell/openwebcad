@@ -52,16 +52,8 @@ export class SelectionRectangleEntity implements Entity {
 
     const selectionToTheLeft = startPointTemp.x > endPointTemp.x;
 
-    const screenStartPoint = worldToScreen(
-      startPointTemp,
-      drawInfo.screenOffset,
-      drawInfo.screenZoom,
-    );
-    const screenEndPoint = worldToScreen(
-      endPointTemp,
-      drawInfo.screenOffset,
-      drawInfo.screenZoom,
-    );
+    const screenStartPoint = worldToScreen(startPointTemp);
+    const screenEndPoint = worldToScreen(endPointTemp);
 
     drawInfo.context.setLineDash([5, 5]);
     drawInfo.context.strokeStyle = selectionToTheLeft

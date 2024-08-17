@@ -2,6 +2,8 @@ import { Entity } from '../entities/Entitity.ts';
 import { SVG_MARGIN } from '../App.consts.ts';
 import { Point, Vector } from '@flatten-js/core';
 import { Shape } from '../App.types.ts';
+import { getCanvasSize, getEntities } from '../state.ts';
+import { saveAs } from 'file-saver';
 
 export function convertEntitiesToSvgString(
   entities: Entity[],
@@ -47,8 +49,17 @@ export function convertEntitiesToSvgString(
   return `
       <svg width="${boundingBoxWidth}" height="${boundingBoxHeight}" xmlns="http://www.w3.org/2000/svg">
         <rect x="0" y="0" width="${boundingBoxWidth}" height="${boundingBoxHeight}" fill="white" />
-        ${svgStrings
-          .join('')}
+        ${svgStrings.join('')}
       </svg>
     `;
+}
+
+export function exportEntitiesToSvgFile() {
+  const entities = getEntities();
+  const canvasSize = getCanvasSize();
+
+  const svgFileContent = convertEntitiesToSvgString(entities, canvasSize);
+
+  const blob = new Blob([svgFileContent], { type: 'text/svg;charset=utf-8' });
+  saveAs(blob, 'open-web-cad--drawing.svg');
 }

@@ -3,7 +3,7 @@ import { Point } from '@flatten-js/core';
 import { Tool } from './tools.ts';
 import { screenToWorld } from './helpers/world-screen-conversion.ts';
 import { HoverPoint, SnapPoint } from './App.types.ts';
-import { createStack } from './helpers/undo-stack.ts';
+import { createStack, StateVariable, UndoState } from './helpers/undo-stack.ts';
 import { isEqual } from 'es-toolkit';
 
 // state variables
@@ -154,7 +154,10 @@ export const setContext = (newContext: CanvasRenderingContext2D) =>
   (context = newContext);
 export const setScreenMouseLocation = (newLocation: Point) =>
   (screenMouseLocation = newLocation);
-export const setActiveTool = (newTool: Tool) => (activeTool = newTool);
+export const setActiveTool = (newTool: Tool) => {
+  triggerReactUpdate(StateVariable.activeTool);
+  activeTool = newTool;
+};
 export const setEntities = (newEntities: Entity[]) => {
   trackUndoState(StateVariable.entities, entities);
   entities = newEntities;
@@ -174,6 +177,7 @@ export const setHelperEntities = (newEntities: Entity[]) =>
 export const setDebugEntities = (newDebugEntities: Entity[]) =>
   (debugEntities = newDebugEntities);
 export const setAngleStep = (newStep: number) => {
+  triggerReactUpdate(StateVariable.activeTool);
   trackUndoState(StateVariable.angleStep, angleStep);
   angleStep = newStep;
 };
@@ -197,34 +201,18 @@ export const setHoveredSnapPoints = (newHoveredSnapPoints: HoverPoint[]) =>
 export const setLastDrawTimestamp = (newTimestamp: DOMHighResTimeStamp) =>
   (lastDrawTimestamp = newTimestamp);
 
-enum StateVariable {
-  canvasSize = 'canvasSize',
-  canvas = 'canvas',
-  context = 'context',
-  screenMouseLocation = 'screenMouseLocation',
-  activeTool = 'activeTool',
-  entities = 'entities',
-  activeEntity = 'activeEntity',
-  shouldDrawCursor = 'shouldDrawCursor',
-  helperEntities = 'helperEntities',
-  debugEntities = 'debugEntities',
-  angleStep = 'angleStep',
-  screenOffset = 'screenOffset',
-  screenScale = 'screenScale',
-  panStartLocation = 'panStartLocation',
-  snapPoint = 'snapPoint',
-  snapPointOnAngleGuide = 'snapPointOnAngleGuide',
-  hoveredSnapPoints = 'hoveredSnapPoints',
-  lastDrawTimestamp = 'lastDrawTimestamp',
-}
+const reactStateVariables: StateVariable[] = [
+  StateVariable.activeTool,
+  StateVariable.angleStep,
+];
 
-// const undoableStateVariables: StateVariable[] = [
-//   StateVariable.entities,
-//   StateVariable.activeEntity,
-//   StateVariable.angleStep,
-//   StateVariable.screenOffset,
-//   StateVariable.screenScale,
-// ];
+const undoableStateVariables: StateVariable[] = [
+  StateVariable.entities,
+  StateVariable.activeEntity,
+  StateVariable.angleStep,
+  StateVariable.screenOffset,
+  StateVariable.screenScale,
+];
 
 const undoableAndCompactableStateVariables: StateVariable[] = [
   StateVariable.angleStep,
@@ -232,19 +220,21 @@ const undoableAndCompactableStateVariables: StateVariable[] = [
   StateVariable.screenScale,
 ];
 
-interface UndoState {
-  variable: StateVariable;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  value: any;
-}
-
-const undoStack = createStack<UndoState>();
+const undoStack = createStack();
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function trackUndoState(variable: StateVariable, oldValue: any) {
+  if (!undoableStateVariables.includes(variable)) return;
+
   const lastUndoState = undoStack.peek();
   if (isEqual(oldValue, lastUndoState?.value)) {
     return; // Sometimes entities are updated because of highlighting, but not actually differ with the last list of entities
+  }
+
+  if (variable !== StateVariable.activeEntity) {
+    // Clear active entity changes from the undo history when anything else changes
+    // Since we don't want to undo drawing old entities point by point
+    undoStack.clear(StateVariable.activeEntity);
   }
 
   if (undoableAndCompactableStateVariables.includes(variable)) {
@@ -296,4 +286,11 @@ export function redo() {
   if (!redoState) return;
 
   updateStates(redoState);
+}
+
+function triggerReactUpdate(variable: StateVariable) {
+  if (!reactStateVariables.includes(variable)) return;
+
+  console.log('triggering react update for: ', variable);
+  window.dispatchEvent(new CustomEvent(variable));
 }

@@ -1,11 +1,11 @@
-import { FC, useCallback, useState } from 'react';
+import { FC, useCallback, useEffect, useState } from 'react';
 import { IconName } from './icon.tsx';
 import { Tool } from '../tools.ts';
 import { DropdownButton } from './DropdownButton.tsx';
 import { Button } from './Button.tsx';
 import {
-  getCanvasSize,
-  getEntities,
+  getActiveTool,
+  getAngleStep,
   redo,
   setActiveEntity,
   setActiveTool,
@@ -13,8 +13,8 @@ import {
   setSelectedEntityIds,
   undo,
 } from '../state.ts';
-import { convertEntitiesToSvgString } from '../helpers/export-entities-to-svg.ts';
-import { saveAs } from 'file-saver';
+import { StateVariable } from '../helpers/undo-stack.ts';
+import { exportEntitiesToSvgFile } from '../helpers/export-entities-to-svg.ts';
 
 interface ToolbarProps {}
 
@@ -22,22 +22,43 @@ export const Toolbar: FC<ToolbarProps> = () => {
   const [activeToolLocal, setActiveToolLocal] = useState<Tool>(Tool.Line);
   const [angleStepLocal, setAngleStepLocal] = useState<number>(45);
 
+  const fetchStateUpdatesFromOutside = useCallback(() => {
+    console.log('fetching state updates from outside: ', {
+      activeTool: getActiveTool(),
+      angleStep: getAngleStep(),
+    });
+    setActiveToolLocal(getActiveTool());
+    setAngleStepLocal(getAngleStep());
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener(
+      StateVariable.activeTool,
+      fetchStateUpdatesFromOutside,
+    );
+    window.addEventListener(
+      StateVariable.angleStep,
+      fetchStateUpdatesFromOutside,
+    );
+
+    return () => {
+      window.removeEventListener(
+        StateVariable.activeTool,
+        fetchStateUpdatesFromOutside,
+      );
+      window.removeEventListener(
+        StateVariable.angleStep,
+        fetchStateUpdatesFromOutside,
+      );
+    };
+  }, [fetchStateUpdatesFromOutside]);
+
   const handleToolClick = useCallback((tool: Tool) => {
     console.log('set active tool: ', tool);
     setActiveToolLocal(tool);
     setActiveTool(tool);
     setActiveEntity(null);
     setSelectedEntityIds([]);
-  }, []);
-
-  const handleExportClick = useCallback(() => {
-    const entities = getEntities();
-    const canvasSize = getCanvasSize();
-
-    const svgFileContent = convertEntitiesToSvgString(entities, canvasSize);
-
-    const blob = new Blob([svgFileContent], { type: 'text/svg;charset=utf-8' });
-    saveAs(blob, 'open-web-cad--drawing.svg');
   }, []);
 
   const handleAngleChanged = useCallback((angle: number) => {
@@ -48,36 +69,40 @@ export const Toolbar: FC<ToolbarProps> = () => {
   return (
     <div className="controls absolute top-0 left-0 flex flex-col gap-1 m-1">
       <Button
-        title="Select"
+        title="Select (s)"
         icon={IconName.Direction}
         onClick={() => handleToolClick(Tool.Select)}
         active={activeToolLocal === Tool.Select}
       />
       <Button
-        title="Line"
+        title="Line (l)"
         icon={IconName.Line}
         onClick={() => handleToolClick(Tool.Line)}
         active={activeToolLocal === Tool.Line}
       />
       <Button
-        title="Rectangle"
+        title="Rectangle (r)"
         icon={IconName.Square}
         onClick={() => handleToolClick(Tool.Rectangle)}
         active={activeToolLocal === Tool.Rectangle}
       />
       <Button
-        title="Circle"
+        title="Circle (c)"
         icon={IconName.Circle}
         onClick={() => handleToolClick(Tool.Circle)}
         active={activeToolLocal === Tool.Circle}
       />
       <Button
         className="mt-2"
-        title="Undo"
+        title="Undo (ctrl + z)"
         icon={IconName.AntiClockwise}
         onClick={() => undo()}
       />
-      <Button title="Redo" icon={IconName.Clockwise} onClick={() => redo()} />
+      <Button
+        title="Redo (ctrl + shift + z"
+        icon={IconName.Clockwise}
+        onClick={() => redo()}
+      />
       {/* TODO add delete segments logic */}
       {/*<Button*/}
       {/*  className="mt-2"*/}
@@ -126,7 +151,7 @@ export const Toolbar: FC<ToolbarProps> = () => {
         className="mt-2"
         title="Export SVG"
         label="SVG"
-        onClick={() => handleExportClick()}
+        onClick={() => exportEntitiesToSvgFile()}
       />
     </div>
   );

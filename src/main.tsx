@@ -22,7 +22,9 @@ import {
   getSnapPoint,
   getSnapPointOnAngleGuide,
   getWorldMouseLocation,
+  redo,
   setActiveEntity,
+  setActiveTool,
   setCanvas,
   setCanvasSize,
   setContext,
@@ -39,6 +41,7 @@ import {
   setShouldDrawCursor,
   setSnapPoint,
   setSnapPointOnAngleGuide,
+  undo,
 } from './state.ts';
 import { DrawInfo, MouseButton } from './App.types.ts';
 import { Tool } from './tools.ts';
@@ -194,12 +197,32 @@ function handleMouseUp(evt: MouseEvent) {
 
 function handleKeyUp(evt: KeyboardEvent) {
   if (evt.key === 'Escape') {
+    evt.preventDefault();
     setActiveEntity(null);
     setHighlightedEntityIds([]);
     setSelectedEntityIds([]);
   } else if (evt.key === 'Delete') {
+    evt.preventDefault();
     setEntities(getNotSelectedEntities());
     setSelectedEntityIds([]);
+  } else if (evt.key === 'z' && evt.ctrlKey && !evt.shiftKey) {
+    evt.preventDefault();
+    undo();
+  } else if (evt.key === 'z' && evt.ctrlKey && evt.shiftKey) {
+    evt.preventDefault();
+    redo();
+  } else if (evt.key === 'l') {
+    evt.preventDefault();
+    setActiveTool(Tool.Line);
+  } else if (evt.key === 'c') {
+    evt.preventDefault();
+    setActiveTool(Tool.Circle);
+  } else if (evt.key === 'r') {
+    evt.preventDefault();
+    setActiveTool(Tool.Rectangle);
+  } else if (evt.key === 's') {
+    evt.preventDefault();
+    setActiveTool(Tool.Select);
   }
 }
 

@@ -60,7 +60,7 @@ export const SNAP_POINT_SIZE = 15;
  * How long you need to hover over a snap point to make it a marked snap point that will show angle guides
  * in milliseconds
  */
-export const HOVERED_SNAP_POINT_TIME = 2000;
+export const HOVERED_SNAP_POINT_TIME = 1000;
 
 /**
  * Maximum number of snap points that can be marked at the same time

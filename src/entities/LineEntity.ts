@@ -4,10 +4,9 @@ import { Box, Point, Segment } from '@flatten-js/core';
 import { worldToScreen } from '../helpers/world-screen-conversion.ts';
 
 export class LineEntity implements Entity {
+  public readonly id: string = crypto.randomUUID();
   private segment: Segment | null = null;
   private startPoint: Point | null = null;
-  public isSelected: boolean = false;
-  public isHighlighted: boolean = false;
 
   constructor(p1?: Point | Segment, p2?: Point) {
     if (p1 instanceof Segment) {

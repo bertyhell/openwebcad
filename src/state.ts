@@ -3,6 +3,8 @@ import { Point } from '@flatten-js/core';
 import { Tool } from './tools.ts';
 import { screenToWorld } from './helpers/world-screen-conversion.ts';
 import { HoverPoint, SnapPoint } from './App.types.ts';
+import { createStack } from './helpers/undo-stack.ts';
+import { isEqual } from 'es-toolkit';
 
 // state variables
 /**
@@ -34,6 +36,16 @@ let activeTool = Tool.Line;
  * List of entities like lines, circles, rectangles, etc to be drawn on the canvas
  */
 let entities: Entity[] = [];
+
+/**
+ * Entities that are highlighted: when the mouse is close to an entity
+ */
+let highlightedEntityIds: string[] = [];
+
+/**
+ * Entities that are selected by the user by clicking on them with the select tool or by selecting them with a selection rectangle
+ */
+let selectedEntityIds: string[] = [];
 
 /**
  * Entity that is currently being drawn, but isn't complete yet
@@ -104,6 +116,8 @@ export const getContext = () => context;
 export const getScreenMouseLocation = () => screenMouseLocation;
 export const getActiveTool = () => activeTool;
 export const getEntities = (): Entity[] => entities;
+export const getHighlightedEntityIds = () => highlightedEntityIds;
+export const getSelectedEntityIds = () => selectedEntityIds;
 export const getActiveEntity = () => activeEntity;
 export const getShouldDrawCursor = () => shouldDrawCursor;
 export const getHelperEntities = () => helperEntities;
@@ -121,6 +135,17 @@ export const getLastDrawTimestamp = () => lastDrawTimestamp;
 export const getWorldMouseLocation = () =>
   screenToWorld(screenMouseLocation, screenOffset, screenScale);
 
+export const getSelectedEntities = (): Entity[] => {
+  return entities.filter(e => selectedEntityIds.includes(e.id));
+};
+export const getNotSelectedEntities = (): Entity[] => {
+  return entities.filter(e => !selectedEntityIds.includes(e.id));
+};
+export const isEntitySelected = (entity: Entity) =>
+  selectedEntityIds.includes(entity.id);
+export const isEntityHighlighted = (entity: Entity) =>
+  highlightedEntityIds.includes(entity.id);
+
 // setters
 export const setCanvasSize = (newCanvasSize: Point) =>
   (canvasSize = newCanvasSize);
@@ -130,18 +155,36 @@ export const setContext = (newContext: CanvasRenderingContext2D) =>
 export const setScreenMouseLocation = (newLocation: Point) =>
   (screenMouseLocation = newLocation);
 export const setActiveTool = (newTool: Tool) => (activeTool = newTool);
-export const setEntities = (newEntities: Entity[]) => (entities = newEntities);
-export const setActiveEntity = (newEntity: Entity | null) =>
-  (activeEntity = newEntity);
+export const setEntities = (newEntities: Entity[]) => {
+  trackUndoState(StateVariable.entities, entities);
+  entities = newEntities;
+};
+export const setActiveEntity = (newEntity: Entity | null) => {
+  trackUndoState(StateVariable.activeEntity, activeEntity);
+  activeEntity = newEntity;
+};
+export const setHighlightedEntityIds = (newEntityIds: string[]) =>
+  (highlightedEntityIds = newEntityIds);
+export const setSelectedEntityIds = (newEntityIds: string[]) =>
+  (selectedEntityIds = newEntityIds);
 export const setShouldDrawCursor = (newValue: boolean) =>
   (shouldDrawCursor = newValue);
 export const setHelperEntities = (newEntities: Entity[]) =>
   (helperEntities = newEntities);
 export const setDebugEntities = (newDebugEntities: Entity[]) =>
   (debugEntities = newDebugEntities);
-export const setAngleStep = (newStep: number) => (angleStep = newStep);
-export const setScreenOffset = (newOffset: Point) => (screenOffset = newOffset);
-export const setScreenScale = (newScale: number) => (screenScale = newScale);
+export const setAngleStep = (newStep: number) => {
+  trackUndoState(StateVariable.angleStep, angleStep);
+  angleStep = newStep;
+};
+export const setScreenOffset = (newOffset: Point) => {
+  trackUndoState(StateVariable.screenOffset, screenOffset);
+  screenOffset = newOffset;
+};
+export const setScreenScale = (newScale: number) => {
+  trackUndoState(StateVariable.screenScale, screenScale);
+  screenScale = newScale;
+};
 export const setPanStartLocation = (newLocation: Point | null) =>
   (panStartLocation = newLocation);
 export const setSnapPoint = (newSnapPoint: SnapPoint | null) =>
@@ -153,3 +196,104 @@ export const setHoveredSnapPoints = (newHoveredSnapPoints: HoverPoint[]) =>
   (hoveredSnapPoints = newHoveredSnapPoints);
 export const setLastDrawTimestamp = (newTimestamp: DOMHighResTimeStamp) =>
   (lastDrawTimestamp = newTimestamp);
+
+enum StateVariable {
+  canvasSize = 'canvasSize',
+  canvas = 'canvas',
+  context = 'context',
+  screenMouseLocation = 'screenMouseLocation',
+  activeTool = 'activeTool',
+  entities = 'entities',
+  activeEntity = 'activeEntity',
+  shouldDrawCursor = 'shouldDrawCursor',
+  helperEntities = 'helperEntities',
+  debugEntities = 'debugEntities',
+  angleStep = 'angleStep',
+  screenOffset = 'screenOffset',
+  screenScale = 'screenScale',
+  panStartLocation = 'panStartLocation',
+  snapPoint = 'snapPoint',
+  snapPointOnAngleGuide = 'snapPointOnAngleGuide',
+  hoveredSnapPoints = 'hoveredSnapPoints',
+  lastDrawTimestamp = 'lastDrawTimestamp',
+}
+
+// const undoableStateVariables: StateVariable[] = [
+//   StateVariable.entities,
+//   StateVariable.activeEntity,
+//   StateVariable.angleStep,
+//   StateVariable.screenOffset,
+//   StateVariable.screenScale,
+// ];
+
+const undoableAndCompactableStateVariables: StateVariable[] = [
+  StateVariable.angleStep,
+  StateVariable.screenOffset,
+  StateVariable.screenScale,
+];
+
+interface UndoState {
+  variable: StateVariable;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  value: any;
+}
+
+const undoStack = createStack<UndoState>();
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function trackUndoState(variable: StateVariable, oldValue: any) {
+  const lastUndoState = undoStack.peek();
+  if (isEqual(oldValue, lastUndoState?.value)) {
+    return; // Sometimes entities are updated because of highlighting, but not actually differ with the last list of entities
+  }
+
+  if (undoableAndCompactableStateVariables.includes(variable)) {
+    // See if we need to merge with the last state to avoid a million undo states for eg pan or zoom actions
+
+    if (lastUndoState?.variable === variable) {
+      // Replace the old undo state
+      undoStack.replace({ variable: variable, value: oldValue });
+      return;
+    }
+  }
+  // Push the new undo state
+  undoStack.push({ variable: variable, value: oldValue });
+}
+
+function updateStates(undoState: UndoState) {
+  const variable = undoState.variable;
+  const value = undoState.value;
+
+  // Do not use the setters for setting these states, otherwise you trigger the undo stack again
+  switch (variable) {
+    case StateVariable.entities:
+      entities = value;
+      break;
+    case StateVariable.activeEntity:
+      activeEntity = value;
+      break;
+    case StateVariable.angleStep:
+      angleStep = value;
+      break;
+    case StateVariable.screenOffset:
+      screenOffset = value;
+      break;
+    case StateVariable.screenScale:
+      screenScale = value;
+      break;
+  }
+}
+
+export function undo() {
+  const undoState = undoStack.undo();
+  if (!undoState) return;
+
+  updateStates(undoState);
+}
+
+export function redo() {
+  const redoState = undoStack.redo();
+  if (!redoState) return;
+
+  updateStates(redoState);
+}

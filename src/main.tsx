@@ -13,6 +13,7 @@ import {
   getHelperEntities,
   getHoveredSnapPoints,
   getLastDrawTimestamp,
+  getNotSelectedEntities,
   getPanStartLocation,
   getScreenMouseLocation,
   getScreenOffset,
@@ -27,12 +28,14 @@ import {
   setContext,
   setEntities,
   setHelperEntities,
+  setHighlightedEntityIds,
   setHoveredSnapPoints,
   setLastDrawTimestamp,
   setPanStartLocation,
   setScreenMouseLocation,
   setScreenOffset,
   setScreenScale,
+  setSelectedEntityIds,
   setShouldDrawCursor,
   setSnapPoint,
   setSnapPointOnAngleGuide,
@@ -41,7 +44,6 @@ import { DrawInfo, MouseButton } from './App.types.ts';
 import { Tool } from './tools.ts';
 import { Point } from '@flatten-js/core';
 import { getDrawHelpers } from './helpers/get-draw-guides.ts';
-import { compact } from './helpers/compact.ts';
 import {
   HIGHLIGHT_ENTITY_DISTANCE,
   HOVERED_SNAP_POINT_TIME,
@@ -55,9 +57,9 @@ import { handleRectangleToolClick } from './helpers/tools/rectangle-tool.ts';
 import { handleCircleToolClick } from './helpers/tools/circle-tool.ts';
 import { handleSelectToolClick } from './helpers/tools/select-tool.ts';
 import { getClosestSnapPointWithinRadius } from './helpers/get-closest-snap-point.ts';
-import { deSelectAndDeHighlightEntities } from './helpers/select-entities.ts';
 import { findClosestEntity } from './helpers/find-closest-entity.ts';
 import { trackHoveredSnapPoint } from './helpers/track-hovered-snap-points.ts';
+import { compact } from 'es-toolkit';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -191,13 +193,13 @@ function handleMouseUp(evt: MouseEvent) {
 }
 
 function handleKeyUp(evt: KeyboardEvent) {
-  const entities = getEntities();
-
   if (evt.key === 'Escape') {
     setActiveEntity(null);
-    setEntities(deSelectAndDeHighlightEntities(entities));
+    setHighlightedEntityIds([]);
+    setSelectedEntityIds([]);
   } else if (evt.key === 'Delete') {
-    setEntities(entities.filter(entity => !entity.isSelected));
+    setEntities(getNotSelectedEntities());
+    setSelectedEntityIds([]);
   }
 }
 
@@ -277,19 +279,14 @@ function startDrawLoop(
    * Highlight the entity closest to the mouse when the select tool is active
    */
   if (activeTool === Tool.Select) {
-    const newEntities = [...entities];
-    newEntities.forEach(entity => {
-      entity.isHighlighted = false;
-    });
     const [distance, , closestEntity] = findClosestEntity(
       screenToWorld(screenMouseLocation, screenOffset, screenScale),
       entities,
     );
 
     if (distance < HIGHLIGHT_ENTITY_DISTANCE) {
-      closestEntity.isHighlighted = true;
+      setSelectedEntityIds([closestEntity.id]);
     }
-    setEntities(newEntities);
   }
 
   /**

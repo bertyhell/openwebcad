@@ -4,10 +4,9 @@ import { Box, Point, Relations, Segment } from '@flatten-js/core';
 import { worldToScreen } from '../helpers/world-screen-conversion.ts';
 
 export class RectangleEntity implements Entity {
+  public readonly id: string = crypto.randomUUID();
   private rectangle: Box | null = null;
   private startPoint: Point | null = null;
-  public isSelected: boolean = false;
-  public isHighlighted: boolean = false;
 
   public send(point: Point): boolean {
     if (!this.startPoint) {

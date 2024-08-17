@@ -9,11 +9,11 @@ import {
   drawSnapPoint,
 } from './draw-functions.ts';
 import { getClosestSnapPoint } from './get-closest-snap-point.ts';
-import { compact } from './compact.ts';
 import { isPointEqual } from './is-point-equal.ts';
 import { Entity } from '../entities/Entitity.ts';
 import { Point } from '@flatten-js/core';
 import { HOVERED_SNAP_POINT_TIME } from '../App.consts.ts';
+import { compact } from 'es-toolkit';
 
 export function draw(
   drawInfo: DrawInfo,

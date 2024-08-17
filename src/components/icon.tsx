@@ -9,6 +9,8 @@ import SolidDownIcon from 'teenyicons/solid/down.svg?react';
 import SolidUpIcon from 'teenyicons/solid/up.svg?react';
 import SolidUpSmallIcon from 'teenyicons/solid/up-small.svg?react';
 import SolidDownSmallIcon from 'teenyicons/solid/down-small.svg?react';
+import AntiClockwiseIcon from 'teenyicons/outline/anti-clockwise.svg?react';
+import ClockwiseIcon from 'teenyicons/outline/clockwise.svg?react';
 import AngleIcon from './angle.svg?react';
 import { FC } from 'react';
 
@@ -20,6 +22,8 @@ enum IconName {
   Direction = 'Direction',
   VectorDocument = 'VectorDocument',
   LayersDifference = 'LayersDifference',
+  AntiClockwise = 'AntiClockwise',
+  Clockwise = 'Clockwise',
   Svg = 'Svg',
   Angle = 'Angle',
   SolidDown = 'SolidDown',
@@ -35,6 +39,8 @@ const icons: Record<IconName, FC> = {
   [IconName.Direction]: DirectionIcon,
   [IconName.VectorDocument]: VectorDocumentIcon,
   [IconName.LayersDifference]: LayersDifferenceIcon,
+  [IconName.AntiClockwise]: AntiClockwiseIcon,
+  [IconName.Clockwise]: ClockwiseIcon,
   [IconName.Svg]: SvgIcon,
   [IconName.Angle]: AngleIcon,
   [IconName.SolidDown]: SolidDownIcon,

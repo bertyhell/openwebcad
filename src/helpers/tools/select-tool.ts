@@ -1,15 +1,17 @@
 import { Box, Point } from '@flatten-js/core';
-import { Entity } from '../../entities/Entitity.ts';
 import { SelectionRectangleEntity } from '../../entities/SelectionRectangleEntity.ts';
 import { findClosestEntity } from '../find-closest-entity.ts';
 import { HIGHLIGHT_ENTITY_DISTANCE } from '../../App.consts.ts';
-import { deHighlightEntities, deSelectEntities } from '../select-entities.ts';
 import {
   getActiveEntity,
   getEntities,
+  getSelectedEntityIds,
+  isEntitySelected,
   setActiveEntity,
-  setEntities,
+  setHighlightedEntityIds,
+  setSelectedEntityIds,
 } from '../../state.ts';
+import { compact } from 'es-toolkit';
 
 export function handleSelectToolClick(
   worldClickPoint: Point,
@@ -17,16 +19,13 @@ export function handleSelectToolClick(
   holdingShift: boolean,
 ) {
   const activeEntity = getActiveEntity();
-  const entities = getEntities();
-
-  let newEntities: Entity[] = [...entities];
 
   let activeSelectionRectangle = null;
   if (activeEntity instanceof SelectionRectangleEntity) {
     activeSelectionRectangle = activeEntity as SelectionRectangleEntity;
   }
 
-  const closestEntityInfo = findClosestEntity(worldClickPoint, newEntities);
+  const closestEntityInfo = findClosestEntity(worldClickPoint, getEntities());
 
   // Mouse is close to entity and is not dragging a rectangle
   if (
@@ -38,14 +37,23 @@ export function handleSelectToolClick(
     const closestEntity = closestEntityInfo[2];
     console.log('selecting entity close to the mouse: ', closestEntity);
     if (!holdingCtrl && !holdingShift) {
-      newEntities = deSelectEntities(newEntities);
+      setSelectedEntityIds([]);
     }
     if (holdingCtrl) {
-      closestEntity.isSelected = !closestEntity.isSelected;
+      // ctrl => toggle selection
+      if (isEntitySelected(closestEntity)) {
+        // Remove the entity from the selection
+        setSelectedEntityIds(
+          getSelectedEntityIds().filter(id => id !== closestEntity.id),
+        );
+      } else {
+        // Add the entity to the selection
+        setSelectedEntityIds([...getSelectedEntityIds(), closestEntity.id]);
+      }
     } else {
-      closestEntity.isSelected = true;
+      // shift => add to selection
+      setSelectedEntityIds([...getSelectedEntityIds(), closestEntity.id]);
     }
-    return newEntities;
   }
 
   // No elements are close to the mouse and no selection dragging is in progress
@@ -63,53 +71,56 @@ export function handleSelectToolClick(
     new Point(worldClickPoint.x, worldClickPoint.y),
   );
 
-  newEntities = deHighlightEntities(newEntities);
+  setHighlightedEntityIds([]);
   if (completed) {
     // Finish the selection
     console.log('Finish selection: ', activeSelectionRectangle);
     const intersectionSelection =
       activeSelectionRectangle.isIntersectionSelection();
-    newEntities.forEach(entity => {
-      if (intersectionSelection) {
-        if (
-          entity.intersectsWithBox(
-            activeSelectionRectangle.getBoundingBox() as Box,
-          ) ||
-          entity.isContainedInBox(
-            activeSelectionRectangle.getBoundingBox() as Box,
-          )
-        ) {
-          if (holdingCtrl) {
-            entity.isSelected = !entity.isSelected;
-          } else {
-            entity.isSelected = true;
+    const newSelectedEntityIds: string[] = compact(
+      getEntities().map((entity): string | null => {
+        if (intersectionSelection) {
+          if (
+            entity.intersectsWithBox(
+              activeSelectionRectangle.getBoundingBox() as Box,
+            ) ||
+            entity.isContainedInBox(
+              activeSelectionRectangle.getBoundingBox() as Box,
+            )
+          ) {
+            if (holdingCtrl) {
+              if (isEntitySelected(entity)) {
+                return null;
+              } else {
+                return entity.id;
+              }
+            } else {
+              return entity.id;
+            }
           }
         } else {
-          if (!holdingCtrl && !holdingShift) {
-            entity.isSelected = false;
+          if (
+            entity.isContainedInBox(
+              activeSelectionRectangle.getBoundingBox() as Box,
+            )
+          ) {
+            if (holdingCtrl) {
+              if (isEntitySelected(entity)) {
+                return null;
+              } else {
+                return entity.id;
+              }
+            } else {
+              return entity.id;
+            }
           }
         }
-      } else {
-        if (
-          entity.isContainedInBox(
-            activeSelectionRectangle.getBoundingBox() as Box,
-          )
-        ) {
-          if (holdingCtrl) {
-            entity.isSelected = !entity.isSelected;
-          } else {
-            entity.isSelected = true;
-          }
-        } else {
-          if (!holdingCtrl && !holdingShift) {
-            entity.isSelected = false;
-          }
-        }
-      }
-    });
+        return null;
+      }),
+    );
+    setSelectedEntityIds(newSelectedEntityIds);
 
     console.log('Set active entity to null');
     setActiveEntity(null);
   }
-  setEntities(newEntities);
 }

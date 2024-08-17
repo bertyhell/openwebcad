@@ -4,9 +4,8 @@ import { Box, Point, Segment } from '@flatten-js/core';
 import { worldToScreen } from '../helpers/world-screen-conversion.ts';
 
 export class PointEntity implements Entity {
+  public readonly id: string = crypto.randomUUID();
   public point: Point;
-  public isSelected: boolean = false;
-  public isHighlighted: boolean = false;
 
   constructor(x: number, y: number) {
     this.point = new Point(x, y);

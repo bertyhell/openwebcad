@@ -10,10 +10,9 @@ import { worldToScreen } from '../helpers/world-screen-conversion.ts';
 
 // TODO move the selection rectangle to its own thing, not part of the entities logic
 export class SelectionRectangleEntity implements Entity {
+  public readonly id: string = crypto.randomUUID();
   private rectangle: Box | null = null;
   private startPoint: Point | null = null;
-  public isSelected: boolean = false;
-  public isHighlighted: boolean = false;
 
   public send(point: Point): boolean {
     if (!this.startPoint) {

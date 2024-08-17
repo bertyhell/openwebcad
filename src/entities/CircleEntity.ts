@@ -4,10 +4,9 @@ import { Box, circle, Circle, point, Point, Segment } from '@flatten-js/core';
 import { worldToScreen } from '../helpers/world-screen-conversion.ts';
 
 export class CircleEntity implements Entity {
+  public readonly id: string = crypto.randomUUID();
   private circle: Circle | null = null;
   private centerPoint: Point | null = null;
-  public isSelected: boolean = false;
-  public isHighlighted: boolean = false;
 
   public send(newPoint: Point): boolean {
     if (!this.centerPoint) {

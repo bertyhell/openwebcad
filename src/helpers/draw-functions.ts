@@ -9,6 +9,7 @@ import {
   SNAP_POINT_SIZE,
 } from '../App.consts.ts';
 import { worldToScreen } from './world-screen-conversion.ts';
+import { isEntityHighlighted, isEntitySelected } from '../state.ts';
 
 export function setLineStyles(
   context: CanvasRenderingContext2D,
@@ -32,7 +33,11 @@ export function setLineStyles(
 
 export function drawEntities(drawInfo: DrawInfo, entities: Entity[]) {
   entities.forEach(entity => {
-    setLineStyles(drawInfo.context, entity.isHighlighted, entity.isSelected);
+    setLineStyles(
+      drawInfo.context,
+      isEntityHighlighted(entity),
+      isEntitySelected(entity),
+    );
     entity.draw(drawInfo);
   });
 }
@@ -41,8 +46,8 @@ export function drawDebugEntities(drawInfo: DrawInfo, debugEntities: Entity[]) {
   debugEntities.forEach(debugEntity => {
     setLineStyles(
       drawInfo.context,
-      debugEntity.isHighlighted,
-      debugEntity.isSelected,
+      isEntityHighlighted(debugEntity),
+      isEntitySelected(debugEntity),
       '#FF5500',
     );
     debugEntity.draw(drawInfo);
@@ -198,8 +203,8 @@ export function drawHelpers(drawInfo: DrawInfo, helperEntities: Entity[]) {
   helperEntities.forEach(entity => {
     setLineStyles(
       drawInfo.context,
-      entity.isHighlighted,
-      entity.isSelected,
+      isEntityHighlighted(entity),
+      isEntitySelected(entity),
       ANGLE_GUIDES_COLOR,
       [1, 5],
     );

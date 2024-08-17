@@ -7,7 +7,7 @@ import { getAngleGuideLines } from './get-angle-guide-lines.ts';
 import { findClosestEntity } from './find-closest-entity.ts';
 import { Entity } from '../entities/Entitity.ts';
 import { LineEntity } from '../entities/LineEntity.ts';
-import { compact } from './compact.ts';
+import { compact } from 'es-toolkit';
 
 /**
  * Gets the angle guides from the angle point to the mouse if the mouse is close to one of the angle steps and also returns the closest snap point

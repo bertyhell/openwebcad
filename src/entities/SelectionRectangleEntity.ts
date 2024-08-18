@@ -129,4 +129,8 @@ export class SelectionRectangleEntity implements Entity {
   public getType(): EntityName {
     return EntityName.SelectionRectangle;
   }
+
+  public containsPoint(): boolean {
+    return false; // Not implemented
+  }
 }

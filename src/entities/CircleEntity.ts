@@ -141,4 +141,11 @@ export class CircleEntity implements Entity {
   public getType(): EntityName {
     return EntityName.Circle;
   }
+
+  public containsPoint(point: Point): boolean {
+    if (!this.circle) {
+      return false;
+    }
+    return this.circle.contains(point);
+  }
 }

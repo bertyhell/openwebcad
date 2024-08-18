@@ -1,9 +1,11 @@
 import { Point, Segment } from '@flatten-js/core';
 import { findClosestEntity } from '../find-closest-entity.ts';
-import { getEntities } from '../../state.ts';
+import { getEntities, setDebugEntities, setEntities } from '../../state.ts';
 import { compact } from 'es-toolkit';
 import { Entity, EntityName } from '../../entities/Entitity.ts';
 import { LineEntity } from '../../entities/LineEntity.ts';
+import { findNeighboringPointsOnLine } from '../find-neighboring-points-on-line.ts';
+import { PointEntity } from '../../entities/PointEntity.ts';
 
 export function handleEraserToolClick(worldClickPoint: Point) {
   const closestEntity = findClosestEntity(worldClickPoint, getEntities());
@@ -14,18 +16,42 @@ export function handleEraserToolClick(worldClickPoint: Point) {
   const clickedPointOnLine = closestEntity.segment.start;
 
   // Find entities that intersect with the closest entity
-  const intersections = getAllIntersectionPoints(closestEntity, getEntities());
+  const intersections = getAllIntersectionPoints(
+    closestEntity.entity,
+    getEntities(),
+  );
 
   switch (closestEntity.entity.getType()) {
-    case EntityName.Line:
+    case EntityName.Line: {
       const line = closestEntity.entity as LineEntity;
       const segment = line.getShape() as Segment;
-      findNeighboringPointsOnLine(clickedPointOnLine, [
-        ...intersections,
+      const [firstCutPoint, secondCutPoint] = findNeighboringPointsOnLine(
+        clickedPointOnLine,
         segment.start,
         segment.end,
+        intersections,
+      );
+
+      setDebugEntities(
+        [firstCutPoint, secondCutPoint].map(point => new PointEntity(point)),
+      );
+
+      const cutLines: Entity[] = line.cutAtPoints([
+        firstCutPoint,
+        secondCutPoint,
+      ]);
+      // Remove the segment that has the clickedPointOnLine on it
+      const remainingLines = cutLines.filter(
+        line => !line.containsPoint(clickedPointOnLine),
+      );
+      setEntities([
+        ...getEntities().filter(
+          entity => entity.id !== closestEntity.entity.id,
+        ),
+        ...remainingLines,
       ]);
       break;
+    }
 
     case EntityName.Circle:
       break;

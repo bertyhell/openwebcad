@@ -1,55 +1,40 @@
-import { Point, Vector } from '@flatten-js/core';
-import { EPSILON } from '../App.consts.ts';
-import { minBy, partition } from 'es-toolkit';
+import { Point } from '@flatten-js/core';
+import { sortBy, uniqWith } from 'es-toolkit';
+import { isPointEqual } from './is-point-equal.ts';
 
+/**
+ * Find the closest points on both sides of the clicked point
+ * @param clickedPointOnLine
+ * @param lineStartPoint
+ * @param lineEndPoint
+ * @param pointsOnLine
+ */
 export function findNeighboringPointsOnLine(
   clickedPointOnLine: Point,
+  lineStartPoint: Point,
+  lineEndPoint: Point,
   pointsOnLine: Point[],
 ): [Point, Point] {
-  if (pointsOnLine.length < 2) {
+  // Sort points from start point to endpoint
+  const sortedPoints = sortBy(
+    uniqWith(
+      [lineStartPoint, ...pointsOnLine, clickedPointOnLine, lineEndPoint],
+      isPointEqual,
+    ),
+    [pointOnLine => lineStartPoint.distanceTo(pointOnLine)],
+  );
+
+  const indexOfClickedPoint: number = sortedPoints.findIndex(point =>
+    isPointEqual(clickedPointOnLine, point),
+  );
+  if (indexOfClickedPoint === -1) {
     throw new Error(
-      'findNeighboringPointsOnLine function requires at least 2 points',
+      'Clicked point not found on line in function findNeighboringPointsOnLine',
     );
   }
-  // Find the vector of all points to the clicked point
-  const vectors: Vector[] = pointsOnLine.map(
-    point =>
-      new Vector(
-        clickedPointOnLine.x - point.x,
-        clickedPointOnLine.y - point.y,
-      ),
-  );
 
-  // Find the direction of all vectors
-  const vectorsWithAngle: { vector: Vector; angle: number }[] = vectors.map(
-    vector => ({
-      vector,
-      angle: vector.angleTo(vectors[0]),
-    }),
-  );
-
-  const [vectorsOneWay, vectorsOtherWay] = partition(
-    vectorsWithAngle,
-    vectorWithAngle =>
-      Math.abs(vectorWithAngle.angle - vectorWithAngle[0].angle) < EPSILON,
-  );
-
-  // Find the closest vector to the clicked point in both directions
-  const closestVectorOneWay = minBy(
-    vectorsOneWay,
-    vectorWithAngle => vectorWithAngle.vector.length,
-  );
-  const closestVectorOtherWay = minBy(
-    vectorsOtherWay,
-    vectorWithAngle => vectorWithAngle.vector.length,
-  );
-
-  const firstPoint: Point = clickedPointOnLine.translate(
-    closestVectorOneWay.vector,
-  );
-  const secondPoint: Point = clickedPointOnLine.translate(
-    closestVectorOtherWay.vector,
-  );
-
-  return [firstPoint, secondPoint];
+  return [
+    sortedPoints[indexOfClickedPoint - 1] || lineStartPoint,
+    sortedPoints[indexOfClickedPoint + 1] || lineEndPoint,
+  ];
 }

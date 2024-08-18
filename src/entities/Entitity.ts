@@ -16,6 +16,7 @@ export interface Entity {
   distanceTo(shape: Shape): [number, Segment] | null;
   getSvgString(): string | null;
   getType(): EntityName;
+  containsPoint(point: Point): boolean;
 }
 
 export enum EntityName {
@@ -23,4 +24,5 @@ export enum EntityName {
   Circle = 'Circle',
   Rectangle = 'Rectangle',
   SelectionRectangle = 'SelectionRectangle',
+  Point = 'Point',
 }

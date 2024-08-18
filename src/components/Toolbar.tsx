@@ -56,14 +56,14 @@ export const Toolbar: FC<ToolbarProps> = () => {
   const handleToolClick = useCallback((tool: Tool) => {
     console.log('set active tool: ', tool);
     setActiveToolLocal(tool);
-    setActiveTool(tool);
+    setActiveTool(tool, false);
     setActiveEntity(null);
     setSelectedEntityIds([]);
   }, []);
 
   const handleAngleChanged = useCallback((angle: number) => {
     setAngleStepLocal(angle);
-    setAngleStep(angle);
+    setAngleStep(angle, false);
   }, []);
 
   return (
@@ -99,18 +99,17 @@ export const Toolbar: FC<ToolbarProps> = () => {
         onClick={() => undo()}
       />
       <Button
-        title="Redo (ctrl + shift + z"
+        title="Redo (ctrl + shift + z)"
         icon={IconName.Clockwise}
         onClick={() => redo()}
       />
-      {/* TODO add delete segments logic */}
-      {/*<Button*/}
-      {/*  className="mt-2"*/}
-      {/*  title="Delete segments"*/}
-      {/*  icon={IconName.LayersDifference}*/}
-      {/*  onClick={() => handleToolClick(Tool.Eraser)}*/}
-      {/*  active={activeToolLocal === Tool.Eraser}*/}
-      {/*/>*/}
+      <Button
+        className="mt-2"
+        title="Delete segments"
+        icon={IconName.Crop}
+        onClick={() => handleToolClick(Tool.Eraser)}
+        active={activeToolLocal === Tool.Eraser}
+      />
       <DropdownButton
         className="mt-2"
         title="Snap angles"
@@ -152,6 +151,14 @@ export const Toolbar: FC<ToolbarProps> = () => {
         title="Export SVG"
         label="SVG"
         onClick={() => exportEntitiesToSvgFile()}
+      />
+      <Button
+        className="mt-2"
+        title="Github"
+        icon={IconName.Github}
+        onClick={() =>
+          window.open('https://github.com/bertyhell/openwebcad', '_blank')
+        }
       />
     </div>
   );

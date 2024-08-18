@@ -1,4 +1,4 @@
-import { Entity } from './Entitity.ts';
+import { Entity, EntityName } from './Entitity.ts';
 import { DrawInfo, SnapPoint } from '../App.types.ts';
 import { Box, Point, Segment } from '@flatten-js/core';
 import {
@@ -124,5 +124,13 @@ export class SelectionRectangleEntity implements Entity {
 
   public getSvgString(): string | null {
     return this.rectangle?.svg() || null;
+  }
+
+  public getType(): EntityName {
+    return EntityName.SelectionRectangle;
+  }
+
+  public containsPointOnLine(): boolean {
+    return false; // Not implemented
   }
 }

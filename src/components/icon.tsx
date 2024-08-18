@@ -11,7 +11,8 @@ import SolidUpSmallIcon from 'teenyicons/solid/up-small.svg?react';
 import SolidDownSmallIcon from 'teenyicons/solid/down-small.svg?react';
 import AntiClockwiseIcon from 'teenyicons/outline/anti-clockwise.svg?react';
 import ClockwiseIcon from 'teenyicons/outline/clockwise.svg?react';
-import AngleIcon from './angle.svg?react';
+import GithubIcon from 'teenyicons/outline/github.svg?react';
+import CropIcon from 'teenyicons/outline/crop.svg?react';
 import { FC } from 'react';
 
 // https://icon-sets.iconify.design/teenyicons
@@ -24,8 +25,9 @@ enum IconName {
   LayersDifference = 'LayersDifference',
   AntiClockwise = 'AntiClockwise',
   Clockwise = 'Clockwise',
+  Github = 'Github',
+  Crop = 'Crop',
   Svg = 'Svg',
-  Angle = 'Angle',
   SolidDown = 'SolidDown',
   SolidUp = 'SolidUp',
   SolidUpSmall = 'SolidUpSmall',
@@ -41,8 +43,9 @@ const icons: Record<IconName, FC> = {
   [IconName.LayersDifference]: LayersDifferenceIcon,
   [IconName.AntiClockwise]: AntiClockwiseIcon,
   [IconName.Clockwise]: ClockwiseIcon,
+  [IconName.Github]: GithubIcon,
+  [IconName.Crop]: CropIcon,
   [IconName.Svg]: SvgIcon,
-  [IconName.Angle]: AngleIcon,
   [IconName.SolidDown]: SolidDownIcon,
   [IconName.SolidUp]: SolidUpIcon,
   [IconName.SolidUpSmall]: SolidUpSmallIcon,

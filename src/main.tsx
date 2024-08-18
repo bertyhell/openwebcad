@@ -60,6 +60,7 @@ import { getClosestSnapPointWithinRadius } from './helpers/get-closest-snap-poin
 import { findClosestEntity } from './helpers/find-closest-entity.ts';
 import { trackHoveredSnapPoint } from './helpers/track-hovered-snap-points.ts';
 import { compact } from 'es-toolkit';
+import { handleEraserToolClick } from './helpers/tools/eraser-tool.ts';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -177,6 +178,10 @@ function handleMouseUp(evt: MouseEvent) {
 
     if (getActiveTool() === Tool.Select) {
       handleSelectToolClick(worldClickPoint, evt.ctrlKey, evt.shiftKey);
+    }
+
+    if (getActiveTool() === Tool.Eraser) {
+      handleEraserToolClick(worldClickPoint);
     }
   }
 }

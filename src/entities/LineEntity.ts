@@ -1,7 +1,10 @@
-import { Entity } from './Entitity.ts';
+import { Entity, EntityName } from './Entitity.ts';
 import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
 import { Box, Point, Segment } from '@flatten-js/core';
 import { worldToScreen } from '../helpers/world-screen-conversion.ts';
+import { sortBy, uniqWith } from 'es-toolkit';
+import { isPointEqual } from '../helpers/is-point-equal.ts';
+import { pointDistance } from '../helpers/distance-between-points.ts';
 
 export class LineEntity implements Entity {
   public readonly id: string = crypto.randomUUID();
@@ -124,5 +127,46 @@ export class LineEntity implements Entity {
 
   public getSvgString(): string | null {
     return this.segment?.svg() || null;
+  }
+
+  public getType(): EntityName {
+    return EntityName.Line;
+  }
+
+  public containsPointOnLine(point: Point): boolean {
+    if (!this.segment) {
+      return false;
+    }
+    return this.segment.contains(point);
+  }
+
+  /**
+   * Cuts the line at the given points and returns a list of new lines in order from the start point of the original line
+   * @param pointOnLine
+   */
+  public cutAtPoints(pointOnLine: Point[]): Entity[] {
+    if (!this.segment) {
+      // This entity is not complete, so we cannot cut it yet
+      return [this];
+    }
+    const points = uniqWith(
+      [this.segment.start, this.segment.end, ...pointOnLine],
+      isPointEqual,
+    );
+    const sortLinesByDistanceToStartPoint = sortBy(points, [
+      (point: Point): number => pointDistance(this.segment!.start, point),
+    ]);
+
+    const lineSegments: Entity[] = [];
+    // Until length - 2, so we can combine start points with endpoints
+    for (let i = 0; i < sortLinesByDistanceToStartPoint.length - 1; i++) {
+      lineSegments.push(
+        new LineEntity(
+          sortLinesByDistanceToStartPoint[i],
+          sortLinesByDistanceToStartPoint[i + 1],
+        ),
+      );
+    }
+    return lineSegments;
   }
 }

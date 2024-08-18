@@ -20,7 +20,7 @@ export function handleSelectToolClick(
 ) {
   const activeEntity = getActiveEntity();
 
-  let activeSelectionRectangle = null;
+  let activeSelectionRectangle: SelectionRectangleEntity | null = null;
   if (activeEntity instanceof SelectionRectangleEntity) {
     activeSelectionRectangle = activeEntity as SelectionRectangleEntity;
   }

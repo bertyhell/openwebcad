@@ -1,4 +1,4 @@
-import { Entity } from './Entitity.ts';
+import { Entity, EntityName } from './Entitity.ts';
 import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
 import { Box, circle, Circle, point, Point, Segment } from '@flatten-js/core';
 import { worldToScreen } from '../helpers/world-screen-conversion.ts';
@@ -136,5 +136,9 @@ export class CircleEntity implements Entity {
 
   public getSvgString(): string | null {
     return this.circle?.svg() || null;
+  }
+
+  public getType(): EntityName {
+    return EntityName.Circle;
   }
 }

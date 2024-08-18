@@ -1,4 +1,4 @@
-import { Entity } from './Entitity.ts';
+import { Entity, EntityName } from './Entitity.ts';
 import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
 import { Box, Point, Relations, Segment } from '@flatten-js/core';
 import { worldToScreen } from '../helpers/world-screen-conversion.ts';
@@ -163,5 +163,9 @@ export class RectangleEntity implements Entity {
         ?.replace(/width=([0-9]+)/g, 'width="$1"')
         ?.replace(/height=([0-9]+)/g, 'height="$1"') || null
     );
+  }
+
+  public getType(): EntityName {
+    return EntityName.Rectangle;
   }
 }

@@ -178,6 +178,10 @@ function handleMouseUp(evt: MouseEvent) {
     if (getActiveTool() === Tool.Select) {
       handleSelectToolClick(worldClickPoint, evt.ctrlKey, evt.shiftKey);
     }
+
+    if (getActiveTool() === Tool.Eraser) {
+      handleEraserToolClick(worldClickPoint);
+    }
   }
 }
 

@@ -15,4 +15,12 @@ export interface Entity {
   getIntersections(entity: Entity): Point[];
   distanceTo(shape: Shape): [number, Segment] | null;
   getSvgString(): string | null;
+  getType(): EntityName;
+}
+
+export enum EntityName {
+  Line = 'Line',
+  Circle = 'Circle',
+  Rectangle = 'Rectangle',
+  SelectionRectangle = 'SelectionRectangle',
 }

@@ -42,7 +42,7 @@ export function handleEraserToolClick(worldClickPoint: Point) {
       ]);
       // Remove the segment that has the clickedPointOnLine on it
       const remainingLines = cutLines.filter(
-        line => !line.containsPoint(clickedPointOnLine),
+        line => !line.containsPointOnLine(clickedPointOnLine),
       );
       setEntities([
         ...getEntities().filter(

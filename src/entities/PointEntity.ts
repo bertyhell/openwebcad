@@ -80,7 +80,7 @@ export class PointEntity implements Entity {
     return EntityName.Point;
   }
 
-  public containsPoint(point: Flatten.Point): boolean {
+  public containsPointOnLine(point: Flatten.Point): boolean {
     return this.point.equalTo(point);
   }
 }

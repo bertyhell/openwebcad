@@ -16,7 +16,7 @@ export interface Entity {
   distanceTo(shape: Shape): [number, Segment] | null;
   getSvgString(): string | null;
   getType(): EntityName;
-  containsPoint(point: Point): boolean;
+  containsPointOnLine(point: Point): boolean;
 }
 
 export enum EntityName {

@@ -133,7 +133,7 @@ export class LineEntity implements Entity {
     return EntityName.Line;
   }
 
-  public containsPoint(point: Point): boolean {
+  public containsPointOnLine(point: Point): boolean {
     if (!this.segment) {
       return false;
     }

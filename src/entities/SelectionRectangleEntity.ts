@@ -130,7 +130,7 @@ export class SelectionRectangleEntity implements Entity {
     return EntityName.SelectionRectangle;
   }
 
-  public containsPoint(): boolean {
+  public containsPointOnLine(): boolean {
     return false; // Not implemented
   }
 }

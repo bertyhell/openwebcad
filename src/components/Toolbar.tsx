@@ -56,14 +56,14 @@ export const Toolbar: FC<ToolbarProps> = () => {
   const handleToolClick = useCallback((tool: Tool) => {
     console.log('set active tool: ', tool);
     setActiveToolLocal(tool);
-    setActiveTool(tool);
+    setActiveTool(tool, false);
     setActiveEntity(null);
     setSelectedEntityIds([]);
   }, []);
 
   const handleAngleChanged = useCallback((angle: number) => {
     setAngleStepLocal(angle);
-    setAngleStep(angle);
+    setAngleStep(angle, false);
   }, []);
 
   return (

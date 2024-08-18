@@ -142,7 +142,7 @@ export class CircleEntity implements Entity {
     return EntityName.Circle;
   }
 
-  public containsPoint(point: Point): boolean {
+  public containsPointOnLine(point: Point): boolean {
     if (!this.circle) {
       return false;
     }

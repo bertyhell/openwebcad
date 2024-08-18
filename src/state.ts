@@ -153,8 +153,10 @@ export const setContext = (newContext: CanvasRenderingContext2D) =>
   (context = newContext);
 export const setScreenMouseLocation = (newLocation: Point) =>
   (screenMouseLocation = newLocation);
-export const setActiveTool = (newTool: Tool) => {
-  triggerReactUpdate(StateVariable.activeTool);
+export const setActiveTool = (newTool: Tool, triggerReact: boolean = true) => {
+  if (triggerReact) {
+    triggerReactUpdate(StateVariable.activeTool);
+  }
   activeTool = newTool;
 };
 export const setEntities = (newEntities: Entity[]) => {
@@ -175,8 +177,10 @@ export const setHelperEntities = (newEntities: Entity[]) =>
   (helperEntities = newEntities);
 export const setDebugEntities = (newDebugEntities: Entity[]) =>
   (debugEntities = newDebugEntities);
-export const setAngleStep = (newStep: number) => {
-  triggerReactUpdate(StateVariable.activeTool);
+export const setAngleStep = (newStep: number, triggerReact: boolean = true) => {
+  if (triggerReact) {
+    triggerReactUpdate(StateVariable.activeTool);
+  }
   trackUndoState(StateVariable.angleStep, angleStep);
   angleStep = newStep;
 };

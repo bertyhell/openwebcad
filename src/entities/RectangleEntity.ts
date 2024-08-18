@@ -1,5 +1,6 @@
 import { Entity, EntityName } from './Entitity.ts';
 import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
+import * as Flatten from '@flatten-js/core';
 import { Box, Point, Relations, Segment } from '@flatten-js/core';
 import { worldToScreen } from '../helpers/world-screen-conversion.ts';
 
@@ -167,5 +168,12 @@ export class RectangleEntity implements Entity {
 
   public getType(): EntityName {
     return EntityName.Rectangle;
+  }
+
+  public containsPointOnLine(point: Flatten.Point): boolean {
+    if (!this.rectangle) {
+      return false;
+    }
+    return this.rectangle.toSegments().some(segment => segment.contains(point));
   }
 }

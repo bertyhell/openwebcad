@@ -15,6 +15,7 @@ import {
 } from '../state.ts';
 import { StateVariable } from '../helpers/undo-stack.ts';
 import { exportEntitiesToSvgFile } from '../helpers/export-entities-to-svg.ts';
+import { exportEntitiesToPngFile } from '../helpers/export-entities-to-png.ts';
 
 interface ToolbarProps {}
 
@@ -151,6 +152,11 @@ export const Toolbar: FC<ToolbarProps> = () => {
         title="Export SVG"
         label="SVG"
         onClick={() => exportEntitiesToSvgFile()}
+      />
+      <Button
+        title="Export PNG"
+        label="PNG"
+        onClick={() => exportEntitiesToPngFile()}
       />
       <Button
         className="mt-2"

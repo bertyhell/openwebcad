@@ -23,6 +23,7 @@ This is a React-based canvas drawing application that allows users to draw vario
   - drag left, to select by intersecting
   - drag right, to select by containing
 - Export drawing as an SVG file
+- Export drawing as an PNG file
 
 ### Possible future feature ideas (TODO) in order of likelihood
 - Eraser tool to delete segments

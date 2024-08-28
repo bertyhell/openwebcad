@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build --base=/openwebcad/",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "stats": "npx cloc ./src"
   },
   "dependencies": {
     "@flatten-js/core": "^1.6.1",

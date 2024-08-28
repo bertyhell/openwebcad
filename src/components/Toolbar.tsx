@@ -150,14 +150,9 @@ export const Toolbar: FC<ToolbarProps> = () => {
           active={angleStepLocal === 90}
         />
       </DropdownButton>
+
       <Button
-        className="mt-2"
-        title="Save to JSON file"
-        icon={IconName.Save}
-        onClick={() => exportEntitiesToJsonFile()}
-      />
-      <Button
-        className="relative"
+        className="relative mt-2"
         title="Load from JSON file"
         icon={IconName.Folder}
         onClick={noop}
@@ -172,6 +167,11 @@ export const Toolbar: FC<ToolbarProps> = () => {
           }}
         ></input>
       </Button>
+      <Button
+        title="Save to JSON file"
+        icon={IconName.Save}
+        onClick={() => exportEntitiesToJsonFile()}
+      />
       <Button
         title="Export to SVG file"
         label="SVG"

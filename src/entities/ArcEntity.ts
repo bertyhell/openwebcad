@@ -162,7 +162,15 @@ export class ArcEntity implements Entity {
   }
 
   public getSvgString(): string | null {
-    return this.arc?.svg() || null;
+    if (!this.arc) {
+      return null;
+    }
+    return (
+      this.arc.svg({
+        strokeWidth: this.lineWidth,
+        stroke: this.lineColor,
+      }) || null
+    );
   }
 
   public getType(): EntityName {
@@ -216,6 +224,8 @@ export class ArcEntity implements Entity {
     return {
       id: this.id,
       type: EntityName.Arc,
+      lineColor: this.lineColor,
+      lineWidth: this.lineWidth,
       shapeData: {
         center: { x: this.arc.center.x, y: this.arc.center.y },
         start: { x: this.arc.start.x, y: this.arc.start.y },
@@ -245,6 +255,8 @@ export class ArcEntity implements Entity {
     const counterClockwise = jsonEntity.shapeData.counterClockwise;
     const arcEntity = new ArcEntity(center, start, end, counterClockwise);
     arcEntity.id = jsonEntity.id;
+    arcEntity.lineColor = jsonEntity.lineColor;
+    arcEntity.lineWidth = jsonEntity.lineWidth;
     return arcEntity;
   }
 }

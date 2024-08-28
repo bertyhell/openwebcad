@@ -39,7 +39,10 @@ export function convertEntitiesToSvgString(
         new Point(SVG_MARGIN, SVG_MARGIN),
       ),
     );
-    const svgString = (translatedShape as Shape).svg();
+    const svgString = (translatedShape as Shape).svg({
+      stroke: entity.lineColor,
+      strokeWidth: entity.lineWidth,
+    });
     if (svgString) {
       svgStrings.push(svgString);
     }

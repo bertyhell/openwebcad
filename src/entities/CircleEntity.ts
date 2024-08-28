@@ -155,7 +155,15 @@ export class CircleEntity implements Entity {
   }
 
   public getSvgString(): string | null {
-    return this.circle?.svg() || null;
+    if (!this.circle) {
+      return null;
+    }
+    return (
+      this.circle.svg({
+        strokeWidth: this.lineWidth,
+        stroke: this.lineColor,
+      }) || null
+    );
   }
 
   public getType(): EntityName {
@@ -200,6 +208,8 @@ export class CircleEntity implements Entity {
     return {
       id: this.id,
       type: EntityName.Circle,
+      lineColor: this.lineColor,
+      lineWidth: this.lineWidth,
       shapeData: {
         center: { x: this.circle.center.x, y: this.circle.center.y },
         radius: this.circle?.r,
@@ -215,6 +225,8 @@ export class CircleEntity implements Entity {
     const radius = jsonEntity.shapeData.radius;
     const circleEntity = new CircleEntity(center, radius);
     circleEntity.id = jsonEntity.id;
+    circleEntity.lineColor = jsonEntity.lineColor;
+    circleEntity.lineWidth = jsonEntity.lineWidth;
     return circleEntity;
   }
 }

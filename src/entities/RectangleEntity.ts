@@ -173,14 +173,13 @@ export class RectangleEntity implements Entity {
   }
 
   public getSvgString(): string | null {
-    const svgString = this.rectangle?.svg();
-
-    // Patch for bug: https://github.com/alexbol99/flatten-js/pull/186/files
-    return (
-      svgString
-        ?.replace(/width=([0-9]+)/g, 'width="$1"')
-        ?.replace(/height=([0-9]+)/g, 'height="$1"') || null
-    );
+    if (!this.rectangle) {
+      return null;
+    }
+    return this.rectangle.svg({
+      strokeWidth: this.lineWidth,
+      stroke: this.lineColor,
+    });
   }
 
   public getType(): EntityName {
@@ -201,6 +200,8 @@ export class RectangleEntity implements Entity {
     return {
       id: this.id,
       type: EntityName.Rectangle,
+      lineColor: this.lineColor,
+      lineWidth: this.lineWidth,
       shapeData: {
         xmin: this.rectangle.xmin,
         ymin: this.rectangle.ymin,
@@ -221,6 +222,8 @@ export class RectangleEntity implements Entity {
     );
     const rectangleEntity = new RectangleEntity(startPoint, endPoint);
     rectangleEntity.id = jsonEntity.id;
+    rectangleEntity.lineColor = jsonEntity.lineColor;
+    rectangleEntity.lineWidth = jsonEntity.lineWidth;
     return rectangleEntity;
   }
 }

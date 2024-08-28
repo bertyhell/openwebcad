@@ -47,5 +47,7 @@ export type ShapeJsonData =
 export interface JsonEntity<TShapeJsonData = ShapeJsonData> {
   id: string;
   type: EntityName;
+  lineColor: string;
+  lineWidth: number;
   shapeData: TShapeJsonData;
 }

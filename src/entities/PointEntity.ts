@@ -80,7 +80,15 @@ export class PointEntity implements Entity {
   }
 
   public getSvgString(): string | null {
-    return this.point?.svg() || null;
+    if (!this.point) {
+      return null;
+    }
+    return (
+      this.point.svg({
+        strokeWidth: this.lineWidth,
+        stroke: this.lineColor,
+      }) || null
+    );
   }
 
   public getType(): EntityName {
@@ -101,6 +109,8 @@ export class PointEntity implements Entity {
     return {
       id: this.id,
       type: EntityName.Point,
+      lineColor: this.lineColor,
+      lineWidth: this.lineWidth,
       shapeData: {
         point: {
           x: this.point.x,
@@ -117,6 +127,8 @@ export class PointEntity implements Entity {
     );
     const lineEntity = new PointEntity(point);
     lineEntity.id = jsonEntity.id;
+    lineEntity.lineColor = jsonEntity.lineColor;
+    lineEntity.lineWidth = jsonEntity.lineWidth;
     return lineEntity;
   }
 }

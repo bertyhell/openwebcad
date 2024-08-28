@@ -129,7 +129,15 @@ export class LineEntity implements Entity {
   }
 
   public getSvgString(): string | null {
-    return this.segment?.svg() || null;
+    if (!this.segment) {
+      return null;
+    }
+    return (
+      this.segment.svg({
+        strokeWidth: this.lineWidth,
+        stroke: this.lineColor,
+      }) || null
+    );
   }
 
   public getType(): EntityName {
@@ -181,6 +189,8 @@ export class LineEntity implements Entity {
     return {
       id: this.id,
       type: EntityName.Line,
+      lineColor: this.lineColor,
+      lineWidth: this.lineWidth,
       shapeData: {
         startPoint: { x: this.segment.start.x, y: this.segment.start.y },
         endPoint: { x: this.segment.end.x, y: this.segment.end.y },
@@ -199,6 +209,8 @@ export class LineEntity implements Entity {
     );
     const lineEntity = new LineEntity(startPoint, endPoint);
     lineEntity.id = jsonEntity.id;
+    lineEntity.lineColor = jsonEntity.lineColor;
+    lineEntity.lineWidth = jsonEntity.lineWidth;
     return lineEntity;
   }
 }

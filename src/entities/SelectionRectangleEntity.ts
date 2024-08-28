@@ -126,7 +126,7 @@ export class SelectionRectangleEntity implements Entity {
   }
 
   public getSvgString(): string | null {
-    return this.rectangle?.svg() || null;
+    return null;
   }
 
   public getType(): EntityName {

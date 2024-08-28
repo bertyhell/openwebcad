@@ -142,21 +142,22 @@ export class LineEntity implements Entity {
 
   /**
    * Cuts the line at the given points and returns a list of new lines in order from the start point of the original line
-   * @param pointOnLine
+   * @param pointsOnShape
    */
-  public cutAtPoints(pointOnLine: Point[]): Entity[] {
+  public cutAtPoints(pointsOnShape: Point[]): Entity[] {
     if (!this.segment) {
       // This entity is not complete, so we cannot cut it yet
       return [this];
     }
     const points = uniqWith(
-      [this.segment.start, this.segment.end, ...pointOnLine],
+      [this.segment.start, this.segment.end, ...pointsOnShape],
       isPointEqual,
     );
     const sortLinesByDistanceToStartPoint = sortBy(points, [
       (point: Point): number => pointDistance(this.segment!.start, point),
     ]);
 
+    // Convert the points back into line segments
     const lineSegments: Entity[] = [];
     // Until length - 2, so we can combine start points with endpoints
     for (let i = 0; i < sortLinesByDistanceToStartPoint.length - 1; i++) {

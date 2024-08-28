@@ -1,4 +1,4 @@
-import { Box, Circle, Point, Segment } from '@flatten-js/core';
+import { Arc, Box, Circle, Point, Segment } from '@flatten-js/core';
 
 export interface DrawInfo {
   context: CanvasRenderingContext2D;
@@ -9,7 +9,7 @@ export interface DrawInfo {
   screenZoom: number;
 }
 
-export type Shape = Box | Segment | Point | Circle;
+export type Shape = Box | Segment | Point | Circle | Arc;
 
 export enum SnapPointType {
   AngleGuide = 'AngleGuide',

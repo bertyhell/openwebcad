@@ -2,6 +2,8 @@ import { Entity, EntityName } from './Entitity.ts';
 import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
 import { Box, circle, Circle, point, Point, Segment } from '@flatten-js/core';
 import { worldToScreen } from '../helpers/world-screen-conversion.ts';
+import { ArcEntity } from './ArcEntity.ts';
+import { wrapModule } from '../helpers/wrap-module.ts';
 
 export class CircleEntity implements Entity {
   public readonly id: string = crypto.randomUUID();
@@ -147,5 +149,29 @@ export class CircleEntity implements Entity {
       return false;
     }
     return this.circle.contains(point);
+  }
+
+  public cutAtPoints(pointsOnShape: Point[]): Entity[] {
+    if (!this.circle) {
+      return [this];
+    }
+    const segmentArcs: Entity[] = [];
+
+    // Go around the circle and also connect the last and first point with an arc
+    const length = pointsOnShape.length;
+    for (let i = 0; i < length; i++) {
+      // Create points from using the 2 points from pointOnLine and the center point of the circle
+      const point1 = pointsOnShape[wrapModule(i, length)];
+      const point2 = pointsOnShape[wrapModule(i + 1, length)];
+
+      const arc = new ArcEntity(
+        this.centerPoint || undefined,
+        point1,
+        point2,
+        true,
+      );
+      segmentArcs.push(arc);
+    }
+    return segmentArcs;
   }
 }

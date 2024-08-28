@@ -204,6 +204,21 @@ export const setHoveredSnapPoints = (newHoveredSnapPoints: HoverPoint[]) =>
 export const setLastDrawTimestamp = (newTimestamp: DOMHighResTimeStamp) =>
   (lastDrawTimestamp = newTimestamp);
 
+// Computed setters
+export const deleteEntity = (entityToDelete: Entity): Entity[] => {
+  const newEntities = getEntities().filter(
+    entity => entity.id !== entityToDelete.id,
+  );
+  setEntities(newEntities);
+  return newEntities;
+};
+export const addEntity = (...entitiesToAdd: Entity[]): Entity[] => {
+  const newEntities = [...getEntities(), ...entitiesToAdd];
+  setEntities(newEntities);
+  return newEntities;
+};
+
+// Undo redo states
 const reactStateVariables: StateVariable[] = [
   StateVariable.activeTool,
   StateVariable.angleStep,

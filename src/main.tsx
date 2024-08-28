@@ -196,24 +196,37 @@ function handleKeyUp(evt: KeyboardEvent) {
     evt.preventDefault();
     setEntities(getNotSelectedEntities());
     setSelectedEntityIds([]);
+    setActiveEntity(null);
   } else if (evt.key === 'z' && evt.ctrlKey && !evt.shiftKey) {
     evt.preventDefault();
     undo();
+    setActiveEntity(null);
+    setSelectedEntityIds([]);
   } else if (evt.key === 'z' && evt.ctrlKey && evt.shiftKey) {
     evt.preventDefault();
     redo();
+    setActiveEntity(null);
+    setSelectedEntityIds([]);
   } else if (evt.key === 'l') {
     evt.preventDefault();
     setActiveTool(Tool.Line);
+    setActiveEntity(null);
+    setSelectedEntityIds([]);
   } else if (evt.key === 'c') {
     evt.preventDefault();
     setActiveTool(Tool.Circle);
+    setActiveEntity(null);
+    setSelectedEntityIds([]);
   } else if (evt.key === 'r') {
     evt.preventDefault();
     setActiveTool(Tool.Rectangle);
+    setActiveEntity(null);
+    setSelectedEntityIds([]);
   } else if (evt.key === 's') {
     evt.preventDefault();
     setActiveTool(Tool.Select);
+    setActiveEntity(null);
+    setSelectedEntityIds([]);
   }
 }
 

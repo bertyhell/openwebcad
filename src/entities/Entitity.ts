@@ -22,6 +22,7 @@ export interface Entity {
 export enum EntityName {
   Line = 'Line',
   Circle = 'Circle',
+  Arc = 'Arc',
   Rectangle = 'Rectangle',
   SelectionRectangle = 'SelectionRectangle',
   Point = 'Point',

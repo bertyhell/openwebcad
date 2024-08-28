@@ -1,15 +1,15 @@
-import { EntityName, JsonEntity } from '../entities/Entity.ts';
 import { JsonDrawingFile } from './export-entities-to-json.ts';
+import { compact } from 'es-toolkit';
+import { EntityName, JsonEntity } from '../../entities/Entity.ts';
+import { ArcEntity, ArcJsonData } from '../../entities/ArcEntity.ts';
+import { CircleEntity, CircleJsonData } from '../../entities/CircleEntity.ts';
+import { LineEntity, LineJsonData } from '../../entities/LineEntity.ts';
+import { PointEntity, PointJsonData } from '../../entities/PointEntity.ts';
 import {
   RectangleEntity,
   RectangleJsonData,
-} from '../entities/RectangleEntity.ts';
-import { ArcEntity, ArcJsonData } from '../entities/ArcEntity.ts';
-import { CircleEntity, CircleJsonData } from '../entities/CircleEntity.ts';
-import { LineEntity, LineJsonData } from '../entities/LineEntity.ts';
-import { PointEntity, PointJsonData } from '../entities/PointEntity.ts';
-import { setEntities } from '../state.ts';
-import { compact } from 'es-toolkit';
+} from '../../entities/RectangleEntity.ts';
+import { setEntities } from '../../state.ts';
 
 /**
  * Open a file selection dialog to select *.json files

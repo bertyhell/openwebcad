@@ -23,6 +23,8 @@ export enum StateVariable {
   snapPointOnAngleGuide = 'snapPointOnAngleGuide',
   hoveredSnapPoints = 'hoveredSnapPoints',
   lastDrawTimestamp = 'lastDrawTimestamp',
+  activeLineColor = 'activeLineColor',
+  activeLineWidth = 'activeLineWidth',
 }
 
 /**

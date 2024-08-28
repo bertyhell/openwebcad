@@ -1,4 +1,4 @@
-import { FC, ReactNode, useState } from 'react';
+import { CSSProperties, FC, ReactNode, useState } from 'react';
 import { Icon, IconName } from './icon.tsx';
 import { Button } from './Button.tsx';
 
@@ -9,6 +9,8 @@ interface DropdownButtonProps {
   active?: boolean;
   onClick?: () => void;
   className?: string;
+  style?: CSSProperties;
+  buttonStyle?: CSSProperties;
   children?: ReactNode;
 }
 
@@ -17,6 +19,8 @@ export const DropdownButton: FC<DropdownButtonProps> = ({
   title,
   icon,
   className,
+  style,
+  buttonStyle,
   children,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -26,6 +30,7 @@ export const DropdownButton: FC<DropdownButtonProps> = ({
       className={
         'flex flex-row gap-2 relative' + (className ? ' ' + className : '')
       }
+      style={style}
     >
       <Button
         icon={icon}
@@ -33,6 +38,7 @@ export const DropdownButton: FC<DropdownButtonProps> = ({
         title={title}
         data-active={isOpen}
         onClick={() => setIsOpen(!isOpen)}
+        style={buttonStyle}
       />
       <Icon
         name={IconName.SolidDownSmall}

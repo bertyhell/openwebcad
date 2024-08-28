@@ -11,6 +11,9 @@ import { worldToScreen } from '../helpers/world-screen-conversion.ts'; // TODO m
 // TODO move the selection rectangle to its own thing, not part of the entities logic
 export class SelectionRectangleEntity implements Entity {
   public id: string = crypto.randomUUID();
+  public lineColor: string = '#fff';
+  public lineWidth: number = 1;
+
   private rectangle: Box | null = null;
   private startPoint: Point | null = null;
 

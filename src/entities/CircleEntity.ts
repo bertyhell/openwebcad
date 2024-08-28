@@ -8,6 +8,9 @@ import { pointDistance } from '../helpers/distance-between-points.ts';
 
 export class CircleEntity implements Entity {
   public id: string = crypto.randomUUID();
+  public lineColor: string = '#fff';
+  public lineWidth: number = 1;
+
   private circle: Circle | null = null;
   private centerPoint: Point | null = null;
 

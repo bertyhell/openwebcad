@@ -2,6 +2,8 @@ import { Point } from '@flatten-js/core';
 import { LineEntity } from '../../entities/LineEntity.ts';
 import {
   getActiveEntity,
+  getActiveLineColor,
+  getActiveLineWidth,
   getEntities,
   setActiveEntity,
   setEntities,
@@ -15,6 +17,8 @@ export function handleLineToolClick(worldClickPoint: Point) {
   if (!activeLine) {
     // Start a new line
     activeLine = new LineEntity();
+    activeLine.lineColor = getActiveLineColor();
+    activeLine.lineWidth = getActiveLineWidth();
     setActiveEntity(activeLine);
   }
   const completed = activeLine.send(worldClickPoint);
@@ -25,6 +29,8 @@ export function handleLineToolClick(worldClickPoint: Point) {
 
     // Start a new line from the endpoint of the last line
     activeLine = new LineEntity();
+    activeLine.lineColor = getActiveLineColor();
+    activeLine.lineWidth = getActiveLineWidth();
     setActiveEntity(activeLine);
     activeLine.send(worldClickPoint);
   }

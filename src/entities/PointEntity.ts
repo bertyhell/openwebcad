@@ -7,6 +7,9 @@ import { isNil } from 'es-toolkit';
 
 export class PointEntity implements Entity {
   public id: string = crypto.randomUUID();
+  public lineColor: string = '#fff';
+  public lineWidth: number = 1;
+
   public point: Point | null = null;
 
   constructor(x?: Point | number, y?: number) {

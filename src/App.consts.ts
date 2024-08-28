@@ -78,3 +78,21 @@ export const SELECTION_RECTANGLE_COLOR_CONTAINS = '#6899f3';
  * Mouse zoom multiplier. Higher zooms faster for each mouse scroll
  */
 export const MOUSE_ZOOM_MULTIPLIER = 0.1;
+
+export const COLOR_LIST = [
+  '#2f4f4f',
+  '#800000',
+  '#006400',
+  '#d2b48c',
+  '#ff0000',
+  '#00ced1',
+  '#ffa500',
+  '#ffff00',
+  '#00ff00',
+  '#0000ff',
+  '#ff00ff',
+  '#1e90ff',
+  '#dda0dd',
+  '#ff1493',
+  '#98fb98',
+];

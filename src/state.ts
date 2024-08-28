@@ -109,6 +109,16 @@ let hoveredSnapPoints: HoverPoint[] = [];
  */
 let lastDrawTimestamp: DOMHighResTimeStamp = 0;
 
+/**
+ * Active line color
+ */
+let activeLineColor = '#fff';
+
+/**
+ * Active line width
+ */
+let activeLineWidth = 1;
+
 // getters
 export const getCanvasSize = () => canvasSize;
 export const getCanvas = () => canvas;
@@ -130,6 +140,8 @@ export const getSnapPoint = () => snapPoint;
 export const getSnapPointOnAngleGuide = () => snapPointOnAngleGuide;
 export const getHoveredSnapPoints = () => hoveredSnapPoints;
 export const getLastDrawTimestamp = () => lastDrawTimestamp;
+export const getActiveLineColor = () => activeLineColor;
+export const getActiveLineWidth = () => activeLineWidth;
 
 // computed getters
 export const getWorldMouseLocation = () => screenToWorld(screenMouseLocation);
@@ -154,10 +166,11 @@ export const setContext = (newContext: CanvasRenderingContext2D) =>
 export const setScreenMouseLocation = (newLocation: Point) =>
   (screenMouseLocation = newLocation);
 export const setActiveTool = (newTool: Tool, triggerReact: boolean = true) => {
+  activeTool = newTool;
+
   if (triggerReact) {
     triggerReactUpdate(StateVariable.activeTool);
   }
-  activeTool = newTool;
 };
 export const setEntities = (newEntities: Entity[]) => {
   trackUndoState(StateVariable.entities, entities);
@@ -178,11 +191,12 @@ export const setHelperEntities = (newEntities: Entity[]) =>
 export const setDebugEntities = (newDebugEntities: Entity[]) =>
   (debugEntities = newDebugEntities);
 export const setAngleStep = (newStep: number, triggerReact: boolean = true) => {
+  trackUndoState(StateVariable.angleStep, angleStep);
+  angleStep = newStep;
+
   if (triggerReact) {
     triggerReactUpdate(StateVariable.activeTool);
   }
-  trackUndoState(StateVariable.angleStep, angleStep);
-  angleStep = newStep;
 };
 export const setScreenOffset = (newOffset: Point) => {
   trackUndoState(StateVariable.screenOffset, screenOffset);
@@ -203,6 +217,26 @@ export const setHoveredSnapPoints = (newHoveredSnapPoints: HoverPoint[]) =>
   (hoveredSnapPoints = newHoveredSnapPoints);
 export const setLastDrawTimestamp = (newTimestamp: DOMHighResTimeStamp) =>
   (lastDrawTimestamp = newTimestamp);
+export const setActiveLineColor = (
+  newColor: string,
+  triggerReact: boolean = true,
+) => {
+  activeLineColor = newColor;
+
+  if (triggerReact) {
+    triggerReactUpdate(StateVariable.activeLineColor);
+  }
+};
+export const setActiveLineWidth = (
+  newWidth: number,
+  triggerReact: boolean = true,
+) => {
+  activeLineWidth = newWidth;
+
+  if (triggerReact) {
+    triggerReactUpdate(StateVariable.activeLineWidth);
+  }
+};
 
 // Computed setters
 export const deleteEntity = (entityToDelete: Entity): Entity[] => {
@@ -222,6 +256,8 @@ export const addEntity = (...entitiesToAdd: Entity[]): Entity[] => {
 const reactStateVariables: StateVariable[] = [
   StateVariable.activeTool,
   StateVariable.angleStep,
+  StateVariable.activeLineColor,
+  StateVariable.activeLineWidth,
 ];
 
 const undoableStateVariables: StateVariable[] = [

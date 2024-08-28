@@ -4,35 +4,48 @@ import { Tool } from '../tools.ts';
 import { DropdownButton } from './DropdownButton.tsx';
 import { Button } from './Button.tsx';
 import {
+  getActiveLineColor,
+  getActiveLineWidth,
   getActiveTool,
   getAngleStep,
   redo,
   setActiveEntity,
+  setActiveLineColor,
+  setActiveLineWidth,
   setActiveTool,
   setAngleStep,
   setSelectedEntityIds,
   undo,
 } from '../state.ts';
 import { StateVariable } from '../helpers/undo-stack.ts';
-import { exportEntitiesToSvgFile } from '../helpers/export-entities-to-svg.ts';
-import { exportEntitiesToPngFile } from '../helpers/export-entities-to-png.ts';
-import { exportEntitiesToJsonFile } from '../helpers/export-entities-to-json.ts';
-import { importEntitiesFromJsonFile } from '../helpers/import-entities-from-json.ts';
 import { noop } from 'es-toolkit';
+import { importEntitiesFromJsonFile } from '../helpers/import-export-handlers/import-entities-from-json.ts';
+import { exportEntitiesToJsonFile } from '../helpers/import-export-handlers/export-entities-to-json.ts';
+import { exportEntitiesToSvgFile } from '../helpers/import-export-handlers/export-entities-to-svg.ts';
+import { exportEntitiesToPngFile } from '../helpers/import-export-handlers/export-entities-to-png.ts';
+import { COLOR_LIST } from '../App.consts.ts';
+import { times } from '../helpers/times.ts';
 
 interface ToolbarProps {}
 
 export const Toolbar: FC<ToolbarProps> = () => {
   const [activeToolLocal, setActiveToolLocal] = useState<Tool>(Tool.Line);
   const [angleStepLocal, setAngleStepLocal] = useState<number>(45);
+  const [activeLineColorLocal, setActiveLineColorLocal] =
+    useState<string>('#FFF');
+  const [activeLineWidthLocal, setActiveLineWidthLocal] = useState<number>(1);
 
   const fetchStateUpdatesFromOutside = useCallback(() => {
     console.log('fetching state updates from outside: ', {
       activeTool: getActiveTool(),
       angleStep: getAngleStep(),
+      activeLineColor: getActiveLineColor(),
+      activeLineWidth: getActiveLineWidth(),
     });
     setActiveToolLocal(getActiveTool());
     setAngleStepLocal(getAngleStep());
+    setActiveLineColorLocal(getActiveLineColor());
+    setActiveLineWidthLocal(getActiveLineWidth());
   }, []);
 
   useEffect(() => {
@@ -44,6 +57,14 @@ export const Toolbar: FC<ToolbarProps> = () => {
       StateVariable.angleStep,
       fetchStateUpdatesFromOutside,
     );
+    window.addEventListener(
+      StateVariable.activeLineColor,
+      fetchStateUpdatesFromOutside,
+    );
+    window.addEventListener(
+      StateVariable.activeLineWidth,
+      fetchStateUpdatesFromOutside,
+    );
 
     return () => {
       window.removeEventListener(
@@ -52,6 +73,14 @@ export const Toolbar: FC<ToolbarProps> = () => {
       );
       window.removeEventListener(
         StateVariable.angleStep,
+        fetchStateUpdatesFromOutside,
+      );
+      window.removeEventListener(
+        StateVariable.activeLineColor,
+        fetchStateUpdatesFromOutside,
+      );
+      window.removeEventListener(
+        StateVariable.activeLineWidth,
         fetchStateUpdatesFromOutside,
       );
     };
@@ -116,9 +145,37 @@ export const Toolbar: FC<ToolbarProps> = () => {
       />
       <DropdownButton
         className="mt-2"
-        title="Snap angles"
-        label={angleStepLocal + '°'}
+        title="Line color"
+        buttonStyle={{ backgroundColor: activeLineColorLocal }}
       >
+        {COLOR_LIST.map(color => (
+          <Button
+            key={'line-color--' + color}
+            title="Change line color"
+            style={{ backgroundColor: color }}
+            active={color === activeLineColorLocal}
+            onClick={() => setActiveLineColor(color)}
+          />
+        ))}
+      </DropdownButton>
+      <DropdownButton
+        title="Line width"
+        label={String(activeLineWidthLocal) + 'px'}
+      >
+        {times<number>(9).map((width: number) => {
+          const lineWidth = width + 1;
+          return (
+            <Button
+              key={'line-width--' + lineWidth}
+              title="Change line width"
+              label={String(lineWidth) + 'px'}
+              active={lineWidth === activeLineWidthLocal}
+              onClick={() => setActiveLineWidth(lineWidth)}
+            />
+          );
+        })}
+      </DropdownButton>
+      <DropdownButton title="Snap angles" label={angleStepLocal + '°'}>
         <Button
           title="Add guide every 5 degrees"
           label="5°"

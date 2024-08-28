@@ -24,14 +24,19 @@ This is a React-based canvas drawing application that allows users to draw vario
   - drag right, to select by containing
 - Export drawing as an SVG file
 - Export drawing as an PNG file
+- Save and load drawings from/to json files
+
 
 ### Possible future feature ideas (TODO) in order of likelihood
 - Eraser tool to delete segments
+  - Max distance to delete
 - Draw with snap points for
   - circle tangents
   - nearest point on line
+  - prioritize certain snap points over others
 - Edit existing lines and circles by dragging endpoints/middle points
 - Move, rotate, scale shapes
+- Align shapes to each other
 - Select line color and thickness
 - Layers for drawing shapes in different layers that can be toggled on or off
 - Array copy shapes
@@ -41,7 +46,6 @@ This is a React-based canvas drawing application that allows users to draw vario
 - Import images
 - Export to dwg
 - Export to dxf
-- Save and load drawings
 - Import DXF files
 - Import DWG files
 

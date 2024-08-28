@@ -6,6 +6,9 @@ import { worldToScreen } from '../helpers/world-screen-conversion.ts';
 
 export class RectangleEntity implements Entity {
   public id: string = crypto.randomUUID();
+  public lineColor: string = '#fff';
+  public lineWidth: number = 1;
+
   private rectangle: Box | null = null;
   private startPoint: Point | null = null;
 

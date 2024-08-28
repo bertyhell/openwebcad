@@ -8,6 +8,9 @@ import { pointDistance } from '../helpers/distance-between-points.ts';
 
 export class LineEntity implements Entity {
   public id: string = crypto.randomUUID();
+  public lineColor: string = '#fff';
+  public lineWidth: number = 1;
+
   private segment: Segment | null = null;
   private startPoint: Point | null = null;
 

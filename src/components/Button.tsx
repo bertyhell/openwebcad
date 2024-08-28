@@ -1,4 +1,4 @@
-import { FC, ReactNode } from 'react';
+import { CSSProperties, FC, ReactNode } from 'react';
 import { Icon, IconName } from './icon.tsx';
 
 interface ButtonProps {
@@ -9,6 +9,7 @@ interface ButtonProps {
   onClick?: () => void;
   children?: ReactNode;
   className?: string;
+  style?: CSSProperties;
 }
 
 export const Button: FC<ButtonProps> = ({
@@ -19,6 +20,7 @@ export const Button: FC<ButtonProps> = ({
   active = false,
   children,
   className,
+  style,
 }) => {
   return (
     <>
@@ -27,6 +29,7 @@ export const Button: FC<ButtonProps> = ({
           'bg-gray-950 text-blue-700 font-semibold py-2 px-2 border border-blue-500 rounded w-10 h-10 flex flex-row justify-center items-center hover:bg-blue-500 hover:text-white hover:border-transparent  data-[active=true]:bg-blue-500 data-[active=true]:text-white data-[active=true]:border-transparent' +
           (className ? ' ' + className : '')
         }
+        style={style}
         data-active={active}
         onClick={onClick}
         title={title}

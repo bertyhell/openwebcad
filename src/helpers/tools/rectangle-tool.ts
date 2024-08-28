@@ -2,6 +2,8 @@ import { Point } from '@flatten-js/core';
 import { RectangleEntity } from '../../entities/RectangleEntity.ts';
 import {
   getActiveEntity,
+  getActiveLineColor,
+  getActiveLineWidth,
   getEntities,
   setActiveEntity,
   setEntities,
@@ -15,6 +17,8 @@ export function handleRectangleToolClick(worldClickPoint: Point) {
   if (!activeRectangle) {
     // Start a new rectangle
     activeRectangle = new RectangleEntity();
+    activeRectangle.lineColor = getActiveLineColor();
+    activeRectangle.lineWidth = getActiveLineWidth();
     setActiveEntity(activeRectangle);
   }
   const completed = activeRectangle.send(

@@ -2,6 +2,8 @@ import { CircleEntity } from '../../entities/CircleEntity.ts';
 import { Point } from '@flatten-js/core';
 import {
   getActiveEntity,
+  getActiveLineColor,
+  getActiveLineWidth,
   getEntities,
   setActiveEntity,
   setEntities,
@@ -15,6 +17,8 @@ export function handleCircleToolClick(worldClickPoint: Point) {
   if (!activeCircle) {
     // Start a new rectangle
     activeCircle = new CircleEntity();
+    activeCircle.lineColor = getActiveLineColor();
+    activeCircle.lineWidth = getActiveLineWidth();
     setActiveEntity(activeCircle);
   }
   const completed = activeCircle.send(worldClickPoint);

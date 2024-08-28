@@ -9,7 +9,9 @@ import { PointJsonData } from './PointEntity.ts';
 export interface Entity {
   // Random uuid generated when the Entity is created
   // Used for comparing entities
-  readonly id: string;
+  id: string;
+  lineColor: string;
+  lineWidth: number;
   draw(drawInfo: DrawInfo): void;
   getBoundingBox(): Box | null;
   intersectsWithBox(box: Box): boolean;

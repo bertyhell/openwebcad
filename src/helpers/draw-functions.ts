@@ -3,27 +3,32 @@ import { Entity } from '../entities/Entity.ts';
 import {
   ANGLE_GUIDES_COLOR,
   CANVAS_BACKGROUND_COLOR,
-  CANVAS_FOREGROUND_COLOR,
   CURSOR_SIZE,
   SNAP_POINT_COLOR,
   SNAP_POINT_SIZE,
 } from '../App.consts.ts';
 import { worldToScreen } from './world-screen-conversion.ts';
-import { isEntityHighlighted, isEntitySelected } from '../state.ts';
+import {
+  getActiveLineColor,
+  getActiveLineWidth,
+  isEntityHighlighted,
+  isEntitySelected,
+} from '../state.ts';
 
 export function setLineStyles(
   context: CanvasRenderingContext2D,
   isHighlighted: boolean,
   isSelected: boolean,
-  color: string = CANVAS_FOREGROUND_COLOR,
+  color: string,
+  lineWidth: number,
   dash: number[] = [],
 ) {
   context.strokeStyle = color;
-  context.lineWidth = 1;
+  context.lineWidth = lineWidth;
   context.setLineDash(dash);
 
   if (isHighlighted) {
-    context.lineWidth = 2;
+    context.lineWidth = lineWidth + 1;
   }
 
   if (isSelected) {
@@ -37,6 +42,8 @@ export function drawEntities(drawInfo: DrawInfo, entities: Entity[]) {
       drawInfo.context,
       isEntityHighlighted(entity),
       isEntitySelected(entity),
+      entity.lineColor,
+      entity.lineWidth,
     );
     entity.draw(drawInfo);
   });
@@ -49,6 +56,7 @@ export function drawDebugEntities(drawInfo: DrawInfo, debugEntities: Entity[]) {
       isEntityHighlighted(debugEntity),
       isEntitySelected(debugEntity),
       '#FF5500',
+      1,
     );
     debugEntity.draw(drawInfo);
   });
@@ -69,7 +77,7 @@ export function drawSnapPoint(
 
   const screenSnapPoint = worldToScreen(worldSnapPoint.point);
 
-  setLineStyles(drawInfo.context, false, false, SNAP_POINT_COLOR);
+  setLineStyles(drawInfo.context, false, false, SNAP_POINT_COLOR, 1);
   const context = drawInfo.context;
 
   if (isMarked) {
@@ -202,6 +210,7 @@ export function drawHelpers(drawInfo: DrawInfo, helperEntities: Entity[]) {
       isEntityHighlighted(entity),
       isEntitySelected(entity),
       ANGLE_GUIDES_COLOR,
+      1,
       [1, 5],
     );
     entity.draw(drawInfo);
@@ -212,14 +221,20 @@ export function drawActiveEntity(
   drawInfo: DrawInfo,
   activeEntity: Entity | null,
 ) {
-  setLineStyles(drawInfo.context, false, false);
+  setLineStyles(
+    drawInfo.context,
+    false,
+    false,
+    getActiveLineColor(),
+    getActiveLineWidth(),
+  );
   activeEntity?.draw(drawInfo);
 }
 
 export function drawCursor(drawInfo: DrawInfo, drawCursor: boolean) {
   if (!drawCursor) return;
 
-  setLineStyles(drawInfo.context, false, false);
+  setLineStyles(drawInfo.context, false, false, '#FFF', 1);
 
   drawInfo.context.beginPath();
   drawInfo.context.moveTo(

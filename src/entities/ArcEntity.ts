@@ -9,6 +9,9 @@ import { sortPointsOnArc } from '../helpers/sort-points-on-arc.ts';
 
 export class ArcEntity implements Entity {
   public id: string = crypto.randomUUID();
+  public lineColor: string = '#fff';
+  public lineWidth: number = 1;
+
   private arc: Arc | null = null;
   private centerPoint: Point | null = null;
   private firstPoint: Point | null = null;

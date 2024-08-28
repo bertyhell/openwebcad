@@ -1,4 +1,4 @@
-import { Entity } from './entities/Entitity.ts';
+import { Entity } from './entities/Entity.ts';
 import { Point } from '@flatten-js/core';
 import { Tool } from './tools.ts';
 import { screenToWorld } from './helpers/world-screen-conversion.ts';

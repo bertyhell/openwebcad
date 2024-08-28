@@ -1,4 +1,4 @@
-import { Entity, EntityName } from './Entitity.ts';
+import { Entity, EntityName, JsonEntity } from './Entity.ts';
 import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
 import { Box, Point, Segment } from '@flatten-js/core';
 import { worldToScreen } from '../helpers/world-screen-conversion.ts';
@@ -7,7 +7,7 @@ import { isPointEqual } from '../helpers/is-point-equal.ts';
 import { pointDistance } from '../helpers/distance-between-points.ts';
 
 export class LineEntity implements Entity {
-  public readonly id: string = crypto.randomUUID();
+  public id: string = crypto.randomUUID();
   private segment: Segment | null = null;
   private startPoint: Point | null = null;
 
@@ -133,7 +133,7 @@ export class LineEntity implements Entity {
     return EntityName.Line;
   }
 
-  public containsPointOnLine(point: Point): boolean {
+  public containsPointOnShape(point: Point): boolean {
     if (!this.segment) {
       return false;
     }
@@ -170,4 +170,37 @@ export class LineEntity implements Entity {
     }
     return lineSegments;
   }
+
+  public toJson(): JsonEntity<LineJsonData> | null {
+    if (!this.segment) {
+      return null;
+    }
+    return {
+      id: this.id,
+      type: EntityName.Line,
+      shapeData: {
+        startPoint: { x: this.segment.start.x, y: this.segment.start.y },
+        endPoint: { x: this.segment.end.x, y: this.segment.end.y },
+      },
+    };
+  }
+
+  public fromJson(jsonEntity: JsonEntity<LineJsonData>): LineEntity {
+    const startPoint = new Point(
+      jsonEntity.shapeData.startPoint.x,
+      jsonEntity.shapeData.startPoint.y,
+    );
+    const endPoint = new Point(
+      jsonEntity.shapeData.endPoint.x,
+      jsonEntity.shapeData.endPoint.y,
+    );
+    const lineEntity = new LineEntity(startPoint, endPoint);
+    lineEntity.id = jsonEntity.id;
+    return lineEntity;
+  }
+}
+
+export interface LineJsonData {
+  startPoint: { x: number; y: number };
+  endPoint: { x: number; y: number };
 }

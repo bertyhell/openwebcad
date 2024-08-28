@@ -1,5 +1,10 @@
 import { DrawInfo, Shape, SnapPoint } from '../App.types.ts';
 import { Box, Point, Segment } from '@flatten-js/core';
+import { ArcJsonData } from './ArcEntity.ts';
+import { CircleJsonData } from './CircleEntity.ts';
+import { LineJsonData } from './LineEntity.ts';
+import { RectangleJsonData } from './RectangleEntity.ts';
+import { PointJsonData } from './PointEntity.ts';
 
 export interface Entity {
   // Random uuid generated when the Entity is created
@@ -16,7 +21,9 @@ export interface Entity {
   distanceTo(shape: Shape): [number, Segment] | null;
   getSvgString(): string | null;
   getType(): EntityName;
-  containsPointOnLine(point: Point): boolean;
+  containsPointOnShape(point: Point): boolean;
+  toJson(): JsonEntity | null;
+  fromJson(jsonEntity: JsonEntity): Entity | null;
 }
 
 export enum EntityName {
@@ -26,4 +33,17 @@ export enum EntityName {
   Rectangle = 'Rectangle',
   SelectionRectangle = 'SelectionRectangle',
   Point = 'Point',
+}
+
+export type ShapeJsonData =
+  | RectangleJsonData
+  | CircleJsonData
+  | ArcJsonData
+  | LineJsonData
+  | PointJsonData;
+
+export interface JsonEntity<TShapeJsonData = ShapeJsonData> {
+  id: string;
+  type: EntityName;
+  shapeData: TShapeJsonData;
 }

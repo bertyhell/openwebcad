@@ -1,5 +1,5 @@
 import { DrawInfo, SnapPoint, SnapPointType } from '../App.types.ts';
-import { Entity } from '../entities/Entitity.ts';
+import { Entity } from '../entities/Entity.ts';
 import {
   ANGLE_GUIDES_COLOR,
   CANVAS_BACKGROUND_COLOR,

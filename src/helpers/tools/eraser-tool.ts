@@ -7,7 +7,7 @@ import {
   setDebugEntities,
 } from '../../state.ts';
 import { compact } from 'es-toolkit';
-import { Entity, EntityName } from '../../entities/Entitity.ts';
+import { Entity, EntityName } from '../../entities/Entity.ts';
 import { LineEntity } from '../../entities/LineEntity.ts';
 import { findNeighboringPointsOnLine } from '../find-neighboring-points-on-line.ts';
 import { PointEntity } from '../../entities/PointEntity.ts';
@@ -104,7 +104,7 @@ function eraseLineSegment(
   const cutLines: Entity[] = line.cutAtPoints([firstCutPoint, secondCutPoint]);
   // Remove the segment that has the clickedPointOnShape point on it
   const remainingLines = cutLines.filter(
-    line => !line.containsPointOnLine(clickedPointOnShape),
+    line => !line.containsPointOnShape(clickedPointOnShape),
   );
   deleteEntity(line);
   addEntity(...remainingLines);
@@ -134,7 +134,7 @@ function eraseCircleSegment(
   } else {
     // Delete segment that contains the click point
     const remainingArcs = cutArcs.filter(
-      arc => !arc.containsPointOnLine(clickedPointOnShape),
+      arc => !arc.containsPointOnShape(clickedPointOnShape),
     );
     deleteEntity(circle);
     addEntity(...remainingArcs);
@@ -165,7 +165,7 @@ function eraseArcSegment(
   } else {
     // Delete segment that contains the click point
     const remainingArcs = cutArcs.filter(
-      arc => !arc.containsPointOnLine(clickedPointOnShape),
+      arc => !arc.containsPointOnShape(clickedPointOnShape),
     );
     deleteEntity(arc);
     addEntity(...remainingArcs);

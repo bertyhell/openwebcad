@@ -16,6 +16,9 @@ import {
 import { StateVariable } from '../helpers/undo-stack.ts';
 import { exportEntitiesToSvgFile } from '../helpers/export-entities-to-svg.ts';
 import { exportEntitiesToPngFile } from '../helpers/export-entities-to-png.ts';
+import { exportEntitiesToJsonFile } from '../helpers/export-entities-to-json.ts';
+import { importEntitiesFromJsonFile } from '../helpers/import-entities-from-json.ts';
+import { noop } from 'es-toolkit';
 
 interface ToolbarProps {}
 
@@ -149,12 +152,33 @@ export const Toolbar: FC<ToolbarProps> = () => {
       </DropdownButton>
       <Button
         className="mt-2"
-        title="Export SVG"
+        title="Save to JSON file"
+        icon={IconName.Save}
+        onClick={() => exportEntitiesToJsonFile()}
+      />
+      <Button
+        className="relative"
+        title="Load from JSON file"
+        icon={IconName.Folder}
+        onClick={noop}
+      >
+        <input
+          className="absolute inset-0 opacity-0"
+          type="file"
+          accept="*.json"
+          onChange={async evt => {
+            await importEntitiesFromJsonFile(evt.target.files?.[0]);
+            evt.target.files = null;
+          }}
+        ></input>
+      </Button>
+      <Button
+        title="Export to SVG file"
         label="SVG"
         onClick={() => exportEntitiesToSvgFile()}
       />
       <Button
-        title="Export PNG"
+        title="Export to PNG file"
         label="PNG"
         onClick={() => exportEntitiesToPngFile()}
       />

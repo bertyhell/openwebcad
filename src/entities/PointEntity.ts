@@ -1,24 +1,25 @@
-import { Entity, EntityName } from './Entitity.ts';
+import { Entity, EntityName, JsonEntity } from './Entity.ts';
 import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
 import * as Flatten from '@flatten-js/core';
 import { Box, Point, Segment } from '@flatten-js/core';
 import { worldToScreen } from '../helpers/world-screen-conversion.ts';
+import { isNil } from 'es-toolkit';
 
 export class PointEntity implements Entity {
-  public readonly id: string = crypto.randomUUID();
-  public point: Point;
+  public id: string = crypto.randomUUID();
+  public point: Point | null = null;
 
-  constructor(x: Point | number, y?: number) {
-    if (!y) {
-      // Past a point object
-      this.point = x as Point;
-    } else {
+  constructor(x?: Point | number, y?: number) {
+    if (!isNil(x) && !isNil(y)) {
       // Passed x and y coordinates
       this.point = new Point(x as number, y as number);
     }
   }
 
   public draw(drawInfo: DrawInfo): void {
+    if (!this.point) {
+      return;
+    }
     const screenPoint = worldToScreen(this.point);
 
     drawInfo.context.beginPath();
@@ -37,7 +38,10 @@ export class PointEntity implements Entity {
     return box.contains(this.point);
   }
 
-  public getBoundingBox(): Box {
+  public getBoundingBox(): Box | null {
+    if (!this.point) {
+      return null;
+    }
     return new Box(this.point.x, this.point.y, this.point.x, this.point.y);
   }
 
@@ -80,7 +84,43 @@ export class PointEntity implements Entity {
     return EntityName.Point;
   }
 
-  public containsPointOnLine(point: Flatten.Point): boolean {
+  public containsPointOnShape(point: Flatten.Point): boolean {
+    if (!this.point) {
+      return false;
+    }
     return this.point.equalTo(point);
   }
+
+  public toJson(): JsonEntity<PointJsonData> | null {
+    if (!this.point) {
+      return null;
+    }
+    return {
+      id: this.id,
+      type: EntityName.Point,
+      shapeData: {
+        point: {
+          x: this.point.x,
+          y: this.point.y,
+        },
+      },
+    };
+  }
+
+  public fromJson(jsonEntity: JsonEntity<PointJsonData>): PointEntity {
+    const point = new Point(
+      jsonEntity.shapeData.point.x,
+      jsonEntity.shapeData.point.y,
+    );
+    const lineEntity = new PointEntity(point);
+    lineEntity.id = jsonEntity.id;
+    return lineEntity;
+  }
+}
+
+export interface PointJsonData {
+  point: {
+    x: number;
+    y: number;
+  };
 }

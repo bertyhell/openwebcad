@@ -1,14 +1,29 @@
-import { Entity, EntityName } from './Entitity.ts';
+import { Entity, EntityName, JsonEntity } from './Entity.ts';
 import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
 import { Box, circle, Circle, point, Point, Segment } from '@flatten-js/core';
 import { worldToScreen } from '../helpers/world-screen-conversion.ts';
 import { ArcEntity } from './ArcEntity.ts';
 import { wrapModule } from '../helpers/wrap-module.ts';
+import { pointDistance } from '../helpers/distance-between-points.ts';
 
 export class CircleEntity implements Entity {
-  public readonly id: string = crypto.randomUUID();
+  public id: string = crypto.randomUUID();
   private circle: Circle | null = null;
   private centerPoint: Point | null = null;
+
+  constructor(centerPoint?: Point, radiusOrSecondPoint?: number | Point) {
+    if (centerPoint) {
+      this.centerPoint = centerPoint;
+    }
+    if (centerPoint && radiusOrSecondPoint) {
+      this.circle = new Circle(
+        centerPoint,
+        typeof radiusOrSecondPoint === 'number'
+          ? radiusOrSecondPoint
+          : pointDistance(centerPoint, radiusOrSecondPoint),
+      );
+    }
+  }
 
   public send(newPoint: Point): boolean {
     if (!this.centerPoint) {
@@ -144,7 +159,7 @@ export class CircleEntity implements Entity {
     return EntityName.Circle;
   }
 
-  public containsPointOnLine(point: Point): boolean {
+  public containsPointOnShape(point: Point): boolean {
     if (!this.circle) {
       return false;
     }
@@ -174,4 +189,34 @@ export class CircleEntity implements Entity {
     }
     return segmentArcs;
   }
+
+  public toJson(): JsonEntity<CircleJsonData> | null {
+    if (!this.circle) {
+      return null;
+    }
+    return {
+      id: this.id,
+      type: EntityName.Circle,
+      shapeData: {
+        center: { x: this.circle.center.x, y: this.circle.center.y },
+        radius: this.circle?.r,
+      },
+    };
+  }
+
+  public fromJson(jsonEntity: JsonEntity<CircleJsonData>): CircleEntity {
+    const center = new Point(
+      jsonEntity.shapeData.center.x,
+      jsonEntity.shapeData.center.y,
+    );
+    const radius = jsonEntity.shapeData.radius;
+    const circleEntity = new CircleEntity(center, radius);
+    circleEntity.id = jsonEntity.id;
+    return circleEntity;
+  }
+}
+
+export interface CircleJsonData {
+  center: { x: number; y: number };
+  radius: number;
 }

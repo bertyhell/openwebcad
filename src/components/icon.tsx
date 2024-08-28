@@ -13,6 +13,8 @@ import AntiClockwiseIcon from 'teenyicons/outline/anti-clockwise.svg?react';
 import ClockwiseIcon from 'teenyicons/outline/clockwise.svg?react';
 import GithubIcon from 'teenyicons/outline/github.svg?react';
 import CropIcon from 'teenyicons/outline/crop.svg?react';
+import FolderIcon from 'teenyicons/outline/folder.svg?react';
+import SaveIcon from 'teenyicons/outline/save.svg?react';
 import { FC } from 'react';
 
 // https://icon-sets.iconify.design/teenyicons
@@ -27,6 +29,8 @@ enum IconName {
   Clockwise = 'Clockwise',
   Github = 'Github',
   Crop = 'Crop',
+  Folder = 'Folder',
+  Save = 'Save',
   Svg = 'Svg',
   SolidDown = 'SolidDown',
   SolidUp = 'SolidUp',
@@ -45,6 +49,8 @@ const icons: Record<IconName, FC> = {
   [IconName.Clockwise]: ClockwiseIcon,
   [IconName.Github]: GithubIcon,
   [IconName.Crop]: CropIcon,
+  [IconName.Folder]: FolderIcon,
+  [IconName.Save]: SaveIcon,
   [IconName.Svg]: SvgIcon,
   [IconName.SolidDown]: SolidDownIcon,
   [IconName.SolidUp]: SolidUpIcon,

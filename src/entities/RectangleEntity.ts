@@ -1,13 +1,27 @@
-import { Entity, EntityName } from './Entitity.ts';
+import { Entity, EntityName, JsonEntity } from './Entity.ts';
 import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
 import * as Flatten from '@flatten-js/core';
 import { Box, Point, Relations, Segment } from '@flatten-js/core';
 import { worldToScreen } from '../helpers/world-screen-conversion.ts';
 
 export class RectangleEntity implements Entity {
-  public readonly id: string = crypto.randomUUID();
+  public id: string = crypto.randomUUID();
   private rectangle: Box | null = null;
   private startPoint: Point | null = null;
+
+  constructor(startPoint?: Point, endPoint?: Point) {
+    if (startPoint) {
+      this.startPoint = startPoint;
+    }
+    if (startPoint && endPoint) {
+      this.rectangle = new Box(
+        Math.min(startPoint.x, endPoint.x),
+        Math.min(startPoint.y, endPoint.y),
+        Math.max(startPoint.x, endPoint.x),
+        Math.max(startPoint.y, endPoint.y),
+      );
+    }
+  }
 
   public send(point: Point): boolean {
     if (!this.startPoint) {
@@ -170,10 +184,47 @@ export class RectangleEntity implements Entity {
     return EntityName.Rectangle;
   }
 
-  public containsPointOnLine(point: Flatten.Point): boolean {
+  public containsPointOnShape(point: Flatten.Point): boolean {
     if (!this.rectangle) {
       return false;
     }
     return this.rectangle.toSegments().some(segment => segment.contains(point));
   }
+
+  public toJson(): JsonEntity<RectangleJsonData> | null {
+    if (!this.rectangle) {
+      return null;
+    }
+    return {
+      id: this.id,
+      type: EntityName.Rectangle,
+      shapeData: {
+        xmin: this.rectangle.xmin,
+        ymin: this.rectangle.ymin,
+        xmax: this.rectangle.xmax,
+        ymax: this.rectangle.ymax,
+      },
+    };
+  }
+
+  public fromJson(jsonEntity: JsonEntity<RectangleJsonData>): RectangleEntity {
+    const startPoint = new Point(
+      jsonEntity.shapeData.xmin,
+      jsonEntity.shapeData.ymin,
+    );
+    const endPoint = new Point(
+      jsonEntity.shapeData.xmax,
+      jsonEntity.shapeData.ymax,
+    );
+    const rectangleEntity = new RectangleEntity(startPoint, endPoint);
+    rectangleEntity.id = jsonEntity.id;
+    return rectangleEntity;
+  }
+}
+
+export interface RectangleJsonData {
+  xmin: number;
+  ymin: number;
+  xmax: number;
+  ymax: number;
 }

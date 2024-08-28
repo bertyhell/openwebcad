@@ -1,4 +1,4 @@
-import { Entity, EntityName } from './Entitity.ts';
+import { Entity, EntityName, JsonEntity } from './Entity.ts';
 import { DrawInfo, SnapPoint } from '../App.types.ts';
 import { Box, Point, Segment } from '@flatten-js/core';
 import {
@@ -6,11 +6,11 @@ import {
   SELECTION_RECTANGLE_COLOR_CONTAINS,
   SELECTION_RECTANGLE_COLOR_INTERSECTION,
 } from '../App.consts.ts';
-import { worldToScreen } from '../helpers/world-screen-conversion.ts';
+import { worldToScreen } from '../helpers/world-screen-conversion.ts'; // TODO move the selection rectangle to its own thing, not part of the entities logic
 
 // TODO move the selection rectangle to its own thing, not part of the entities logic
 export class SelectionRectangleEntity implements Entity {
-  public readonly id: string = crypto.randomUUID();
+  public id: string = crypto.randomUUID();
   private rectangle: Box | null = null;
   private startPoint: Point | null = null;
 
@@ -130,7 +130,15 @@ export class SelectionRectangleEntity implements Entity {
     return EntityName.SelectionRectangle;
   }
 
-  public containsPointOnLine(): boolean {
+  public containsPointOnShape(): boolean {
     return false; // Not implemented
+  }
+
+  public toJson(): JsonEntity | null {
+    return null; // Not implemented
+  }
+
+  public fromJson(): Entity | null {
+    return null; // Not implemented
   }
 }

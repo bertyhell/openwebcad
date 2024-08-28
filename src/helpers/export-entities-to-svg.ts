@@ -1,4 +1,4 @@
-import { Entity } from '../entities/Entitity.ts';
+import { Entity } from '../entities/Entity.ts';
 import { SVG_MARGIN } from '../App.consts.ts';
 import { Point, Vector } from '@flatten-js/core';
 import { Shape } from '../App.types.ts';

@@ -1,4 +1,4 @@
-import { FC } from 'react';
+import { FC, ReactNode } from 'react';
 import { Icon, IconName } from './icon.tsx';
 
 interface ButtonProps {
@@ -7,6 +7,7 @@ interface ButtonProps {
   icon?: IconName;
   active?: boolean;
   onClick?: () => void;
+  children?: ReactNode;
   className?: string;
 }
 
@@ -16,6 +17,7 @@ export const Button: FC<ButtonProps> = ({
   icon,
   onClick,
   active = false,
+  children,
   className,
 }) => {
   return (
@@ -31,6 +33,7 @@ export const Button: FC<ButtonProps> = ({
       >
         {icon && <Icon name={icon} />}
         {label && <span>{label}</span>}
+        {children}
       </button>
     </>
   );

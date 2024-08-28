@@ -1,4 +1,4 @@
-import { Entity, EntityName } from './Entitity.ts';
+import { Entity, EntityName, JsonEntity } from './Entity.ts';
 import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
 import { Arc, Box, Line, point, Point, Segment } from '@flatten-js/core';
 import { worldToScreen } from '../helpers/world-screen-conversion.ts';
@@ -8,7 +8,7 @@ import { isPointEqual } from '../helpers/is-point-equal.ts';
 import { sortPointsOnArc } from '../helpers/sort-points-on-arc.ts';
 
 export class ArcEntity implements Entity {
-  public readonly id: string = crypto.randomUUID();
+  public id: string = crypto.randomUUID();
   private arc: Arc | null = null;
   private centerPoint: Point | null = null;
   private firstPoint: Point | null = null;
@@ -166,7 +166,7 @@ export class ArcEntity implements Entity {
     return EntityName.Arc;
   }
 
-  public containsPointOnLine(point: Point): boolean {
+  public containsPointOnShape(point: Point): boolean {
     if (!this.arc) {
       return false;
     }
@@ -205,4 +205,50 @@ export class ArcEntity implements Entity {
     }
     return segmentArcs;
   }
+
+  public toJson(): JsonEntity<ArcJsonData> | null {
+    if (!this.arc) {
+      return null;
+    }
+    return {
+      id: this.id,
+      type: EntityName.Arc,
+      shapeData: {
+        center: { x: this.arc.center.x, y: this.arc.center.y },
+        start: { x: this.arc.start.x, y: this.arc.start.y },
+        end: { x: this.arc.end.x, y: this.arc.end.y },
+        counterClockwise: this.arc.counterClockwise,
+      },
+    };
+  }
+
+  public fromJson(jsonEntity: JsonEntity<ArcJsonData>): ArcEntity {
+    if (jsonEntity.type !== EntityName.Arc) {
+      throw new Error('Invalid Entity type in JSON');
+    }
+
+    const center = new Point(
+      jsonEntity.shapeData.center.x,
+      jsonEntity.shapeData.center.y,
+    );
+    const start = new Point(
+      jsonEntity.shapeData.start.x,
+      jsonEntity.shapeData.start.y,
+    );
+    const end = new Point(
+      jsonEntity.shapeData.end.x,
+      jsonEntity.shapeData.end.y,
+    );
+    const counterClockwise = jsonEntity.shapeData.counterClockwise;
+    const arcEntity = new ArcEntity(center, start, end, counterClockwise);
+    arcEntity.id = jsonEntity.id;
+    return arcEntity;
+  }
+}
+
+export interface ArcJsonData {
+  center: { x: number; y: number };
+  start: { x: number; y: number };
+  end: { x: number; y: number };
+  counterClockwise: boolean;
 }

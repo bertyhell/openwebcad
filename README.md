@@ -25,6 +25,7 @@ This is a React-based canvas drawing application that allows users to draw vario
 - Export drawing as an SVG file
 - Export drawing as an PNG file
 - Save and load drawings from/to json files
+- Select line color and thickness
 
 
 ### Possible future feature ideas (TODO) in order of likelihood
@@ -37,11 +38,12 @@ This is a React-based canvas drawing application that allows users to draw vario
 - Edit existing lines and circles by dragging endpoints/middle points
 - Move, rotate, scale shapes
 - Align shapes to each other
-- Select line color and thickness
+- Add measurement indicators
 - Layers for drawing shapes in different layers that can be toggled on or off
 - Array copy shapes
 - Array radial copy shapes
 - Hatching and fill areas
+- gradient fills
 - Import SVG files
 - Import images
 - Export to dwg

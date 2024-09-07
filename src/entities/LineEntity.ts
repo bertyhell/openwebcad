@@ -66,6 +66,13 @@ export class LineEntity implements Entity {
     drawInfo.context.stroke();
   }
 
+  public move(x: number, y: number) {
+    if (this.segment) {
+      return new LineEntity(this.segment.translate(x, y));
+    }
+    return this;
+  }
+
   public intersectsWithBox(box: Box): boolean {
     if (!this.segment) {
       return false;

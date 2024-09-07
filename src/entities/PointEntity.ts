@@ -30,6 +30,13 @@ export class PointEntity implements Entity {
     drawInfo.context.stroke();
   }
 
+  public move(x: number, y: number) {
+    if (this.point) {
+      return new PointEntity(this.point.translate(x, y));
+    }
+    return this;
+  }
+
   public intersectsWithBox(): boolean {
     return false;
   }

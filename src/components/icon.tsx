@@ -14,6 +14,7 @@ import ClockwiseIcon from 'teenyicons/outline/clockwise.svg?react';
 import GithubIcon from 'teenyicons/outline/github.svg?react';
 import CropIcon from 'teenyicons/outline/crop.svg?react';
 import FolderIcon from 'teenyicons/outline/folder.svg?react';
+import ExpandIcon from 'teenyicons/outline/expand.svg?react';
 import SaveIcon from 'teenyicons/outline/save.svg?react';
 import { FC } from 'react';
 
@@ -32,6 +33,7 @@ enum IconName {
   Folder = 'Folder',
   Save = 'Save',
   Svg = 'Svg',
+  Expand = 'Expand',
   SolidDown = 'SolidDown',
   SolidUp = 'SolidUp',
   SolidUpSmall = 'SolidUpSmall',
@@ -52,6 +54,7 @@ const icons: Record<IconName, FC> = {
   [IconName.Folder]: FolderIcon,
   [IconName.Save]: SaveIcon,
   [IconName.Svg]: SvgIcon,
+  [IconName.Expand]: ExpandIcon,
   [IconName.SolidDown]: SolidDownIcon,
   [IconName.SolidUp]: SolidUpIcon,
   [IconName.SolidUpSmall]: SolidUpSmallIcon,

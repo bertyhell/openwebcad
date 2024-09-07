@@ -14,16 +14,22 @@ export class CircleEntity implements Entity {
   private circle: Circle | null = null;
   private centerPoint: Point | null = null;
 
-  constructor(centerPoint?: Point, radiusOrSecondPoint?: number | Point) {
-    if (centerPoint) {
-      this.centerPoint = centerPoint;
-    }
-    if (centerPoint && radiusOrSecondPoint) {
+  constructor(
+    centerPointOrCircle?: Point | Circle,
+    radiusOrSecondPoint?: number | Point,
+  ) {
+    if (centerPointOrCircle instanceof Circle) {
+      const circle = centerPointOrCircle as Circle;
+      this.circle = circle;
+      this.centerPoint = circle.center;
+    } else if (centerPointOrCircle instanceof Point && !radiusOrSecondPoint) {
+      this.centerPoint = centerPointOrCircle;
+    } else if (centerPointOrCircle instanceof Point && radiusOrSecondPoint) {
       this.circle = new Circle(
-        centerPoint,
+        centerPointOrCircle,
         typeof radiusOrSecondPoint === 'number'
           ? radiusOrSecondPoint
-          : pointDistance(centerPoint, radiusOrSecondPoint),
+          : pointDistance(centerPointOrCircle, radiusOrSecondPoint),
       );
     }
   }
@@ -67,6 +73,13 @@ export class CircleEntity implements Entity {
       2 * Math.PI,
     );
     drawInfo.context.stroke();
+  }
+
+  public move(x: number, y: number) {
+    if (this.circle) {
+      return new CircleEntity(this.circle?.translate(x, y));
+    }
+    return this;
   }
 
   public intersectsWithBox(box: Box): boolean {

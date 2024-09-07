@@ -16,12 +16,12 @@ import {
   getScreenMouseLocation,
   getScreenOffset,
   getScreenScale,
+  getShouldDrawHelpers,
   getSnapPoint,
   getSnapPointOnAngleGuide,
   getWorldMouseLocation,
   redo,
   setActiveEntity,
-  setActiveTool,
   setCanvas,
   setCanvasSize,
   setContext,
@@ -52,15 +52,11 @@ import {
 } from './App.consts.ts';
 import { draw } from './helpers/draw.ts';
 import { screenToWorld } from './helpers/world-screen-conversion.ts';
-import { handleLineToolClick } from './helpers/tools/line-tool.ts';
-import { handleRectangleToolClick } from './helpers/tools/rectangle-tool.ts';
-import { handleCircleToolClick } from './helpers/tools/circle-tool.ts';
-import { handleSelectToolClick } from './helpers/tools/select-tool.ts';
 import { getClosestSnapPointWithinRadius } from './helpers/get-closest-snap-point.ts';
 import { findClosestEntity } from './helpers/find-closest-entity.ts';
 import { trackHoveredSnapPoint } from './helpers/track-hovered-snap-points.ts';
 import { compact } from 'es-toolkit';
-import { handleEraserToolClick } from './helpers/tools/eraser-tool.ts';
+import { toolHandlers } from './helpers/tools/tool.consts.ts';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -164,25 +160,12 @@ function handleMouseUp(evt: MouseEvent) {
       ? closestSnapPoint.point
       : worldMouseLocationTemp;
 
-    if (getActiveTool() === Tool.Line) {
-      handleLineToolClick(worldClickPoint);
-    }
-
-    if (getActiveTool() === Tool.Rectangle) {
-      handleRectangleToolClick(worldClickPoint);
-    }
-
-    if (getActiveTool() === Tool.Circle) {
-      handleCircleToolClick(worldClickPoint);
-    }
-
-    if (getActiveTool() === Tool.Select) {
-      handleSelectToolClick(worldClickPoint, evt.ctrlKey, evt.shiftKey);
-    }
-
-    if (getActiveTool() === Tool.Eraser) {
-      handleEraserToolClick(worldClickPoint);
-    }
+    const activeTool = getActiveTool();
+    toolHandlers[activeTool]?.handleToolClick(
+      worldClickPoint,
+      evt.ctrlKey,
+      evt.shiftKey,
+    );
   }
 }
 
@@ -209,24 +192,19 @@ function handleKeyUp(evt: KeyboardEvent) {
     setSelectedEntityIds([]);
   } else if (evt.key === 'l') {
     evt.preventDefault();
-    setActiveTool(Tool.Line);
-    setActiveEntity(null);
-    setSelectedEntityIds([]);
+    toolHandlers[Tool.Line]?.handleToolActivate();
   } else if (evt.key === 'c') {
     evt.preventDefault();
-    setActiveTool(Tool.Circle);
-    setActiveEntity(null);
-    setSelectedEntityIds([]);
+    toolHandlers[Tool.Circle]?.handleToolActivate();
   } else if (evt.key === 'r') {
     evt.preventDefault();
-    setActiveTool(Tool.Rectangle);
-    setActiveEntity(null);
-    setSelectedEntityIds([]);
+    toolHandlers[Tool.Rectangle]?.handleToolActivate();
   } else if (evt.key === 's') {
     evt.preventDefault();
-    setActiveTool(Tool.Select);
-    setActiveEntity(null);
-    setSelectedEntityIds([]);
+    toolHandlers[Tool.Select]?.handleToolActivate();
+  } else if (evt.key === 'm') {
+    evt.preventDefault();
+    toolHandlers[Tool.Move]?.handleToolActivate();
   }
 }
 
@@ -234,7 +212,6 @@ function handleKeyUp(evt: KeyboardEvent) {
  * Calculate angle guides and snap points
  */
 function calculateAngleGuidesAndSnapPoints() {
-  const activeTool = getActiveTool();
   const angleStep = getAngleStep();
   const activeEntity = getActiveEntity();
   const entities = getEntities();
@@ -251,7 +228,8 @@ function calculateAngleGuidesAndSnapPoints() {
     hoveredSnapPoint => hoveredSnapPoint.snapPoint.point,
   );
 
-  if ([Tool.Line, Tool.Rectangle, Tool.Circle].includes(activeTool)) {
+  if (getShouldDrawHelpers()) {
+    console.log('drawing helpers');
     // If you're in the progress of drawing a shape, show the angle guides and closest snap point
     let firstPoint: Point | null = null;
     if (
@@ -261,6 +239,7 @@ function calculateAngleGuidesAndSnapPoints() {
     ) {
       firstPoint = activeEntity.getFirstPoint();
     }
+
     const { angleGuides, entitySnapPoint, angleSnapPoint } = getDrawHelpers(
       entities,
       compact([firstPoint, ...eligibleHoveredPoints]),
@@ -368,6 +347,8 @@ function initApplication() {
     setContext(context);
 
     startDrawLoop(context, 0);
+
+    toolHandlers[Tool.Line]?.handleToolActivate();
   }
 }
 

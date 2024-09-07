@@ -6,32 +6,52 @@ import {
   getActiveLineWidth,
   getEntities,
   setActiveEntity,
+  setActiveTool,
   setEntities,
+  setSelectedEntityIds,
+  setShouldDrawHelpers,
 } from '../../state.ts';
+import { ToolHandler } from './tool.types.ts';
+import { Tool } from '../../tools.ts';
 
-export function handleLineToolClick(worldClickPoint: Point) {
-  const entities = getEntities();
-  const activeEntity = getActiveEntity();
+export const lineToolHandler: ToolHandler = {
+  handleToolActivate: () => {
+    console.log('activate line tool');
+    setActiveTool(Tool.Line);
+    setShouldDrawHelpers(true);
+    setActiveEntity(null);
+    setSelectedEntityIds([]);
+  },
 
-  let activeLine = activeEntity as LineEntity | null;
-  if (!activeLine) {
-    // Start a new line
-    activeLine = new LineEntity();
-    activeLine.lineColor = getActiveLineColor();
-    activeLine.lineWidth = getActiveLineWidth();
-    setActiveEntity(activeLine);
-  }
-  const completed = activeLine.send(worldClickPoint);
+  handleToolClick: (worldClickPoint: Point) => {
+    console.log('line tool click:', worldClickPoint);
+    const entities = getEntities();
+    const activeEntity = getActiveEntity();
 
-  if (completed) {
-    // Finish the line
-    setEntities([...entities, activeLine]);
+    let activeLine = activeEntity as LineEntity | null;
+    if (!activeLine) {
+      // Start a new line
+      activeLine = new LineEntity();
+      activeLine.lineColor = getActiveLineColor();
+      activeLine.lineWidth = getActiveLineWidth();
+      setActiveEntity(activeLine);
+    }
+    const completed = activeLine.send(worldClickPoint);
 
-    // Start a new line from the endpoint of the last line
-    activeLine = new LineEntity();
-    activeLine.lineColor = getActiveLineColor();
-    activeLine.lineWidth = getActiveLineWidth();
-    setActiveEntity(activeLine);
-    activeLine.send(worldClickPoint);
-  }
-}
+    if (completed) {
+      // Finish the line
+      setEntities([...entities, activeLine]);
+
+      // Start a new line from the endpoint of the last line
+      activeLine = new LineEntity();
+      activeLine.lineColor = getActiveLineColor();
+      activeLine.lineWidth = getActiveLineWidth();
+      setActiveEntity(activeLine);
+      activeLine.send(worldClickPoint);
+    }
+  },
+
+  handleToolTypedCommand: (command: string) => {
+    console.log('erase tool typed command:', command);
+  },
+};

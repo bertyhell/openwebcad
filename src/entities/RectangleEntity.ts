@@ -12,16 +12,19 @@ export class RectangleEntity implements Entity {
   private rectangle: Box | null = null;
   private startPoint: Point | null = null;
 
-  constructor(startPoint?: Point, endPoint?: Point) {
-    if (startPoint) {
-      this.startPoint = startPoint;
-    }
-    if (startPoint && endPoint) {
+  constructor(startPointOrRectangle?: Point | Box, endPoint?: Point) {
+    if (startPointOrRectangle instanceof Box) {
+      const rect = startPointOrRectangle as Box;
+      this.startPoint = new Point(rect.xmin, rect.ymin);
+      this.rectangle = rect;
+    } else if (startPointOrRectangle && !endPoint) {
+      this.startPoint = startPointOrRectangle;
+    } else if (startPointOrRectangle && endPoint) {
       this.rectangle = new Box(
-        Math.min(startPoint.x, endPoint.x),
-        Math.min(startPoint.y, endPoint.y),
-        Math.max(startPoint.x, endPoint.x),
-        Math.max(startPoint.y, endPoint.y),
+        Math.min(startPointOrRectangle.x, endPoint.x),
+        Math.min(startPointOrRectangle.y, endPoint.y),
+        Math.max(startPointOrRectangle.x, endPoint.x),
+        Math.max(startPointOrRectangle.y, endPoint.y),
       );
     }
   }
@@ -72,6 +75,13 @@ export class RectangleEntity implements Entity {
       screenEndPoint.x - screenStartPoint.x,
       screenEndPoint.y - screenStartPoint.y,
     );
+  }
+
+  public move(x: number, y: number) {
+    if (this.rectangle) {
+      return new RectangleEntity(this.rectangle.translate(x, y));
+    }
+    return this;
   }
 
   public intersectsWithBox(selectionBox: Box): boolean {

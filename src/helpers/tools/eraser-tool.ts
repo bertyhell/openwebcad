@@ -4,7 +4,11 @@ import {
   addEntity,
   deleteEntity,
   getEntities,
+  setActiveEntity,
+  setActiveTool,
   setDebugEntities,
+  setSelectedEntityIds,
+  setShouldDrawHelpers,
 } from '../../state.ts';
 import { compact } from 'es-toolkit';
 import { Entity, EntityName } from '../../entities/Entity.ts';
@@ -17,60 +21,77 @@ import { findNeighboringPointsOnCircle } from '../find-neighboring-points-on-cir
 import { isPointEqual } from '../is-point-equal.ts';
 import { ArcEntity } from '../../entities/ArcEntity.ts';
 import { findNeighboringPointsOnArc } from '../find-neighboring-points-on-arc.ts';
+import { ToolHandler } from './tool.types.ts';
+import { Tool } from '../../tools.ts';
 
-export function handleEraserToolClick(worldClickPoint: Point) {
-  const closestEntity = findClosestEntity(worldClickPoint, getEntities());
-  if (!closestEntity) {
-    return;
-  }
+export const eraseToolHandler: ToolHandler = {
+  handleToolActivate: () => {
+    setActiveTool(Tool.Eraser);
+    setShouldDrawHelpers(false);
+    setActiveEntity(null);
+    setSelectedEntityIds([]);
+  },
 
-  const clickedPointOnShape = closestEntity.segment.start;
-
-  // Find entities that intersect with the closest entity
-  const intersections = getAllIntersectionPoints(
-    closestEntity.entity,
-    getEntities(),
-  );
-
-  switch (closestEntity.entity.getType()) {
-    case EntityName.Line: {
-      const line = closestEntity.entity as LineEntity;
-      eraseLineSegment(line, clickedPointOnShape, intersections);
-      break;
+  handleToolClick: (worldClickPoint: Point) => {
+    const closestEntity = findClosestEntity(worldClickPoint, getEntities());
+    if (!closestEntity) {
+      return;
     }
 
-    case EntityName.Circle: {
-      const circle = closestEntity.entity as CircleEntity;
-      eraseCircleSegment(circle, clickedPointOnShape, intersections);
-      break;
+    const clickedPointOnShape = closestEntity.segment.start;
+
+    // Find entities that intersect with the closest entity
+    const intersections = getAllIntersectionPoints(
+      closestEntity.entity,
+      getEntities(),
+    );
+
+    switch (closestEntity.entity.getType()) {
+      case EntityName.Line: {
+        const line = closestEntity.entity as LineEntity;
+        eraseLineSegment(line, clickedPointOnShape, intersections);
+        break;
+      }
+
+      case EntityName.Circle: {
+        const circle = closestEntity.entity as CircleEntity;
+        eraseCircleSegment(circle, clickedPointOnShape, intersections);
+        break;
+      }
+
+      case EntityName.Arc: {
+        const arc = closestEntity.entity as ArcEntity;
+        eraseArcSegment(arc, clickedPointOnShape, intersections);
+        break;
+      }
+
+      case EntityName.Rectangle: {
+        const rectangle = closestEntity.entity as RectangleEntity;
+        const rectangleShape = rectangle.getShape() as Box;
+        const segments = rectangleShape.toSegments();
+        const segmentEntities = segments.map(
+          segment => new LineEntity(segment),
+        );
+        // Replace rectangle with its line segments in the entities array
+        deleteEntity(rectangle);
+        addEntity(...segmentEntities);
+
+        segmentEntities.forEach(segmentEntity =>
+          eraseLineSegment(segmentEntity, clickedPointOnShape, intersections),
+        );
+        break;
+      }
+
+      case EntityName.SelectionRectangle:
+        // Ignore selection rectangles
+        break;
     }
+  },
 
-    case EntityName.Arc: {
-      const arc = closestEntity.entity as ArcEntity;
-      eraseArcSegment(arc, clickedPointOnShape, intersections);
-      break;
-    }
-
-    case EntityName.Rectangle: {
-      const rectangle = closestEntity.entity as RectangleEntity;
-      const rectangleShape = rectangle.getShape() as Box;
-      const segments = rectangleShape.toSegments();
-      const segmentEntities = segments.map(segment => new LineEntity(segment));
-      // Replace rectangle with its line segments in the entities array
-      deleteEntity(rectangle);
-      addEntity(...segmentEntities);
-
-      segmentEntities.forEach(segmentEntity =>
-        eraseLineSegment(segmentEntity, clickedPointOnShape, intersections),
-      );
-      break;
-    }
-
-    case EntityName.SelectionRectangle:
-      // Ignore selection rectangles
-      break;
-  }
-}
+  handleToolTypedCommand: (command: string) => {
+    console.log('move tool typed command:', command);
+  },
+};
 
 function getAllIntersectionPoints(entity: Entity, entities: Entity[]): Point[] {
   // TODO see if we need to make this list unique

@@ -13,6 +13,7 @@ export interface Entity {
   lineColor: string;
   lineWidth: number;
   draw(drawInfo: DrawInfo): void;
+  move(x: number, y: number): Entity;
   getBoundingBox(): Box | null;
   intersectsWithBox(box: Box): boolean;
   isContainedInBox(box: Box): boolean;

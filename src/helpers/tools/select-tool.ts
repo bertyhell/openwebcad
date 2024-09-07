@@ -8,12 +8,37 @@ import {
   getSelectedEntityIds,
   isEntitySelected,
   setActiveEntity,
+  setActiveTool,
   setHighlightedEntityIds,
   setSelectedEntityIds,
+  setShouldDrawHelpers,
 } from '../../state.ts';
 import { compact } from 'es-toolkit';
+import { ToolHandler } from './tool.types.ts';
+import { Tool } from '../../tools.ts';
 
-export function handleSelectToolClick(
+export const selectToolHandler: ToolHandler = {
+  handleToolActivate: () => {
+    setActiveTool(Tool.Select);
+    setShouldDrawHelpers(false);
+    setActiveEntity(null);
+    setSelectedEntityIds([]);
+  },
+
+  handleToolClick: (
+    worldClickPoint: Point,
+    holdingCtrl: boolean,
+    holdingShift: boolean,
+  ) => {
+    handleSelectToolClick(worldClickPoint, holdingCtrl, holdingShift);
+  },
+
+  handleToolTypedCommand: (command: string) => {
+    console.log('select tool typed command:', command);
+  },
+};
+
+function handleSelectToolClick(
   worldClickPoint: Point,
   holdingCtrl: boolean,
   holdingShift: boolean,

@@ -63,6 +63,11 @@ let shouldDrawCursor = false;
 let helperEntities: Entity[] = [];
 
 /**
+ * Should helper entities be calculated and drawn? eg: angle guides and snap points
+ */
+let shouldDrawHelpers: boolean = false;
+
+/**
  * Entities that are drawn for debugging the application purposes
  */
 let debugEntities: Entity[] = [];
@@ -131,6 +136,7 @@ export const getSelectedEntityIds = () => selectedEntityIds;
 export const getActiveEntity = () => activeEntity;
 export const getShouldDrawCursor = () => shouldDrawCursor;
 export const getHelperEntities = () => helperEntities;
+export const getShouldDrawHelpers = () => shouldDrawHelpers;
 export const getDebugEntities = () => debugEntities;
 export const getAngleStep = () => angleStep;
 export const getScreenOffset = () => screenOffset;
@@ -188,6 +194,8 @@ export const setShouldDrawCursor = (newValue: boolean) =>
   (shouldDrawCursor = newValue);
 export const setHelperEntities = (newEntities: Entity[]) =>
   (helperEntities = newEntities);
+export const setShouldDrawHelpers = (shouldDraw: boolean) =>
+  (shouldDrawHelpers = shouldDraw);
 export const setDebugEntities = (newDebugEntities: Entity[]) =>
   (debugEntities = newDebugEntities);
 export const setAngleStep = (newStep: number, triggerReact: boolean = true) => {

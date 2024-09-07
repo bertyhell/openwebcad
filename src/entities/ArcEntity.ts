@@ -21,23 +21,30 @@ export class ArcEntity implements Entity {
   }
 
   constructor(
-    centerPoint?: Point,
+    centerPointOrArc?: Point | Arc,
     firstPoint?: Point,
     secondPoint?: Point,
     counterClockWise?: boolean,
   ) {
-    if (centerPoint) {
-      this.centerPoint = centerPoint;
-    }
-    if (centerPoint && firstPoint) {
+    if (centerPointOrArc instanceof Arc) {
+      const arc = centerPointOrArc as Arc;
+      this.arc = arc;
+      this.centerPoint = arc.center;
+      this.firstPoint = arc.start;
+    } else if (
+      centerPointOrArc instanceof Point &&
+      !firstPoint &&
+      !secondPoint
+    ) {
+      this.centerPoint = centerPointOrArc;
+    } else if (centerPointOrArc && firstPoint && !secondPoint) {
       this.firstPoint = firstPoint;
-    }
-    if (centerPoint && firstPoint && secondPoint) {
-      const startAngle = ArcEntity.getAngle(centerPoint, firstPoint);
-      const endAngle = ArcEntity.getAngle(centerPoint, secondPoint);
+    } else if (centerPointOrArc && firstPoint && secondPoint) {
+      const startAngle = ArcEntity.getAngle(centerPointOrArc, firstPoint);
+      const endAngle = ArcEntity.getAngle(centerPointOrArc, secondPoint);
       this.arc = new Arc(
-        centerPoint,
-        pointDistance(centerPoint, firstPoint),
+        centerPointOrArc,
+        pointDistance(centerPointOrArc, firstPoint),
         startAngle,
         endAngle,
         counterClockWise,
@@ -93,6 +100,19 @@ export class ArcEntity implements Entity {
       this.arc?.endAngle || 2 * Math.PI,
     );
     drawInfo.context.stroke();
+  }
+
+  public move(x: number, y: number): Entity {
+    if (this.arc) {
+      const newArc = this.arc.translate(x, y);
+      return new ArcEntity(
+        newArc.center,
+        newArc.start,
+        newArc.end,
+        newArc.counterClockwise,
+      );
+    }
+    return this;
   }
 
   public intersectsWithBox(box: Box): boolean {

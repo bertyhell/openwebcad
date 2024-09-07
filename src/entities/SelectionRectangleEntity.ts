@@ -73,6 +73,12 @@ export class SelectionRectangleEntity implements Entity {
     );
   }
 
+  public move(x: number, y: number): SelectionRectangleEntity {
+    // Not implemented
+    console.log('not implemented', { x, y });
+    return this;
+  }
+
   /**
    * Selections to the left of the start point are intersection selections (green), and everything intersecting with the selection rectangle will be selected
    * SElections to the right of the start point are normal selections (blue), and only the entities fully inside the selection rectangle will be selected

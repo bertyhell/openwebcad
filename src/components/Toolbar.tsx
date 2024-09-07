@@ -9,12 +9,11 @@ import {
   getActiveTool,
   getAngleStep,
   redo,
-  setActiveEntity,
   setActiveLineColor,
   setActiveLineWidth,
   setActiveTool,
   setAngleStep,
-  setSelectedEntityIds,
+  setShouldDrawHelpers,
   undo,
 } from '../state.ts';
 import { StateVariable } from '../helpers/undo-stack.ts';
@@ -25,6 +24,7 @@ import { exportEntitiesToSvgFile } from '../helpers/import-export-handlers/expor
 import { exportEntitiesToPngFile } from '../helpers/import-export-handlers/export-entities-to-png.ts';
 import { COLOR_LIST } from '../App.consts.ts';
 import { times } from '../helpers/times.ts';
+import { toolHandlers } from '../helpers/tools/tool.consts.ts';
 
 interface ToolbarProps {}
 
@@ -90,8 +90,8 @@ export const Toolbar: FC<ToolbarProps> = () => {
     console.log('set active tool: ', tool);
     setActiveToolLocal(tool);
     setActiveTool(tool, false);
-    setActiveEntity(null);
-    setSelectedEntityIds([]);
+
+    toolHandlers[tool]?.handleToolActivate();
   }, []);
 
   const handleAngleChanged = useCallback((angle: number) => {
@@ -104,26 +104,45 @@ export const Toolbar: FC<ToolbarProps> = () => {
       <Button
         title="Select (s)"
         icon={IconName.Direction}
-        onClick={() => handleToolClick(Tool.Select)}
+        onClick={() => {
+          handleToolClick(Tool.Select);
+          setShouldDrawHelpers(true);
+        }}
         active={activeToolLocal === Tool.Select}
       />
       <Button
         title="Line (l)"
         icon={IconName.Line}
-        onClick={() => handleToolClick(Tool.Line)}
+        onClick={() => {
+          handleToolClick(Tool.Line);
+          setShouldDrawHelpers(true);
+        }}
         active={activeToolLocal === Tool.Line}
       />
       <Button
         title="Rectangle (r)"
         icon={IconName.Square}
-        onClick={() => handleToolClick(Tool.Rectangle)}
+        onClick={() => {
+          handleToolClick(Tool.Rectangle);
+          setShouldDrawHelpers(true);
+        }}
         active={activeToolLocal === Tool.Rectangle}
       />
       <Button
         title="Circle (c)"
         icon={IconName.Circle}
-        onClick={() => handleToolClick(Tool.Circle)}
+        onClick={() => {
+          handleToolClick(Tool.Circle);
+          setShouldDrawHelpers(true);
+        }}
         active={activeToolLocal === Tool.Circle}
+      />
+      <Button
+        className="mt-2"
+        title="Move"
+        icon={IconName.Expand}
+        onClick={() => handleToolClick(Tool.Move)}
+        active={activeToolLocal === Tool.Move}
       />
       <Button
         className="mt-2"

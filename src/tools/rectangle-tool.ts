@@ -1,5 +1,5 @@
-import { CircleEntity } from '../../entities/CircleEntity.ts';
 import { Point } from '@flatten-js/core';
+import { RectangleEntity } from '../entities/RectangleEntity.ts';
 import {
   getActiveEntity,
   getActiveLineColor,
@@ -10,13 +10,13 @@ import {
   setEntities,
   setSelectedEntityIds,
   setShouldDrawHelpers,
-} from '../../state.ts';
+} from '../state.ts';
 import { ToolHandler } from './tool.types.ts';
-import { Tool } from '../../tools.ts';
+import { Tool } from '../tools.ts';
 
-export const circleToolHandler: ToolHandler = {
+export const rectangleToolHandler: ToolHandler = {
   handleToolActivate: () => {
-    setActiveTool(Tool.Circle);
+    setActiveTool(Tool.Rectangle);
     setShouldDrawHelpers(true);
     setActiveEntity(null);
     setSelectedEntityIds([]);
@@ -26,24 +26,26 @@ export const circleToolHandler: ToolHandler = {
     const entities = getEntities();
     const activeEntity = getActiveEntity();
 
-    let activeCircle = activeEntity as CircleEntity | null;
-    if (!activeCircle) {
+    let activeRectangle = activeEntity as RectangleEntity | null;
+    if (!activeRectangle) {
       // Start a new rectangle
-      activeCircle = new CircleEntity();
-      activeCircle.lineColor = getActiveLineColor();
-      activeCircle.lineWidth = getActiveLineWidth();
-      setActiveEntity(activeCircle);
+      activeRectangle = new RectangleEntity();
+      activeRectangle.lineColor = getActiveLineColor();
+      activeRectangle.lineWidth = getActiveLineWidth();
+      setActiveEntity(activeRectangle);
     }
-    const completed = activeCircle.send(worldClickPoint);
+    const completed = activeRectangle.send(
+      new Point(worldClickPoint.x, worldClickPoint.y),
+    );
 
     if (completed) {
       // Finish the rectangle
-      setEntities([...entities, activeCircle]);
+      setEntities([...entities, activeRectangle]);
       setActiveEntity(null);
     }
   },
 
   handleToolTypedCommand: (command: string) => {
-    console.log('circle tool typed command:', command);
+    console.log('erase tool typed command:', command);
   },
 };

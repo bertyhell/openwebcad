@@ -24,7 +24,7 @@ import { exportEntitiesToSvgFile } from '../helpers/import-export-handlers/expor
 import { exportEntitiesToPngFile } from '../helpers/import-export-handlers/export-entities-to-png.ts';
 import { COLOR_LIST } from '../App.consts.ts';
 import { times } from '../helpers/times.ts';
-import { toolHandlers } from '../helpers/tools/tool.consts.ts';
+import { toolHandlers } from '../tools/tool.consts.ts';
 
 interface ToolbarProps {}
 

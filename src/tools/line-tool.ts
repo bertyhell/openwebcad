@@ -1,5 +1,5 @@
 import { Point } from '@flatten-js/core';
-import { LineEntity } from '../../entities/LineEntity.ts';
+import { LineEntity } from '../entities/LineEntity.ts';
 import {
   getActiveEntity,
   getActiveLineColor,
@@ -10,9 +10,9 @@ import {
   setEntities,
   setSelectedEntityIds,
   setShouldDrawHelpers,
-} from '../../state.ts';
+} from '../state.ts';
 import { ToolHandler } from './tool.types.ts';
-import { Tool } from '../../tools.ts';
+import { Tool } from '../tools.ts';
 
 export const lineToolHandler: ToolHandler = {
   handleToolActivate: () => {

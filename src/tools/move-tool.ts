@@ -5,10 +5,11 @@ import {
   setActiveEntity,
   setActiveTool,
   setEntities,
+  setSelectedEntityIds,
   setShouldDrawHelpers,
-} from '../../state.ts';
+} from '../state.ts';
 import { toolHandlers } from './tool.consts.ts';
-import { Tool } from '../../tools.ts';
+import { Tool } from '../tools.ts';
 import { ToolHandler } from './tool.types.ts';
 
 let startPoint: Point | null = null;
@@ -51,6 +52,8 @@ export const moveToolHandler: ToolHandler = {
         return entity;
       });
       setEntities(movedEntities);
+      startPoint = null;
+      setSelectedEntityIds([]);
     } else {
       console.log('unhandled point for handle move tool click');
     }

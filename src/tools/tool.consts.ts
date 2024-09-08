@@ -1,4 +1,4 @@
-import { Tool } from '../../tools.ts';
+import { Tool } from '../tools.ts';
 import { ToolHandler } from './tool.types.ts';
 import { moveToolHandler } from './move-tool.ts';
 import { eraseToolHandler } from './eraser-tool.ts';

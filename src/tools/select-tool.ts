@@ -1,7 +1,7 @@
 import { Box, Point } from '@flatten-js/core';
-import { SelectionRectangleEntity } from '../../entities/SelectionRectangleEntity.ts';
-import { findClosestEntity } from '../find-closest-entity.ts';
-import { HIGHLIGHT_ENTITY_DISTANCE } from '../../App.consts.ts';
+import { SelectionRectangleEntity } from '../entities/SelectionRectangleEntity.ts';
+import { findClosestEntity } from '../helpers/find-closest-entity.ts';
+import { HIGHLIGHT_ENTITY_DISTANCE } from '../App.consts.ts';
 import {
   getActiveEntity,
   getEntities,
@@ -12,10 +12,10 @@ import {
   setHighlightedEntityIds,
   setSelectedEntityIds,
   setShouldDrawHelpers,
-} from '../../state.ts';
+} from '../state.ts';
 import { compact } from 'es-toolkit';
 import { ToolHandler } from './tool.types.ts';
-import { Tool } from '../../tools.ts';
+import { Tool } from '../tools.ts';
 
 export const selectToolHandler: ToolHandler = {
   handleToolActivate: () => {

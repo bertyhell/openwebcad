@@ -1,5 +1,5 @@
 import { Box, Point, Segment } from '@flatten-js/core';
-import { findClosestEntity } from '../find-closest-entity.ts';
+import { findClosestEntity } from '../helpers/find-closest-entity.ts';
 import {
   addEntity,
   deleteEntity,
@@ -9,20 +9,20 @@ import {
   setDebugEntities,
   setSelectedEntityIds,
   setShouldDrawHelpers,
-} from '../../state.ts';
+} from '../state.ts';
 import { compact } from 'es-toolkit';
-import { Entity, EntityName } from '../../entities/Entity.ts';
-import { LineEntity } from '../../entities/LineEntity.ts';
-import { findNeighboringPointsOnLine } from '../find-neighboring-points-on-line.ts';
-import { PointEntity } from '../../entities/PointEntity.ts';
-import { CircleEntity } from '../../entities/CircleEntity.ts';
-import { RectangleEntity } from '../../entities/RectangleEntity.ts';
-import { findNeighboringPointsOnCircle } from '../find-neighboring-points-on-circle.ts';
-import { isPointEqual } from '../is-point-equal.ts';
-import { ArcEntity } from '../../entities/ArcEntity.ts';
-import { findNeighboringPointsOnArc } from '../find-neighboring-points-on-arc.ts';
+import { Entity, EntityName } from '../entities/Entity.ts';
+import { LineEntity } from '../entities/LineEntity.ts';
+import { findNeighboringPointsOnLine } from '../helpers/find-neighboring-points-on-line.ts';
+import { PointEntity } from '../entities/PointEntity.ts';
+import { CircleEntity } from '../entities/CircleEntity.ts';
+import { RectangleEntity } from '../entities/RectangleEntity.ts';
+import { findNeighboringPointsOnCircle } from '../helpers/find-neighboring-points-on-circle.ts';
+import { isPointEqual } from '../helpers/is-point-equal.ts';
+import { ArcEntity } from '../entities/ArcEntity.ts';
+import { findNeighboringPointsOnArc } from '../helpers/find-neighboring-points-on-arc.ts';
 import { ToolHandler } from './tool.types.ts';
-import { Tool } from '../../tools.ts';
+import { Tool } from '../tools.ts';
 
 export const eraseToolHandler: ToolHandler = {
   handleToolActivate: () => {

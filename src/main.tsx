@@ -57,6 +57,7 @@ import { findClosestEntity } from './helpers/find-closest-entity.ts';
 import { trackHoveredSnapPoint } from './helpers/track-hovered-snap-points.ts';
 import { compact } from 'es-toolkit';
 import { toolHandlers } from './tools/tool.consts.ts';
+import { lineToolActor } from './tools/line-tool.ts';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -161,6 +162,12 @@ function handleMouseUp(evt: MouseEvent) {
       : worldMouseLocationTemp;
 
     const activeTool = getActiveTool();
+    if (activeTool === Tool.Line) {
+      lineToolActor.send({
+        type: 'MOUSE_CLICK',
+        worldClickPoint,
+      });
+    }
     toolHandlers[activeTool]?.handleToolClick(
       worldClickPoint,
       evt.ctrlKey,
@@ -175,6 +182,12 @@ function handleKeyUp(evt: KeyboardEvent) {
     setActiveEntity(null);
     setHighlightedEntityIds([]);
     setSelectedEntityIds([]);
+
+    if (getActiveTool() === Tool.Line) {
+      lineToolActor.send({
+        type: 'ESC',
+      });
+    }
   } else if (evt.key === 'Delete') {
     evt.preventDefault();
     setEntities(getNotSelectedEntities());
@@ -275,6 +288,13 @@ function startDrawLoop(
     screenOffset,
     screenZoom: screenScale,
   };
+
+  if (getActiveTool() === Tool.Line) {
+    lineToolActor.send({
+      type: 'DRAW',
+      drawInfo,
+    });
+  }
 
   /**
    * Highlight the entity closest to the mouse when the select tool is active

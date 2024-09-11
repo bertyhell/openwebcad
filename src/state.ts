@@ -5,6 +5,7 @@ import { screenToWorld } from './helpers/world-screen-conversion.ts';
 import { HoverPoint, SnapPoint } from './App.types.ts';
 import { createStack, StateVariable, UndoState } from './helpers/undo-stack.ts';
 import { isEqual } from 'es-toolkit';
+import { RectangleEntity } from './entities/RectangleEntity.ts';
 
 // state variables
 /**
@@ -51,6 +52,11 @@ let selectedEntityIds: string[] = [];
  * Entity that is currently being drawn, but isn't complete yet
  */
 let activeEntity: Entity | null = null;
+
+/**
+ * Rectangle that indicates the selection rectangle
+ */
+let activeSelectionRect: RectangleEntity | null = null;
 
 /**
  * Whether to draw the cursor or not
@@ -134,6 +140,7 @@ export const getEntities = (): Entity[] => entities;
 export const getHighlightedEntityIds = () => highlightedEntityIds;
 export const getSelectedEntityIds = () => selectedEntityIds;
 export const getActiveEntity = () => activeEntity;
+export const getActiveSelectionRect = () => activeSelectionRect;
 export const getShouldDrawCursor = () => shouldDrawCursor;
 export const getHelperEntities = () => helperEntities;
 export const getShouldDrawHelpers = () => shouldDrawHelpers;
@@ -185,6 +192,11 @@ export const setEntities = (newEntities: Entity[]) => {
 export const setActiveEntity = (newEntity: Entity | null) => {
   trackUndoState(StateVariable.activeEntity, activeEntity);
   activeEntity = newEntity;
+};
+export const setActiveSelectionRect = (
+  newActiveSelectionRect: RectangleEntity,
+) => {
+  activeSelectionRect = newActiveSelectionRect;
 };
 export const setHighlightedEntityIds = (newEntityIds: string[]) =>
   (highlightedEntityIds = newEntityIds);

@@ -1,4 +1,5 @@
 import { Point } from '@flatten-js/core';
+import { DrawInfo } from '../App.types.ts';
 
 export enum ActionType {
   Click = 'Click',
@@ -24,4 +25,26 @@ export interface ToolHandler {
     holdingShift: boolean,
   ): void;
   handleToolTypedCommand(command: string): void;
+}
+
+export enum ActorEvent {
+  MOUSE_CLICK = 'MOUSE_CLICK',
+  ESC = 'ESC',
+  DRAW = 'DRAW',
+}
+
+export interface MouseClickEvent {
+  type: ActorEvent.MOUSE_CLICK;
+  worldClickPoint: Point;
+  holdingCtrl: boolean;
+  holdingShift: boolean;
+}
+
+export interface KeyboardEscEvent {
+  type: ActorEvent.ESC;
+}
+
+export interface DrawEvent {
+  type: ActorEvent.DRAW;
+  drawInfo: DrawInfo;
 }

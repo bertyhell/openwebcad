@@ -9,27 +9,12 @@ import {
   setSelectedEntityIds,
   setShouldDrawHelpers,
 } from '../state.ts';
-import { ToolHandler } from './tool.types.ts';
 import { Tool } from '../tools.ts';
 import { assign, createActor, createMachine } from 'xstate';
-import { DrawInfo } from '../App.types.ts';
+import { DrawEvent, KeyboardEscEvent, MouseClickEvent } from './tool.types.ts';
 
-interface LineContext {
+export interface LineContext {
   startPoint: Point | null;
-}
-
-interface MouseClickEvent {
-  type: 'MOUSE_CLICK';
-  worldClickPoint: Point;
-}
-
-interface KeyboardEscEvent {
-  type: 'ESC';
-}
-
-interface DrawEvent {
-  type: 'DRAW';
-  drawInfo: DrawInfo;
 }
 
 const lineToolStateMachine = createMachine(
@@ -45,7 +30,7 @@ const lineToolStateMachine = createMachine(
     states: {
       waitingForStartPoint: {
         always: {
-          actions: 'enableHelpers',
+          actions: 'initLineTool',
         },
         on: {
           MOUSE_CLICK: {
@@ -73,8 +58,12 @@ const lineToolStateMachine = createMachine(
   },
   {
     actions: {
-      enableHelpers: () => {
+      initLineTool: () => {
+        console.log('activate line tool');
+        setActiveTool(Tool.Line);
         setShouldDrawHelpers(true);
+        setActiveEntity(null);
+        setSelectedEntityIds([]);
       },
       recordStartPoint: assign({
         startPoint: ({ event }) => {
@@ -124,45 +113,3 @@ lineToolActor.subscribe(state => {
   console.log('line tool state:', state.value);
 });
 lineToolActor.start();
-
-export const lineToolHandler: ToolHandler = {
-  handleToolActivate: () => {
-    console.log('activate line tool');
-    setActiveTool(Tool.Line);
-    setShouldDrawHelpers(true);
-    setActiveEntity(null);
-    setSelectedEntityIds([]);
-  },
-
-  handleToolClick: (worldClickPoint: Point) => {
-    // console.log('line tool click:', worldClickPoint);
-    // const entities = getEntities();
-    // const activeEntity = getActiveEntity();
-    //
-    // let activeLine = activeEntity as LineEntity | null;
-    // if (!activeLine) {
-    //   // Start a new line
-    //   activeLine = new LineEntity();
-    //   activeLine.lineColor = getActiveLineColor();
-    //   activeLine.lineWidth = getActiveLineWidth();
-    //   setActiveEntity(activeLine);
-    // }
-    // const completed = activeLine.send(worldClickPoint);
-    //
-    // if (completed) {
-    //   // Finish the line
-    //   setEntities([...entities, activeLine]);
-    //
-    //   // Start a new line from the endpoint of the last line
-    //   activeLine = new LineEntity();
-    //   activeLine.lineColor = getActiveLineColor();
-    //   activeLine.lineWidth = getActiveLineWidth();
-    //   setActiveEntity(activeLine);
-    //   activeLine.send(worldClickPoint);
-    // }
-  },
-
-  handleToolTypedCommand: (command: string) => {
-    console.log('erase tool typed command:', command);
-  },
-};

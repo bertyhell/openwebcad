@@ -105,7 +105,7 @@ export const moveToolHandler: ToolHandler = {
   ) => {
     if (!getSelectedEntityIds().length) {
       // Nothing selected yet
-      toolHandlers[Tool.Select].handleToolClick(
+      toolHandlers[Tool.Select]?.handleToolClick(
         worldClickPoint,
         holdingCtrl,
         holdingShift,

@@ -56,8 +56,8 @@ import { getClosestSnapPointWithinRadius } from './helpers/get-closest-snap-poin
 import { findClosestEntity } from './helpers/find-closest-entity.ts';
 import { trackHoveredSnapPoint } from './helpers/track-hovered-snap-points.ts';
 import { compact } from 'es-toolkit';
-import { toolHandlers } from './tools/tool.consts.ts';
-import { lineToolActor } from './tools/line-tool.ts';
+import { toolActors, toolHandlers } from './tools/tool.consts.ts';
+import { ActorEvent, DrawEvent, MouseClickEvent } from './tools/tool.types.ts';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -162,17 +162,17 @@ function handleMouseUp(evt: MouseEvent) {
       : worldMouseLocationTemp;
 
     const activeTool = getActiveTool();
-    if (activeTool === Tool.Line) {
-      lineToolActor.send({
-        type: 'MOUSE_CLICK',
-        worldClickPoint,
-      });
-    }
     toolHandlers[activeTool]?.handleToolClick(
       worldClickPoint,
       evt.ctrlKey,
       evt.shiftKey,
     );
+    toolActors[activeTool]?.send({
+      type: ActorEvent.MOUSE_CLICK,
+      worldClickPoint,
+      holdingCtrl: evt.ctrlKey,
+      holdingShift: evt.shiftKey,
+    } as MouseClickEvent);
   }
 }
 
@@ -183,11 +183,9 @@ function handleKeyUp(evt: KeyboardEvent) {
     setHighlightedEntityIds([]);
     setSelectedEntityIds([]);
 
-    if (getActiveTool() === Tool.Line) {
-      lineToolActor.send({
-        type: 'ESC',
-      });
-    }
+    toolActors[getActiveTool()]?.send({
+      type: ActorEvent.ESC,
+    } as KeyboardEvent);
   } else if (evt.key === 'Delete') {
     evt.preventDefault();
     setEntities(getNotSelectedEntities());
@@ -289,12 +287,10 @@ function startDrawLoop(
     screenZoom: screenScale,
   };
 
-  if (getActiveTool() === Tool.Line) {
-    lineToolActor.send({
-      type: 'DRAW',
-      drawInfo,
-    });
-  }
+  toolActors[getActiveTool()].send({
+    type: ActorEvent.DRAW,
+    drawInfo,
+  } as DrawEvent);
 
   /**
    * Highlight the entity closest to the mouse when the select tool is active

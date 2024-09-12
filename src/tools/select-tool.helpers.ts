@@ -67,25 +67,18 @@ export function handleFirstSelectionPoint(
   };
 }
 
-export function handleSecondSelectionPoint(
-  context: SelectContext,
-  event: MouseClickEvent,
-): SelectContext {
-  if (!context.startPoint) {
-    // Assert startPoint
-    throw new Error(
-      '[SELECT] Got into second selection point state without start point being set',
-    );
-  }
+export function selectEntitiesInsideRectangle(
+  startPoint: Point,
+  endPoint: Point,
+  holdingCtrl: boolean,
+  // holdingShift: boolean, // TODO implement add to selection using shift
+): void {
   // Finish the selection
-  const activeSelectionRectangle = new RectangleEntity(
-    context.startPoint,
-    event.worldClickPoint,
-  );
+  const activeSelectionRectangle = new RectangleEntity(startPoint, endPoint);
   console.log('Finish selection: ', activeSelectionRectangle);
   const intersectionSelection = getIsIntersectionSelection(
     activeSelectionRectangle,
-    context.startPoint,
+    startPoint,
   );
   const newSelectedEntityIds: string[] = compact(
     getEntities().map((entity): string | null => {
@@ -99,7 +92,7 @@ export function handleSecondSelectionPoint(
             activeSelectionRectangle.getBoundingBox() as Box,
           )
         ) {
-          if (event.holdingCtrl) {
+          if (holdingCtrl) {
             if (isEntitySelected(entity)) {
               return null;
             } else {
@@ -116,7 +109,7 @@ export function handleSecondSelectionPoint(
             activeSelectionRectangle.getBoundingBox() as Box,
           )
         ) {
-          if (event.holdingCtrl) {
+          if (holdingCtrl) {
             if (isEntitySelected(entity)) {
               return null;
             } else {
@@ -131,9 +124,6 @@ export function handleSecondSelectionPoint(
     }),
   );
   setSelectedEntityIds(newSelectedEntityIds);
-  return {
-    startPoint: null,
-  };
 }
 
 export function drawTempSelectionRectangle(startPoint: Point, endPoint: Point) {

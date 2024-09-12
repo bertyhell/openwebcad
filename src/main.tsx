@@ -245,7 +245,7 @@ function calculateAngleGuidesAndSnapPoints() {
     let firstPoint: Point | null = null;
     if (
       activeEntity &&
-      !activeEntity.getShape() &&
+      !!activeEntity.getShape() &&
       activeEntity.getFirstPoint()
     ) {
       firstPoint = activeEntity.getFirstPoint();

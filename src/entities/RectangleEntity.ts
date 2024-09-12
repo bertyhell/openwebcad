@@ -30,22 +30,6 @@ export class RectangleEntity implements Entity {
     }
   }
 
-  public send(point: Point): boolean {
-    if (!this.startPoint) {
-      this.startPoint = point;
-      return false;
-    } else if (!this.rectangle) {
-      this.rectangle = new Box(
-        Math.min(this.startPoint.x, point.x),
-        Math.min(this.startPoint.y, point.y),
-        Math.max(this.startPoint.x, point.x),
-        Math.max(this.startPoint.y, point.y),
-      );
-      return true;
-    }
-    return true;
-  }
-
   public draw(drawInfo: DrawInfo): void {
     if (!this.startPoint && !this.rectangle) {
       return;

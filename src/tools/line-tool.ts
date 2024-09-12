@@ -20,6 +20,7 @@ export interface LineContext {
 export enum LineState {
   WAITING_FOR_START_POINT = 'WAITING_FOR_START_POINT',
   WAITING_FOR_END_POINT = 'WAITING_FOR_END_POINT',
+  INIT = 'INIT',
 }
 
 export enum LineAction {
@@ -39,12 +40,15 @@ const lineToolStateMachine = createMachine(
     context: {
       startPoint: null,
     },
-    initial: LineState.WAITING_FOR_START_POINT,
+    initial: LineState.INIT,
     states: {
-      [LineState.WAITING_FOR_START_POINT]: {
+      [LineState.INIT]: {
         always: {
           actions: LineAction.INIT_LINE_TOOL,
+          target: LineState.WAITING_FOR_START_POINT,
         },
+      },
+      [LineState.WAITING_FOR_START_POINT]: {
         on: {
           MOUSE_CLICK: {
             actions: LineAction.RECORD_START_POINT,

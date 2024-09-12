@@ -11,7 +11,7 @@ import { assign, createActor, createMachine } from 'xstate';
 import {
   drawTempSelectionRectangle,
   handleFirstSelectionPoint,
-  handleSecondSelectionPoint,
+  selectEntitiesInsideRectangle,
 } from './select-tool.helpers.ts';
 
 export interface SelectContext {
@@ -19,7 +19,9 @@ export interface SelectContext {
 }
 
 export enum SelectState {
+  INIT = 'INIT',
   WAITING_FOR_FIRST_SELECT_POINT = 'WAITING_FOR_FIRST_SELECT_POINT',
+  CHECK_SELECTION = 'CHECK_SELECTION',
   WAITING_FOR_SECOND_SELECT_POINT = 'WAITING_FOR_SECOND_SELECT_POINT',
 }
 
@@ -40,22 +42,38 @@ const selectToolStateMachine = createMachine(
     context: {
       startPoint: null,
     },
-    initial: SelectState.WAITING_FOR_FIRST_SELECT_POINT,
+    initial: SelectState.INIT,
     states: {
-      [SelectState.WAITING_FOR_FIRST_SELECT_POINT]: {
+      [SelectState.INIT]: {
         always: {
           actions: SelectAction.INIT_SELECT_TOOL,
+          target: SelectState.WAITING_FOR_FIRST_SELECT_POINT,
         },
+      },
+      [SelectState.WAITING_FOR_FIRST_SELECT_POINT]: {
         on: {
           MOUSE_CLICK: {
             actions: SelectAction.HANDLE_FIRST_SELECT_POINT,
-            guard: args => !!args.context.startPoint,
-            target: SelectState.WAITING_FOR_SECOND_SELECT_POINT,
+            target: SelectState.CHECK_SELECTION,
           },
           ESC: {
             actions: SelectAction.RESET_SELECTION,
           },
         },
+      },
+      [SelectState.CHECK_SELECTION]: {
+        always: [
+          {
+            // User started drawing a selection rectangle
+            guard: args => !!args.context.startPoint,
+            target: SelectState.WAITING_FOR_SECOND_SELECT_POINT,
+          },
+          {
+            // User clicked on an entity
+            guard: args => !args.context.startPoint,
+            target: SelectState.WAITING_FOR_FIRST_SELECT_POINT,
+          },
+        ],
       },
       [SelectState.WAITING_FOR_SECOND_SELECT_POINT]: {
         on: {
@@ -64,7 +82,7 @@ const selectToolStateMachine = createMachine(
           },
           MOUSE_CLICK: {
             actions: SelectAction.SELECT_ENTITIES_INSIDE_RECTANGLE,
-            target: SelectState.WAITING_FOR_SECOND_SELECT_POINT,
+            target: SelectState.WAITING_FOR_FIRST_SELECT_POINT,
           },
           ESC: {
             actions: SelectAction.RESET_SELECTION,
@@ -85,9 +103,6 @@ const selectToolStateMachine = createMachine(
       HANDLE_FIRST_SELECT_POINT: assign(({ context, event }) => {
         return handleFirstSelectionPoint(context, event as MouseClickEvent);
       }),
-      HANDLE_SECOND_SELECT_POINT: assign(({ context, event }) => {
-        return handleSecondSelectionPoint(context, event as MouseClickEvent);
-      }),
       DRAW_TEMP_SELECTION_RECTANGLE: ({ context, event }) => {
         if (!context.startPoint) {
           // assert
@@ -100,6 +115,24 @@ const selectToolStateMachine = createMachine(
           (event as DrawEvent).drawInfo.worldMouseLocation,
         );
       },
+      SELECT_ENTITIES_INSIDE_RECTANGLE: assign(({ context, event }) => {
+        if (!context.startPoint) {
+          //
+          throw new Error(
+            '[SELECT] calling SELECT_ENTITIES_INSIDE_RECTANGLE without start point',
+          );
+        }
+        selectEntitiesInsideRectangle(
+          context.startPoint,
+          (event as MouseClickEvent).worldClickPoint,
+          (event as MouseClickEvent).holdingCtrl,
+          // (event as MouseClickEvent).holdingShift,
+        );
+        setActiveEntity(null);
+        return {
+          startPoint: null,
+        };
+      }),
       RESET_SELECTION: assign(() => {
         setActiveEntity(null);
         setSelectedEntityIds([]);

@@ -8,12 +8,7 @@ import {
   SNAP_POINT_SIZE,
 } from '../App.consts.ts';
 import { worldToScreen } from './world-screen-conversion.ts';
-import {
-  getActiveLineColor,
-  getActiveLineWidth,
-  isEntityHighlighted,
-  isEntitySelected,
-} from '../state.ts';
+import { isEntityHighlighted, isEntitySelected } from '../state.ts';
 
 export function setLineStyles(
   context: CanvasRenderingContext2D,
@@ -221,12 +216,16 @@ export function drawActiveEntity(
   drawInfo: DrawInfo,
   activeEntity: Entity | null,
 ) {
+  if (!activeEntity) {
+    return;
+  }
   setLineStyles(
     drawInfo.context,
     false,
     false,
-    getActiveLineColor(),
-    getActiveLineWidth(),
+    activeEntity.lineColor,
+    activeEntity.lineWidth,
+    activeEntity.lineStyle,
   );
   activeEntity?.draw(drawInfo);
 }

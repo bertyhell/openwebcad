@@ -1,6 +1,6 @@
 import { Entity, EntityName, JsonEntity } from './Entity.ts';
 import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
-import { Box, circle, Circle, point, Point, Segment } from '@flatten-js/core';
+import { Box, Circle, Point, Segment } from '@flatten-js/core';
 import { worldToScreen } from '../helpers/world-screen-conversion.ts';
 import { ArcEntity } from './ArcEntity.ts';
 import { wrapModule } from '../helpers/wrap-module.ts';
@@ -10,6 +10,7 @@ export class CircleEntity implements Entity {
   public id: string = crypto.randomUUID();
   public lineColor: string = '#fff';
   public lineWidth: number = 1;
+  public lineStyle: number[] | undefined = undefined;
 
   private circle: Circle | null = null;
   private centerPoint: Point | null = null;
@@ -32,20 +33,6 @@ export class CircleEntity implements Entity {
           : pointDistance(centerPointOrCircle, radiusOrSecondPoint),
       );
     }
-  }
-
-  public send(newPoint: Point): boolean {
-    if (!this.centerPoint) {
-      this.centerPoint = point(newPoint.x, newPoint.y);
-      return false;
-    } else if (!this.circle) {
-      this.circle = circle(
-        this.centerPoint,
-        this.centerPoint.distanceTo(newPoint)[0],
-      );
-      return true;
-    }
-    return true;
   }
 
   public draw(drawInfo: DrawInfo): void {

@@ -24,7 +24,7 @@ import { exportEntitiesToSvgFile } from '../helpers/import-export-handlers/expor
 import { exportEntitiesToPngFile } from '../helpers/import-export-handlers/export-entities-to-png.ts';
 import { COLOR_LIST } from '../App.consts.ts';
 import { times } from '../helpers/times.ts';
-import { toolHandlers } from '../tools/tool.consts.ts';
+import { toolActors } from '../tools/tool.consts.ts';
 
 interface ToolbarProps {}
 
@@ -88,10 +88,12 @@ export const Toolbar: FC<ToolbarProps> = () => {
 
   const handleToolClick = useCallback((tool: Tool) => {
     console.log('set active tool: ', tool);
+    toolActors[getActiveTool()]?.stop();
+
     setActiveToolLocal(tool);
     setActiveTool(tool, false);
 
-    toolHandlers[tool]?.handleToolActivate();
+    toolActors[tool]?.start();
   }, []);
 
   const handleAngleChanged = useCallback((angle: number) => {

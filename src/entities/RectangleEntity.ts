@@ -8,6 +8,7 @@ export class RectangleEntity implements Entity {
   public id: string = crypto.randomUUID();
   public lineColor: string = '#fff';
   public lineWidth: number = 1;
+  public lineStyle: number[] | undefined = undefined;
 
   private rectangle: Box | null = null;
   private startPoint: Point | null = null;

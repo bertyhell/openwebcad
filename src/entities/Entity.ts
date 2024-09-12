@@ -34,7 +34,6 @@ export enum EntityName {
   Circle = 'Circle',
   Arc = 'Arc',
   Rectangle = 'Rectangle',
-  SelectionRectangle = 'SelectionRectangle',
   Point = 'Point',
 }
 

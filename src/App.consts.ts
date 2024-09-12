@@ -73,6 +73,8 @@ export const MAX_MARKED_SNAP_POINTS = 3;
  */
 export const SELECTION_RECTANGLE_COLOR_INTERSECTION = '#b6ff9a';
 export const SELECTION_RECTANGLE_COLOR_CONTAINS = '#6899f3';
+export const SELECTION_RECTANGLE_WIDTH = 1;
+export const SELECTION_RECTANGLE_STYLE = [5, 5]; // Dashed line
 
 /**
  * Mouse zoom multiplier. Higher zooms faster for each mouse scroll

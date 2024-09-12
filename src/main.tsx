@@ -56,7 +56,7 @@ import { getClosestSnapPointWithinRadius } from './helpers/get-closest-snap-poin
 import { findClosestEntity } from './helpers/find-closest-entity.ts';
 import { trackHoveredSnapPoint } from './helpers/track-hovered-snap-points.ts';
 import { compact } from 'es-toolkit';
-import { toolActors, toolHandlers } from './tools/tool.consts.ts';
+import { toolActors } from './tools/tool.consts.ts';
 import { ActorEvent, DrawEvent, MouseClickEvent } from './tools/tool.types.ts';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -162,11 +162,6 @@ function handleMouseUp(evt: MouseEvent) {
       : worldMouseLocationTemp;
 
     const activeTool = getActiveTool();
-    toolHandlers[activeTool]?.handleToolClick(
-      worldClickPoint,
-      evt.ctrlKey,
-      evt.shiftKey,
-    );
     toolActors[activeTool]?.send({
       type: ActorEvent.MOUSE_CLICK,
       worldClickPoint,
@@ -203,19 +198,24 @@ function handleKeyUp(evt: KeyboardEvent) {
     setSelectedEntityIds([]);
   } else if (evt.key === 'l') {
     evt.preventDefault();
-    toolHandlers[Tool.Line]?.handleToolActivate();
+    toolActors[getActiveTool()]?.stop();
+    toolActors[Tool.Line]?.start();
   } else if (evt.key === 'c') {
     evt.preventDefault();
-    toolHandlers[Tool.Circle]?.handleToolActivate();
+    toolActors[getActiveTool()]?.stop();
+    toolActors[Tool.Circle]?.start();
   } else if (evt.key === 'r') {
     evt.preventDefault();
-    toolHandlers[Tool.Rectangle]?.handleToolActivate();
+    toolActors[getActiveTool()]?.stop();
+    toolActors[Tool.Rectangle]?.start();
   } else if (evt.key === 's') {
     evt.preventDefault();
-    toolHandlers[Tool.Select]?.handleToolActivate();
+    toolActors[getActiveTool()]?.stop();
+    toolActors[Tool.Select]?.start();
   } else if (evt.key === 'm') {
     evt.preventDefault();
-    toolHandlers[Tool.Move]?.handleToolActivate();
+    toolActors[getActiveTool()]?.stop();
+    toolActors[Tool.Move]?.start();
   }
 }
 
@@ -364,7 +364,7 @@ function initApplication() {
 
     startDrawLoop(context, 0);
 
-    toolHandlers[Tool.Line]?.handleToolActivate();
+    toolActors[Tool.Line]?.start();
   }
 }
 

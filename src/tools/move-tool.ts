@@ -1,141 +1,128 @@
 import { Point } from '@flatten-js/core';
 import {
-  getEntities,
   getSelectedEntityIds,
   setActiveEntity,
   setActiveTool,
-  setEntities,
   setSelectedEntityIds,
   setShouldDrawHelpers,
 } from '../state.ts';
-import { toolHandlers } from './tool.consts.ts';
 import { Tool } from '../tools.ts';
-import { ToolHandler } from './tool.types.ts';
+import { DrawEvent, KeyboardEscEvent, MouseClickEvent } from './tool.types.ts';
+import { assign, createActor, createMachine } from 'xstate';
+import { moveSelection } from './move-tool.helpers.ts';
 
-let startPoint: Point | null = null;
+export interface MoveContext {
+  startPoint: Point | null;
+}
 
-// const moveToolStateMachine = createMachine(
-//   {
-//     context: {
-//       startPoint: null,
-//     },
-//     initial: 'checkSelection',
-//     states: {
-//       checkSelection: {
-//         always: [
-//           {
-//             guard: 'hasNoSelectedEntities',
-//             target: '#drawingMachine.selectingEntities',
-//           },
-//           {
-//             target: 'waitingForStartPoint',
-//           },
-//         ],
-//       },
-//       waitingForStartPoint: {
-//         on: {
-//           MOUSE_CLICK: {
-//             actions: 'recordStartPoint',
-//             target: 'waitingForEndPoint',
-//           },
-//           ESC: {
-//             target: '#drawingMachine.selectingEntities',
-//           },
-//         },
-//       },
-//       waitingForEndPoint: {
-//         on: {
-//           MOUSE_CLICK: {
-//             actions: 'moveEntities',
-//             target: 'checkSelection',
-//           },
-//           ESC: {
-//             target: 'checkSelection',
-//           },
-//         },
-//       },
-//     },
-//   },
-//   {
-//     actions: {
-//       selectEntity: assign((context, event) => {
-//         // Logic to select an entity
-//       }),
-//       startDrawingRectangle: assign((context, event) => {
-//         // Logic to start drawing a rectangle
-//       }),
-//       finishDrawingRectangle: assign((context, event) => {
-//         // Logic to finish drawing a rectangle and select entities inside
-//       }),
-//       selectEntitiesInRectangle: assign((context, event) => {
-//         // Logic to select entities inside the drawn rectangle
-//       }),
-//       recordStartPoint: assign((context, event) => {
-//         return { startPoint: event.point };
-//       }),
-//       moveEntities: assign((context, event) => {
-//         // Logic to move entities from startPoint to event.point
-//         return { startPoint: null, endPoint: null };
-//       }),
-//     },
-//     guards: {
-//       isCloseToEntity: (context, event) => {
-//         // Logic to determine if the click is close to an entity
-//         return true;
-//       },
-//       hasNoSelectedEntities: (context, event) => {
-//         return context.selectedEntities.length === 0;
-//       },
-//     },
-//   },
-// );
+export enum MoveState {
+  WAITING_FOR_SELECTION = 'WAITING_FOR_SELECTION',
+  WAITING_FOR_START_POINT = 'WAITING_FOR_START_POINT',
+  WAITING_FOR_END_POINT = 'WAITING_FOR_END_POINT',
+}
 
-export const moveToolHandler: ToolHandler = {
-  handleToolActivate: () => {
-    console.log('activate move tool');
-    setActiveTool(Tool.Move);
-    setActiveEntity(null);
-    setShouldDrawHelpers(getSelectedEntityIds().length > 0);
+export enum MoveAction {
+  INIT_MOVE_TOOL = 'INIT_MOVE_TOOL',
+  ENABLE_HELPERS = 'ENABLE_HELPERS',
+  RECORD_START_POINT = 'RECORD_START_POINT',
+  MOVE_SELECTION = 'MOVE_SELECTION',
+  DESELECT_ENTITIES = 'DESELECT_ENTITIES',
+}
+
+const moveToolStateMachine = createMachine(
+  {
+    types: {} as {
+      context: MoveContext;
+      events: MouseClickEvent | KeyboardEscEvent | DrawEvent;
+    },
+    context: {
+      startPoint: null,
+    },
+    initial: MoveState.WAITING_FOR_SELECTION,
+    states: {
+      [MoveState.WAITING_FOR_SELECTION]: {
+        always: [
+          {
+            actions: MoveAction.INIT_MOVE_TOOL,
+          },
+          {
+            guard: () => getSelectedEntityIds().length > 0,
+            target: MoveState.WAITING_FOR_START_POINT,
+          },
+        ],
+        on: {
+          // TODO connect selection state machine here
+        },
+      },
+      [MoveState.WAITING_FOR_START_POINT]: {
+        always: {
+          actions: MoveAction.ENABLE_HELPERS,
+        },
+        on: {
+          MOUSE_CLICK: {
+            actions: MoveAction.RECORD_START_POINT,
+            target: MoveState.WAITING_FOR_END_POINT,
+          },
+          ESC: {
+            actions: MoveAction.DESELECT_ENTITIES,
+          },
+        },
+      },
+      [MoveState.WAITING_FOR_END_POINT]: {
+        on: {
+          MOUSE_CLICK: {
+            actions: [MoveAction.MOVE_SELECTION, MoveAction.DESELECT_ENTITIES],
+            target: MoveState.WAITING_FOR_SELECTION,
+          },
+        },
+      },
+    },
   },
-
-  handleToolClick: (
-    worldClickPoint: Point,
-    holdingCtrl: boolean,
-    holdingShift: boolean,
-  ) => {
-    if (!getSelectedEntityIds().length) {
-      // Nothing selected yet
-      toolHandlers[Tool.Select]?.handleToolClick(
-        worldClickPoint,
-        holdingCtrl,
-        holdingShift,
-      );
-      // If something was selected, draw helpers to select the start move point
-      setShouldDrawHelpers(getSelectedEntityIds().length > 0);
-    } else if (getSelectedEntityIds().length > 0 && !startPoint) {
-      // Store point to use as the move start point
-      startPoint = worldClickPoint;
-    } else if (getSelectedEntityIds().length > 0 && !!startPoint) {
-      // Move selected entities from start point to end point
-      const endPoint = worldClickPoint;
-      const movedEntities = getEntities().map(entity => {
-        if (getSelectedEntityIds().includes(entity.id)) {
-          return entity.move(
-            endPoint.x - startPoint!.x,
-            endPoint.y - startPoint!.y,
+  {
+    actions: {
+      [MoveAction.INIT_MOVE_TOOL]: () => {
+        console.log('activate move tool');
+        setActiveTool(Tool.Move);
+        setShouldDrawHelpers(true);
+        setActiveEntity(null);
+        setSelectedEntityIds([]);
+      },
+      [MoveAction.ENABLE_HELPERS]: () => {
+        setShouldDrawHelpers(true);
+      },
+      [MoveAction.RECORD_START_POINT]: assign(({ event }) => {
+        return {
+          startPoint: (event as MouseClickEvent).worldClickPoint,
+        };
+      }),
+      [MoveAction.MOVE_SELECTION]: assign(({ context, event }) => {
+        if (!context.startPoint) {
+          throw new Error(
+            '[MOVE] Calling move selection without a start point',
           );
         }
-        return entity;
-      });
-      setEntities(movedEntities);
-      startPoint = null;
-      setSelectedEntityIds([]);
-    } else {
-      console.log('unhandled point for handle move tool click');
-    }
-  },
+        moveSelection(
+          context.startPoint as Point,
+          (event as MouseClickEvent).worldClickPoint,
+        );
 
-  handleToolTypedCommand: (command: string) => {
-    console.log('move tool typed command:', command);
+        setSelectedEntityIds([]);
+        return {
+          startPoint: null,
+        };
+      }),
+      [MoveAction.DESELECT_ENTITIES]: assign(() => {
+        setActiveEntity(null);
+        setSelectedEntityIds([]);
+        return {
+          startPoint: null,
+        };
+      }),
+    },
   },
-};
+);
+
+export const moveToolActor = createActor(moveToolStateMachine);
+moveToolActor.subscribe(state => {
+  console.log('move tool state:', state.value);
+});

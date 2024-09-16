@@ -16,6 +16,7 @@ export interface MoveContext {
 }
 
 export enum MoveState {
+  INIT = 'INIT',
   WAITING_FOR_SELECTION = 'WAITING_FOR_SELECTION',
   WAITING_FOR_START_POINT = 'WAITING_FOR_START_POINT',
   WAITING_FOR_END_POINT = 'WAITING_FOR_END_POINT',
@@ -38,13 +39,16 @@ const moveToolStateMachine = createMachine(
     context: {
       startPoint: null,
     },
-    initial: MoveState.WAITING_FOR_SELECTION,
+    initial: MoveState.INIT,
     states: {
+      [MoveState.INIT]: {
+        always: {
+          actions: MoveAction.INIT_MOVE_TOOL,
+          target: MoveState.WAITING_FOR_SELECTION,
+        },
+      },
       [MoveState.WAITING_FOR_SELECTION]: {
         always: [
-          {
-            actions: MoveAction.INIT_MOVE_TOOL,
-          },
           {
             guard: () => getSelectedEntityIds().length > 0,
             target: MoveState.WAITING_FOR_START_POINT,
@@ -65,6 +69,7 @@ const moveToolStateMachine = createMachine(
           },
           ESC: {
             actions: MoveAction.DESELECT_ENTITIES,
+            target: MoveState.INIT,
           },
         },
       },
@@ -73,6 +78,10 @@ const moveToolStateMachine = createMachine(
           MOUSE_CLICK: {
             actions: [MoveAction.MOVE_SELECTION, MoveAction.DESELECT_ENTITIES],
             target: MoveState.WAITING_FOR_SELECTION,
+          },
+          ESC: {
+            actions: MoveAction.DESELECT_ENTITIES,
+            target: MoveState.INIT,
           },
         },
       },
@@ -123,6 +132,3 @@ const moveToolStateMachine = createMachine(
 );
 
 export const moveToolActor = createActor(moveToolStateMachine);
-moveToolActor.subscribe(state => {
-  console.log('move tool state:', state.value);
-});

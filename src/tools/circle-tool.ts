@@ -20,6 +20,7 @@ export interface CircleContext {
 export enum CircleState {
   WAITING_FOR_CENTER_POINT = 'WAITING_FOR_CENTER_POINT',
   WAITING_FOR_POINT_ON_CIRCLE = 'WAITING_FOR_POINT_ON_CIRCLE',
+  INIT = 'INIT',
 }
 
 export enum CircleAction {
@@ -27,7 +28,6 @@ export enum CircleAction {
   RECORD_START_POINT = 'RECORD_START_POINT',
   DRAW_TEMP_CIRCLE = 'DRAW_TEMP_CIRCLE',
   DRAW_FINAL_CIRCLE = 'DRAW_FINAL_CIRCLE',
-  RESET_ACTIVE_ENTITY = 'RESET_ACTIVE_ENTITY',
 }
 
 const circleToolStateMachine = createMachine(
@@ -39,12 +39,15 @@ const circleToolStateMachine = createMachine(
     context: {
       centerPoint: null,
     },
-    initial: CircleState.WAITING_FOR_CENTER_POINT,
+    initial: CircleState.INIT,
     states: {
-      [CircleState.WAITING_FOR_CENTER_POINT]: {
+      [CircleState.INIT]: {
         always: {
           actions: CircleAction.INIT_CIRCLE_TOOL,
+          target: CircleState.WAITING_FOR_CENTER_POINT,
         },
+      },
+      [CircleState.WAITING_FOR_CENTER_POINT]: {
         on: {
           MOUSE_CLICK: {
             actions: CircleAction.RECORD_START_POINT,
@@ -59,11 +62,10 @@ const circleToolStateMachine = createMachine(
           },
           MOUSE_CLICK: {
             actions: CircleAction.DRAW_FINAL_CIRCLE,
-            target: CircleState.WAITING_FOR_POINT_ON_CIRCLE,
+            target: CircleState.INIT,
           },
           ESC: {
-            actions: CircleAction.RESET_ACTIVE_ENTITY,
-            target: CircleState.WAITING_FOR_CENTER_POINT,
+            target: CircleState.INIT,
           },
         },
       },
@@ -71,13 +73,16 @@ const circleToolStateMachine = createMachine(
   },
   {
     actions: {
-      [CircleAction.INIT_CIRCLE_TOOL]: () => {
+      [CircleAction.INIT_CIRCLE_TOOL]: assign(() => {
         console.log('activate circle tool');
         setActiveTool(Tool.Circle);
         setShouldDrawHelpers(true);
         setActiveEntity(null);
         setSelectedEntityIds([]);
-      },
+        return {
+          centerPoint: null,
+        };
+      }),
       [CircleAction.RECORD_START_POINT]: assign({
         centerPoint: ({ event }) => {
           return (event as MouseClickEvent).worldClickPoint;
@@ -110,17 +115,8 @@ const circleToolStateMachine = createMachine(
           centerPoint: null,
         };
       }),
-      [CircleAction.RESET_ACTIVE_ENTITY]: assign(() => {
-        setActiveEntity(null);
-        return {
-          centerPoint: null,
-        };
-      }),
     },
   },
 );
 
 export const circleToolActor = createActor(circleToolStateMachine);
-circleToolActor.subscribe(state => {
-  console.log('circle tool state:', state.value);
-});

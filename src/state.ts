@@ -190,7 +190,7 @@ export const setEntities = (newEntities: Entity[]) => {
   entities = newEntities;
 };
 export const setActiveEntity = (newEntity: Entity | null) => {
-  trackUndoState(StateVariable.activeEntity, activeEntity);
+  console.log('setting active entity to ', activeEntity);
   activeEntity = newEntity;
 };
 export const setActiveSelectionRect = (
@@ -211,7 +211,6 @@ export const setShouldDrawHelpers = (shouldDraw: boolean) =>
 export const setDebugEntities = (newDebugEntities: Entity[]) =>
   (debugEntities = newDebugEntities);
 export const setAngleStep = (newStep: number, triggerReact: boolean = true) => {
-  trackUndoState(StateVariable.angleStep, angleStep);
   angleStep = newStep;
 
   if (triggerReact) {
@@ -219,11 +218,9 @@ export const setAngleStep = (newStep: number, triggerReact: boolean = true) => {
   }
 };
 export const setScreenOffset = (newOffset: Point) => {
-  trackUndoState(StateVariable.screenOffset, screenOffset);
   screenOffset = newOffset;
 };
 export const setScreenScale = (newScale: number) => {
-  trackUndoState(StateVariable.screenScale, screenScale);
   screenScale = newScale;
 };
 export const setPanStartLocation = (newLocation: Point | null) =>
@@ -365,6 +362,5 @@ export function redo() {
 function triggerReactUpdate(variable: StateVariable) {
   if (!reactStateVariables.includes(variable)) return;
 
-  console.log('triggering react update for: ', variable);
   window.dispatchEvent(new CustomEvent(variable));
 }

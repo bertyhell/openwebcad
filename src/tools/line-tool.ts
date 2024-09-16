@@ -18,9 +18,9 @@ export interface LineContext {
 }
 
 export enum LineState {
+  INIT = 'INIT',
   WAITING_FOR_START_POINT = 'WAITING_FOR_START_POINT',
   WAITING_FOR_END_POINT = 'WAITING_FOR_END_POINT',
-  INIT = 'INIT',
 }
 
 export enum LineAction {
@@ -28,7 +28,6 @@ export enum LineAction {
   RECORD_START_POINT = 'RECORD_START_POINT',
   DRAW_TEMP_LINE = 'DRAW_TEMP_LINE',
   DRAW_FINAL_LINE = 'DRAW_FINAL_LINE',
-  RESET_ACTIVE_ENTITY = 'RESET_ACTIVE_ENTITY',
 }
 
 const lineToolStateMachine = createMachine(
@@ -66,8 +65,7 @@ const lineToolStateMachine = createMachine(
             target: LineState.WAITING_FOR_END_POINT,
           },
           ESC: {
-            actions: LineAction.RESET_ACTIVE_ENTITY,
-            target: LineState.WAITING_FOR_START_POINT,
+            target: LineState.INIT,
           },
         },
       },
@@ -75,13 +73,16 @@ const lineToolStateMachine = createMachine(
   },
   {
     actions: {
-      [LineAction.INIT_LINE_TOOL]: () => {
+      [LineAction.INIT_LINE_TOOL]: assign(() => {
         console.log('activate line tool');
         setActiveTool(Tool.Line);
         setShouldDrawHelpers(true);
         setActiveEntity(null);
         setSelectedEntityIds([]);
-      },
+        return {
+          startPoint: null,
+        };
+      }),
       [LineAction.RECORD_START_POINT]: assign({
         startPoint: ({ event }) => {
           return (event as MouseClickEvent).worldClickPoint;
@@ -115,17 +116,8 @@ const lineToolStateMachine = createMachine(
           startPoint: endPoint,
         };
       }),
-      [LineAction.RESET_ACTIVE_ENTITY]: assign(() => {
-        setActiveEntity(null);
-        return {
-          startPoint: null,
-        };
-      }),
     },
   },
 );
 
 export const lineToolActor = createActor(lineToolStateMachine);
-lineToolActor.subscribe(state => {
-  console.log('line tool state:', state.value);
-});

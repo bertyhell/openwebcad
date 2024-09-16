@@ -36,12 +36,6 @@ export const Toolbar: FC<ToolbarProps> = () => {
   const [activeLineWidthLocal, setActiveLineWidthLocal] = useState<number>(1);
 
   const fetchStateUpdatesFromOutside = useCallback(() => {
-    console.log('fetching state updates from outside: ', {
-      activeTool: getActiveTool(),
-      angleStep: getAngleStep(),
-      activeLineColor: getActiveLineColor(),
-      activeLineWidth: getActiveLineWidth(),
-    });
     setActiveToolLocal(getActiveTool());
     setAngleStepLocal(getAngleStep());
     setActiveLineColorLocal(getActiveLineColor());

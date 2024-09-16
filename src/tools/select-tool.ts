@@ -28,7 +28,6 @@ export enum SelectState {
 export enum SelectAction {
   INIT_SELECT_TOOL = 'INIT_SELECT_TOOL',
   HANDLE_FIRST_SELECT_POINT = 'HANDLE_FIRST_SELECT_POINT',
-  RESET_SELECTION = 'RESET_SELECTION',
   SELECT_ENTITIES_INSIDE_RECTANGLE = 'SELECT_ENTITIES_INSIDE_RECTANGLE',
   DRAW_TEMP_SELECTION_RECTANGLE = 'DRAW_TEMP_SELECTION_RECTANGLE',
 }
@@ -57,7 +56,7 @@ const selectToolStateMachine = createMachine(
             target: SelectState.CHECK_SELECTION,
           },
           ESC: {
-            actions: SelectAction.RESET_SELECTION,
+            actions: SelectAction.INIT_SELECT_TOOL,
           },
         },
       },
@@ -85,8 +84,7 @@ const selectToolStateMachine = createMachine(
             target: SelectState.WAITING_FOR_FIRST_SELECT_POINT,
           },
           ESC: {
-            actions: SelectAction.RESET_SELECTION,
-            target: SelectState.WAITING_FOR_FIRST_SELECT_POINT,
+            target: SelectState.INIT,
           },
         },
       },
@@ -99,6 +97,7 @@ const selectToolStateMachine = createMachine(
         setActiveTool(Tool.Select);
         setShouldDrawHelpers(false);
         setActiveEntity(null);
+        setSelectedEntityIds([]);
       },
       HANDLE_FIRST_SELECT_POINT: assign(({ context, event }) => {
         return handleFirstSelectionPoint(context, event as MouseClickEvent);
@@ -145,6 +144,3 @@ const selectToolStateMachine = createMachine(
 );
 
 export const selectToolActor = createActor(selectToolStateMachine);
-selectToolActor.subscribe(state => {
-  console.log('select tool state:', state.value);
-});

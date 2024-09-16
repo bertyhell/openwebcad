@@ -32,6 +32,7 @@ export class CircleEntity implements Entity {
           ? radiusOrSecondPoint
           : pointDistance(centerPointOrCircle, radiusOrSecondPoint),
       );
+      this.centerPoint = this.circle.center;
     }
   }
 

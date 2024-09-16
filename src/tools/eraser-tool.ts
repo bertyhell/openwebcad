@@ -27,6 +27,7 @@ import {
 export interface EraserContext {}
 
 export enum EraserState {
+  INIT = 'INIT',
   WAITING_FOR_FIRST_CLICK = 'WAITING_FOR_FIRST_CLICK',
 }
 
@@ -44,12 +45,15 @@ const eraserToolStateMachine = createMachine(
     context: {
       startPoint: null,
     },
-    initial: EraserState.WAITING_FOR_FIRST_CLICK,
+    initial: EraserState.INIT,
     states: {
-      [EraserState.WAITING_FOR_FIRST_CLICK]: {
+      [EraserState.INIT]: {
         always: {
           actions: EraserAction.INIT_ERASER_TOOL,
+          target: EraserState.WAITING_FOR_FIRST_CLICK,
         },
+      },
+      [EraserState.WAITING_FOR_FIRST_CLICK]: {
         on: {
           MOUSE_CLICK: {
             actions: EraserAction.HANDLE_MOUSE_CLICK,
@@ -62,13 +66,14 @@ const eraserToolStateMachine = createMachine(
   },
   {
     actions: {
-      [EraserAction.INIT_ERASER_TOOL]: () => {
+      [EraserAction.INIT_ERASER_TOOL]: assign(() => {
         console.log('activate eraser tool');
         setActiveTool(Tool.Eraser);
         setShouldDrawHelpers(true);
         setActiveEntity(null);
         setSelectedEntityIds([]);
-      },
+        return {};
+      }),
       [EraserAction.HANDLE_MOUSE_CLICK]: assign((context, event) => {
         handleMouseClick((event as MouseClickEvent).worldClickPoint);
 
@@ -129,6 +134,3 @@ function handleMouseClick(worldClickPoint: Point) {
 }
 
 export const eraserToolActor = createActor(eraserToolStateMachine);
-eraserToolActor.subscribe(state => {
-  console.log('eraser tool state:', state.value);
-});

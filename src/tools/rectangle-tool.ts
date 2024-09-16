@@ -18,6 +18,7 @@ export interface RectangleContext {
 }
 
 export enum RectangleState {
+  INIT = 'INIT',
   WAITING_FOR_START_POINT = 'WAITING_FOR_START_POINT',
   WAITING_FOR_END_POINT = 'WAITING_FOR_END_POINT',
 }
@@ -27,7 +28,6 @@ export enum RectangleAction {
   RECORD_START_POINT = 'RECORD_START_POINT',
   DRAW_TEMP_RECTANGLE = 'DRAW_TEMP_RECTANGLE',
   DRAW_FINAL_RECTANGLE = 'DRAW_FINAL_RECTANGLE',
-  RESET_ACTIVE_ENTITY = 'RESET_ACTIVE_ENTITY',
 }
 
 const rectangleToolStateMachine = createMachine(
@@ -39,12 +39,15 @@ const rectangleToolStateMachine = createMachine(
     context: {
       startPoint: null,
     },
-    initial: RectangleState.WAITING_FOR_START_POINT,
+    initial: RectangleState.INIT,
     states: {
-      [RectangleState.WAITING_FOR_START_POINT]: {
+      [RectangleState.INIT]: {
         always: {
           actions: RectangleAction.INIT_RECTANGLE_TOOL,
+          target: RectangleState.WAITING_FOR_START_POINT,
         },
+      },
+      [RectangleState.WAITING_FOR_START_POINT]: {
         on: {
           MOUSE_CLICK: {
             actions: RectangleAction.RECORD_START_POINT,
@@ -59,11 +62,10 @@ const rectangleToolStateMachine = createMachine(
           },
           MOUSE_CLICK: {
             actions: RectangleAction.DRAW_FINAL_RECTANGLE,
-            target: RectangleState.WAITING_FOR_END_POINT,
+            target: RectangleState.INIT,
           },
           ESC: {
-            actions: RectangleAction.RESET_ACTIVE_ENTITY,
-            target: RectangleState.WAITING_FOR_START_POINT,
+            target: RectangleState.INIT,
           },
         },
       },
@@ -78,14 +80,19 @@ const rectangleToolStateMachine = createMachine(
         setActiveEntity(null);
         setSelectedEntityIds([]);
       },
-      [RectangleAction.RECORD_START_POINT]: assign({
-        startPoint: ({ event }) => {
-          return (event as MouseClickEvent).worldClickPoint;
-        },
+      [RectangleAction.RECORD_START_POINT]: assign(({ event }) => {
+        return {
+          startPoint: (event as MouseClickEvent).worldClickPoint,
+        };
       }),
       [RectangleAction.DRAW_TEMP_RECTANGLE]: ({ context, event }) => {
         console.log('drawTempRectangle', { context, event });
 
+        if (!context.startPoint) {
+          throw new Error(
+            '[RECTANGLE]: calling draw without start point being set',
+          );
+        }
         const activeRectangle = new RectangleEntity(
           context.startPoint as Point,
           (event as DrawEvent).drawInfo.worldMouseLocation,
@@ -110,17 +117,8 @@ const rectangleToolStateMachine = createMachine(
           startPoint: null,
         };
       }),
-      [RectangleAction.RESET_ACTIVE_ENTITY]: assign(() => {
-        setActiveEntity(null);
-        return {
-          startPoint: null,
-        };
-      }),
     },
   },
 );
 
 export const rectangleToolActor = createActor(rectangleToolStateMachine);
-rectangleToolActor.subscribe(state => {
-  console.log('rectangle tool state:', state.value);
-});

@@ -8,38 +8,26 @@ export class RectangleEntity implements Entity {
   public id: string = crypto.randomUUID();
   public lineColor: string = '#fff';
   public lineWidth: number = 1;
+  public lineStyle: number[] | undefined = undefined;
 
   private rectangle: Box | null = null;
   private startPoint: Point | null = null;
 
-  constructor(startPoint?: Point, endPoint?: Point) {
-    if (startPoint) {
-      this.startPoint = startPoint;
-    }
-    if (startPoint && endPoint) {
+  constructor(startPointOrRectangle?: Point | Box, endPoint?: Point) {
+    if (startPointOrRectangle instanceof Box) {
+      const rect = startPointOrRectangle as Box;
+      this.startPoint = new Point(rect.xmin, rect.ymin);
+      this.rectangle = rect;
+    } else if (startPointOrRectangle && !endPoint) {
+      this.startPoint = startPointOrRectangle;
+    } else if (startPointOrRectangle && endPoint) {
       this.rectangle = new Box(
-        Math.min(startPoint.x, endPoint.x),
-        Math.min(startPoint.y, endPoint.y),
-        Math.max(startPoint.x, endPoint.x),
-        Math.max(startPoint.y, endPoint.y),
+        Math.min(startPointOrRectangle.x, endPoint.x),
+        Math.min(startPointOrRectangle.y, endPoint.y),
+        Math.max(startPointOrRectangle.x, endPoint.x),
+        Math.max(startPointOrRectangle.y, endPoint.y),
       );
     }
-  }
-
-  public send(point: Point): boolean {
-    if (!this.startPoint) {
-      this.startPoint = point;
-      return false;
-    } else if (!this.rectangle) {
-      this.rectangle = new Box(
-        Math.min(this.startPoint.x, point.x),
-        Math.min(this.startPoint.y, point.y),
-        Math.max(this.startPoint.x, point.x),
-        Math.max(this.startPoint.y, point.y),
-      );
-      return true;
-    }
-    return true;
   }
 
   public draw(drawInfo: DrawInfo): void {
@@ -72,6 +60,13 @@ export class RectangleEntity implements Entity {
       screenEndPoint.x - screenStartPoint.x,
       screenEndPoint.y - screenStartPoint.y,
     );
+  }
+
+  public move(x: number, y: number) {
+    if (this.rectangle) {
+      return new RectangleEntity(this.rectangle.translate(x, y));
+    }
+    return this;
   }
 
   public intersectsWithBox(selectionBox: Box): boolean {

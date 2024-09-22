@@ -1,6 +1,6 @@
 import { Entity, EntityName, JsonEntity } from './Entity.ts';
 import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
-import { Box, circle, Circle, point, Point, Segment } from '@flatten-js/core';
+import { Box, Circle, Point, Segment } from '@flatten-js/core';
 import { worldToScreen } from '../helpers/world-screen-conversion.ts';
 import { ArcEntity } from './ArcEntity.ts';
 import { wrapModule } from '../helpers/wrap-module.ts';
@@ -10,36 +10,30 @@ export class CircleEntity implements Entity {
   public id: string = crypto.randomUUID();
   public lineColor: string = '#fff';
   public lineWidth: number = 1;
+  public lineStyle: number[] | undefined = undefined;
 
   private circle: Circle | null = null;
   private centerPoint: Point | null = null;
 
-  constructor(centerPoint?: Point, radiusOrSecondPoint?: number | Point) {
-    if (centerPoint) {
-      this.centerPoint = centerPoint;
-    }
-    if (centerPoint && radiusOrSecondPoint) {
+  constructor(
+    centerPointOrCircle?: Point | Circle,
+    radiusOrSecondPoint?: number | Point,
+  ) {
+    if (centerPointOrCircle instanceof Circle) {
+      const circle = centerPointOrCircle as Circle;
+      this.circle = circle;
+      this.centerPoint = circle.center;
+    } else if (centerPointOrCircle instanceof Point && !radiusOrSecondPoint) {
+      this.centerPoint = centerPointOrCircle;
+    } else if (centerPointOrCircle instanceof Point && radiusOrSecondPoint) {
       this.circle = new Circle(
-        centerPoint,
+        centerPointOrCircle,
         typeof radiusOrSecondPoint === 'number'
           ? radiusOrSecondPoint
-          : pointDistance(centerPoint, radiusOrSecondPoint),
+          : pointDistance(centerPointOrCircle, radiusOrSecondPoint),
       );
+      this.centerPoint = this.circle.center;
     }
-  }
-
-  public send(newPoint: Point): boolean {
-    if (!this.centerPoint) {
-      this.centerPoint = point(newPoint.x, newPoint.y);
-      return false;
-    } else if (!this.circle) {
-      this.circle = circle(
-        this.centerPoint,
-        this.centerPoint.distanceTo(newPoint)[0],
-      );
-      return true;
-    }
-    return true;
   }
 
   public draw(drawInfo: DrawInfo): void {
@@ -67,6 +61,13 @@ export class CircleEntity implements Entity {
       2 * Math.PI,
     );
     drawInfo.context.stroke();
+  }
+
+  public move(x: number, y: number) {
+    if (this.circle) {
+      return new CircleEntity(this.circle?.translate(x, y));
+    }
+    return this;
   }
 
   public intersectsWithBox(box: Box): boolean {

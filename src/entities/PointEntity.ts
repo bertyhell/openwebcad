@@ -9,6 +9,7 @@ export class PointEntity implements Entity {
   public id: string = crypto.randomUUID();
   public lineColor: string = '#fff';
   public lineWidth: number = 1;
+  public lineStyle: number[] | undefined = undefined;
 
   public point: Point | null = null;
 
@@ -28,6 +29,13 @@ export class PointEntity implements Entity {
     drawInfo.context.beginPath();
     drawInfo.context.arc(screenPoint.x, screenPoint.y, 5, 0, Math.PI * 2);
     drawInfo.context.stroke();
+  }
+
+  public move(x: number, y: number) {
+    if (this.point) {
+      return new PointEntity(this.point.translate(x, y));
+    }
+    return this;
   }
 
   public intersectsWithBox(): boolean {

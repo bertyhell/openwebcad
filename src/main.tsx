@@ -4,28 +4,27 @@ import App from './App.tsx';
 import './index.scss';
 import {
   getActiveEntity,
-  getActiveTool,
+  getActiveToolActor,
   getAngleStep,
   getCanvas,
   getCanvasSize,
   getEntities,
   getHoveredSnapPoints,
   getLastDrawTimestamp,
-  getNotSelectedEntities,
   getPanStartLocation,
   getScreenMouseLocation,
   getScreenOffset,
   getScreenScale,
+  getShouldDrawHelpers,
   getSnapPoint,
   getSnapPointOnAngleGuide,
   getWorldMouseLocation,
   redo,
   setActiveEntity,
-  setActiveTool,
+  setActiveToolActor,
   setCanvas,
   setCanvasSize,
   setContext,
-  setEntities,
   setHelperEntities,
   setHighlightedEntityIds,
   setHoveredSnapPoints,
@@ -52,15 +51,18 @@ import {
 } from './App.consts.ts';
 import { draw } from './helpers/draw.ts';
 import { screenToWorld } from './helpers/world-screen-conversion.ts';
-import { handleLineToolClick } from './helpers/tools/line-tool.ts';
-import { handleRectangleToolClick } from './helpers/tools/rectangle-tool.ts';
-import { handleCircleToolClick } from './helpers/tools/circle-tool.ts';
-import { handleSelectToolClick } from './helpers/tools/select-tool.ts';
 import { getClosestSnapPointWithinRadius } from './helpers/get-closest-snap-point.ts';
 import { findClosestEntity } from './helpers/find-closest-entity.ts';
 import { trackHoveredSnapPoint } from './helpers/track-hovered-snap-points.ts';
 import { compact } from 'es-toolkit';
-import { handleEraserToolClick } from './helpers/tools/eraser-tool.ts';
+import { toolStateMachines } from './tools/tool.consts.ts';
+import { ActorEvent, DrawEvent, MouseClickEvent } from './tools/tool.types.ts';
+import { Actor } from 'xstate';
+import { lineToolStateMachine } from './tools/line-tool.ts';
+import { circleToolStateMachine } from './tools/circle-tool.ts';
+import { rectangleToolStateMachine } from './tools/rectangle-tool.ts';
+import { selectToolStateMachine } from './tools/select-tool.ts';
+import { moveToolStateMachine } from './tools/move-tool.ts';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -94,7 +96,7 @@ function handleMouseMove(evt: MouseEvent) {
   calculateAngleGuidesAndSnapPoints();
 
   // Highlight the entity closest to the mouse when the select tool is active
-  if (getActiveTool() === Tool.Select) {
+  if (getActiveToolActor()?.getSnapshot()?.context.type === Tool.SELECT) {
     const closestEntityInfo = findClosestEntity(
       getWorldMouseLocation(),
       getEntities(),
@@ -164,69 +166,63 @@ function handleMouseUp(evt: MouseEvent) {
       ? closestSnapPoint.point
       : worldMouseLocationTemp;
 
-    if (getActiveTool() === Tool.Line) {
-      handleLineToolClick(worldClickPoint);
-    }
-
-    if (getActiveTool() === Tool.Rectangle) {
-      handleRectangleToolClick(worldClickPoint);
-    }
-
-    if (getActiveTool() === Tool.Circle) {
-      handleCircleToolClick(worldClickPoint);
-    }
-
-    if (getActiveTool() === Tool.Select) {
-      handleSelectToolClick(worldClickPoint, evt.ctrlKey, evt.shiftKey);
-    }
-
-    if (getActiveTool() === Tool.Eraser) {
-      handleEraserToolClick(worldClickPoint);
-    }
+    const activeToolActor = getActiveToolActor();
+    activeToolActor?.send({
+      type: ActorEvent.MOUSE_CLICK,
+      worldClickPoint,
+      holdingCtrl: evt.ctrlKey,
+      holdingShift: evt.shiftKey,
+    } as MouseClickEvent);
   }
 }
 
 function handleKeyUp(evt: KeyboardEvent) {
   if (evt.key === 'Escape') {
     evt.preventDefault();
-    setActiveEntity(null);
-    setHighlightedEntityIds([]);
-    setSelectedEntityIds([]);
+    getActiveToolActor()?.send({
+      type: ActorEvent.ESC,
+    });
+  } else if (evt.key === 'Enter') {
+    evt.preventDefault();
+    getActiveToolActor()?.send({
+      type: ActorEvent.ENTER,
+    });
   } else if (evt.key === 'Delete') {
     evt.preventDefault();
-    setEntities(getNotSelectedEntities());
-    setSelectedEntityIds([]);
-    setActiveEntity(null);
+    getActiveToolActor()?.send({
+      type: ActorEvent.DELETE,
+    });
   } else if (evt.key === 'z' && evt.ctrlKey && !evt.shiftKey) {
     evt.preventDefault();
     undo();
     setActiveEntity(null);
     setSelectedEntityIds([]);
+    getActiveToolActor()?.send({
+      type: ActorEvent.ESC,
+    });
   } else if (evt.key === 'z' && evt.ctrlKey && evt.shiftKey) {
     evt.preventDefault();
     redo();
     setActiveEntity(null);
     setSelectedEntityIds([]);
+    getActiveToolActor()?.send({
+      type: ActorEvent.ESC,
+    });
   } else if (evt.key === 'l') {
     evt.preventDefault();
-    setActiveTool(Tool.Line);
-    setActiveEntity(null);
-    setSelectedEntityIds([]);
+    setActiveToolActor(new Actor(lineToolStateMachine));
   } else if (evt.key === 'c') {
     evt.preventDefault();
-    setActiveTool(Tool.Circle);
-    setActiveEntity(null);
-    setSelectedEntityIds([]);
+    setActiveToolActor(new Actor(circleToolStateMachine));
   } else if (evt.key === 'r') {
     evt.preventDefault();
-    setActiveTool(Tool.Rectangle);
-    setActiveEntity(null);
-    setSelectedEntityIds([]);
+    setActiveToolActor(new Actor(rectangleToolStateMachine));
   } else if (evt.key === 's') {
     evt.preventDefault();
-    setActiveTool(Tool.Select);
-    setActiveEntity(null);
-    setSelectedEntityIds([]);
+    setActiveToolActor(new Actor(selectToolStateMachine));
+  } else if (evt.key === 'm') {
+    evt.preventDefault();
+    setActiveToolActor(new Actor(moveToolStateMachine));
   }
 }
 
@@ -234,7 +230,6 @@ function handleKeyUp(evt: KeyboardEvent) {
  * Calculate angle guides and snap points
  */
 function calculateAngleGuidesAndSnapPoints() {
-  const activeTool = getActiveTool();
   const angleStep = getAngleStep();
   const activeEntity = getActiveEntity();
   const entities = getEntities();
@@ -251,16 +246,17 @@ function calculateAngleGuidesAndSnapPoints() {
     hoveredSnapPoint => hoveredSnapPoint.snapPoint.point,
   );
 
-  if ([Tool.Line, Tool.Rectangle, Tool.Circle].includes(activeTool)) {
+  if (getShouldDrawHelpers()) {
     // If you're in the progress of drawing a shape, show the angle guides and closest snap point
     let firstPoint: Point | null = null;
     if (
       activeEntity &&
-      !activeEntity.getShape() &&
+      !!activeEntity.getShape() &&
       activeEntity.getFirstPoint()
     ) {
       firstPoint = activeEntity.getFirstPoint();
     }
+
     const { angleGuides, entitySnapPoint, angleSnapPoint } = getDrawHelpers(
       entities,
       compact([firstPoint, ...eligibleHoveredPoints]),
@@ -297,10 +293,17 @@ function startDrawLoop(
     screenZoom: screenScale,
   };
 
+  if (getActiveToolActor()?.getSnapshot().can({ type: ActorEvent.DRAW })) {
+    getActiveToolActor()?.send({
+      type: ActorEvent.DRAW,
+      drawInfo,
+    } as DrawEvent);
+  }
+
   /**
    * Highlight the entity closest to the mouse when the select tool is active
    */
-  if (getActiveTool() === Tool.Select) {
+  if (getActiveToolActor()?.getSnapshot()?.context?.type === Tool.SELECT) {
     const { distance, entity: closestEntity } = findClosestEntity(
       screenToWorld(screenMouseLocation),
       getEntities(),
@@ -368,6 +371,10 @@ function initApplication() {
     setContext(context);
 
     startDrawLoop(context, 0);
+
+    const lineToolActor = new Actor(toolStateMachines[Tool.LINE]);
+    lineToolActor.start();
+    setActiveToolActor(lineToolActor);
   }
 }
 

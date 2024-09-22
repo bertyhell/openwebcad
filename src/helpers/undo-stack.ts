@@ -44,13 +44,13 @@ export function createStack() {
       stack.length = index;
       stack[index++] = value;
 
-      console.log('stack push', JSON.stringify(stack, null, 2));
+      // console.log('stack push', JSON.stringify(stack, null, 2));
       return peek();
     },
     replace: (value: UndoState) => {
       stack[index - 1] = value;
 
-      console.log('stack replace', JSON.stringify(stack, null, 2));
+      // console.log('stack replace', JSON.stringify(stack, null, 2));
       return peek();
     },
     peek: () => {
@@ -59,13 +59,13 @@ export function createStack() {
     undo: () => {
       if (index > 1) index -= 1;
 
-      console.log('stack undo', JSON.stringify(stack, null, 2));
+      // console.log('stack undo', JSON.stringify(stack, null, 2));
       return peek();
     },
     redo: () => {
       if (index < stack.length) index += 1;
 
-      console.log('stack redo', JSON.stringify(stack, null, 2));
+      // console.log('stack redo', JSON.stringify(stack, null, 2));
       return peek();
     },
     // Clear certain states from the undo stack

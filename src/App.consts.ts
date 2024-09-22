@@ -28,7 +28,7 @@ export const CANVAS_FOREGROUND_COLOR = '#fff';
 /**
  * The color of the angle guide lines that are drawn when you are close to an angle step from the last drawn point
  */
-export const ANGLE_GUIDES_COLOR = '#666666';
+export const ANGLE_GUIDES_COLOR = '#999999';
 
 /**
  * The color of the snap points that are drawn when you are close to a snap point
@@ -73,6 +73,8 @@ export const MAX_MARKED_SNAP_POINTS = 3;
  */
 export const SELECTION_RECTANGLE_COLOR_INTERSECTION = '#b6ff9a';
 export const SELECTION_RECTANGLE_COLOR_CONTAINS = '#6899f3';
+export const SELECTION_RECTANGLE_WIDTH = 1;
+export const SELECTION_RECTANGLE_STYLE = [5, 5]; // Dashed line
 
 /**
  * Mouse zoom multiplier. Higher zooms faster for each mouse scroll

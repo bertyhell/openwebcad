@@ -1,6 +1,6 @@
 import { Entity, EntityName, JsonEntity } from './Entity.ts';
 import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
-import { Arc, Box, Line, point, Point, Segment } from '@flatten-js/core';
+import { Arc, Box, Line, Point, Segment } from '@flatten-js/core';
 import { worldToScreen } from '../helpers/world-screen-conversion.ts';
 import { pointDistance } from '../helpers/distance-between-points.ts';
 import { uniqWith } from 'es-toolkit';
@@ -11,6 +11,7 @@ export class ArcEntity implements Entity {
   public id: string = crypto.randomUUID();
   public lineColor: string = '#fff';
   public lineWidth: number = 1;
+  public lineStyle: number[] | undefined = undefined;
 
   private arc: Arc | null = null;
   private centerPoint: Point | null = null;
@@ -21,49 +22,35 @@ export class ArcEntity implements Entity {
   }
 
   constructor(
-    centerPoint?: Point,
+    centerPointOrArc?: Point | Arc,
     firstPoint?: Point,
     secondPoint?: Point,
     counterClockWise?: boolean,
   ) {
-    if (centerPoint) {
-      this.centerPoint = centerPoint;
-    }
-    if (centerPoint && firstPoint) {
+    if (centerPointOrArc instanceof Arc) {
+      const arc = centerPointOrArc as Arc;
+      this.arc = arc;
+      this.centerPoint = arc.center;
+      this.firstPoint = arc.start;
+    } else if (
+      centerPointOrArc instanceof Point &&
+      !firstPoint &&
+      !secondPoint
+    ) {
+      this.centerPoint = centerPointOrArc;
+    } else if (centerPointOrArc && firstPoint && !secondPoint) {
       this.firstPoint = firstPoint;
-    }
-    if (centerPoint && firstPoint && secondPoint) {
-      const startAngle = ArcEntity.getAngle(centerPoint, firstPoint);
-      const endAngle = ArcEntity.getAngle(centerPoint, secondPoint);
+    } else if (centerPointOrArc && firstPoint && secondPoint) {
+      const startAngle = ArcEntity.getAngle(centerPointOrArc, firstPoint);
+      const endAngle = ArcEntity.getAngle(centerPointOrArc, secondPoint);
       this.arc = new Arc(
-        centerPoint,
-        pointDistance(centerPoint, firstPoint),
+        centerPointOrArc,
+        pointDistance(centerPointOrArc, firstPoint),
         startAngle,
         endAngle,
         counterClockWise,
       );
     }
-  }
-
-  public send(newPoint: Point): boolean {
-    if (!this.centerPoint) {
-      this.centerPoint = point(newPoint.x, newPoint.y);
-      return false;
-    } else if (!this.firstPoint) {
-      this.firstPoint = new Point(newPoint.x, newPoint.y);
-    } else if (!this.arc) {
-      const startAngle = ArcEntity.getAngle(this.centerPoint, this.firstPoint);
-      const endAngle = ArcEntity.getAngle(this.centerPoint, newPoint);
-      this.arc = new Arc(
-        this.centerPoint,
-        pointDistance(this.centerPoint, this.firstPoint),
-        startAngle,
-        endAngle,
-        endAngle > startAngle,
-      );
-      return true;
-    }
-    return true;
   }
 
   public draw(drawInfo: DrawInfo): void {
@@ -93,6 +80,19 @@ export class ArcEntity implements Entity {
       this.arc?.endAngle || 2 * Math.PI,
     );
     drawInfo.context.stroke();
+  }
+
+  public move(x: number, y: number): Entity {
+    if (this.arc) {
+      const newArc = this.arc.translate(x, y);
+      return new ArcEntity(
+        newArc.center,
+        newArc.start,
+        newArc.end,
+        newArc.counterClockwise,
+      );
+    }
+    return this;
   }
 
   public intersectsWithBox(box: Box): boolean {

@@ -12,7 +12,9 @@ export interface Entity {
   id: string;
   lineColor: string;
   lineWidth: number;
+  lineStyle: number[] | undefined;
   draw(drawInfo: DrawInfo): void;
+  move(x: number, y: number): Entity;
   getBoundingBox(): Box | null;
   intersectsWithBox(box: Box): boolean;
   isContainedInBox(box: Box): boolean;
@@ -33,7 +35,6 @@ export enum EntityName {
   Circle = 'Circle',
   Arc = 'Arc',
   Rectangle = 'Rectangle',
-  SelectionRectangle = 'SelectionRectangle',
   Point = 'Point',
 }
 

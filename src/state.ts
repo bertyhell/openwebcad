@@ -1,10 +1,17 @@
 import { Entity } from './entities/Entity.ts';
 import { Point } from '@flatten-js/core';
-import { Tool } from './tools.ts';
 import { screenToWorld } from './helpers/world-screen-conversion.ts';
-import { HoverPoint, SnapPoint } from './App.types.ts';
+import {
+  HoverPoint,
+  HtmlEvent,
+  SnapPoint,
+  StateMetaData,
+} from './App.types.ts';
 import { createStack, StateVariable, UndoState } from './helpers/undo-stack.ts';
 import { isEqual } from 'es-toolkit';
+import { RectangleEntity } from './entities/RectangleEntity.ts';
+import { Actor, MachineSnapshot } from 'xstate';
+import { Tool } from './tools.ts';
 
 // state variables
 /**
@@ -28,9 +35,15 @@ let context: CanvasRenderingContext2D | null = null;
 let screenMouseLocation = new Point(0, 0);
 
 /**
- * Active tool like line tool or rectangle tool
+ * Active tool xstate actor
  */
-let activeTool = Tool.Line;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let activeToolActor: Actor<any> | null = null;
+
+/**
+ * Last state instructions
+ */
+let lastStateInstructions: string | null = null;
 
 /**
  * List of entities like lines, circles, rectangles, etc to be drawn on the canvas
@@ -53,6 +66,11 @@ let selectedEntityIds: string[] = [];
 let activeEntity: Entity | null = null;
 
 /**
+ * Rectangle that indicates the selection rectangle
+ */
+let activeSelectionRect: RectangleEntity | null = null;
+
+/**
  * Whether to draw the cursor or not
  */
 let shouldDrawCursor = false;
@@ -61,6 +79,11 @@ let shouldDrawCursor = false;
  * Helper entities like angle guides
  */
 let helperEntities: Entity[] = [];
+
+/**
+ * Should helper entities be calculated and drawn? eg: angle guides and snap points
+ */
+let shouldDrawHelpers: boolean = false;
 
 /**
  * Entities that are drawn for debugging the application purposes
@@ -124,13 +147,16 @@ export const getCanvasSize = () => canvasSize;
 export const getCanvas = () => canvas;
 export const getContext = () => context;
 export const getScreenMouseLocation = () => screenMouseLocation;
-export const getActiveTool = () => activeTool;
+export const getActiveToolActor = () => activeToolActor;
+export const getLastStateInstructions = () => lastStateInstructions;
 export const getEntities = (): Entity[] => entities;
 export const getHighlightedEntityIds = () => highlightedEntityIds;
 export const getSelectedEntityIds = () => selectedEntityIds;
 export const getActiveEntity = () => activeEntity;
+export const getActiveSelectionRect = () => activeSelectionRect;
 export const getShouldDrawCursor = () => shouldDrawCursor;
 export const getHelperEntities = () => helperEntities;
+export const getShouldDrawHelpers = () => shouldDrawHelpers;
 export const getDebugEntities = () => debugEntities;
 export const getAngleStep = () => angleStep;
 export const getScreenOffset = () => screenOffset;
@@ -156,6 +182,8 @@ export const isEntitySelected = (entity: Entity) =>
   selectedEntityIds.includes(entity.id);
 export const isEntityHighlighted = (entity: Entity) =>
   highlightedEntityIds.includes(entity.id);
+export const getActiveTool = (): Tool | null =>
+  activeToolActor?.getSnapshot()?.context?.type || null;
 
 // setters
 export const setCanvasSize = (newCanvasSize: Point) =>
@@ -165,20 +193,51 @@ export const setContext = (newContext: CanvasRenderingContext2D) =>
   (context = newContext);
 export const setScreenMouseLocation = (newLocation: Point) =>
   (screenMouseLocation = newLocation);
-export const setActiveTool = (newTool: Tool, triggerReact: boolean = true) => {
-  activeTool = newTool;
+export const setActiveToolActor = (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  newToolActor: Actor<any>,
+  triggerReact: boolean = true,
+) => {
+  getActiveToolActor()?.stop();
+
+  activeToolActor = newToolActor;
+  activeToolActor.subscribe(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (state: MachineSnapshot<any, any, any, any, any, any, any, any>) => {
+      const stateInstructions = Object.values(
+        state?.getMeta() as Record<string, StateMetaData>,
+      )[0]?.instructions;
+
+      if (getLastStateInstructions() === stateInstructions) {
+        return;
+      }
+
+      setLastStateInstructions(stateInstructions || null);
+
+      if (stateInstructions) {
+        console.log('STATE: ' + stateInstructions);
+      }
+    },
+  );
+  activeToolActor.start();
 
   if (triggerReact) {
     triggerReactUpdate(StateVariable.activeTool);
   }
 };
+export const setLastStateInstructions = (newInstructions: string | null) =>
+  (lastStateInstructions = newInstructions);
 export const setEntities = (newEntities: Entity[]) => {
   trackUndoState(StateVariable.entities, entities);
   entities = newEntities;
 };
 export const setActiveEntity = (newEntity: Entity | null) => {
-  trackUndoState(StateVariable.activeEntity, activeEntity);
   activeEntity = newEntity;
+};
+export const setActiveSelectionRect = (
+  newActiveSelectionRect: RectangleEntity,
+) => {
+  activeSelectionRect = newActiveSelectionRect;
 };
 export const setHighlightedEntityIds = (newEntityIds: string[]) =>
   (highlightedEntityIds = newEntityIds);
@@ -188,10 +247,15 @@ export const setShouldDrawCursor = (newValue: boolean) =>
   (shouldDrawCursor = newValue);
 export const setHelperEntities = (newEntities: Entity[]) =>
   (helperEntities = newEntities);
+export const setShouldDrawHelpers = (shouldDraw: boolean) => {
+  console.log('setShouldDrawHelpers', shouldDraw);
+  setSnapPoint(null);
+  setSnapPointOnAngleGuide(null);
+  return (shouldDrawHelpers = shouldDraw);
+};
 export const setDebugEntities = (newDebugEntities: Entity[]) =>
   (debugEntities = newDebugEntities);
 export const setAngleStep = (newStep: number, triggerReact: boolean = true) => {
-  trackUndoState(StateVariable.angleStep, angleStep);
   angleStep = newStep;
 
   if (triggerReact) {
@@ -199,11 +263,9 @@ export const setAngleStep = (newStep: number, triggerReact: boolean = true) => {
   }
 };
 export const setScreenOffset = (newOffset: Point) => {
-  trackUndoState(StateVariable.screenOffset, screenOffset);
   screenOffset = newOffset;
 };
 export const setScreenScale = (newScale: number) => {
-  trackUndoState(StateVariable.screenScale, screenScale);
   screenScale = newScale;
 };
 export const setPanStartLocation = (newLocation: Point | null) =>
@@ -345,6 +407,5 @@ export function redo() {
 function triggerReactUpdate(variable: StateVariable) {
   if (!reactStateVariables.includes(variable)) return;
 
-  console.log('triggering react update for: ', variable);
-  window.dispatchEvent(new CustomEvent(variable));
+  window.dispatchEvent(new CustomEvent(HtmlEvent.UPDATE_STATE));
 }

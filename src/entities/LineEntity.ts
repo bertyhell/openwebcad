@@ -10,6 +10,7 @@ export class LineEntity implements Entity {
   public id: string = crypto.randomUUID();
   public lineColor: string = '#fff';
   public lineWidth: number = 1;
+  public lineStyle: number[] | undefined = undefined;
 
   private segment: Segment | null = null;
   private startPoint: Point | null = null;
@@ -24,17 +25,6 @@ export class LineEntity implements Entity {
     } else if (p1) {
       this.startPoint = p1;
     }
-  }
-
-  public send(point: Point): boolean {
-    if (!this.startPoint) {
-      this.startPoint = point;
-      return false;
-    } else if (!this.segment) {
-      this.segment = new Segment(this.startPoint, point);
-      return true;
-    }
-    return true;
   }
 
   public draw(drawInfo: DrawInfo): void {
@@ -64,6 +54,13 @@ export class LineEntity implements Entity {
     drawInfo.context.moveTo(screenStartPoint.x, screenStartPoint.y);
     drawInfo.context.lineTo(screenEndPoint.x, screenEndPoint.y);
     drawInfo.context.stroke();
+  }
+
+  public move(x: number, y: number) {
+    if (this.segment) {
+      return new LineEntity(this.segment.translate(x, y));
+    }
+    return this;
   }
 
   public intersectsWithBox(box: Box): boolean {

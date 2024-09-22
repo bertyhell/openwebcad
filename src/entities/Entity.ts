@@ -26,8 +26,8 @@ export interface Entity {
   getSvgString(): string | null;
   getType(): EntityName;
   containsPointOnShape(point: Point): boolean;
-  toJson(): JsonEntity | null;
-  fromJson(jsonEntity: JsonEntity): Entity | null;
+  toJson(): Promise<JsonEntity | null>;
+  fromJson(jsonEntity: JsonEntity): Promise<Entity | null>;
 }
 
 export enum EntityName {
@@ -36,6 +36,7 @@ export enum EntityName {
   Arc = 'Arc',
   Rectangle = 'Rectangle',
   Point = 'Point',
+  Image = 'Image',
 }
 
 export type ShapeJsonData =

@@ -35,6 +35,7 @@ export enum ActorEvent {
   ENTER = 'ENTER',
   DELETE = 'DELETE',
   DRAW = 'DRAW',
+  FILE_SELECTED = 'FILE_SELECTED',
 }
 
 export interface MouseClickEvent extends EventObject {
@@ -56,6 +57,11 @@ export interface KeyboardDeleteEvent extends EventObject {
   type: ActorEvent.DELETE;
 }
 
+export interface FileSelectedEvent extends EventObject {
+  type: ActorEvent.FILE_SELECTED;
+  arrayBuffer: ArrayBuffer;
+}
+
 export interface DrawEvent extends EventObject {
   type: ActorEvent.DRAW;
   drawInfo: DrawInfo;
@@ -66,6 +72,7 @@ export type StateEvent =
   | KeyboardEscEvent
   | KeyboardEnterEvent
   | KeyboardDeleteEvent
+  | FileSelectedEvent
   | DrawEvent;
 
 export interface ToolContext {

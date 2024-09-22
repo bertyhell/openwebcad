@@ -218,7 +218,7 @@ export class ArcEntity implements Entity {
     return segmentArcs;
   }
 
-  public toJson(): JsonEntity<ArcJsonData> | null {
+  public async toJson(): Promise<JsonEntity<ArcJsonData> | null> {
     if (!this.arc) {
       return null;
     }
@@ -236,7 +236,9 @@ export class ArcEntity implements Entity {
     };
   }
 
-  public fromJson(jsonEntity: JsonEntity<ArcJsonData>): ArcEntity {
+  public async fromJson(
+    jsonEntity: JsonEntity<ArcJsonData>,
+  ): Promise<ArcEntity> {
     if (jsonEntity.type !== EntityName.Arc) {
       throw new Error('Invalid Entity type in JSON');
     }

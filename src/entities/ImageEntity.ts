@@ -5,54 +5,47 @@ import { Box, Point, Relations, Segment } from '@flatten-js/core';
 import { worldToScreen } from '../helpers/world-screen-conversion.ts';
 import { getExportColor } from '../helpers/get-export-color.ts';
 
-export class RectangleEntity implements Entity {
+export class ImageEntity implements Entity {
   public id: string = crypto.randomUUID();
   public lineColor: string = '#fff';
   public lineWidth: number = 1;
   public lineStyle: number[] | undefined = undefined;
 
+  private imageData: ArrayBuffer | null = null;
   private rectangle: Box | null = null;
   private startPoint: Point | null = null;
 
-  constructor(startPointOrRectangle?: Point | Box, endPoint?: Point) {
-    if (startPointOrRectangle instanceof Box) {
-      const rect = startPointOrRectangle as Box;
-      this.startPoint = new Point(rect.xmin, rect.ymin);
-      this.rectangle = rect;
-    } else if (startPointOrRectangle && !endPoint) {
-      this.startPoint = startPointOrRectangle;
-    } else if (startPointOrRectangle && endPoint) {
+  constructor(imgData: ArrayBuffer, startPoint?: Point, endPoint?: Point) {
+    this.imageData = imgData;
+    if (startPoint && !endPoint) {
+      this.startPoint = startPoint;
+    } else if (startPoint && endPoint) {
       this.rectangle = new Box(
-        Math.min(startPointOrRectangle.x, endPoint.x),
-        Math.min(startPointOrRectangle.y, endPoint.y),
-        Math.max(startPointOrRectangle.x, endPoint.x),
-        Math.max(startPointOrRectangle.y, endPoint.y),
+        Math.min(startPoint.x, endPoint.x),
+        Math.min(startPoint.y, endPoint.y),
+        Math.max(startPoint.x, endPoint.x),
+        Math.max(startPoint.y, endPoint.y),
       );
     }
   }
 
   public draw(drawInfo: DrawInfo): void {
-    if (!this.startPoint && !this.rectangle) {
+    if (!this.rectangle || !this.imageData) {
       return;
     }
 
-    let startPointTemp: Point;
-    let endPointTemp: Point;
-    if (this.rectangle) {
-      // Draw the line between the 2 points
-      startPointTemp = this.rectangle.high;
-      endPointTemp = this.rectangle.low;
-    } else {
-      // Draw the line between the start point and the mouse
-      startPointTemp = this.startPoint as Point;
-      endPointTemp = new Point(
-        drawInfo.worldMouseLocation.x,
-        drawInfo.worldMouseLocation.y,
-      );
-    }
+    const startPointTemp: Point = this.rectangle.high;
+    const endPointTemp: Point = this.rectangle.low;
 
     const screenStartPoint = worldToScreen(startPointTemp);
     const screenEndPoint = worldToScreen(endPointTemp);
+
+    const width = Math.abs(screenEndPoint.x - screenStartPoint.x);
+    const height = Math.abs(screenEndPoint.y - screenStartPoint.y);
+
+    if (width === 0 || height === 0) {
+      return;
+    }
 
     drawInfo.context.beginPath();
     drawInfo.context.strokeRect(
@@ -61,11 +54,34 @@ export class RectangleEntity implements Entity {
       screenEndPoint.x - screenStartPoint.x,
       screenEndPoint.y - screenStartPoint.y,
     );
+
+    const array = new Uint8ClampedArray(this.imageData);
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const i = (y * width + x) * 4;
+        array[i] = x; // red
+        array[i + 1] = y; // green
+        array[i + 2] = 0; // blue
+        array[i + 3] = 255; // alpha
+      }
+    }
+
+    const imageData = new ImageData(array, width, height);
+    drawInfo.context.putImageData(
+      imageData,
+      screenStartPoint.x,
+      screenStartPoint.y,
+    );
   }
 
   public move(x: number, y: number) {
-    if (this.rectangle) {
-      return new RectangleEntity(this.rectangle.translate(x, y));
+    if (this.rectangle && this.imageData) {
+      const newRectangle = this.rectangle.translate(x, y);
+      return new ImageEntity(
+        this.imageData,
+        newRectangle.low,
+        newRectangle.high,
+      );
     }
     return this;
   }
@@ -179,7 +195,7 @@ export class RectangleEntity implements Entity {
   }
 
   public getType(): EntityName {
-    return EntityName.Rectangle;
+    return EntityName.Image;
   }
 
   public containsPointOnShape(point: Flatten.Point): boolean {
@@ -189,13 +205,39 @@ export class RectangleEntity implements Entity {
     return this.rectangle.toSegments().some(segment => segment.contains(point));
   }
 
-  public async toJson(): Promise<JsonEntity<RectangleJsonData> | null> {
-    if (!this.rectangle) {
+  private async arrayBufferToBase64(arrayBuffer: ArrayBuffer): Promise<string> {
+    return new Promise<string>(resolve => {
+      const blob = new Blob([arrayBuffer], { type: 'image/jpeg' });
+      const reader = new FileReader();
+      reader.onload = () => {
+        resolve(reader.result as string);
+      };
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  private async base64StringToArrayBuffer(
+    base64String: string,
+  ): Promise<ArrayBuffer> {
+    return new Promise<ArrayBuffer>(resolve => {
+      const byteString = atob(base64String.split(',')[1]);
+      const byteStringLength = byteString.length;
+      const arrayBuffer = new ArrayBuffer(byteStringLength);
+      const uint8Array = new Uint8Array(arrayBuffer);
+      for (let i = 0; i < byteStringLength; i++) {
+        uint8Array[i] = byteString.charCodeAt(i);
+      }
+      resolve(arrayBuffer);
+    });
+  }
+
+  public async toJson(): Promise<JsonEntity<ImageJsonData> | null> {
+    if (!this.rectangle || !this.imageData) {
       return null;
     }
     return {
       id: this.id,
-      type: EntityName.Rectangle,
+      type: EntityName.Image,
       lineColor: this.lineColor,
       lineWidth: this.lineWidth,
       shapeData: {
@@ -203,13 +245,14 @@ export class RectangleEntity implements Entity {
         ymin: this.rectangle.ymin,
         xmax: this.rectangle.xmax,
         ymax: this.rectangle.ymax,
+        imageData: await this.arrayBufferToBase64(this.imageData),
       },
     };
   }
 
   public async fromJson(
-    jsonEntity: JsonEntity<RectangleJsonData>,
-  ): Promise<RectangleEntity> {
+    jsonEntity: JsonEntity<ImageJsonData>,
+  ): Promise<ImageEntity> {
     const startPoint = new Point(
       jsonEntity.shapeData.xmin,
       jsonEntity.shapeData.ymin,
@@ -218,7 +261,11 @@ export class RectangleEntity implements Entity {
       jsonEntity.shapeData.xmax,
       jsonEntity.shapeData.ymax,
     );
-    const rectangleEntity = new RectangleEntity(startPoint, endPoint);
+    const rectangleEntity = new ImageEntity(
+      await this.base64StringToArrayBuffer(jsonEntity.shapeData.imageData),
+      startPoint,
+      endPoint,
+    );
     rectangleEntity.id = jsonEntity.id;
     rectangleEntity.lineColor = jsonEntity.lineColor;
     rectangleEntity.lineWidth = jsonEntity.lineWidth;
@@ -226,9 +273,10 @@ export class RectangleEntity implements Entity {
   }
 }
 
-export interface RectangleJsonData {
+export interface ImageJsonData {
   xmin: number;
   ymin: number;
   xmax: number;
   ymax: number;
+  imageData: string;
 }

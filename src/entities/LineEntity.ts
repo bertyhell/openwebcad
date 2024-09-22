@@ -180,7 +180,7 @@ export class LineEntity implements Entity {
     return lineSegments;
   }
 
-  public toJson(): JsonEntity<LineJsonData> | null {
+  public async toJson(): Promise<JsonEntity<LineJsonData> | null> {
     if (!this.segment) {
       return null;
     }
@@ -196,7 +196,9 @@ export class LineEntity implements Entity {
     };
   }
 
-  public fromJson(jsonEntity: JsonEntity<LineJsonData>): LineEntity {
+  public async fromJson(
+    jsonEntity: JsonEntity<LineJsonData>,
+  ): Promise<LineEntity> {
     const startPoint = new Point(
       jsonEntity.shapeData.startPoint.x,
       jsonEntity.shapeData.startPoint.y,

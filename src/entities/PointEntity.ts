@@ -111,7 +111,7 @@ export class PointEntity implements Entity {
     return this.point.equalTo(point);
   }
 
-  public toJson(): JsonEntity<PointJsonData> | null {
+  public async toJson(): Promise<JsonEntity<PointJsonData> | null> {
     if (!this.point) {
       return null;
     }
@@ -129,7 +129,9 @@ export class PointEntity implements Entity {
     };
   }
 
-  public fromJson(jsonEntity: JsonEntity<PointJsonData>): PointEntity {
+  public async fromJson(
+    jsonEntity: JsonEntity<PointJsonData>,
+  ): Promise<PointEntity> {
     const point = new Point(
       jsonEntity.shapeData.point.x,
       jsonEntity.shapeData.point.y,

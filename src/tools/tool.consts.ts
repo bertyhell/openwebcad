@@ -7,6 +7,7 @@ import { circleToolStateMachine } from './circle-tool.ts';
 import { selectToolStateMachine } from './select-tool.ts';
 import { eraserToolStateMachine } from './eraser-tool.ts';
 import { moveToolStateMachine } from './move-tool.ts';
+import { imageImportToolStateMachine } from './image-import-tool.ts';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const toolStateMachines: Record<
@@ -34,4 +35,5 @@ export const toolStateMachines: Record<
   [Tool.SELECT]: selectToolStateMachine,
   [Tool.ERASER]: eraserToolStateMachine,
   [Tool.MOVE]: moveToolStateMachine,
+  [Tool.IMAGE_IMPORT]: imageImportToolStateMachine,
 };

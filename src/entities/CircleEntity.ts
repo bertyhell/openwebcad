@@ -203,7 +203,7 @@ export class CircleEntity implements Entity {
     return segmentArcs;
   }
 
-  public toJson(): JsonEntity<CircleJsonData> | null {
+  public async toJson(): Promise<JsonEntity<CircleJsonData> | null> {
     if (!this.circle) {
       return null;
     }
@@ -219,7 +219,9 @@ export class CircleEntity implements Entity {
     };
   }
 
-  public fromJson(jsonEntity: JsonEntity<CircleJsonData>): CircleEntity {
+  public async fromJson(
+    jsonEntity: JsonEntity<CircleJsonData>,
+  ): Promise<CircleEntity> {
     const center = new Point(
       jsonEntity.shapeData.center.x,
       jsonEntity.shapeData.center.y,

@@ -29,6 +29,9 @@ import { toolStateMachines } from '../tools/tool.consts.ts';
 import { Actor } from 'xstate';
 import { HtmlEvent } from '../App.types.ts';
 import { Point } from '@flatten-js/core';
+import { importImageFromFile } from '../helpers/import-export-handlers/import-image-from-file.ts';
+import { ActorEvent } from '../tools/tool.types.ts';
+import { imageImportToolStateMachine } from '../tools/image-import-tool.ts';
 
 interface ToolbarProps {}
 
@@ -216,8 +219,34 @@ export const Toolbar: FC<ToolbarProps> = () => {
         label={(screenZoomLocal * 100).toFixed(0) + '%'}
         onClick={handleZoomLevelClicked}
       ></Button>
+
       <Button
         className="relative mt-2"
+        title="Load image file"
+        icon={IconName.Image}
+        onClick={noop}
+      >
+        <input
+          className="absolute inset-0 opacity-0"
+          type="file"
+          accept="*.jpg,*.jpeg,*.png"
+          onChange={async evt => {
+            const imageArrayBuffer = await importImageFromFile(
+              evt.target.files?.[0],
+            );
+            const imageImportActor = new Actor(imageImportToolStateMachine);
+            imageImportActor.start();
+            imageImportActor.send({
+              type: ActorEvent.FILE_SELECTED,
+              arrayBuffer: imageArrayBuffer,
+            });
+            setActiveToolActor(imageImportActor);
+            evt.target.files = null;
+          }}
+        ></input>
+      </Button>
+      <Button
+        className="relative"
         title="Load from JSON file"
         icon={IconName.Folder}
         onClick={noop}

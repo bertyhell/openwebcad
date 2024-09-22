@@ -5,7 +5,6 @@ import {
   deleteEntity,
   getEntities,
   setActiveEntity,
-  setActiveTool,
   setSelectedEntityIds,
   setShouldDrawHelpers,
 } from '../state.ts';
@@ -14,9 +13,9 @@ import { LineEntity } from '../entities/LineEntity.ts';
 import { CircleEntity } from '../entities/CircleEntity.ts';
 import { RectangleEntity } from '../entities/RectangleEntity.ts';
 import { ArcEntity } from '../entities/ArcEntity.ts';
-import { DrawEvent, KeyboardEscEvent, MouseClickEvent } from './tool.types.ts';
+import { MouseClickEvent, StateEvent, ToolContext } from './tool.types.ts';
 import { Tool } from '../tools.ts';
-import { assign, createActor, createMachine } from 'xstate';
+import { assign, createMachine } from 'xstate';
 import {
   eraseArcSegment,
   eraseCircleSegment,
@@ -24,7 +23,9 @@ import {
   getAllIntersectionPoints,
 } from './eraser-tool.helpers.ts';
 
-export interface EraserContext {}
+export interface EraserContext extends ToolContext {
+  startPoint: Point | null;
+}
 
 export enum EraserState {
   INIT = 'INIT',
@@ -36,24 +37,27 @@ export enum EraserAction {
   HANDLE_MOUSE_CLICK = 'HANDLE_MOUSE_CLICK',
 }
 
-const eraserToolStateMachine = createMachine(
+export const eraserToolStateMachine = createMachine(
   {
     types: {} as {
       context: EraserContext;
-      events: MouseClickEvent | KeyboardEscEvent | DrawEvent;
+      events: StateEvent;
     },
     context: {
       startPoint: null,
+      type: Tool.ERASER,
     },
     initial: EraserState.INIT,
     states: {
       [EraserState.INIT]: {
+        description: 'Initializing the eraser tool',
         always: {
           actions: EraserAction.INIT_ERASER_TOOL,
           target: EraserState.WAITING_FOR_FIRST_CLICK,
         },
       },
       [EraserState.WAITING_FOR_FIRST_CLICK]: {
+        description: 'Select a line segment to delete',
         on: {
           MOUSE_CLICK: {
             actions: EraserAction.HANDLE_MOUSE_CLICK,
@@ -68,13 +72,12 @@ const eraserToolStateMachine = createMachine(
     actions: {
       [EraserAction.INIT_ERASER_TOOL]: assign(() => {
         console.log('activate eraser tool');
-        setActiveTool(Tool.Eraser);
         setShouldDrawHelpers(true);
         setActiveEntity(null);
         setSelectedEntityIds([]);
         return {};
       }),
-      [EraserAction.HANDLE_MOUSE_CLICK]: assign((context, event) => {
+      [EraserAction.HANDLE_MOUSE_CLICK]: assign(({ context, event }) => {
         handleMouseClick((event as MouseClickEvent).worldClickPoint);
 
         return context;
@@ -132,5 +135,3 @@ function handleMouseClick(worldClickPoint: Point) {
     }
   }
 }
-
-export const eraserToolActor = createActor(eraserToolStateMachine);

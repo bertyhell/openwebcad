@@ -5,15 +5,19 @@ import {
   getActiveLineColor,
   getActiveLineWidth,
   setActiveEntity,
-  setActiveTool,
   setSelectedEntityIds,
   setShouldDrawHelpers,
 } from '../state.ts';
-import { DrawEvent, KeyboardEscEvent, MouseClickEvent } from './tool.types.ts';
+import {
+  DrawEvent,
+  MouseClickEvent,
+  StateEvent,
+  ToolContext,
+} from './tool.types.ts';
 import { Tool } from '../tools.ts';
-import { assign, createActor, createMachine } from 'xstate';
+import { assign, createMachine } from 'xstate';
 
-export interface CircleContext {
+export interface CircleContext extends ToolContext {
   centerPoint: Point | null;
 }
 
@@ -30,24 +34,27 @@ export enum CircleAction {
   DRAW_FINAL_CIRCLE = 'DRAW_FINAL_CIRCLE',
 }
 
-const circleToolStateMachine = createMachine(
+export const circleToolStateMachine = createMachine(
   {
     types: {} as {
       context: CircleContext;
-      events: MouseClickEvent | KeyboardEscEvent | DrawEvent;
+      events: StateEvent;
     },
     context: {
       centerPoint: null,
+      type: Tool.CIRCLE,
     },
     initial: CircleState.INIT,
     states: {
       [CircleState.INIT]: {
+        description: 'Initializing the circle tool',
         always: {
           actions: CircleAction.INIT_CIRCLE_TOOL,
           target: CircleState.WAITING_FOR_CENTER_POINT,
         },
       },
       [CircleState.WAITING_FOR_CENTER_POINT]: {
+        description: 'Select the center point of the circle tool',
         on: {
           MOUSE_CLICK: {
             actions: CircleAction.RECORD_START_POINT,
@@ -56,6 +63,7 @@ const circleToolStateMachine = createMachine(
         },
       },
       [CircleState.WAITING_FOR_POINT_ON_CIRCLE]: {
+        description: 'Select a point on the circle',
         on: {
           DRAW: {
             actions: CircleAction.DRAW_TEMP_CIRCLE,
@@ -75,7 +83,6 @@ const circleToolStateMachine = createMachine(
     actions: {
       [CircleAction.INIT_CIRCLE_TOOL]: assign(() => {
         console.log('activate circle tool');
-        setActiveTool(Tool.Circle);
         setShouldDrawHelpers(true);
         setActiveEntity(null);
         setSelectedEntityIds([]);
@@ -118,5 +125,3 @@ const circleToolStateMachine = createMachine(
     },
   },
 );
-
-export const circleToolActor = createActor(circleToolStateMachine);

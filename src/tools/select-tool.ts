@@ -1,20 +1,24 @@
 import { Point } from '@flatten-js/core';
 import {
   setActiveEntity,
-  setActiveTool,
   setSelectedEntityIds,
   setShouldDrawHelpers,
 } from '../state.ts';
-import { DrawEvent, KeyboardEscEvent, MouseClickEvent } from './tool.types.ts';
+import {
+  DrawEvent,
+  MouseClickEvent,
+  StateEvent,
+  ToolContext,
+} from './tool.types.ts';
 import { Tool } from '../tools.ts';
-import { assign, createActor, createMachine } from 'xstate';
+import { assign, createMachine } from 'xstate';
 import {
   drawTempSelectionRectangle,
   handleFirstSelectionPoint,
   selectEntitiesInsideRectangle,
 } from './select-tool.helpers.ts';
 
-export interface SelectContext {
+export interface SelectContext extends ToolContext {
   startPoint: Point | null;
 }
 
@@ -23,6 +27,7 @@ export enum SelectState {
   WAITING_FOR_FIRST_SELECT_POINT = 'WAITING_FOR_FIRST_SELECT_POINT',
   CHECK_SELECTION = 'CHECK_SELECTION',
   WAITING_FOR_SECOND_SELECT_POINT = 'WAITING_FOR_SECOND_SELECT_POINT',
+  SELECTION_COMPLETED = 'SELECTION_COMPLETED',
 }
 
 export enum SelectAction {
@@ -32,24 +37,28 @@ export enum SelectAction {
   DRAW_TEMP_SELECTION_RECTANGLE = 'DRAW_TEMP_SELECTION_RECTANGLE',
 }
 
-const selectToolStateMachine = createMachine(
+export const selectToolStateMachine = createMachine(
   {
     types: {} as {
       context: SelectContext;
-      events: MouseClickEvent | KeyboardEscEvent | DrawEvent;
+      events: StateEvent;
     },
     context: {
       startPoint: null,
+      type: Tool.SELECT,
     },
     initial: SelectState.INIT,
     states: {
       [SelectState.INIT]: {
+        description: 'Initializing the select tool',
         always: {
           actions: SelectAction.INIT_SELECT_TOOL,
           target: SelectState.WAITING_FOR_FIRST_SELECT_POINT,
         },
       },
       [SelectState.WAITING_FOR_FIRST_SELECT_POINT]: {
+        description:
+          'Select a line or select the first point of a selection rectangle',
         on: {
           MOUSE_CLICK: {
             actions: SelectAction.HANDLE_FIRST_SELECT_POINT,
@@ -58,23 +67,31 @@ const selectToolStateMachine = createMachine(
           ESC: {
             actions: SelectAction.INIT_SELECT_TOOL,
           },
+          ENTER: {
+            target: SelectState.SELECTION_COMPLETED,
+          },
         },
       },
       [SelectState.CHECK_SELECTION]: {
+        description:
+          'Checking to select one line or start drawing a selection rectangle',
         always: [
           {
             // User started drawing a selection rectangle
-            guard: args => !!args.context.startPoint,
+            guard: ({ context }: { context: SelectContext }) =>
+              !!context.startPoint,
             target: SelectState.WAITING_FOR_SECOND_SELECT_POINT,
           },
           {
             // User clicked on an entity
-            guard: args => !args.context.startPoint,
+            guard: ({ context }: { context: SelectContext }) =>
+              !context.startPoint,
             target: SelectState.WAITING_FOR_FIRST_SELECT_POINT,
           },
         ],
       },
       [SelectState.WAITING_FOR_SECOND_SELECT_POINT]: {
+        description: 'Select the second point of a selection rectangle',
         on: {
           DRAW: {
             actions: SelectAction.DRAW_TEMP_SELECTION_RECTANGLE,
@@ -88,21 +105,32 @@ const selectToolStateMachine = createMachine(
           },
         },
       },
+      [SelectState.SELECTION_COMPLETED]: {
+        description: 'Selection completed',
+        type: 'final',
+      },
     },
   },
   {
     actions: {
       INIT_SELECT_TOOL: () => {
         console.log('activate select tool');
-        setActiveTool(Tool.Select);
         setShouldDrawHelpers(false);
         setActiveEntity(null);
         setSelectedEntityIds([]);
       },
-      HANDLE_FIRST_SELECT_POINT: assign(({ context, event }) => {
-        return handleFirstSelectionPoint(context, event as MouseClickEvent);
-      }),
-      DRAW_TEMP_SELECTION_RECTANGLE: ({ context, event }) => {
+      HANDLE_FIRST_SELECT_POINT: assign(
+        ({ context, event }: { context: SelectContext; event: StateEvent }) => {
+          return handleFirstSelectionPoint(context, event as MouseClickEvent);
+        },
+      ),
+      DRAW_TEMP_SELECTION_RECTANGLE: ({
+        context,
+        event,
+      }: {
+        context: SelectContext;
+        event: StateEvent;
+      }) => {
         if (!context.startPoint) {
           // assert
           throw new Error(
@@ -114,24 +142,26 @@ const selectToolStateMachine = createMachine(
           (event as DrawEvent).drawInfo.worldMouseLocation,
         );
       },
-      SELECT_ENTITIES_INSIDE_RECTANGLE: assign(({ context, event }) => {
-        if (!context.startPoint) {
-          //
-          throw new Error(
-            '[SELECT] calling SELECT_ENTITIES_INSIDE_RECTANGLE without start point',
+      SELECT_ENTITIES_INSIDE_RECTANGLE: assign(
+        ({ context, event }: { context: SelectContext; event: StateEvent }) => {
+          if (!context.startPoint) {
+            //
+            throw new Error(
+              '[SELECT] calling SELECT_ENTITIES_INSIDE_RECTANGLE without start point',
+            );
+          }
+          selectEntitiesInsideRectangle(
+            context.startPoint,
+            (event as MouseClickEvent).worldClickPoint,
+            (event as MouseClickEvent).holdingCtrl,
+            // (event as MouseClickEvent).holdingShift,
           );
-        }
-        selectEntitiesInsideRectangle(
-          context.startPoint,
-          (event as MouseClickEvent).worldClickPoint,
-          (event as MouseClickEvent).holdingCtrl,
-          // (event as MouseClickEvent).holdingShift,
-        );
-        setActiveEntity(null);
-        return {
-          startPoint: null,
-        };
-      }),
+          setActiveEntity(null);
+          return {
+            startPoint: null,
+          };
+        },
+      ),
       RESET_SELECTION: assign(() => {
         setActiveEntity(null);
         setSelectedEntityIds([]);
@@ -142,5 +172,3 @@ const selectToolStateMachine = createMachine(
     },
   },
 );
-
-export const selectToolActor = createActor(selectToolStateMachine);

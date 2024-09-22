@@ -5,15 +5,19 @@ import {
   getActiveLineColor,
   getActiveLineWidth,
   setActiveEntity,
-  setActiveTool,
   setSelectedEntityIds,
   setShouldDrawHelpers,
 } from '../state.ts';
-import { DrawEvent, KeyboardEscEvent, MouseClickEvent } from './tool.types.ts';
+import {
+  DrawEvent,
+  MouseClickEvent,
+  StateEvent,
+  ToolContext,
+} from './tool.types.ts';
 import { Tool } from '../tools.ts';
-import { assign, createActor, createMachine } from 'xstate';
+import { assign, createMachine } from 'xstate';
 
-export interface RectangleContext {
+export interface RectangleContext extends ToolContext {
   startPoint: Point | null;
 }
 
@@ -30,24 +34,27 @@ export enum RectangleAction {
   DRAW_FINAL_RECTANGLE = 'DRAW_FINAL_RECTANGLE',
 }
 
-const rectangleToolStateMachine = createMachine(
+export const rectangleToolStateMachine = createMachine(
   {
     types: {} as {
       context: RectangleContext;
-      events: MouseClickEvent | KeyboardEscEvent | DrawEvent;
+      events: StateEvent;
     },
     context: {
       startPoint: null,
+      type: Tool.RECTANGLE,
     },
     initial: RectangleState.INIT,
     states: {
       [RectangleState.INIT]: {
+        description: 'Initializing the rectangle tool',
         always: {
           actions: RectangleAction.INIT_RECTANGLE_TOOL,
           target: RectangleState.WAITING_FOR_START_POINT,
         },
       },
       [RectangleState.WAITING_FOR_START_POINT]: {
+        description: 'Select the start point of the rectangle',
         on: {
           MOUSE_CLICK: {
             actions: RectangleAction.RECORD_START_POINT,
@@ -56,6 +63,7 @@ const rectangleToolStateMachine = createMachine(
         },
       },
       [RectangleState.WAITING_FOR_END_POINT]: {
+        description: 'Select the end point of the rectangle',
         on: {
           DRAW: {
             actions: RectangleAction.DRAW_TEMP_RECTANGLE,
@@ -75,7 +83,6 @@ const rectangleToolStateMachine = createMachine(
     actions: {
       [RectangleAction.INIT_RECTANGLE_TOOL]: () => {
         console.log('activate rectangle tool');
-        setActiveTool(Tool.Rectangle);
         setShouldDrawHelpers(true);
         setActiveEntity(null);
         setSelectedEntityIds([]);
@@ -120,5 +127,3 @@ const rectangleToolStateMachine = createMachine(
     },
   },
 );
-
-export const rectangleToolActor = createActor(rectangleToolStateMachine);

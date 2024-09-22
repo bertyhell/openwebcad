@@ -2,24 +2,25 @@ import { Point } from '@flatten-js/core';
 import {
   getSelectedEntityIds,
   setActiveEntity,
-  setActiveTool,
   setSelectedEntityIds,
   setShouldDrawHelpers,
 } from '../state.ts';
 import { Tool } from '../tools.ts';
-import { DrawEvent, KeyboardEscEvent, MouseClickEvent } from './tool.types.ts';
-import { assign, createActor, createMachine } from 'xstate';
+import { MouseClickEvent, StateEvent, ToolContext } from './tool.types.ts';
+import { assign, createMachine } from 'xstate';
 import { moveSelection } from './move-tool.helpers.ts';
+import { selectToolStateMachine } from './select-tool.ts';
 
-export interface MoveContext {
+export interface MoveContext extends ToolContext {
   startPoint: Point | null;
 }
 
 export enum MoveState {
   INIT = 'INIT',
+  CHECK_SELECTION = 'CHECK_SELECTION',
   WAITING_FOR_SELECTION = 'WAITING_FOR_SELECTION',
-  WAITING_FOR_START_POINT = 'WAITING_FOR_START_POINT',
-  WAITING_FOR_END_POINT = 'WAITING_FOR_END_POINT',
+  WAITING_FOR_START_MOVE_POINT = 'WAITING_FOR_START_MOVE_POINT',
+  WAITING_FOR_END_MOVE_POINT = 'WAITING_FOR_END_MOVE_POINT',
 }
 
 export enum MoveAction {
@@ -30,42 +31,57 @@ export enum MoveAction {
   DESELECT_ENTITIES = 'DESELECT_ENTITIES',
 }
 
-const moveToolStateMachine = createMachine(
+export const moveToolStateMachine = createMachine(
   {
     types: {} as {
       context: MoveContext;
-      events: MouseClickEvent | KeyboardEscEvent | DrawEvent;
+      events: StateEvent;
     },
     context: {
       startPoint: null,
+      type: Tool.MOVE,
     },
     initial: MoveState.INIT,
     states: {
       [MoveState.INIT]: {
+        description: 'Initializing the move tool',
         always: {
           actions: MoveAction.INIT_MOVE_TOOL,
           target: MoveState.WAITING_FOR_SELECTION,
         },
       },
-      [MoveState.WAITING_FOR_SELECTION]: {
+      [MoveState.CHECK_SELECTION]: {
+        description: 'Check if there is something selected',
         always: [
           {
             guard: () => getSelectedEntityIds().length > 0,
-            target: MoveState.WAITING_FOR_START_POINT,
+            target: MoveState.WAITING_FOR_START_MOVE_POINT,
+          },
+          {
+            guard: () => getSelectedEntityIds().length === 0,
+            target: MoveState.WAITING_FOR_SELECTION,
           },
         ],
-        on: {
-          // TODO connect selection state machine here
+      },
+      [MoveState.WAITING_FOR_SELECTION]: {
+        description: 'Select what you want to move',
+        invoke: {
+          id: 'selectTool',
+          src: selectToolStateMachine,
+          onDone: {
+            target: MoveState.CHECK_SELECTION,
+          },
         },
       },
-      [MoveState.WAITING_FOR_START_POINT]: {
+      [MoveState.WAITING_FOR_START_MOVE_POINT]: {
+        description: 'Select the start of the move line',
         always: {
           actions: MoveAction.ENABLE_HELPERS,
         },
         on: {
           MOUSE_CLICK: {
             actions: MoveAction.RECORD_START_POINT,
-            target: MoveState.WAITING_FOR_END_POINT,
+            target: MoveState.WAITING_FOR_END_MOVE_POINT,
           },
           ESC: {
             actions: MoveAction.DESELECT_ENTITIES,
@@ -73,7 +89,8 @@ const moveToolStateMachine = createMachine(
           },
         },
       },
-      [MoveState.WAITING_FOR_END_POINT]: {
+      [MoveState.WAITING_FOR_END_MOVE_POINT]: {
+        description: 'Select the end of the move line',
         on: {
           MOUSE_CLICK: {
             actions: [MoveAction.MOVE_SELECTION, MoveAction.DESELECT_ENTITIES],
@@ -91,7 +108,6 @@ const moveToolStateMachine = createMachine(
     actions: {
       [MoveAction.INIT_MOVE_TOOL]: () => {
         console.log('activate move tool');
-        setActiveTool(Tool.Move);
         setShouldDrawHelpers(true);
         setActiveEntity(null);
         setSelectedEntityIds([]);
@@ -127,8 +143,7 @@ const moveToolStateMachine = createMachine(
           startPoint: null,
         };
       }),
+      ...selectToolStateMachine.implementations.actions,
     },
   },
 );
-
-export const moveToolActor = createActor(moveToolStateMachine);

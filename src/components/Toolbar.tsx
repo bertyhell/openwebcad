@@ -6,17 +6,16 @@ import { Button } from './Button.tsx';
 import {
   getActiveLineColor,
   getActiveLineWidth,
-  getActiveTool,
+  getActiveToolActor,
   getAngleStep,
   redo,
   setActiveLineColor,
   setActiveLineWidth,
-  setActiveTool,
+  setActiveToolActor,
   setAngleStep,
   setShouldDrawHelpers,
   undo,
 } from '../state.ts';
-import { StateVariable } from '../helpers/undo-stack.ts';
 import { noop } from 'es-toolkit';
 import { importEntitiesFromJsonFile } from '../helpers/import-export-handlers/import-entities-from-json.ts';
 import { exportEntitiesToJsonFile } from '../helpers/import-export-handlers/export-entities-to-json.ts';
@@ -24,19 +23,22 @@ import { exportEntitiesToSvgFile } from '../helpers/import-export-handlers/expor
 import { exportEntitiesToPngFile } from '../helpers/import-export-handlers/export-entities-to-png.ts';
 import { COLOR_LIST } from '../App.consts.ts';
 import { times } from '../helpers/times.ts';
-import { toolActors } from '../tools/tool.consts.ts';
+import { toolStateMachines } from '../tools/tool.consts.ts';
+import { Actor } from 'xstate';
+import { ActorEvent } from '../tools/tool.types.ts';
+import { HtmlEvent } from '../App.types.ts';
 
 interface ToolbarProps {}
 
 export const Toolbar: FC<ToolbarProps> = () => {
-  const [activeToolLocal, setActiveToolLocal] = useState<Tool>(Tool.Line);
+  const [activeToolLocal, setActiveToolLocal] = useState<Tool>(Tool.LINE);
   const [angleStepLocal, setAngleStepLocal] = useState<number>(45);
   const [activeLineColorLocal, setActiveLineColorLocal] =
     useState<string>('#FFF');
   const [activeLineWidthLocal, setActiveLineWidthLocal] = useState<number>(1);
 
   const fetchStateUpdatesFromOutside = useCallback(() => {
-    setActiveToolLocal(getActiveTool());
+    setActiveToolLocal(getActiveToolActor()?.getSnapshot()?.context.type);
     setAngleStepLocal(getAngleStep());
     setActiveLineColorLocal(getActiveLineColor());
     setActiveLineWidthLocal(getActiveLineWidth());
@@ -44,37 +46,13 @@ export const Toolbar: FC<ToolbarProps> = () => {
 
   useEffect(() => {
     window.addEventListener(
-      StateVariable.activeTool,
-      fetchStateUpdatesFromOutside,
-    );
-    window.addEventListener(
-      StateVariable.angleStep,
-      fetchStateUpdatesFromOutside,
-    );
-    window.addEventListener(
-      StateVariable.activeLineColor,
-      fetchStateUpdatesFromOutside,
-    );
-    window.addEventListener(
-      StateVariable.activeLineWidth,
+      HtmlEvent.UPDATE_STATE,
       fetchStateUpdatesFromOutside,
     );
 
     return () => {
       window.removeEventListener(
-        StateVariable.activeTool,
-        fetchStateUpdatesFromOutside,
-      );
-      window.removeEventListener(
-        StateVariable.angleStep,
-        fetchStateUpdatesFromOutside,
-      );
-      window.removeEventListener(
-        StateVariable.activeLineColor,
-        fetchStateUpdatesFromOutside,
-      );
-      window.removeEventListener(
-        StateVariable.activeLineWidth,
+        HtmlEvent.UPDATE_STATE,
         fetchStateUpdatesFromOutside,
       );
     };
@@ -82,12 +60,16 @@ export const Toolbar: FC<ToolbarProps> = () => {
 
   const handleToolClick = useCallback((tool: Tool) => {
     console.log('set active tool: ', tool);
-    toolActors[getActiveTool()]?.stop();
+    getActiveToolActor()?.send({
+      type: ActorEvent.ESC,
+    });
+    getActiveToolActor()?.stop();
+
+    const newToolActor = new Actor(toolStateMachines[tool]);
+    newToolActor.start();
 
     setActiveToolLocal(tool);
-    setActiveTool(tool, false);
-
-    toolActors[tool]?.start();
+    setActiveToolActor(newToolActor);
   }, []);
 
   const handleAngleChanged = useCallback((angle: number) => {
@@ -101,44 +83,44 @@ export const Toolbar: FC<ToolbarProps> = () => {
         title="Select (s)"
         icon={IconName.Direction}
         onClick={() => {
-          handleToolClick(Tool.Select);
+          handleToolClick(Tool.SELECT);
           setShouldDrawHelpers(true);
         }}
-        active={activeToolLocal === Tool.Select}
+        active={activeToolLocal === Tool.SELECT}
       />
       <Button
         title="Line (l)"
         icon={IconName.Line}
         onClick={() => {
-          handleToolClick(Tool.Line);
+          handleToolClick(Tool.LINE);
           setShouldDrawHelpers(true);
         }}
-        active={activeToolLocal === Tool.Line}
+        active={activeToolLocal === Tool.LINE}
       />
       <Button
         title="Rectangle (r)"
         icon={IconName.Square}
         onClick={() => {
-          handleToolClick(Tool.Rectangle);
+          handleToolClick(Tool.RECTANGLE);
           setShouldDrawHelpers(true);
         }}
-        active={activeToolLocal === Tool.Rectangle}
+        active={activeToolLocal === Tool.RECTANGLE}
       />
       <Button
         title="Circle (c)"
         icon={IconName.Circle}
         onClick={() => {
-          handleToolClick(Tool.Circle);
+          handleToolClick(Tool.CIRCLE);
           setShouldDrawHelpers(true);
         }}
-        active={activeToolLocal === Tool.Circle}
+        active={activeToolLocal === Tool.CIRCLE}
       />
       <Button
         className="mt-2"
         title="Move"
         icon={IconName.Expand}
-        onClick={() => handleToolClick(Tool.Move)}
-        active={activeToolLocal === Tool.Move}
+        onClick={() => handleToolClick(Tool.MOVE)}
+        active={activeToolLocal === Tool.MOVE}
       />
       <Button
         className="mt-2"
@@ -155,8 +137,8 @@ export const Toolbar: FC<ToolbarProps> = () => {
         className="mt-2"
         title="Delete segments"
         icon={IconName.Crop}
-        onClick={() => handleToolClick(Tool.Eraser)}
-        active={activeToolLocal === Tool.Eraser}
+        onClick={() => handleToolClick(Tool.ERASER)}
+        active={activeToolLocal === Tool.ERASER}
       />
       <DropdownButton
         className="mt-2"

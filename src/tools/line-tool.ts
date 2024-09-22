@@ -5,15 +5,19 @@ import {
   getActiveLineColor,
   getActiveLineWidth,
   setActiveEntity,
-  setActiveTool,
   setSelectedEntityIds,
   setShouldDrawHelpers,
 } from '../state.ts';
 import { Tool } from '../tools.ts';
-import { assign, createActor, createMachine } from 'xstate';
-import { DrawEvent, KeyboardEscEvent, MouseClickEvent } from './tool.types.ts';
+import { assign, createMachine } from 'xstate';
+import {
+  DrawEvent,
+  MouseClickEvent,
+  StateEvent,
+  ToolContext,
+} from './tool.types.ts';
 
-export interface LineContext {
+export interface LineContext extends ToolContext {
   startPoint: Point | null;
 }
 
@@ -30,24 +34,27 @@ export enum LineAction {
   DRAW_FINAL_LINE = 'DRAW_FINAL_LINE',
 }
 
-const lineToolStateMachine = createMachine(
+export const lineToolStateMachine = createMachine(
   {
     types: {} as {
       context: LineContext;
-      events: MouseClickEvent | KeyboardEscEvent | DrawEvent;
+      events: StateEvent;
     },
     context: {
       startPoint: null,
+      type: Tool.LINE,
     },
     initial: LineState.INIT,
     states: {
       [LineState.INIT]: {
+        description: 'Initializing the line tool',
         always: {
           actions: LineAction.INIT_LINE_TOOL,
           target: LineState.WAITING_FOR_START_POINT,
         },
       },
       [LineState.WAITING_FOR_START_POINT]: {
+        description: 'Select the start point of the line',
         on: {
           MOUSE_CLICK: {
             actions: LineAction.RECORD_START_POINT,
@@ -56,6 +63,7 @@ const lineToolStateMachine = createMachine(
         },
       },
       [LineState.WAITING_FOR_END_POINT]: {
+        description: 'Select the end point of the line',
         on: {
           DRAW: {
             actions: LineAction.DRAW_TEMP_LINE,
@@ -75,7 +83,6 @@ const lineToolStateMachine = createMachine(
     actions: {
       [LineAction.INIT_LINE_TOOL]: assign(() => {
         console.log('activate line tool');
-        setActiveTool(Tool.Line);
         setShouldDrawHelpers(true);
         setActiveEntity(null);
         setSelectedEntityIds([]);
@@ -111,7 +118,7 @@ const lineToolStateMachine = createMachine(
         addEntity(activeLine);
 
         // Keep drawing from the last point
-        setActiveEntity(new LineEntity(endPoint));
+        setActiveEntity(new LineEntity(endPoint, endPoint));
         return {
           startPoint: endPoint,
         };
@@ -119,5 +126,3 @@ const lineToolStateMachine = createMachine(
     },
   },
 );
-
-export const lineToolActor = createActor(lineToolStateMachine);

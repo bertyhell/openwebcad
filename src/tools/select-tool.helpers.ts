@@ -21,7 +21,7 @@ import { Box, Point } from '@flatten-js/core';
 import { findClosestEntity } from '../helpers/find-closest-entity.ts';
 
 export function handleFirstSelectionPoint(
-  _: SelectContext,
+  context: SelectContext,
   event: MouseClickEvent,
 ): SelectContext {
   const closestEntityInfo = findClosestEntity(
@@ -55,6 +55,7 @@ export function handleFirstSelectionPoint(
       setSelectedEntityIds([...getSelectedEntityIds(), closestEntity.id]);
     }
     return {
+      ...context,
       startPoint: null,
     };
   }
@@ -63,6 +64,7 @@ export function handleFirstSelectionPoint(
   console.log('Start a new selection rectangle drag');
   // Start a new selection rectangle drag
   return {
+    ...context,
     startPoint: event.worldClickPoint,
   };
 }

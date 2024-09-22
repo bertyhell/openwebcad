@@ -41,3 +41,7 @@ export enum MouseButton {
   Back = 3, // Fourth button, typically the Browser Back button
   Forward = 4, // Fifth button, typically the Browser Forward button
 }
+
+export enum HtmlEvent {
+  UPDATE_STATE = 'UPDATE_STATE',
+}

@@ -4,7 +4,7 @@ import App from './App.tsx';
 import './index.scss';
 import {
   getActiveEntity,
-  getActiveTool,
+  getActiveToolActor,
   getAngleStep,
   getCanvas,
   getCanvasSize,
@@ -22,6 +22,7 @@ import {
   getWorldMouseLocation,
   redo,
   setActiveEntity,
+  setActiveToolActor,
   setCanvas,
   setCanvasSize,
   setContext,
@@ -56,8 +57,14 @@ import { getClosestSnapPointWithinRadius } from './helpers/get-closest-snap-poin
 import { findClosestEntity } from './helpers/find-closest-entity.ts';
 import { trackHoveredSnapPoint } from './helpers/track-hovered-snap-points.ts';
 import { compact } from 'es-toolkit';
-import { toolActors } from './tools/tool.consts.ts';
+import { toolStateMachines } from './tools/tool.consts.ts';
 import { ActorEvent, DrawEvent, MouseClickEvent } from './tools/tool.types.ts';
+import { Actor } from 'xstate';
+import { lineToolStateMachine } from './tools/line-tool.ts';
+import { circleToolStateMachine } from './tools/circle-tool.ts';
+import { rectangleToolStateMachine } from './tools/rectangle-tool.ts';
+import { selectToolStateMachine } from './tools/select-tool.ts';
+import { moveToolStateMachine } from './tools/move-tool.ts';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -91,7 +98,7 @@ function handleMouseMove(evt: MouseEvent) {
   calculateAngleGuidesAndSnapPoints();
 
   // Highlight the entity closest to the mouse when the select tool is active
-  if (getActiveTool() === Tool.Select) {
+  if (getActiveToolActor()?.getSnapshot()?.context.type === Tool.SELECT) {
     const closestEntityInfo = findClosestEntity(
       getWorldMouseLocation(),
       getEntities(),
@@ -161,8 +168,8 @@ function handleMouseUp(evt: MouseEvent) {
       ? closestSnapPoint.point
       : worldMouseLocationTemp;
 
-    const activeTool = getActiveTool();
-    toolActors[activeTool]?.send({
+    const activeToolActor = getActiveToolActor();
+    activeToolActor?.send({
       type: ActorEvent.MOUSE_CLICK,
       worldClickPoint,
       holdingCtrl: evt.ctrlKey,
@@ -178,7 +185,7 @@ function handleKeyUp(evt: KeyboardEvent) {
     setHighlightedEntityIds([]);
     setSelectedEntityIds([]);
 
-    toolActors[getActiveTool()]?.send({
+    getActiveToolActor()?.send({
       type: ActorEvent.ESC,
     } as KeyboardEvent);
   } else if (evt.key === 'Delete') {
@@ -191,31 +198,47 @@ function handleKeyUp(evt: KeyboardEvent) {
     undo();
     setActiveEntity(null);
     setSelectedEntityIds([]);
+    getActiveToolActor()?.send({
+      type: ActorEvent.ESC,
+    } as KeyboardEvent);
   } else if (evt.key === 'z' && evt.ctrlKey && evt.shiftKey) {
     evt.preventDefault();
     redo();
     setActiveEntity(null);
     setSelectedEntityIds([]);
+    getActiveToolActor()?.send({
+      type: ActorEvent.ESC,
+    } as KeyboardEvent);
   } else if (evt.key === 'l') {
     evt.preventDefault();
-    toolActors[getActiveTool()]?.stop();
-    toolActors[Tool.Line]?.start();
+    getActiveToolActor()?.stop();
+    const lineToolActor = new Actor(lineToolStateMachine);
+    setActiveToolActor(lineToolActor);
+    lineToolActor.start();
   } else if (evt.key === 'c') {
     evt.preventDefault();
-    toolActors[getActiveTool()]?.stop();
-    toolActors[Tool.Circle]?.start();
+    getActiveToolActor()?.stop();
+    const circleToolActor = new Actor(circleToolStateMachine);
+    setActiveToolActor(circleToolActor);
+    circleToolActor.start();
   } else if (evt.key === 'r') {
     evt.preventDefault();
-    toolActors[getActiveTool()]?.stop();
-    toolActors[Tool.Rectangle]?.start();
+    getActiveToolActor()?.stop();
+    const rectangleToolActor = new Actor(rectangleToolStateMachine);
+    setActiveToolActor(rectangleToolActor);
+    rectangleToolActor.start();
   } else if (evt.key === 's') {
     evt.preventDefault();
-    toolActors[getActiveTool()]?.stop();
-    toolActors[Tool.Select]?.start();
+    getActiveToolActor()?.stop();
+    const selectToolActor = new Actor(selectToolStateMachine);
+    setActiveToolActor(selectToolActor);
+    selectToolActor.start();
   } else if (evt.key === 'm') {
     evt.preventDefault();
-    toolActors[getActiveTool()]?.stop();
-    toolActors[Tool.Move]?.start();
+    getActiveToolActor()?.stop();
+    const moveToolActor = new Actor(moveToolStateMachine);
+    setActiveToolActor(moveToolActor);
+    moveToolActor.start();
   }
 }
 
@@ -287,7 +310,7 @@ function startDrawLoop(
     screenZoom: screenScale,
   };
 
-  toolActors[getActiveTool()].send({
+  getActiveToolActor()?.send({
     type: ActorEvent.DRAW,
     drawInfo,
   } as DrawEvent);
@@ -295,7 +318,7 @@ function startDrawLoop(
   /**
    * Highlight the entity closest to the mouse when the select tool is active
    */
-  if (getActiveTool() === Tool.Select) {
+  if (getActiveToolActor()?.getSnapshot()?.context?.type === Tool.SELECT) {
     const { distance, entity: closestEntity } = findClosestEntity(
       screenToWorld(screenMouseLocation),
       getEntities(),
@@ -364,7 +387,9 @@ function initApplication() {
 
     startDrawLoop(context, 0);
 
-    toolActors[Tool.Line]?.start();
+    const lineToolActor = new Actor(toolStateMachines[Tool.LINE]);
+    lineToolActor.start();
+    setActiveToolActor(lineToolActor);
   }
 }
 

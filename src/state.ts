@@ -1,11 +1,12 @@
 import { Entity } from './entities/Entity.ts';
 import { Point } from '@flatten-js/core';
-import { Tool } from './tools.ts';
 import { screenToWorld } from './helpers/world-screen-conversion.ts';
-import { HoverPoint, SnapPoint } from './App.types.ts';
+import { HoverPoint, HtmlEvent, SnapPoint } from './App.types.ts';
 import { createStack, StateVariable, UndoState } from './helpers/undo-stack.ts';
 import { isEqual } from 'es-toolkit';
 import { RectangleEntity } from './entities/RectangleEntity.ts';
+import { Actor } from 'xstate';
+import { Tool } from './tools.ts';
 
 // state variables
 /**
@@ -29,9 +30,10 @@ let context: CanvasRenderingContext2D | null = null;
 let screenMouseLocation = new Point(0, 0);
 
 /**
- * Active tool like line tool or rectangle tool
+ * Active tool xstate actor
  */
-let activeTool = Tool.Line;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let activeToolActor: Actor<any> | null = null;
 
 /**
  * List of entities like lines, circles, rectangles, etc to be drawn on the canvas
@@ -135,7 +137,7 @@ export const getCanvasSize = () => canvasSize;
 export const getCanvas = () => canvas;
 export const getContext = () => context;
 export const getScreenMouseLocation = () => screenMouseLocation;
-export const getActiveTool = () => activeTool;
+export const getActiveToolActor = () => activeToolActor;
 export const getEntities = (): Entity[] => entities;
 export const getHighlightedEntityIds = () => highlightedEntityIds;
 export const getSelectedEntityIds = () => selectedEntityIds;
@@ -169,6 +171,8 @@ export const isEntitySelected = (entity: Entity) =>
   selectedEntityIds.includes(entity.id);
 export const isEntityHighlighted = (entity: Entity) =>
   highlightedEntityIds.includes(entity.id);
+export const getActiveTool = (): Tool | null =>
+  activeToolActor?.getSnapshot()?.context?.type || null;
 
 // setters
 export const setCanvasSize = (newCanvasSize: Point) =>
@@ -178,8 +182,12 @@ export const setContext = (newContext: CanvasRenderingContext2D) =>
   (context = newContext);
 export const setScreenMouseLocation = (newLocation: Point) =>
   (screenMouseLocation = newLocation);
-export const setActiveTool = (newTool: Tool, triggerReact: boolean = true) => {
-  activeTool = newTool;
+export const setActiveToolActor = (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  newToolActor: Actor<any>,
+  triggerReact: boolean = true,
+) => {
+  activeToolActor = newToolActor;
 
   if (triggerReact) {
     triggerReactUpdate(StateVariable.activeTool);
@@ -362,5 +370,5 @@ export function redo() {
 function triggerReactUpdate(variable: StateVariable) {
   if (!reactStateVariables.includes(variable)) return;
 
-  window.dispatchEvent(new CustomEvent(variable));
+  window.dispatchEvent(new CustomEvent(HtmlEvent.UPDATE_STATE));
 }

@@ -42,13 +42,21 @@ export const Toolbar: FC<ToolbarProps> = () => {
     setActiveLineWidthLocal(getActiveLineWidth());
   }, []);
 
+  const handleWheel = (event: WheelEvent) => {
+    if (event.ctrlKey) {
+      event.preventDefault();
+    }
+  };
+
   useEffect(() => {
+    window.addEventListener('wheel', handleWheel, { passive: false });
     window.addEventListener(
       HtmlEvent.UPDATE_STATE,
       fetchStateUpdatesFromOutside,
     );
 
     return () => {
+      window.removeEventListener('wheel', handleWheel);
       window.removeEventListener(
         HtmlEvent.UPDATE_STATE,
         fetchStateUpdatesFromOutside,

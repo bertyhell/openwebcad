@@ -1,12 +1,12 @@
 import { Point } from '@flatten-js/core';
-import { getScreenOffset, getScreenScale } from '../state.ts';
+import { getScreenOffset, getScreenZoom } from '../state.ts';
 
 /**
  * Convert coordinates from World Space --> Screen Space
  */
 export function worldToScreen(worldCoordinate: Point): Point {
   const screenOffset = getScreenOffset();
-  const screenScale = getScreenScale();
+  const screenScale = getScreenZoom();
   return new Point(
     (worldCoordinate.x - screenOffset.x) * screenScale,
     (worldCoordinate.y - screenOffset.y) * screenScale,
@@ -18,7 +18,7 @@ export function worldToScreen(worldCoordinate: Point): Point {
  */
 export function screenToWorld(screenCoordinate: Point): Point {
   const screenOffset = getScreenOffset();
-  const screenScale = getScreenScale();
+  const screenScale = getScreenZoom();
   return new Point(
     screenCoordinate.x / screenScale + screenOffset.x,
     screenCoordinate.y / screenScale + screenOffset.y,

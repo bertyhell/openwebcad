@@ -8,11 +8,14 @@ import {
   getActiveLineWidth,
   getActiveToolActor,
   getAngleStep,
+  getScreenZoom,
   redo,
   setActiveLineColor,
   setActiveLineWidth,
   setActiveToolActor,
   setAngleStep,
+  setScreenOffset,
+  setScreenZoom,
   undo,
 } from '../state.ts';
 import { noop } from 'es-toolkit';
@@ -25,6 +28,7 @@ import { times } from '../helpers/times.ts';
 import { toolStateMachines } from '../tools/tool.consts.ts';
 import { Actor } from 'xstate';
 import { HtmlEvent } from '../App.types.ts';
+import { Point } from '@flatten-js/core';
 
 interface ToolbarProps {}
 
@@ -34,12 +38,14 @@ export const Toolbar: FC<ToolbarProps> = () => {
   const [activeLineColorLocal, setActiveLineColorLocal] =
     useState<string>('#FFF');
   const [activeLineWidthLocal, setActiveLineWidthLocal] = useState<number>(1);
+  const [screenZoomLocal, setScreenZoomLocal] = useState<number>(1);
 
   const fetchStateUpdatesFromOutside = useCallback(() => {
     setActiveToolLocal(getActiveToolActor()?.getSnapshot()?.context.type);
     setAngleStepLocal(getAngleStep());
     setActiveLineColorLocal(getActiveLineColor());
     setActiveLineWidthLocal(getActiveLineWidth());
+    setScreenZoomLocal(getScreenZoom());
   }, []);
 
   const handleWheel = (event: WheelEvent) => {
@@ -75,6 +81,11 @@ export const Toolbar: FC<ToolbarProps> = () => {
   const handleAngleChanged = useCallback((angle: number) => {
     setAngleStepLocal(angle);
     setAngleStep(angle, false);
+  }, []);
+
+  const handleZoomLevelClicked = useCallback(() => {
+    setScreenZoom(1);
+    setScreenOffset(new Point(0, 0));
   }, []);
 
   return (
@@ -200,7 +211,11 @@ export const Toolbar: FC<ToolbarProps> = () => {
           active={angleStepLocal === 90}
         />
       </DropdownButton>
-
+      <Button
+        title="Zoom level"
+        label={(screenZoomLocal * 100).toFixed(0) + '%'}
+        onClick={handleZoomLevelClicked}
+      ></Button>
       <Button
         className="relative mt-2"
         title="Load from JSON file"

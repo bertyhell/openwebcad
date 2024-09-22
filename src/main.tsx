@@ -14,7 +14,7 @@ import {
   getPanStartLocation,
   getScreenMouseLocation,
   getScreenOffset,
-  getScreenScale,
+  getScreenZoom,
   getShouldDrawHelpers,
   getSnapPoint,
   getSnapPointOnAngleGuide,
@@ -32,7 +32,7 @@ import {
   setPanStartLocation,
   setScreenMouseLocation,
   setScreenOffset,
-  setScreenScale,
+  setScreenZoom,
   setSelectedEntityIds,
   setShouldDrawCursor,
   setSnapPoint,
@@ -81,7 +81,7 @@ function handleMouseMove(evt: MouseEvent) {
   // If the middle mouse button is pressed, pan the screen
   const panStartLocation = getPanStartLocation();
   const screenOffset = getScreenOffset();
-  const screenScale = getScreenScale();
+  const screenScale = getScreenZoom();
   if (panStartLocation) {
     // Pan the screen by the last mouse movement
     const newOffset = new Point(
@@ -119,12 +119,12 @@ function handleMouseOut() {
  */
 function handleMouseWheel(evt: WheelEvent) {
   const screenOffset = getScreenOffset();
-  const screenScale = getScreenScale();
+  const screenScale = getScreenZoom();
   const worldMouseLocationBeforeZoom = getWorldMouseLocation();
   const newScreenScale =
     screenScale *
     (1 - MOUSE_ZOOM_MULTIPLIER * (evt.deltaY / Math.abs(evt.deltaY)));
-  setScreenScale(newScreenScale);
+  setScreenZoom(newScreenScale);
 
   // ...now get the location of the cursor in world space again - It will have changed
   // because the scale has changed, but we can offset our world now to fix the zoom
@@ -156,7 +156,7 @@ function handleMouseUp(evt: MouseEvent) {
     const closestSnapPoint = getClosestSnapPointWithinRadius(
       compact([getSnapPoint(), getSnapPointOnAngleGuide()]),
       getWorldMouseLocation(),
-      SNAP_POINT_DISTANCE / getScreenScale(),
+      SNAP_POINT_DISTANCE / getScreenZoom(),
     );
 
     const worldMouseLocationTemp = screenToWorld(
@@ -233,7 +233,7 @@ function calculateAngleGuidesAndSnapPoints() {
   const angleStep = getAngleStep();
   const activeEntity = getActiveEntity();
   const entities = getEntities();
-  const screenScale = getScreenScale();
+  const screenScale = getScreenZoom();
   const worldMouseLocation = getWorldMouseLocation();
   const hoveredSnapPoints = getHoveredSnapPoints();
 
@@ -277,7 +277,7 @@ function startDrawLoop(
   const canvasSize = getCanvasSize();
   const screenMouseLocation = getScreenMouseLocation();
   const worldMouseLocation = getWorldMouseLocation();
-  const screenScale = getScreenScale();
+  const screenScale = getScreenZoom();
   const screenOffset = getScreenOffset();
   const lastDrawTimestamp = getLastDrawTimestamp();
 
@@ -321,7 +321,7 @@ function startDrawLoop(
     getSnapPoint(),
     getHoveredSnapPoints(),
     setHoveredSnapPoints,
-    SNAP_POINT_DISTANCE / getScreenScale(),
+    SNAP_POINT_DISTANCE / getScreenZoom(),
     elapsedTime,
   );
 

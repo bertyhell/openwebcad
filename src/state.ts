@@ -104,7 +104,7 @@ let screenOffset = new Point(0, 0);
 /**
  * Scale by which the screen is zoomed in or out. Starts at 1 when it coincides with the world scale
  */
-let screenScale = 1;
+let screenZoom = 1;
 
 /**
  * Location where the user started dragging their mouse
@@ -160,7 +160,7 @@ export const getShouldDrawHelpers = () => shouldDrawHelpers;
 export const getDebugEntities = () => debugEntities;
 export const getAngleStep = () => angleStep;
 export const getScreenOffset = () => screenOffset;
-export const getScreenScale = () => screenScale;
+export const getScreenZoom = () => screenZoom;
 export const getPanStartLocation = () => panStartLocation;
 export const getSnapPoint = () => snapPoint;
 export const getSnapPointOnAngleGuide = () => snapPointOnAngleGuide;
@@ -266,8 +266,9 @@ export const setAngleStep = (newStep: number, triggerReact: boolean = true) => {
 export const setScreenOffset = (newOffset: Point) => {
   screenOffset = newOffset;
 };
-export const setScreenScale = (newScale: number) => {
-  screenScale = newScale;
+export const setScreenZoom = (newZoom: number) => {
+  screenZoom = newZoom;
+  triggerReactUpdate(StateVariable.screenZoom);
 };
 export const setPanStartLocation = (newLocation: Point | null) =>
   (panStartLocation = newLocation);
@@ -321,21 +322,12 @@ const reactStateVariables: StateVariable[] = [
   StateVariable.angleStep,
   StateVariable.activeLineColor,
   StateVariable.activeLineWidth,
+  StateVariable.screenZoom,
 ];
 
-const undoableStateVariables: StateVariable[] = [
-  StateVariable.entities,
-  StateVariable.activeEntity,
-  StateVariable.angleStep,
-  StateVariable.screenOffset,
-  StateVariable.screenScale,
-];
+const undoableStateVariables: StateVariable[] = [StateVariable.entities];
 
-const undoableAndCompactableStateVariables: StateVariable[] = [
-  StateVariable.angleStep,
-  StateVariable.screenOffset,
-  StateVariable.screenScale,
-];
+const undoableAndCompactableStateVariables: StateVariable[] = [];
 
 const undoStack = createStack();
 
@@ -385,8 +377,8 @@ function updateStates(undoState: UndoState) {
     case StateVariable.screenOffset:
       screenOffset = value;
       break;
-    case StateVariable.screenScale:
-      screenScale = value;
+    case StateVariable.screenZoom:
+      screenZoom = value;
       break;
   }
 }

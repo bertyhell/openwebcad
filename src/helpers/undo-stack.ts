@@ -17,7 +17,7 @@ export enum StateVariable {
   debugEntities = 'debugEntities',
   angleStep = 'angleStep',
   screenOffset = 'screenOffset',
-  screenScale = 'screenScale',
+  screenZoom = 'screenZoom',
   panStartLocation = 'panStartLocation',
   snapPoint = 'snapPoint',
   snapPointOnAngleGuide = 'snapPointOnAngleGuide',

@@ -199,6 +199,7 @@ export const moveToolStateMachine = createMachine(
         activeMoveLine.lineWidth = SELECTION_RECTANGLE_WIDTH;
         activeMoveLine.lineStyle = SELECTION_RECTANGLE_STYLE;
         setActiveEntity(activeMoveLine);
+        return context;
       }),
       [MoveAction.MOVE_SELECTION]: assign(({ context, event }) => {
         if (!context.startPoint) {

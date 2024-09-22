@@ -89,6 +89,7 @@ export const GUIDE_LINE_STYLE = [5, 5]; // Dashed line
 export const MOUSE_ZOOM_MULTIPLIER = 0.1;
 
 export const COLOR_LIST = [
+  '#ffffff',
   '#2f4f4f',
   '#800000',
   '#006400',

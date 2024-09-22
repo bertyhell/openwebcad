@@ -251,6 +251,7 @@ export const setShouldDrawHelpers = (shouldDraw: boolean) => {
   console.log('setShouldDrawHelpers', shouldDraw);
   setSnapPoint(null);
   setSnapPointOnAngleGuide(null);
+  setHelperEntities([]);
   return (shouldDrawHelpers = shouldDraw);
 };
 export const setDebugEntities = (newDebugEntities: Entity[]) =>

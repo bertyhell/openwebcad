@@ -45,3 +45,7 @@ export enum MouseButton {
 export enum HtmlEvent {
   UPDATE_STATE = 'UPDATE_STATE',
 }
+
+export interface StateMetaData {
+  instructions: string;
+}

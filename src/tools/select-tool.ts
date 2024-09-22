@@ -59,6 +59,9 @@ export const selectToolStateMachine = createMachine(
       [SelectState.WAITING_FOR_FIRST_SELECT_POINT]: {
         description:
           'Select a line or select the first point of a selection rectangle',
+        meta: {
+          instructions: 'Select a line or start drawing a selection rectangle',
+        },
         on: {
           MOUSE_CLICK: {
             actions: SelectAction.HANDLE_FIRST_SELECT_POINT,
@@ -75,6 +78,10 @@ export const selectToolStateMachine = createMachine(
       [SelectState.CHECK_SELECTION]: {
         description:
           'Checking to select one line or start drawing a selection rectangle',
+        meta: {
+          instructions:
+            'Select one line or start drawing a selection rectangle',
+        },
         always: [
           {
             // User started drawing a selection rectangle
@@ -92,6 +99,9 @@ export const selectToolStateMachine = createMachine(
       },
       [SelectState.WAITING_FOR_SECOND_SELECT_POINT]: {
         description: 'Select the second point of a selection rectangle',
+        meta: {
+          instructions: 'Select the second point of a selection rectangle',
+        },
         on: {
           DRAW: {
             actions: SelectAction.DRAW_TEMP_SELECTION_RECTANGLE,
@@ -121,6 +131,7 @@ export const selectToolStateMachine = createMachine(
       },
       HANDLE_FIRST_SELECT_POINT: assign(
         ({ context, event }: { context: SelectContext; event: StateEvent }) => {
+          console.log('handle first select point');
           return handleFirstSelectionPoint(context, event as MouseClickEvent);
         },
       ),
@@ -144,6 +155,7 @@ export const selectToolStateMachine = createMachine(
       },
       SELECT_ENTITIES_INSIDE_RECTANGLE: assign(
         ({ context, event }: { context: SelectContext; event: StateEvent }) => {
+          console.log('select entities inside rectangle');
           if (!context.startPoint) {
             //
             throw new Error(

@@ -55,6 +55,9 @@ export const circleToolStateMachine = createMachine(
       },
       [CircleState.WAITING_FOR_CENTER_POINT]: {
         description: 'Select the center point of the circle tool',
+        meta: {
+          instructions: 'Select the center point of the circle',
+        },
         on: {
           MOUSE_CLICK: {
             actions: CircleAction.RECORD_START_POINT,
@@ -64,6 +67,9 @@ export const circleToolStateMachine = createMachine(
       },
       [CircleState.WAITING_FOR_POINT_ON_CIRCLE]: {
         description: 'Select a point on the circle',
+        meta: {
+          instructions: 'Select the point on the circle',
+        },
         on: {
           DRAW: {
             actions: CircleAction.DRAW_TEMP_CIRCLE,

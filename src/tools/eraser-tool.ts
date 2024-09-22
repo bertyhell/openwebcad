@@ -58,6 +58,9 @@ export const eraserToolStateMachine = createMachine(
       },
       [EraserState.WAITING_FOR_FIRST_CLICK]: {
         description: 'Select a line segment to delete',
+        meta: {
+          instructions: 'Select a line segment to delete',
+        },
         on: {
           MOUSE_CLICK: {
             actions: EraserAction.HANDLE_MOUSE_CLICK,

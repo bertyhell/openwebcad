@@ -11,7 +11,6 @@ import {
   getEntities,
   getHoveredSnapPoints,
   getLastDrawTimestamp,
-  getNotSelectedEntities,
   getPanStartLocation,
   getScreenMouseLocation,
   getScreenOffset,
@@ -26,7 +25,6 @@ import {
   setCanvas,
   setCanvasSize,
   setContext,
-  setEntities,
   setHelperEntities,
   setHighlightedEntityIds,
   setHoveredSnapPoints,
@@ -181,18 +179,19 @@ function handleMouseUp(evt: MouseEvent) {
 function handleKeyUp(evt: KeyboardEvent) {
   if (evt.key === 'Escape') {
     evt.preventDefault();
-    setActiveEntity(null);
-    setHighlightedEntityIds([]);
-    setSelectedEntityIds([]);
-
     getActiveToolActor()?.send({
       type: ActorEvent.ESC,
-    } as KeyboardEvent);
+    });
+  } else if (evt.key === 'Enter') {
+    evt.preventDefault();
+    getActiveToolActor()?.send({
+      type: ActorEvent.ENTER,
+    });
   } else if (evt.key === 'Delete') {
     evt.preventDefault();
-    setEntities(getNotSelectedEntities());
-    setSelectedEntityIds([]);
-    setActiveEntity(null);
+    getActiveToolActor()?.send({
+      type: ActorEvent.DELETE,
+    });
   } else if (evt.key === 'z' && evt.ctrlKey && !evt.shiftKey) {
     evt.preventDefault();
     undo();
@@ -200,7 +199,7 @@ function handleKeyUp(evt: KeyboardEvent) {
     setSelectedEntityIds([]);
     getActiveToolActor()?.send({
       type: ActorEvent.ESC,
-    } as KeyboardEvent);
+    });
   } else if (evt.key === 'z' && evt.ctrlKey && evt.shiftKey) {
     evt.preventDefault();
     redo();
@@ -208,37 +207,22 @@ function handleKeyUp(evt: KeyboardEvent) {
     setSelectedEntityIds([]);
     getActiveToolActor()?.send({
       type: ActorEvent.ESC,
-    } as KeyboardEvent);
+    });
   } else if (evt.key === 'l') {
     evt.preventDefault();
-    getActiveToolActor()?.stop();
-    const lineToolActor = new Actor(lineToolStateMachine);
-    setActiveToolActor(lineToolActor);
-    lineToolActor.start();
+    setActiveToolActor(new Actor(lineToolStateMachine));
   } else if (evt.key === 'c') {
     evt.preventDefault();
-    getActiveToolActor()?.stop();
-    const circleToolActor = new Actor(circleToolStateMachine);
-    setActiveToolActor(circleToolActor);
-    circleToolActor.start();
+    setActiveToolActor(new Actor(circleToolStateMachine));
   } else if (evt.key === 'r') {
     evt.preventDefault();
-    getActiveToolActor()?.stop();
-    const rectangleToolActor = new Actor(rectangleToolStateMachine);
-    setActiveToolActor(rectangleToolActor);
-    rectangleToolActor.start();
+    setActiveToolActor(new Actor(rectangleToolStateMachine));
   } else if (evt.key === 's') {
     evt.preventDefault();
-    getActiveToolActor()?.stop();
-    const selectToolActor = new Actor(selectToolStateMachine);
-    setActiveToolActor(selectToolActor);
-    selectToolActor.start();
+    setActiveToolActor(new Actor(selectToolStateMachine));
   } else if (evt.key === 'm') {
     evt.preventDefault();
-    getActiveToolActor()?.stop();
-    const moveToolActor = new Actor(moveToolStateMachine);
-    setActiveToolActor(moveToolActor);
-    moveToolActor.start();
+    setActiveToolActor(new Actor(moveToolStateMachine));
   }
 }
 
@@ -263,7 +247,6 @@ function calculateAngleGuidesAndSnapPoints() {
   );
 
   if (getShouldDrawHelpers()) {
-    console.log('drawing helpers');
     // If you're in the progress of drawing a shape, show the angle guides and closest snap point
     let firstPoint: Point | null = null;
     if (
@@ -310,10 +293,12 @@ function startDrawLoop(
     screenZoom: screenScale,
   };
 
-  getActiveToolActor()?.send({
-    type: ActorEvent.DRAW,
-    drawInfo,
-  } as DrawEvent);
+  if (getActiveToolActor()?.getSnapshot().can({ type: ActorEvent.DRAW })) {
+    getActiveToolActor()?.send({
+      type: ActorEvent.DRAW,
+      drawInfo,
+    } as DrawEvent);
+  }
 
   /**
    * Highlight the entity closest to the mouse when the select tool is active

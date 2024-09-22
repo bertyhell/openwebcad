@@ -1,11 +1,16 @@
 import { Entity } from './entities/Entity.ts';
 import { Point } from '@flatten-js/core';
 import { screenToWorld } from './helpers/world-screen-conversion.ts';
-import { HoverPoint, HtmlEvent, SnapPoint } from './App.types.ts';
+import {
+  HoverPoint,
+  HtmlEvent,
+  SnapPoint,
+  StateMetaData,
+} from './App.types.ts';
 import { createStack, StateVariable, UndoState } from './helpers/undo-stack.ts';
 import { isEqual } from 'es-toolkit';
 import { RectangleEntity } from './entities/RectangleEntity.ts';
-import { Actor } from 'xstate';
+import { Actor, MachineSnapshot } from 'xstate';
 import { Tool } from './tools.ts';
 
 // state variables
@@ -34,6 +39,11 @@ let screenMouseLocation = new Point(0, 0);
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let activeToolActor: Actor<any> | null = null;
+
+/**
+ * Last state instructions
+ */
+let lastStateInstructions: string | null = null;
 
 /**
  * List of entities like lines, circles, rectangles, etc to be drawn on the canvas
@@ -138,6 +148,7 @@ export const getCanvas = () => canvas;
 export const getContext = () => context;
 export const getScreenMouseLocation = () => screenMouseLocation;
 export const getActiveToolActor = () => activeToolActor;
+export const getLastStateInstructions = () => lastStateInstructions;
 export const getEntities = (): Entity[] => entities;
 export const getHighlightedEntityIds = () => highlightedEntityIds;
 export const getSelectedEntityIds = () => selectedEntityIds;
@@ -187,18 +198,40 @@ export const setActiveToolActor = (
   newToolActor: Actor<any>,
   triggerReact: boolean = true,
 ) => {
+  getActiveToolActor()?.stop();
+
   activeToolActor = newToolActor;
+  activeToolActor.subscribe(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (state: MachineSnapshot<any, any, any, any, any, any, any, any>) => {
+      const stateInstructions = Object.values(
+        state?.getMeta() as Record<string, StateMetaData>,
+      )[0]?.instructions;
+
+      if (getLastStateInstructions() === stateInstructions) {
+        return;
+      }
+
+      setLastStateInstructions(stateInstructions || null);
+
+      if (stateInstructions) {
+        console.log('STATE: ' + stateInstructions);
+      }
+    },
+  );
+  activeToolActor.start();
 
   if (triggerReact) {
     triggerReactUpdate(StateVariable.activeTool);
   }
 };
+export const setLastStateInstructions = (newInstructions: string | null) =>
+  (lastStateInstructions = newInstructions);
 export const setEntities = (newEntities: Entity[]) => {
   trackUndoState(StateVariable.entities, entities);
   entities = newEntities;
 };
 export const setActiveEntity = (newEntity: Entity | null) => {
-  console.log('setting active entity to ', activeEntity);
   activeEntity = newEntity;
 };
 export const setActiveSelectionRect = (
@@ -214,8 +247,12 @@ export const setShouldDrawCursor = (newValue: boolean) =>
   (shouldDrawCursor = newValue);
 export const setHelperEntities = (newEntities: Entity[]) =>
   (helperEntities = newEntities);
-export const setShouldDrawHelpers = (shouldDraw: boolean) =>
-  (shouldDrawHelpers = shouldDraw);
+export const setShouldDrawHelpers = (shouldDraw: boolean) => {
+  console.log('setShouldDrawHelpers', shouldDraw);
+  setSnapPoint(null);
+  setSnapPointOnAngleGuide(null);
+  return (shouldDrawHelpers = shouldDraw);
+};
 export const setDebugEntities = (newDebugEntities: Entity[]) =>
   (debugEntities = newDebugEntities);
 export const setAngleStep = (newStep: number, triggerReact: boolean = true) => {

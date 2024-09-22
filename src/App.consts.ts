@@ -28,7 +28,7 @@ export const CANVAS_FOREGROUND_COLOR = '#fff';
 /**
  * The color of the angle guide lines that are drawn when you are close to an angle step from the last drawn point
  */
-export const ANGLE_GUIDES_COLOR = '#666666';
+export const ANGLE_GUIDES_COLOR = '#999999';
 
 /**
  * The color of the snap points that are drawn when you are close to a snap point

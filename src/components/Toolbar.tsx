@@ -13,7 +13,6 @@ import {
   setActiveLineWidth,
   setActiveToolActor,
   setAngleStep,
-  setShouldDrawHelpers,
   undo,
 } from '../state.ts';
 import { noop } from 'es-toolkit';
@@ -25,7 +24,6 @@ import { COLOR_LIST } from '../App.consts.ts';
 import { times } from '../helpers/times.ts';
 import { toolStateMachines } from '../tools/tool.consts.ts';
 import { Actor } from 'xstate';
-import { ActorEvent } from '../tools/tool.types.ts';
 import { HtmlEvent } from '../App.types.ts';
 
 interface ToolbarProps {}
@@ -59,17 +57,11 @@ export const Toolbar: FC<ToolbarProps> = () => {
   }, [fetchStateUpdatesFromOutside]);
 
   const handleToolClick = useCallback((tool: Tool) => {
-    console.log('set active tool: ', tool);
-    getActiveToolActor()?.send({
-      type: ActorEvent.ESC,
-    });
     getActiveToolActor()?.stop();
 
     const newToolActor = new Actor(toolStateMachines[tool]);
-    newToolActor.start();
-
-    setActiveToolLocal(tool);
     setActiveToolActor(newToolActor);
+    setActiveToolLocal(tool);
   }, []);
 
   const handleAngleChanged = useCallback((angle: number) => {
@@ -84,7 +76,6 @@ export const Toolbar: FC<ToolbarProps> = () => {
         icon={IconName.Direction}
         onClick={() => {
           handleToolClick(Tool.SELECT);
-          setShouldDrawHelpers(true);
         }}
         active={activeToolLocal === Tool.SELECT}
       />
@@ -93,7 +84,6 @@ export const Toolbar: FC<ToolbarProps> = () => {
         icon={IconName.Line}
         onClick={() => {
           handleToolClick(Tool.LINE);
-          setShouldDrawHelpers(true);
         }}
         active={activeToolLocal === Tool.LINE}
       />
@@ -102,7 +92,6 @@ export const Toolbar: FC<ToolbarProps> = () => {
         icon={IconName.Square}
         onClick={() => {
           handleToolClick(Tool.RECTANGLE);
-          setShouldDrawHelpers(true);
         }}
         active={activeToolLocal === Tool.RECTANGLE}
       />
@@ -111,7 +100,6 @@ export const Toolbar: FC<ToolbarProps> = () => {
         icon={IconName.Circle}
         onClick={() => {
           handleToolClick(Tool.CIRCLE);
-          setShouldDrawHelpers(true);
         }}
         active={activeToolLocal === Tool.CIRCLE}
       />

@@ -129,7 +129,6 @@ export function selectEntitiesInsideRectangle(
 }
 
 export function drawTempSelectionRectangle(startPoint: Point, endPoint: Point) {
-  console.log('draw Temp Selection rectangle', { startPoint, endPoint });
   const activeSelectionRectangle = new RectangleEntity(startPoint, endPoint);
   const isIntersectionSelection: boolean = getIsIntersectionSelection(
     activeSelectionRectangle,

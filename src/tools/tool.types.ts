@@ -33,6 +33,7 @@ export enum ActorEvent {
   MOUSE_CLICK = 'MOUSE_CLICK',
   ESC = 'ESC',
   ENTER = 'ENTER',
+  DELETE = 'DELETE',
   DRAW = 'DRAW',
 }
 

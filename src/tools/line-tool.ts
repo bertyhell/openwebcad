@@ -55,6 +55,9 @@ export const lineToolStateMachine = createMachine(
       },
       [LineState.WAITING_FOR_START_POINT]: {
         description: 'Select the start point of the line',
+        meta: {
+          instructions: 'Select the start point of the line',
+        },
         on: {
           MOUSE_CLICK: {
             actions: LineAction.RECORD_START_POINT,
@@ -64,6 +67,9 @@ export const lineToolStateMachine = createMachine(
       },
       [LineState.WAITING_FOR_END_POINT]: {
         description: 'Select the end point of the line',
+        meta: {
+          instructions: 'Select the end point of the line',
+        },
         on: {
           DRAW: {
             actions: LineAction.DRAW_TEMP_LINE,
@@ -82,7 +88,6 @@ export const lineToolStateMachine = createMachine(
   {
     actions: {
       [LineAction.INIT_LINE_TOOL]: assign(() => {
-        console.log('activate line tool');
         setShouldDrawHelpers(true);
         setActiveEntity(null);
         setSelectedEntityIds([]);
@@ -96,8 +101,6 @@ export const lineToolStateMachine = createMachine(
         },
       }),
       [LineAction.DRAW_TEMP_LINE]: ({ context, event }) => {
-        console.log('drawTempLine', { context, event });
-
         const activeLine = new LineEntity(
           context.startPoint as Point,
           (event as DrawEvent).drawInfo.worldMouseLocation,

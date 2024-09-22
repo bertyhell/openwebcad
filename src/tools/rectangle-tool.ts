@@ -55,6 +55,9 @@ export const rectangleToolStateMachine = createMachine(
       },
       [RectangleState.WAITING_FOR_START_POINT]: {
         description: 'Select the start point of the rectangle',
+        meta: {
+          instructions: 'Select the start point of the rectangle',
+        },
         on: {
           MOUSE_CLICK: {
             actions: RectangleAction.RECORD_START_POINT,
@@ -64,6 +67,9 @@ export const rectangleToolStateMachine = createMachine(
       },
       [RectangleState.WAITING_FOR_END_POINT]: {
         description: 'Select the end point of the rectangle',
+        meta: {
+          instructions: 'Select the end point of the rectangle',
+        },
         on: {
           DRAW: {
             actions: RectangleAction.DRAW_TEMP_RECTANGLE,
@@ -82,7 +88,6 @@ export const rectangleToolStateMachine = createMachine(
   {
     actions: {
       [RectangleAction.INIT_RECTANGLE_TOOL]: () => {
-        console.log('activate rectangle tool');
         setShouldDrawHelpers(true);
         setActiveEntity(null);
         setSelectedEntityIds([]);
@@ -93,8 +98,6 @@ export const rectangleToolStateMachine = createMachine(
         };
       }),
       [RectangleAction.DRAW_TEMP_RECTANGLE]: ({ context, event }) => {
-        console.log('drawTempRectangle', { context, event });
-
         if (!context.startPoint) {
           throw new Error(
             '[RECTANGLE]: calling draw without start point being set',
@@ -109,7 +112,6 @@ export const rectangleToolStateMachine = createMachine(
         setActiveEntity(activeRectangle);
       },
       [RectangleAction.DRAW_FINAL_RECTANGLE]: assign(({ context, event }) => {
-        console.log('drawFinalRectangle', { context, event });
         const endPoint = (event as MouseClickEvent).worldClickPoint;
         const activeRectangle = new RectangleEntity(
           context.startPoint as Point,

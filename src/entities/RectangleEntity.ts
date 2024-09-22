@@ -3,6 +3,7 @@ import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
 import * as Flatten from '@flatten-js/core';
 import { Box, Point, Relations, Segment } from '@flatten-js/core';
 import { worldToScreen } from '../helpers/world-screen-conversion.ts';
+import { getExportColor } from '../helpers/get-export-color.ts';
 
 export class RectangleEntity implements Entity {
   public id: string = crypto.randomUUID();
@@ -173,7 +174,7 @@ export class RectangleEntity implements Entity {
     }
     return this.rectangle.svg({
       strokeWidth: this.lineWidth,
-      stroke: this.lineColor,
+      stroke: getExportColor(this.lineColor),
     });
   }
 

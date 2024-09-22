@@ -5,6 +5,7 @@ import { worldToScreen } from '../helpers/world-screen-conversion.ts';
 import { ArcEntity } from './ArcEntity.ts';
 import { wrapModule } from '../helpers/wrap-module.ts';
 import { pointDistance } from '../helpers/distance-between-points.ts';
+import { getExportColor } from '../helpers/get-export-color.ts';
 
 export class CircleEntity implements Entity {
   public id: string = crypto.randomUUID();
@@ -162,7 +163,7 @@ export class CircleEntity implements Entity {
     return (
       this.circle.svg({
         strokeWidth: this.lineWidth,
-        stroke: this.lineColor,
+        stroke: getExportColor(this.lineColor),
       }) || null
     );
   }

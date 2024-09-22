@@ -4,6 +4,7 @@ import { Point, Vector } from '@flatten-js/core';
 import { SVG_MARGIN } from '../../App.consts.ts';
 import { Shape } from '../../App.types.ts';
 import { getCanvasSize, getEntities } from '../../state.ts';
+import { getExportColor } from '../get-export-color.ts';
 
 export function convertEntitiesToSvgString(
   entities: Entity[],
@@ -40,7 +41,7 @@ export function convertEntitiesToSvgString(
       ),
     );
     const svgString = (translatedShape as Shape).svg({
-      stroke: entity.lineColor,
+      stroke: getExportColor(entity.lineColor),
       strokeWidth: entity.lineWidth,
     });
     if (svgString) {

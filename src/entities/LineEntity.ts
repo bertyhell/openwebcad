@@ -5,6 +5,7 @@ import { worldToScreen } from '../helpers/world-screen-conversion.ts';
 import { sortBy, uniqWith } from 'es-toolkit';
 import { isPointEqual } from '../helpers/is-point-equal.ts';
 import { pointDistance } from '../helpers/distance-between-points.ts';
+import { getExportColor } from '../helpers/get-export-color.ts';
 
 export class LineEntity implements Entity {
   public id: string = crypto.randomUUID();
@@ -132,7 +133,7 @@ export class LineEntity implements Entity {
     return (
       this.segment.svg({
         strokeWidth: this.lineWidth,
-        stroke: this.lineColor,
+        stroke: getExportColor(this.lineColor),
       }) || null
     );
   }

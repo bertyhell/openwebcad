@@ -4,6 +4,7 @@ import * as Flatten from '@flatten-js/core';
 import { Box, Point, Segment } from '@flatten-js/core';
 import { worldToScreen } from '../helpers/world-screen-conversion.ts';
 import { isNil } from 'es-toolkit';
+import { getExportColor } from '../helpers/get-export-color.ts';
 
 export class PointEntity implements Entity {
   public id: string = crypto.randomUUID();
@@ -94,7 +95,7 @@ export class PointEntity implements Entity {
     return (
       this.point.svg({
         strokeWidth: this.lineWidth,
-        stroke: this.lineColor,
+        stroke: getExportColor(this.lineColor),
       }) || null
     );
   }

@@ -6,6 +6,7 @@ import { pointDistance } from '../helpers/distance-between-points.ts';
 import { uniqWith } from 'es-toolkit';
 import { isPointEqual } from '../helpers/is-point-equal.ts';
 import { sortPointsOnArc } from '../helpers/sort-points-on-arc.ts';
+import { getExportColor } from '../helpers/get-export-color.ts';
 
 export class ArcEntity implements Entity {
   public id: string = crypto.randomUUID();
@@ -168,7 +169,7 @@ export class ArcEntity implements Entity {
     return (
       this.arc.svg({
         strokeWidth: this.lineWidth,
-        stroke: this.lineColor,
+        stroke: getExportColor(this.lineColor),
       }) || null
     );
   }

@@ -52,6 +52,10 @@ export interface KeyboardEnterEvent extends EventObject {
   type: ActorEvent.ENTER;
 }
 
+export interface KeyboardDeleteEvent extends EventObject {
+  type: ActorEvent.DELETE;
+}
+
 export interface DrawEvent extends EventObject {
   type: ActorEvent.DRAW;
   drawInfo: DrawInfo;
@@ -61,6 +65,7 @@ export type StateEvent =
   | MouseClickEvent
   | KeyboardEscEvent
   | KeyboardEnterEvent
+  | KeyboardDeleteEvent
   | DrawEvent;
 
 export interface ToolContext {

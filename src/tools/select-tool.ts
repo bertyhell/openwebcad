@@ -1,6 +1,8 @@
 import { Point } from '@flatten-js/core';
 import {
+  getNotSelectedEntities,
   setActiveEntity,
+  setEntities,
   setSelectedEntityIds,
   setShouldDrawHelpers,
 } from '../state.ts';
@@ -35,6 +37,7 @@ export enum SelectAction {
   HANDLE_FIRST_SELECT_POINT = 'HANDLE_FIRST_SELECT_POINT',
   SELECT_ENTITIES_INSIDE_RECTANGLE = 'SELECT_ENTITIES_INSIDE_RECTANGLE',
   DRAW_TEMP_SELECTION_RECTANGLE = 'DRAW_TEMP_SELECTION_RECTANGLE',
+  DELETE_SELECTED_ENTITIES = 'DELETE_SELECTED_ENTITIES',
 }
 
 export const selectToolStateMachine = createMachine(
@@ -72,6 +75,10 @@ export const selectToolStateMachine = createMachine(
           },
           ENTER: {
             target: SelectState.SELECTION_COMPLETED,
+          },
+          DELETE: {
+            actions: SelectAction.DELETE_SELECTED_ENTITIES,
+            target: SelectState.INIT,
           },
         },
       },
@@ -174,6 +181,12 @@ export const selectToolStateMachine = createMachine(
           };
         },
       ),
+      DELETE_SELECTED_ENTITIES: () => {
+        console.log('delete selected entities');
+        setEntities(getNotSelectedEntities());
+        setSelectedEntityIds([]);
+        setActiveEntity(null);
+      },
       RESET_SELECTION: assign(() => {
         setActiveEntity(null);
         setSelectedEntityIds([]);

@@ -4,6 +4,8 @@ This is a React-based canvas drawing application that allows users to draw vario
 
 ![demo.gif](readme%2Fdemo.gif)
 
+## DEMO: [https://bertyhell.github.io/openwebcad](https://bertyhell.github.io/openwebcad)
+
 ## Features
 
 - Fullscreen canvas with a black background

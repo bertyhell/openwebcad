@@ -17,9 +17,9 @@ import { moveSelection } from './move-tool.helpers.ts';
 import { selectToolStateMachine } from './select-tool.ts';
 import { LineEntity } from '../entities/LineEntity.ts';
 import {
-  ANGLE_GUIDES_COLOR,
-  SELECTION_RECTANGLE_STYLE,
-  SELECTION_RECTANGLE_WIDTH,
+  GUIDE_LINE_COLOR,
+  GUIDE_LINE_STYLE,
+  GUIDE_LINE_WIDTH,
 } from '../App.consts.ts';
 
 export interface MoveContext extends ToolContext {
@@ -195,9 +195,9 @@ export const moveToolStateMachine = createMachine(
           context.startPoint as Point,
           (event as DrawEvent).drawInfo.worldMouseLocation,
         );
-        activeMoveLine.lineColor = ANGLE_GUIDES_COLOR;
-        activeMoveLine.lineWidth = SELECTION_RECTANGLE_WIDTH;
-        activeMoveLine.lineStyle = SELECTION_RECTANGLE_STYLE;
+        activeMoveLine.lineColor = GUIDE_LINE_COLOR;
+        activeMoveLine.lineWidth = GUIDE_LINE_WIDTH;
+        activeMoveLine.lineStyle = GUIDE_LINE_STYLE;
         setActiveEntity(activeMoveLine);
         return context;
       }),

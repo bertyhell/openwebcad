@@ -1,9 +1,11 @@
 import { DrawInfo, SnapPoint, SnapPointType } from '../App.types.ts';
 import { Entity } from '../entities/Entity.ts';
 import {
-  ANGLE_GUIDES_COLOR,
   CANVAS_BACKGROUND_COLOR,
   CURSOR_SIZE,
+  GUIDE_LINE_COLOR,
+  GUIDE_LINE_STYLE,
+  GUIDE_LINE_WIDTH,
   SNAP_POINT_COLOR,
   SNAP_POINT_SIZE,
 } from '../App.consts.ts';
@@ -204,9 +206,9 @@ export function drawHelpers(drawInfo: DrawInfo, helperEntities: Entity[]) {
       drawInfo.context,
       isEntityHighlighted(entity),
       isEntitySelected(entity),
-      ANGLE_GUIDES_COLOR,
-      1,
-      [1, 5],
+      GUIDE_LINE_COLOR,
+      GUIDE_LINE_WIDTH,
+      GUIDE_LINE_STYLE,
     );
     entity.draw(drawInfo);
   });

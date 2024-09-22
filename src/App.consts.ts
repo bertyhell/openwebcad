@@ -77,6 +77,13 @@ export const SELECTION_RECTANGLE_WIDTH = 1;
 export const SELECTION_RECTANGLE_STYLE = [5, 5]; // Dashed line
 
 /**
+ * Angle guides and move tool line styles
+ */
+export const GUIDE_LINE_COLOR = '#999';
+export const GUIDE_LINE_WIDTH = 1;
+export const GUIDE_LINE_STYLE = [5, 5]; // Dashed line
+
+/**
  * Mouse zoom multiplier. Higher zooms faster for each mouse scroll
  */
 export const MOUSE_ZOOM_MULTIPLIER = 0.1;

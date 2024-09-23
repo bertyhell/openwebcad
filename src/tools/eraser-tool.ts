@@ -1,4 +1,4 @@
-import { Box, Point } from '@flatten-js/core';
+import { Box, Point, Segment } from '@flatten-js/core';
 import { findClosestEntity } from '../helpers/find-closest-entity.ts';
 import {
   addEntity,
@@ -22,6 +22,7 @@ import {
   eraseLineSegment,
   getAllIntersectionPoints,
 } from './eraser-tool.helpers.ts';
+import { isPointEqual } from '../helpers/is-point-equal.ts';
 
 export interface EraserContext extends ToolContext {
   startPoint: Point | null;
@@ -126,15 +127,54 @@ function handleMouseClick(worldClickPoint: Point) {
       const rectangle = closestEntity.entity as RectangleEntity;
       const rectangleShape = rectangle.getShape() as Box;
       const segments = rectangleShape.toSegments();
-      const segmentEntities = segments.map(segment => new LineEntity(segment));
-      // Replace rectangle with its line segments in the entities array
-      deleteEntity(rectangle);
-      addEntity(...segmentEntities);
-
-      segmentEntities.forEach(segmentEntity =>
-        eraseLineSegment(segmentEntity, clickedPointOnShape, intersections),
-      );
+      
+      // Find the closest segment to the clicked point
+      const closestSegment = findClosestEntity(worldClickPoint, segments.map(segment => new LineEntity(segment)));
+      
+      if (closestSegment) {
+        // Remove the rectangle
+        deleteEntity(rectangle);
+        
+        // Create line entities for all sides
+        segments.forEach(segment => {
+          const segmentIntersections = intersections.filter(point => segment.contains(point));
+          
+          if (segmentIntersections.length > 0) {
+            // If the segment has intersections, split it
+            const sortedPoints = [segment.start, ...segmentIntersections, segment.end]
+              .sort((a, b) => a.distanceTo(segment.start)[0] - b.distanceTo(segment.start)[0]);
+            
+            for (let i = 0; i < sortedPoints.length - 1; i++) {
+              const subSegment = new Segment(sortedPoints[i], sortedPoints[i + 1]);
+              if (!isPointOnSegment(worldClickPoint, subSegment)) {
+                const lineEntity = new LineEntity(subSegment);
+                lineEntity.lineColor = rectangle.lineColor;
+                lineEntity.lineWidth = rectangle.lineWidth;
+                addEntity(lineEntity);
+              }
+            }
+          } else if (!areLineSegmentsEqual(segment, (closestSegment.entity as LineEntity).getShape() as Segment)) {
+            // If the segment is not the clicked one and has no intersections, add it as is
+            const lineEntity = new LineEntity(segment);
+            lineEntity.lineColor = rectangle.lineColor;
+            lineEntity.lineWidth = rectangle.lineWidth;
+            addEntity(lineEntity);
+          }
+        });
+      }
       break;
     }
   }
+}
+
+function isPointOnSegment(point: Point, segment: Segment): boolean {
+  const distance = point.distanceTo(segment)[0];
+  return distance < 0.001; // You may need to adjust this threshold
+}
+
+function areLineSegmentsEqual(segment1: Segment, segment2: Segment): boolean {
+  return (
+    (isPointEqual(segment1.start, segment2.start) && isPointEqual(segment1.end, segment2.end)) ||
+    (isPointEqual(segment1.start, segment2.end) && isPointEqual(segment1.end, segment2.start))
+  );
 }

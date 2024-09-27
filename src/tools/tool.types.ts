@@ -59,7 +59,7 @@ export interface KeyboardDeleteEvent extends EventObject {
 
 export interface FileSelectedEvent extends EventObject {
   type: ActorEvent.FILE_SELECTED;
-  arrayBuffer: ArrayBuffer;
+  image: HTMLImageElement;
 }
 
 export interface DrawEvent extends EventObject {

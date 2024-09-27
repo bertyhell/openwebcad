@@ -11,37 +11,24 @@ export class ImageEntity implements Entity {
   public lineWidth: number = 1;
   public lineStyle: number[] | undefined = undefined;
 
-  private imageData: ArrayBuffer | null = null;
+  private imageElement: HTMLImageElement | null = null;
   private rectangle: Box | null = null;
-  private startPoint: Point | null = null;
 
-  constructor(imgData: ArrayBuffer, startPoint?: Point, endPoint?: Point) {
-    this.imageData = imgData;
-    if (startPoint && !endPoint) {
-      this.startPoint = startPoint;
-    } else if (startPoint && endPoint) {
-      this.rectangle = new Box(
-        Math.min(startPoint.x, endPoint.x),
-        Math.min(startPoint.y, endPoint.y),
-        Math.max(startPoint.x, endPoint.x),
-        Math.max(startPoint.y, endPoint.y),
-      );
-    }
+  constructor(imgData: HTMLImageElement, rectangle: Box) {
+    this.imageElement = imgData;
+    this.rectangle = rectangle;
   }
 
   public draw(drawInfo: DrawInfo): void {
-    if (!this.rectangle || !this.imageData) {
+    if (!this.rectangle || !this.imageElement) {
       return;
     }
 
-    const startPointTemp: Point = this.rectangle.high;
-    const endPointTemp: Point = this.rectangle.low;
+    const screenStartPoint = worldToScreen(this.rectangle.low);
+    const screenEndPoint = worldToScreen(this.rectangle.high);
 
-    const screenStartPoint = worldToScreen(startPointTemp);
-    const screenEndPoint = worldToScreen(endPointTemp);
-
-    const width = Math.abs(screenEndPoint.x - screenStartPoint.x);
-    const height = Math.abs(screenEndPoint.y - screenStartPoint.y);
+    const width = Math.abs(screenStartPoint.x - screenEndPoint.x);
+    const height = Math.abs(screenStartPoint.y - screenEndPoint.y);
 
     if (width === 0 || height === 0) {
       return;
@@ -55,35 +42,20 @@ export class ImageEntity implements Entity {
       screenEndPoint.y - screenStartPoint.y,
     );
 
-    const array = new Uint8ClampedArray(this.imageData);
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const i = (y * width + x) * 4;
-        array[i] = x; // red
-        array[i + 1] = y; // green
-        array[i + 2] = 0; // blue
-        array[i + 3] = 255; // alpha
-      }
-    }
-
-    const imageData = new ImageData(array, width, height);
-    drawInfo.context.putImageData(
-      imageData,
+    drawInfo.context.drawImage(
+      this.imageElement,
       screenStartPoint.x,
       screenStartPoint.y,
+      width,
+      height,
     );
   }
 
   public move(x: number, y: number) {
-    if (this.rectangle && this.imageData) {
-      const newRectangle = this.rectangle.translate(x, y);
-      return new ImageEntity(
-        this.imageData,
-        newRectangle.low,
-        newRectangle.high,
-      );
+    if (!this.rectangle || !this.imageElement) {
+      return this;
     }
-    return this;
+    return new ImageEntity(this.imageElement, this.rectangle.translate(x, y));
   }
 
   public intersectsWithBox(selectionBox: Box): boolean {
@@ -181,7 +153,7 @@ export class ImageEntity implements Entity {
   }
 
   public getFirstPoint(): Point | null {
-    return this.startPoint;
+    return this.rectangle?.low || null;
   }
 
   public getSvgString(): string | null {
@@ -205,34 +177,8 @@ export class ImageEntity implements Entity {
     return this.rectangle.toSegments().some(segment => segment.contains(point));
   }
 
-  private async arrayBufferToBase64(arrayBuffer: ArrayBuffer): Promise<string> {
-    return new Promise<string>(resolve => {
-      const blob = new Blob([arrayBuffer], { type: 'image/jpeg' });
-      const reader = new FileReader();
-      reader.onload = () => {
-        resolve(reader.result as string);
-      };
-      reader.readAsDataURL(blob);
-    });
-  }
-
-  private async base64StringToArrayBuffer(
-    base64String: string,
-  ): Promise<ArrayBuffer> {
-    return new Promise<ArrayBuffer>(resolve => {
-      const byteString = atob(base64String.split(',')[1]);
-      const byteStringLength = byteString.length;
-      const arrayBuffer = new ArrayBuffer(byteStringLength);
-      const uint8Array = new Uint8Array(arrayBuffer);
-      for (let i = 0; i < byteStringLength; i++) {
-        uint8Array[i] = byteString.charCodeAt(i);
-      }
-      resolve(arrayBuffer);
-    });
-  }
-
   public async toJson(): Promise<JsonEntity<ImageJsonData> | null> {
-    if (!this.rectangle || !this.imageData) {
+    if (!this.rectangle || !this.imageElement) {
       return null;
     }
     return {
@@ -245,7 +191,7 @@ export class ImageEntity implements Entity {
         ymin: this.rectangle.ymin,
         xmax: this.rectangle.xmax,
         ymax: this.rectangle.ymax,
-        imageData: await this.arrayBufferToBase64(this.imageData),
+        imageData: this.imageElement.currentSrc,
       },
     };
   }
@@ -253,19 +199,15 @@ export class ImageEntity implements Entity {
   public async fromJson(
     jsonEntity: JsonEntity<ImageJsonData>,
   ): Promise<ImageEntity> {
-    const startPoint = new Point(
+    const rectangle = new Box(
       jsonEntity.shapeData.xmin,
       jsonEntity.shapeData.ymin,
-    );
-    const endPoint = new Point(
       jsonEntity.shapeData.xmax,
       jsonEntity.shapeData.ymax,
     );
-    const rectangleEntity = new ImageEntity(
-      await this.base64StringToArrayBuffer(jsonEntity.shapeData.imageData),
-      startPoint,
-      endPoint,
-    );
+    const image = new Image();
+    image.src = jsonEntity.shapeData.imageData;
+    const rectangleEntity = new ImageEntity(image, rectangle);
     rectangleEntity.id = jsonEntity.id;
     rectangleEntity.lineColor = jsonEntity.lineColor;
     rectangleEntity.lineWidth = jsonEntity.lineWidth;

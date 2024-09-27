@@ -5,16 +5,14 @@
  */
 export function importImageFromFile(
   file: File | null | undefined,
-): Promise<ArrayBuffer> {
-  return new Promise<ArrayBuffer>(resolve => {
+): Promise<HTMLImageElement> {
+  return new Promise<HTMLImageElement>(resolve => {
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.addEventListener('load', async () => {
-      const imageArrayBuffer = reader.result as ArrayBuffer;
-
-      resolve(imageArrayBuffer);
-    });
-    reader.readAsArrayBuffer(file);
+    const img = new Image();
+    img.onload = function () {
+      resolve(img);
+    };
+    img.src = URL.createObjectURL(file);
   });
 }

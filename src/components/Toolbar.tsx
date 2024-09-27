@@ -222,7 +222,7 @@ export const Toolbar: FC<ToolbarProps> = () => {
 
       <Button
         className="relative mt-2"
-        title="Load image file"
+        title="Import image into the current drawing"
         icon={IconName.Image}
         onClick={noop}
       >
@@ -231,14 +231,14 @@ export const Toolbar: FC<ToolbarProps> = () => {
           type="file"
           accept="*.jpg,*.jpeg,*.png"
           onChange={async evt => {
-            const imageArrayBuffer = await importImageFromFile(
+            const image: HTMLImageElement = await importImageFromFile(
               evt.target.files?.[0],
             );
             const imageImportActor = new Actor(imageImportToolStateMachine);
             imageImportActor.start();
             imageImportActor.send({
               type: ActorEvent.FILE_SELECTED,
-              arrayBuffer: imageArrayBuffer,
+              image,
             });
             setActiveToolActor(imageImportActor);
             evt.target.files = null;

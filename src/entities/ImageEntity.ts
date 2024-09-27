@@ -5,54 +5,34 @@ import { Box, Point, Relations, Segment } from '@flatten-js/core';
 import { worldToScreen } from '../helpers/world-screen-conversion.ts';
 import { getExportColor } from '../helpers/get-export-color.ts';
 
-export class RectangleEntity implements Entity {
+export class ImageEntity implements Entity {
   public id: string = crypto.randomUUID();
   public lineColor: string = '#fff';
   public lineWidth: number = 1;
   public lineStyle: number[] | undefined = undefined;
 
+  private imageElement: HTMLImageElement | null = null;
   private rectangle: Box | null = null;
-  private startPoint: Point | null = null;
 
-  constructor(startPointOrRectangle?: Point | Box, endPoint?: Point) {
-    if (startPointOrRectangle instanceof Box) {
-      const rect = startPointOrRectangle as Box;
-      this.startPoint = new Point(rect.xmin, rect.ymin);
-      this.rectangle = rect;
-    } else if (startPointOrRectangle && !endPoint) {
-      this.startPoint = startPointOrRectangle;
-    } else if (startPointOrRectangle && endPoint) {
-      this.rectangle = new Box(
-        Math.min(startPointOrRectangle.x, endPoint.x),
-        Math.min(startPointOrRectangle.y, endPoint.y),
-        Math.max(startPointOrRectangle.x, endPoint.x),
-        Math.max(startPointOrRectangle.y, endPoint.y),
-      );
-    }
+  constructor(imgData: HTMLImageElement, rectangle: Box) {
+    this.imageElement = imgData;
+    this.rectangle = rectangle;
   }
 
   public draw(drawInfo: DrawInfo): void {
-    if (!this.startPoint && !this.rectangle) {
+    if (!this.rectangle || !this.imageElement) {
       return;
     }
 
-    let startPointTemp: Point;
-    let endPointTemp: Point;
-    if (this.rectangle) {
-      // Draw the line between the 2 points
-      startPointTemp = this.rectangle.high;
-      endPointTemp = this.rectangle.low;
-    } else {
-      // Draw the line between the start point and the mouse
-      startPointTemp = this.startPoint as Point;
-      endPointTemp = new Point(
-        drawInfo.worldMouseLocation.x,
-        drawInfo.worldMouseLocation.y,
-      );
-    }
+    const screenStartPoint = worldToScreen(this.rectangle.low);
+    const screenEndPoint = worldToScreen(this.rectangle.high);
 
-    const screenStartPoint = worldToScreen(startPointTemp);
-    const screenEndPoint = worldToScreen(endPointTemp);
+    const width = Math.abs(screenStartPoint.x - screenEndPoint.x);
+    const height = Math.abs(screenStartPoint.y - screenEndPoint.y);
+
+    if (width === 0 || height === 0) {
+      return;
+    }
 
     drawInfo.context.beginPath();
     drawInfo.context.strokeRect(
@@ -61,13 +41,21 @@ export class RectangleEntity implements Entity {
       screenEndPoint.x - screenStartPoint.x,
       screenEndPoint.y - screenStartPoint.y,
     );
+
+    drawInfo.context.drawImage(
+      this.imageElement,
+      screenStartPoint.x,
+      screenStartPoint.y,
+      width,
+      height,
+    );
   }
 
   public move(x: number, y: number) {
-    if (this.rectangle) {
-      return new RectangleEntity(this.rectangle.translate(x, y));
+    if (!this.rectangle || !this.imageElement) {
+      return this;
     }
-    return this;
+    return new ImageEntity(this.imageElement, this.rectangle.translate(x, y));
   }
 
   public intersectsWithBox(selectionBox: Box): boolean {
@@ -165,7 +153,7 @@ export class RectangleEntity implements Entity {
   }
 
   public getFirstPoint(): Point | null {
-    return this.startPoint;
+    return this.rectangle?.low || null;
   }
 
   public getSvgString(): string | null {
@@ -179,7 +167,7 @@ export class RectangleEntity implements Entity {
   }
 
   public getType(): EntityName {
-    return EntityName.Rectangle;
+    return EntityName.Image;
   }
 
   public containsPointOnShape(point: Flatten.Point): boolean {
@@ -189,13 +177,13 @@ export class RectangleEntity implements Entity {
     return this.rectangle.toSegments().some(segment => segment.contains(point));
   }
 
-  public async toJson(): Promise<JsonEntity<RectangleJsonData> | null> {
-    if (!this.rectangle) {
+  public async toJson(): Promise<JsonEntity<ImageJsonData> | null> {
+    if (!this.rectangle || !this.imageElement) {
       return null;
     }
     return {
       id: this.id,
-      type: EntityName.Rectangle,
+      type: EntityName.Image,
       lineColor: this.lineColor,
       lineWidth: this.lineWidth,
       shapeData: {
@@ -203,22 +191,23 @@ export class RectangleEntity implements Entity {
         ymin: this.rectangle.ymin,
         xmax: this.rectangle.xmax,
         ymax: this.rectangle.ymax,
+        imageData: this.imageElement.currentSrc,
       },
     };
   }
 
   public async fromJson(
-    jsonEntity: JsonEntity<RectangleJsonData>,
-  ): Promise<RectangleEntity> {
-    const startPoint = new Point(
+    jsonEntity: JsonEntity<ImageJsonData>,
+  ): Promise<ImageEntity> {
+    const rectangle = new Box(
       jsonEntity.shapeData.xmin,
       jsonEntity.shapeData.ymin,
-    );
-    const endPoint = new Point(
       jsonEntity.shapeData.xmax,
       jsonEntity.shapeData.ymax,
     );
-    const rectangleEntity = new RectangleEntity(startPoint, endPoint);
+    const image = new Image();
+    image.src = jsonEntity.shapeData.imageData;
+    const rectangleEntity = new ImageEntity(image, rectangle);
     rectangleEntity.id = jsonEntity.id;
     rectangleEntity.lineColor = jsonEntity.lineColor;
     rectangleEntity.lineWidth = jsonEntity.lineWidth;
@@ -226,9 +215,10 @@ export class RectangleEntity implements Entity {
   }
 }
 
-export interface RectangleJsonData {
+export interface ImageJsonData {
   xmin: number;
   ymin: number;
   xmax: number;
   ymax: number;
+  imageData: string;
 }

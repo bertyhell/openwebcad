@@ -3,12 +3,12 @@ import { compact } from 'es-toolkit';
 import { getEntities } from '../../state.ts';
 import { JsonEntity } from '../../entities/Entity.ts';
 
-export function exportEntitiesToJsonFile() {
+export async function exportEntitiesToJsonFile() {
   const entities = getEntities();
 
-  const jsonEntities = compact(entities.map(entity => entity.toJson()));
+  const jsonEntities = entities.map(entity => entity.toJson());
   const jsonDrawingFile: JsonDrawingFile = {
-    entities: jsonEntities,
+    entities: compact(await Promise.all(jsonEntities)), // TODO use a mapLimit to avoid overloading the event loop
   };
   const json = JSON.stringify(jsonDrawingFile, null, 2);
 

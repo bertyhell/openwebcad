@@ -1,6 +1,6 @@
 import { JsonDrawingFile } from './export-entities-to-json.ts';
 import { compact } from 'es-toolkit';
-import { EntityName, JsonEntity } from '../../entities/Entity.ts';
+import { Entity, EntityName, JsonEntity } from '../../entities/Entity.ts';
 import { ArcEntity, ArcJsonData } from '../../entities/ArcEntity.ts';
 import { CircleEntity, CircleJsonData } from '../../entities/CircleEntity.ts';
 import { LineEntity, LineJsonData } from '../../entities/LineEntity.ts';
@@ -30,7 +30,8 @@ export function importEntitiesFromJsonFile(file: File | null | undefined) {
         reject(new Error('Invalid JSON file'));
       }
 
-      const entities = compact(
+      // TODO use map limit to avoid overloading the event loop
+      const entityPromises: Promise<Entity | null>[] = compact(
         data.entities.map(entity => {
           switch (entity.type) {
             case EntityName.Arc:
@@ -60,7 +61,7 @@ export function importEntitiesFromJsonFile(file: File | null | undefined) {
         }),
       );
 
-      setEntities(entities);
+      setEntities(compact(await Promise.all(entityPromises)));
       resolve();
     });
     reader.readAsText(file, 'utf-8');

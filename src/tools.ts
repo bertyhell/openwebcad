@@ -5,4 +5,5 @@ export enum Tool {
   CIRCLE = 'CIRCLE',
   MOVE = 'MOVE',
   ERASER = 'ERASER',
+  IMAGE_IMPORT = 'IMAGE_IMPORT',
 }

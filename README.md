@@ -24,6 +24,8 @@ This is a React-based canvas drawing application that allows users to draw vario
   - Use shift to add to the current selection
   - drag left, to select by intersecting
   - drag right, to select by containing
+- Move selected lines
+- Import images into the drawing
 - Export drawing as an SVG file
 - Export drawing as an PNG file
 - Save and load drawings from/to json files
@@ -38,7 +40,7 @@ This is a React-based canvas drawing application that allows users to draw vario
   - nearest point on line
   - prioritize certain snap points over others
 - Edit existing lines and circles by dragging endpoints/middle points
-- Move, rotate, scale shapes
+- rotate, scale shapes
 - Align shapes to each other
 - Add measurement indicators
 - Layers for drawing shapes in different layers that can be toggled on or off

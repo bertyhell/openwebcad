@@ -1,4 +1,4 @@
-import { Box, Point, Segment } from '@flatten-js/core';
+import { Box, Point } from '@flatten-js/core';
 import { findClosestEntity } from '../helpers/find-closest-entity.ts';
 import {
   addEntity,
@@ -22,7 +22,6 @@ import {
   eraseLineSegment,
   getAllIntersectionPoints,
 } from './eraser-tool.helpers.ts';
-import { isPointEqual } from '../helpers/is-point-equal.ts';
 
 export interface EraserContext extends ToolContext {
   startPoint: Point | null;

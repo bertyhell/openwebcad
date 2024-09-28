@@ -155,15 +155,3 @@ function handleMouseClick(worldClickPoint: Point) {
     }
   }
 }
-
-function isPointOnSegment(point: Point, segment: Segment): boolean {
-  const distance = point.distanceTo(segment)[0];
-  return distance < 0.001; // You may need to adjust this threshold
-}
-
-function areLineSegmentsEqual(segment1: Segment, segment2: Segment): boolean {
-  return (
-    (isPointEqual(segment1.start, segment2.start) && isPointEqual(segment1.end, segment2.end)) ||
-    (isPointEqual(segment1.start, segment2.end) && isPointEqual(segment1.end, segment2.start))
-  );
-}

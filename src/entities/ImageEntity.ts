@@ -53,10 +53,22 @@ export class ImageEntity implements Entity {
 
   public move(x: number, y: number) {
     if (!this.rectangle || !this.imageElement) {
-      return this;
+      return;
     }
-    return new ImageEntity(this.imageElement, this.rectangle.translate(x, y));
+    this.rectangle = this.rectangle.translate(x, y);
   }
+
+  public clone(): ImageEntity | null {
+    if (!this.rectangle || !this.imageElement) {
+      return null;
+    }
+
+    const clonedImage = document.createElement('img');
+    clonedImage.src = this.imageElement.src;
+    return new ImageEntity(clonedImage, this.rectangle.clone());
+  }
+
+  // TODO add destroy method to cleanup this.imageElement.src
 
   public intersectsWithBox(selectionBox: Box): boolean {
     if (!this.rectangle) {

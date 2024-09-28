@@ -14,9 +14,10 @@ import { HOVERED_SNAP_POINT_TIME } from '../App.consts.ts';
 import { compact } from 'es-toolkit';
 import {
   getActiveEntity,
+  getAngleGuideEntities,
   getDebugEntities,
   getEntities,
-  getHelperEntities,
+  getGhostHelperEntities,
   getHoveredSnapPoints,
   getShouldDrawCursor,
   getSnapPoint,
@@ -27,7 +28,8 @@ import {
 export function draw(drawInfo: DrawInfo) {
   clearCanvas(drawInfo);
 
-  drawHelpers(drawInfo, getHelperEntities());
+  drawHelpers(drawInfo, getAngleGuideEntities());
+  drawEntities(drawInfo, getGhostHelperEntities());
   drawEntities(drawInfo, getEntities());
   drawDebugEntities(drawInfo, getDebugEntities());
   drawActiveEntity(drawInfo, getActiveEntity());

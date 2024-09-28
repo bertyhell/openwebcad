@@ -65,9 +65,15 @@ export class RectangleEntity implements Entity {
 
   public move(x: number, y: number) {
     if (this.rectangle) {
-      return new RectangleEntity(this.rectangle.translate(x, y));
+      this.rectangle = this.rectangle.translate(x, y);
     }
-    return this;
+  }
+
+  public clone(): RectangleEntity | null {
+    if (!this.rectangle) {
+      return null;
+    }
+    return new RectangleEntity(this.rectangle.clone());
   }
 
   public intersectsWithBox(selectionBox: Box): boolean {

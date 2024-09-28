@@ -83,15 +83,15 @@ export class ArcEntity implements Entity {
     drawInfo.context.stroke();
   }
 
-  public move(x: number, y: number): Entity {
+  public move(x: number, y: number) {
     if (this.arc) {
-      const newArc = this.arc.translate(x, y);
-      return new ArcEntity(
-        newArc.center,
-        newArc.start,
-        newArc.end,
-        newArc.counterClockwise,
-      );
+      this.arc = this.arc.translate(x, y);
+    }
+  }
+
+  public clone(): Entity {
+    if (this.arc) {
+      return new ArcEntity(this.arc.clone());
     }
     return this;
   }

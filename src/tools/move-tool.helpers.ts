@@ -1,16 +1,17 @@
-import { Point } from '@flatten-js/core';
-import { getEntities, getSelectedEntityIds, setEntities } from '../state.ts';
+import { Entity } from '../entities/Entity.ts';
 
-export function moveSelection(startPoint: Point, endPoint: Point) {
-  // Move selected entities from start point to end point
-  const movedEntities = getEntities().map(entity => {
-    if (getSelectedEntityIds().includes(entity.id)) {
-      return entity.move(
-        endPoint.x - startPoint!.x,
-        endPoint.y - startPoint!.y,
-      );
-    }
-    return entity;
+/**
+ * Move entities by the difference between the start and end points
+ * @param entities
+ * @param deltaX
+ * @param deltaY
+ */
+export function moveEntities(
+  entities: Entity[],
+  deltaX: number,
+  deltaY: number,
+) {
+  entities.forEach(entity => {
+    return entity.move(deltaX, deltaY);
   });
-  setEntities(movedEntities);
 }

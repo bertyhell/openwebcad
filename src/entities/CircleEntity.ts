@@ -66,7 +66,13 @@ export class CircleEntity implements Entity {
 
   public move(x: number, y: number) {
     if (this.circle) {
-      return new CircleEntity(this.circle?.translate(x, y));
+      this.circle = this.circle?.translate(x, y);
+    }
+  }
+
+  public clone(): Entity {
+    if (this.circle) {
+      return new CircleEntity(this.circle.clone());
     }
     return this;
   }

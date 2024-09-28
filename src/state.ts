@@ -76,9 +76,15 @@ let activeSelectionRect: RectangleEntity | null = null;
 let shouldDrawCursor = false;
 
 /**
- * Helper entities like angle guides
+ * Angle guide temporary entities, these are recalculated every frame as the user moves their mouse during a draw action
  */
-let helperEntities: Entity[] = [];
+let angleGuideEntities: Entity[] = [];
+
+/**
+ * These are entities that are being drawn on the canvas during a move, scale or rotate operation
+ * To give visual feedback to the user of the final result
+ */
+let ghostHelperEntities: Entity[] = [];
 
 /**
  * Should helper entities be calculated and drawn? eg: angle guides and snap points
@@ -155,7 +161,8 @@ export const getSelectedEntityIds = () => selectedEntityIds;
 export const getActiveEntity = () => activeEntity;
 export const getActiveSelectionRect = () => activeSelectionRect;
 export const getShouldDrawCursor = () => shouldDrawCursor;
-export const getHelperEntities = () => helperEntities;
+export const getAngleGuideEntities = () => angleGuideEntities;
+export const getGhostHelperEntities = () => ghostHelperEntities;
 export const getShouldDrawHelpers = () => shouldDrawHelpers;
 export const getDebugEntities = () => debugEntities;
 export const getAngleStep = () => angleStep;
@@ -245,13 +252,15 @@ export const setSelectedEntityIds = (newEntityIds: string[]) =>
   (selectedEntityIds = newEntityIds);
 export const setShouldDrawCursor = (newValue: boolean) =>
   (shouldDrawCursor = newValue);
-export const setHelperEntities = (newEntities: Entity[]) =>
-  (helperEntities = newEntities);
+export const setAngleGuideEntities = (newAngleGuideEntities: Entity[]) =>
+  (angleGuideEntities = newAngleGuideEntities);
+export const setGhostHelperEntities = (newGhostHelperEntities: Entity[]) =>
+  (ghostHelperEntities = newGhostHelperEntities);
 export const setShouldDrawHelpers = (shouldDraw: boolean) => {
   console.log('setShouldDrawHelpers', shouldDraw);
   setSnapPoint(null);
   setSnapPointOnAngleGuide(null);
-  setHelperEntities([]);
+  setAngleGuideEntities([]);
   return (shouldDrawHelpers = shouldDraw);
 };
 export const setDebugEntities = (newDebugEntities: Entity[]) =>
@@ -303,9 +312,10 @@ export const setActiveLineWidth = (
 };
 
 // Computed setters
-export const deleteEntity = (entityToDelete: Entity): Entity[] => {
+export const deleteEntity = (...entitiesToDelete: Entity[]): Entity[] => {
+  const entityIdsToBeDeleted = entitiesToDelete.map(entity => entity.id);
   const newEntities = getEntities().filter(
-    entity => entity.id !== entityToDelete.id,
+    entity => !entityIdsToBeDeleted.includes(entity.id),
   );
   setEntities(newEntities);
   return newEntities;

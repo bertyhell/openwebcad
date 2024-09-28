@@ -59,9 +59,15 @@ export class LineEntity implements Entity {
 
   public move(x: number, y: number) {
     if (this.segment) {
-      return new LineEntity(this.segment.translate(x, y));
+      this.segment = this.segment.translate(x, y);
     }
-    return this;
+  }
+
+  public clone(): LineEntity | null {
+    if (!this.segment) {
+      return null;
+    }
+    return new LineEntity(this.segment.clone());
   }
 
   public intersectsWithBox(box: Box): boolean {

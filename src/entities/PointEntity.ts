@@ -34,9 +34,15 @@ export class PointEntity implements Entity {
 
   public move(x: number, y: number) {
     if (this.point) {
-      return new PointEntity(this.point.translate(x, y));
+      this.point = this.point.translate(x, y);
     }
-    return this;
+  }
+
+  public clone(): PointEntity | null {
+    if (!this.point) {
+      return null;
+    }
+    return new PointEntity(this.point.clone());
   }
 
   public intersectsWithBox(): boolean {

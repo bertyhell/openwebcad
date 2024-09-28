@@ -14,7 +14,14 @@ export interface Entity {
   lineWidth: number;
   lineStyle: number[] | undefined;
   draw(drawInfo: DrawInfo): void;
-  move(x: number, y: number): Entity;
+
+  /**
+   * Translate an entity by x and y amount
+   * @param x
+   * @param y
+   */
+  move(x: number, y: number): void;
+  clone(): Entity | null;
   getBoundingBox(): Box | null;
   intersectsWithBox(box: Box): boolean;
   isContainedInBox(box: Box): boolean;

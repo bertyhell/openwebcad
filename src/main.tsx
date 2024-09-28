@@ -22,10 +22,10 @@ import {
   redo,
   setActiveEntity,
   setActiveToolActor,
+  setAngleGuideEntities,
   setCanvas,
   setCanvasSize,
   setContext,
-  setHelperEntities,
   setHighlightedEntityIds,
   setHoveredSnapPoints,
   setLastDrawTimestamp,
@@ -126,10 +126,10 @@ function handleMouseWheel(evt: WheelEvent) {
     (1 - MOUSE_ZOOM_MULTIPLIER * (evt.deltaY / Math.abs(evt.deltaY)));
   setScreenZoom(newScreenScale);
 
-  // ...now get the location of the cursor in world space again - It will have changed
-  // because the scale has changed, but we can offset our world now to fix the zoom
-  // location in screen space, because we know how much it changed laterally between
-  // the two spatial scales. Neat huh? ;-)
+  // now get the location of the cursor in world space again
+  // It will have changed because the scale has changed,
+  // but we can offset our world now to fix the zoom location in screen space,
+  // because we know how much it changed laterally between the two spatial scales.
   const worldMouseLocationAfterZoom = screenToWorld(getScreenMouseLocation());
 
   setScreenOffset(
@@ -264,7 +264,7 @@ function calculateAngleGuidesAndSnapPoints() {
       angleStep,
       SNAP_POINT_DISTANCE / screenScale,
     );
-    setHelperEntities(angleGuides);
+    setAngleGuideEntities(angleGuides);
     setSnapPoint(entitySnapPoint);
     setSnapPointOnAngleGuide(angleSnapPoint);
   }

@@ -2,7 +2,7 @@ import { Box, Point } from '@flatten-js/core';
 import {
   addEntity,
   setActiveEntity,
-  setHelperEntities,
+  setAngleGuideEntities,
   setSelectedEntityIds,
   setShouldDrawHelpers,
 } from '../state.ts';
@@ -160,7 +160,7 @@ export const imageImportToolStateMachine = createMachine(
           ),
         );
         setActiveEntity(activeImage);
-        setHelperEntities([draggedRectangle]);
+        setAngleGuideEntities([draggedRectangle]);
       },
       [ImageImportAction.DRAW_FINAL_IMAGE_IMPORT]: assign(
         ({ context, event }) => {

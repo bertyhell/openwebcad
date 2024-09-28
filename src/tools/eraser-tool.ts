@@ -127,41 +127,30 @@ function handleMouseClick(worldClickPoint: Point) {
       const rectangle = closestEntity.entity as RectangleEntity;
       const rectangleShape = rectangle.getShape() as Box;
       const segments = rectangleShape.toSegments();
-      
+      const segmentEntities = segments.map(segment => new LineEntity(segment));
+
       // Find the closest segment to the clicked point
-      const closestSegment = findClosestEntity(worldClickPoint, segments.map(segment => new LineEntity(segment)));
-      
-      if (closestSegment) {
-        // Remove the rectangle
-        deleteEntity(rectangle);
-        
-        // Create line entities for all sides
-        segments.forEach(segment => {
-          const segmentIntersections = intersections.filter(point => segment.contains(point));
-          
-          if (segmentIntersections.length > 0) {
-            // If the segment has intersections, split it
-            const sortedPoints = [segment.start, ...segmentIntersections, segment.end]
-              .sort((a, b) => a.distanceTo(segment.start)[0] - b.distanceTo(segment.start)[0]);
-            
-            for (let i = 0; i < sortedPoints.length - 1; i++) {
-              const subSegment = new Segment(sortedPoints[i], sortedPoints[i + 1]);
-              if (!isPointOnSegment(worldClickPoint, subSegment)) {
-                const lineEntity = new LineEntity(subSegment);
-                lineEntity.lineColor = rectangle.lineColor;
-                lineEntity.lineWidth = rectangle.lineWidth;
-                addEntity(lineEntity);
-              }
-            }
-          } else if (!areLineSegmentsEqual(segment, (closestSegment.entity as LineEntity).getShape() as Segment)) {
-            // If the segment is not the clicked one and has no intersections, add it as is
-            const lineEntity = new LineEntity(segment);
-            lineEntity.lineColor = rectangle.lineColor;
-            lineEntity.lineWidth = rectangle.lineWidth;
-            addEntity(lineEntity);
-          }
-        });
-      }
+      const closestSegmentInfo = findClosestEntity(
+        worldClickPoint,
+        segmentEntities,
+      );
+
+      // Remove the rectangle
+      deleteEntity(rectangle);
+
+      // Add 4 lines instead of the rectangle
+      addEntity(...segmentEntities);
+
+      // Remove (a segment) of the 4th line closest to the cursor
+      const lineIntersections = getAllIntersectionPoints(
+        closestSegmentInfo.entity,
+        getEntities(),
+      );
+      eraseLineSegment(
+        closestSegmentInfo.entity as LineEntity,
+        clickedPointOnShape,
+        lineIntersections,
+      );
       break;
     }
   }

@@ -1,4 +1,4 @@
-import { Box, Point } from '@flatten-js/core';
+import { Box, Point, Segment } from '@flatten-js/core';
 import { findClosestEntity } from '../helpers/find-closest-entity.ts';
 import {
   addEntity,
@@ -22,6 +22,7 @@ import {
   eraseLineSegment,
   getAllIntersectionPoints,
 } from './eraser-tool.helpers.ts';
+import { isPointEqual } from '../helpers/is-point-equal.ts';
 
 export interface EraserContext extends ToolContext {
   startPoint: Point | null;
@@ -127,12 +128,28 @@ function handleMouseClick(worldClickPoint: Point) {
       const rectangleShape = rectangle.getShape() as Box;
       const segments = rectangleShape.toSegments();
       const segmentEntities = segments.map(segment => new LineEntity(segment));
-      // Replace rectangle with its line segments in the entities array
+
+      // Find the closest segment to the clicked point
+      const closestSegmentInfo = findClosestEntity(
+        worldClickPoint,
+        segmentEntities,
+      );
+
+      // Remove the rectangle
       deleteEntity(rectangle);
+
+      // Add 4 lines instead of the rectangle
       addEntity(...segmentEntities);
 
-      segmentEntities.forEach(segmentEntity =>
-        eraseLineSegment(segmentEntity, clickedPointOnShape, intersections),
+      // Remove (a segment) of the 4th line closest to the cursor
+      const lineIntersections = getAllIntersectionPoints(
+        closestSegmentInfo.entity,
+        getEntities(),
+      );
+      eraseLineSegment(
+        closestSegmentInfo.entity as LineEntity,
+        clickedPointOnShape,
+        lineIntersections,
       );
       break;
     }

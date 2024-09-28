@@ -222,6 +222,8 @@ export const setActiveToolActor = (
       setLastStateInstructions(stateInstructions || null);
 
       if (stateInstructions) {
+        document.getElementById('toolInstructions')!.innerText =
+          stateInstructions;
         console.log('STATE: ' + stateInstructions);
       }
     },

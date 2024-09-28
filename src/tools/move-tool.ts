@@ -114,7 +114,7 @@ export const moveToolStateMachine = createMachine(
       [MoveState.WAITING_FOR_SELECTION]: {
         description: 'Select what you want to move',
         meta: {
-          instructions: 'Select what you want to move',
+          instructions: 'Select what you want to move, then ENTER',
         },
         invoke: {
           id: 'selectToolInsideTheMoveTool',

@@ -2,12 +2,13 @@ import { Box, Point } from '@flatten-js/core';
 import {
   addEntity,
   setActiveEntity,
+  setActiveToolActor,
   setAngleGuideEntities,
   setSelectedEntityIds,
   setShouldDrawHelpers,
 } from '../state.ts';
 import { Tool } from '../tools.ts';
-import { assign, createMachine } from 'xstate';
+import { Actor, assign, createMachine } from 'xstate';
 import {
   ActorEvent,
   DrawEvent,
@@ -19,6 +20,7 @@ import {
 import { ImageEntity } from '../entities/ImageEntity.ts';
 import { getContainRectangleInsideRectangle } from './image-import-tool.helpers.ts';
 import { RectangleEntity } from '../entities/RectangleEntity.ts';
+import { selectToolStateMachine } from './select-tool.ts';
 
 export interface ImageImportContext extends ToolContext {
   startPoint: Point | null;
@@ -38,6 +40,7 @@ export enum ImageImportAction {
   RECORD_START_POINT = 'RECORD_START_POINT',
   DRAW_TEMP_IMAGE_IMPORT = 'DRAW_TEMP_IMAGE_IMPORT',
   DRAW_FINAL_IMAGE_IMPORT = 'DRAW_FINAL_IMAGE_IMPORT',
+  SWITCH_TO_SELECT_TOOL = 'SWITCH_TO_SELECT_TOOL',
 }
 
 export const imageImportToolStateMachine = createMachine(
@@ -97,7 +100,10 @@ export const imageImportToolStateMachine = createMachine(
             actions: ImageImportAction.DRAW_TEMP_IMAGE_IMPORT,
           },
           MOUSE_CLICK: {
-            actions: ImageImportAction.DRAW_FINAL_IMAGE_IMPORT,
+            actions: [
+              ImageImportAction.DRAW_FINAL_IMAGE_IMPORT,
+              ImageImportAction.SWITCH_TO_SELECT_TOOL,
+            ],
             target: ImageImportState.INIT,
           },
           ESC: {
@@ -203,6 +209,9 @@ export const imageImportToolStateMachine = createMachine(
           };
         },
       ),
+      [ImageImportAction.SWITCH_TO_SELECT_TOOL]: () => {
+        setActiveToolActor(new Actor(selectToolStateMachine));
+      },
     },
   },
 );

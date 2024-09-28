@@ -61,7 +61,7 @@ let highlightedEntityIds: string[] = [];
 let selectedEntityIds: string[] = [];
 
 /**
- * Entity that is currently being drawn, but isn't complete yet
+ * Entity/Entities that is currently being drawn, but isn't/aren't complete yet
  */
 let activeEntity: Entity | null = null;
 
@@ -231,8 +231,8 @@ export const setEntities = (newEntities: Entity[]) => {
   trackUndoState(StateVariable.entities, entities);
   entities = newEntities;
 };
-export const setActiveEntity = (newEntity: Entity | null) => {
-  activeEntity = newEntity;
+export const setActiveEntity = (newActiveEntity: Entity | null) => {
+  activeEntity = newActiveEntity;
 };
 export const setActiveSelectionRect = (
   newActiveSelectionRect: RectangleEntity,

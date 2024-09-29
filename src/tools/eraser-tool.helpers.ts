@@ -6,10 +6,7 @@ import { findNeighboringPointsOnLine } from '../helpers/find-neighboring-points-
 import { addEntity, deleteEntity, setDebugEntities } from '../state.ts';
 import { PointEntity } from '../entities/PointEntity.ts';
 import { CircleEntity } from '../entities/CircleEntity.ts';
-import { findNeighboringPointsOnCircle } from '../helpers/find-neighboring-points-on-circle.ts';
-import { isPointEqual } from '../helpers/is-point-equal.ts';
 import { ArcEntity } from '../entities/ArcEntity.ts';
-import { findNeighboringPointsOnArc } from '../helpers/find-neighboring-points-on-arc.ts';
 
 export function getAllIntersectionPoints(
   entity: Entity,
@@ -57,30 +54,16 @@ export function eraseCircleSegment(
   clickedPointOnShape: Point,
   intersections: Point[],
 ): void {
-  const [firstCutPoint, secondCutPoint] = findNeighboringPointsOnCircle(
-    clickedPointOnShape,
-    circle,
-    intersections,
-  );
-
-  setDebugEntities(
-    [firstCutPoint, secondCutPoint].map(point => new PointEntity(point)),
-  );
-
-  const cutArcs: Entity[] = circle.cutAtPoints([firstCutPoint, secondCutPoint]);
-
-  // Remove the arc segment that has the clickedPointOnShape point on it
-  if (isPointEqual(firstCutPoint, secondCutPoint)) {
-    // If one one intersection, delete the whole circle
+  if (intersections.length === 0) {
     deleteEntity(circle);
-  } else {
-    // Delete segment that contains the click point
-    const remainingArcs = cutArcs.filter(
-      arc => !arc.containsPointOnShape(clickedPointOnShape),
-    );
-    deleteEntity(circle);
-    addEntity(...remainingArcs);
+    return;
   }
+
+  const remainingArcs = circle.cutAtPoints(intersections)
+    .filter(arc => !arc.containsPointOnShape(clickedPointOnShape));
+
+  deleteEntity(circle);
+  addEntity(...remainingArcs);
 }
 
 export function eraseArcSegment(
@@ -88,28 +71,9 @@ export function eraseArcSegment(
   clickedPointOnShape: Point,
   intersections: Point[],
 ): void {
-  const [firstCutPoint, secondCutPoint] = findNeighboringPointsOnArc(
-    clickedPointOnShape,
-    arc,
-    intersections,
-  );
+  const remainingArcs = arc.cutAtPoints(intersections)
+    .filter(cutArc => !cutArc.containsPointOnShape(clickedPointOnShape));
 
-  setDebugEntities(
-    [firstCutPoint, secondCutPoint].map(point => new PointEntity(point)),
-  );
-
-  const cutArcs: Entity[] = arc.cutAtPoints([firstCutPoint, secondCutPoint]);
-
-  // Remove the arc segment that has the clickedPointOnShape point on it
-  if (isPointEqual(firstCutPoint, secondCutPoint)) {
-    // If one one intersection, delete the whole circle
-    deleteEntity(arc);
-  } else {
-    // Delete segment that contains the click point
-    const remainingArcs = cutArcs.filter(
-      arc => !arc.containsPointOnShape(clickedPointOnShape),
-    );
-    deleteEntity(arc);
-    addEntity(...remainingArcs);
-  }
+  deleteEntity(arc);
+  addEntity(...remainingArcs);
 }

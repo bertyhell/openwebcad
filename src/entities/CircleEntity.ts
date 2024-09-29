@@ -3,7 +3,6 @@ import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
 import { Box, Circle, Point, Segment } from '@flatten-js/core';
 import { worldToScreen } from '../helpers/world-screen-conversion.ts';
 import { ArcEntity } from './ArcEntity.ts';
-import { wrapModule } from '../helpers/wrap-module.ts';
 import { pointDistance } from '../helpers/distance-between-points.ts';
 import { getExportColor } from '../helpers/get-export-color.ts';
 
@@ -186,27 +185,25 @@ export class CircleEntity implements Entity {
   }
 
   public cutAtPoints(pointsOnShape: Point[]): Entity[] {
-    if (!this.circle) {
-      return [this];
-    }
-    const segmentArcs: Entity[] = [];
-
-    // Go around the circle and also connect the last and first point with an arc
-    const length = pointsOnShape.length;
-    for (let i = 0; i < length; i++) {
-      // Create points from using the 2 points from pointOnLine and the center point of the circle
-      const point1 = pointsOnShape[wrapModule(i, length)];
-      const point2 = pointsOnShape[wrapModule(i + 1, length)];
-
-      const arc = new ArcEntity(
-        this.centerPoint || undefined,
-        point1,
-        point2,
-        true,
-      );
-      segmentArcs.push(arc);
-    }
-    return segmentArcs;
+    if (!this.circle || !this.centerPoint) return [this];
+  
+    const getAngle = (p: Point) => Math.atan2(p.y - this.centerPoint!.y, p.x - this.centerPoint!.x);
+    
+    return pointsOnShape
+      .sort((a, b) => getAngle(a) - getAngle(b))
+      .map((point, i, arr) => {
+        const nextPoint = arr[(i + 1) % arr.length];
+        const arc = new ArcEntity(
+          this.centerPoint!,
+          this.circle!.r,
+          getAngle(point),
+          getAngle(nextPoint),
+          true
+        );
+        arc.lineColor = this.lineColor;
+        arc.lineWidth = this.lineWidth;
+        return arc;
+      });
   }
 
   public async toJson(): Promise<JsonEntity<CircleJsonData> | null> {
@@ -238,6 +235,10 @@ export class CircleEntity implements Entity {
     circleEntity.lineColor = jsonEntity.lineColor;
     circleEntity.lineWidth = jsonEntity.lineWidth;
     return circleEntity;
+  }
+
+  public getRadius(): number {
+    return this.circle?.r ?? 0;
   }
 }
 

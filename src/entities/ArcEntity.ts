@@ -23,35 +23,15 @@ export class ArcEntity implements Entity {
   }
 
   constructor(
-    centerPointOrArc?: Point | Arc,
-    firstPoint?: Point,
-    secondPoint?: Point,
-    counterClockWise?: boolean,
+    centerPoint: Point,
+    radius: number,
+    startAngle: number,
+    endAngle: number,
+    counterClockwise: boolean = true
   ) {
-    if (centerPointOrArc instanceof Arc) {
-      const arc = centerPointOrArc as Arc;
-      this.arc = arc;
-      this.centerPoint = arc.center;
-      this.firstPoint = arc.start;
-    } else if (
-      centerPointOrArc instanceof Point &&
-      !firstPoint &&
-      !secondPoint
-    ) {
-      this.centerPoint = centerPointOrArc;
-    } else if (centerPointOrArc && firstPoint && !secondPoint) {
-      this.firstPoint = firstPoint;
-    } else if (centerPointOrArc && firstPoint && secondPoint) {
-      const startAngle = ArcEntity.getAngle(centerPointOrArc, firstPoint);
-      const endAngle = ArcEntity.getAngle(centerPointOrArc, secondPoint);
-      this.arc = new Arc(
-        centerPointOrArc,
-        pointDistance(centerPointOrArc, firstPoint),
-        startAngle,
-        endAngle,
-        counterClockWise,
-      );
-    }
+    this.centerPoint = centerPoint;
+    this.arc = new Arc(centerPoint, radius, startAngle, endAngle, counterClockwise);
+    this.firstPoint = this.arc.start;
   }
 
   public draw(drawInfo: DrawInfo): void {
@@ -91,7 +71,8 @@ export class ArcEntity implements Entity {
 
   public clone(): Entity {
     if (this.arc) {
-      return new ArcEntity(this.arc.clone());
+      const { center, r, startAngle, endAngle, counterClockwise } = this.arc;
+      return new ArcEntity(center, r.valueOf(), startAngle, endAngle, counterClockwise);
     }
     return this;
   }
@@ -185,7 +166,7 @@ export class ArcEntity implements Entity {
     return this.arc.contains(point);
   }
 
-  public cutAtPoints(pointsOnShape: Point[]): Entity[] {
+  public cutAtPoints(pointsOnShape: Point[]): ArcEntity[] {
     if (!this.arc) {
       return [this];
     }
@@ -201,19 +182,24 @@ export class ArcEntity implements Entity {
       this.arc.start,
     );
 
-    const segmentArcs: Entity[] = [];
+    const segmentArcs: ArcEntity[] = [];
     for (let i = 0; i < sortedPoints.length - 1; i++) {
-      // Create points from using the 2 points from pointOnLine and the center point of the circle
       const point1 = sortedPoints[i];
       const point2 = sortedPoints[i + 1];
 
-      const arc = new ArcEntity(
-        this.centerPoint || undefined,
-        point1,
-        point2,
-        this.arc.counterClockwise,
+      const startAngle = ArcEntity.getAngle(this.arc.center, point1);
+      const endAngle = ArcEntity.getAngle(this.arc.center, point2);
+
+      const newArc = new ArcEntity(
+        this.arc.center,
+        Number(this.arc.r),
+        startAngle,
+        endAngle,
+        this.arc.counterClockwise
       );
-      segmentArcs.push(arc);
+      newArc.lineColor = this.lineColor;
+      newArc.lineWidth = this.lineWidth;
+      segmentArcs.push(newArc);
     }
     return segmentArcs;
   }
@@ -255,8 +241,12 @@ export class ArcEntity implements Entity {
       jsonEntity.shapeData.end.x,
       jsonEntity.shapeData.end.y,
     );
+    const radius = Number(center.distanceTo(start)[0]);
+    const startAngle = Number(ArcEntity.getAngle(center, start));
+    const endAngle = Number(ArcEntity.getAngle(center, end));
     const counterClockwise = jsonEntity.shapeData.counterClockwise;
-    const arcEntity = new ArcEntity(center, start, end, counterClockwise);
+    
+    const arcEntity = new ArcEntity(center, radius, startAngle, endAngle, counterClockwise);
     arcEntity.id = jsonEntity.id;
     arcEntity.lineColor = jsonEntity.lineColor;
     arcEntity.lineWidth = jsonEntity.lineWidth;

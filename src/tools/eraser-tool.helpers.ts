@@ -1,5 +1,5 @@
 import { Entity } from '../entities/Entity.ts';
-import { Point, Segment } from '@flatten-js/core';
+import { Circle, Point, Segment } from '@flatten-js/core';
 import { compact } from 'es-toolkit';
 import { LineEntity } from '../entities/LineEntity.ts';
 import { findNeighboringPointsOnLine } from '../helpers/find-neighboring-points-on-line.ts';
@@ -57,59 +57,52 @@ export function eraseCircleSegment(
   clickedPointOnShape: Point,
   intersections: Point[],
 ): void {
+  if (intersections.length === 0) {
+    deleteEntity(circle);
+    return;
+  }
+
   const [firstCutPoint, secondCutPoint] = findNeighboringPointsOnCircle(
     clickedPointOnShape,
     circle,
     intersections,
   );
 
-  setDebugEntities(
-    [firstCutPoint, secondCutPoint].map(point => new PointEntity(point)),
-  );
+  const circleShape = circle.getShape() as Circle;
+  const center = circleShape.center;
+  
+  const angles = [firstCutPoint, secondCutPoint, clickedPointOnShape].map(p => 
+    Math.atan2(p.y - center.y, p.x - center.x));
+  
+  const [startAngle, endAngle] = isAngleBetween(angles[2], angles[0], angles[1]) 
+    ? [angles[1], angles[0]] 
+    : [angles[0], angles[1]];
 
-  const cutArcs: Entity[] = circle.cutAtPoints([firstCutPoint, secondCutPoint]);
+  const newArc = new ArcEntity(center, circleShape.r, startAngle, endAngle, true);
+  Object.assign(newArc, { lineColor: circle.lineColor, lineWidth: circle.lineWidth });
 
-  // Remove the arc segment that has the clickedPointOnShape point on it
-  if (isPointEqual(firstCutPoint, secondCutPoint)) {
-    // If one one intersection, delete the whole circle
-    deleteEntity(circle);
-  } else {
-    // Delete segment that contains the click point
-    const remainingArcs = cutArcs.filter(
-      arc => !arc.containsPointOnShape(clickedPointOnShape),
-    );
-    deleteEntity(circle);
-    addEntity(...remainingArcs);
-  }
+  deleteEntity(circle);
+  addEntity(newArc);
 }
 
-export function eraseArcSegment(
-  arc: ArcEntity,
-  clickedPointOnShape: Point,
-  intersections: Point[],
-): void {
-  const [firstCutPoint, secondCutPoint] = findNeighboringPointsOnArc(
-    clickedPointOnShape,
-    arc,
-    intersections,
-  );
+function isAngleBetween(angle: number, start: number, end: number): boolean {
+  const twoPi = 2 * Math.PI;
+  return ((angle - start + twoPi) % twoPi) <= ((end - start + twoPi) % twoPi);
+}
 
-  setDebugEntities(
-    [firstCutPoint, secondCutPoint].map(point => new PointEntity(point)),
-  );
+export function eraseArcSegment(arc: ArcEntity, clickedPointOnShape: Point, intersections: Point[]): void {
+  const [first, second] = findNeighboringPointsOnArc(clickedPointOnShape, arc, intersections);
 
-  const cutArcs: Entity[] = arc.cutAtPoints([firstCutPoint, secondCutPoint]);
-
-  // Remove the arc segment that has the clickedPointOnShape point on it
-  if (isPointEqual(firstCutPoint, secondCutPoint)) {
-    // If one one intersection, delete the whole circle
+  if (isPointEqual(first, second)) {
     deleteEntity(arc);
-  } else {
-    // Delete segment that contains the click point
-    const remainingArcs = cutArcs.filter(
-      arc => !arc.containsPointOnShape(clickedPointOnShape),
-    );
-    deleteEntity(arc);
-    addEntity(...remainingArcs);
+    return;
   }
+
+  deleteEntity(arc);
+  arc.cutAtPoints([first, second])
+    .filter(cutArc => !cutArc.containsPointOnShape(clickedPointOnShape))
+    .forEach(newArc => {
+      Object.assign(newArc, { lineColor: arc.lineColor, lineWidth: arc.lineWidth });
+      addEntity(newArc);
+    });
 }

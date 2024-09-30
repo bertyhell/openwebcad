@@ -213,7 +213,7 @@ export class RectangleEntity implements Entity {
     };
   }
 
-  public async fromJson(
+  public static async fromJson(
     jsonEntity: JsonEntity<RectangleJsonData>,
   ): Promise<RectangleEntity> {
     const startPoint = new Point(

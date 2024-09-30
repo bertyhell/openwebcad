@@ -27,10 +27,16 @@ export class ArcEntity implements Entity {
     radius: number,
     startAngle: number,
     endAngle: number,
-    counterClockwise: boolean = true
+    counterClockwise: boolean = true,
   ) {
     this.centerPoint = centerPoint;
-    this.arc = new Arc(centerPoint, radius, startAngle, endAngle, counterClockwise);
+    this.arc = new Arc(
+      centerPoint,
+      radius,
+      startAngle,
+      endAngle,
+      counterClockwise,
+    );
     this.firstPoint = this.arc.start;
   }
 
@@ -72,7 +78,13 @@ export class ArcEntity implements Entity {
   public clone(): Entity {
     if (this.arc) {
       const { center, r, startAngle, endAngle, counterClockwise } = this.arc;
-      return new ArcEntity(center, r.valueOf(), startAngle, endAngle, counterClockwise);
+      return new ArcEntity(
+        center,
+        r.valueOf(),
+        startAngle,
+        endAngle,
+        counterClockwise,
+      );
     }
     return this;
   }
@@ -195,7 +207,7 @@ export class ArcEntity implements Entity {
         Number(this.arc.r),
         startAngle,
         endAngle,
-        this.arc.counterClockwise
+        this.arc.counterClockwise,
       );
       newArc.lineColor = this.lineColor;
       newArc.lineWidth = this.lineWidth;
@@ -222,7 +234,7 @@ export class ArcEntity implements Entity {
     };
   }
 
-  public async fromJson(
+  public static async fromJson(
     jsonEntity: JsonEntity<ArcJsonData>,
   ): Promise<ArcEntity> {
     if (jsonEntity.type !== EntityName.Arc) {
@@ -245,8 +257,14 @@ export class ArcEntity implements Entity {
     const startAngle = Number(ArcEntity.getAngle(center, start));
     const endAngle = Number(ArcEntity.getAngle(center, end));
     const counterClockwise = jsonEntity.shapeData.counterClockwise;
-    
-    const arcEntity = new ArcEntity(center, radius, startAngle, endAngle, counterClockwise);
+
+    const arcEntity = new ArcEntity(
+      center,
+      radius,
+      startAngle,
+      endAngle,
+      counterClockwise,
+    );
     arcEntity.id = jsonEntity.id;
     arcEntity.lineColor = jsonEntity.lineColor;
     arcEntity.lineWidth = jsonEntity.lineWidth;

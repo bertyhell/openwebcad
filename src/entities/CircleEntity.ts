@@ -186,12 +186,18 @@ export class CircleEntity implements Entity {
 
   public cutAtPoints(pointsOnShape: Point[]): Entity[] {
     if (!this.circle || !this.centerPoint) return [this];
-    
+
     const { centerPoint, circle } = this;
     return pointsOnShape.map((point, i) => {
       const nextPoint = pointsOnShape[(i + 1) % pointsOnShape.length];
-      const angle1 = Math.atan2(point.y - centerPoint.y, point.x - centerPoint.x);
-      const angle2 = Math.atan2(nextPoint.y - centerPoint.y, nextPoint.x - centerPoint.x);
+      const angle1 = Math.atan2(
+        point.y - centerPoint.y,
+        point.x - centerPoint.x,
+      );
+      const angle2 = Math.atan2(
+        nextPoint.y - centerPoint.y,
+        nextPoint.x - centerPoint.x,
+      );
       return new ArcEntity(centerPoint, circle.r, angle1, angle2, true);
     });
   }
@@ -212,7 +218,7 @@ export class CircleEntity implements Entity {
     };
   }
 
-  public async fromJson(
+  public static async fromJson(
     jsonEntity: JsonEntity<CircleJsonData>,
   ): Promise<CircleEntity> {
     const center = new Point(

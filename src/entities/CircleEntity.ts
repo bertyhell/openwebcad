@@ -186,24 +186,14 @@ export class CircleEntity implements Entity {
 
   public cutAtPoints(pointsOnShape: Point[]): Entity[] {
     if (!this.circle || !this.centerPoint) return [this];
-  
-    const getAngle = (p: Point) => Math.atan2(p.y - this.centerPoint!.y, p.x - this.centerPoint!.x);
     
-    return pointsOnShape
-      .sort((a, b) => getAngle(a) - getAngle(b))
-      .map((point, i, arr) => {
-        const nextPoint = arr[(i + 1) % arr.length];
-        const arc = new ArcEntity(
-          this.centerPoint!,
-          this.circle!.r,
-          getAngle(point),
-          getAngle(nextPoint),
-          true
-        );
-        arc.lineColor = this.lineColor;
-        arc.lineWidth = this.lineWidth;
-        return arc;
-      });
+    const { centerPoint, circle } = this;
+    return pointsOnShape.map((point, i) => {
+      const nextPoint = pointsOnShape[(i + 1) % pointsOnShape.length];
+      const angle1 = Math.atan2(point.y - centerPoint.y, point.x - centerPoint.x);
+      const angle2 = Math.atan2(nextPoint.y - centerPoint.y, nextPoint.x - centerPoint.x);
+      return new ArcEntity(centerPoint, circle.r, angle1, angle2, true);
+    });
   }
 
   public async toJson(): Promise<JsonEntity<CircleJsonData> | null> {

@@ -143,7 +143,7 @@ export class PointEntity implements Entity {
     };
   }
 
-  public async fromJson(
+  public static async fromJson(
     jsonEntity: JsonEntity<PointJsonData>,
   ): Promise<PointEntity> {
     const point = new Point(

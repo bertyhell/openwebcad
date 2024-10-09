@@ -35,7 +35,7 @@ export interface Entity {
   getType(): EntityName;
   containsPointOnShape(point: Point): boolean;
   toJson(): Promise<JsonEntity | null>;
-  fromJson(jsonEntity: JsonEntity): Promise<Entity | null>;
+  // static fromJson(jsonEntity: JsonEntity): Promise<Entity | null>;
 }
 
 export enum EntityName {

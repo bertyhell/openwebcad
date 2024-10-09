@@ -35,23 +35,17 @@ export function importEntitiesFromJsonFile(file: File | null | undefined) {
         data.entities.map(entity => {
           switch (entity.type) {
             case EntityName.Arc:
-              return new ArcEntity().fromJson(
-                entity as JsonEntity<ArcJsonData>,
-              );
+              return ArcEntity.fromJson(entity as JsonEntity<ArcJsonData>);
             case EntityName.Circle:
-              return new CircleEntity().fromJson(
+              return CircleEntity.fromJson(
                 entity as JsonEntity<CircleJsonData>,
               );
             case EntityName.Line:
-              return new LineEntity().fromJson(
-                entity as JsonEntity<LineJsonData>,
-              );
+              return LineEntity.fromJson(entity as JsonEntity<LineJsonData>);
             case EntityName.Point:
-              return new PointEntity().fromJson(
-                entity as JsonEntity<PointJsonData>,
-              );
+              return PointEntity.fromJson(entity as JsonEntity<PointJsonData>);
             case EntityName.Rectangle:
-              return new RectangleEntity().fromJson(
+              return RectangleEntity.fromJson(
                 entity as JsonEntity<RectangleJsonData>,
               );
 

@@ -10,7 +10,6 @@ import { moveToolStateMachine } from './move-tool.ts';
 import { imageImportToolStateMachine } from './image-import-tool.ts';
 import { scaleToolStateMachine } from './scale-tool.ts';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const toolStateMachines: Record<
   Partial<Tool>,
   StateMachine<

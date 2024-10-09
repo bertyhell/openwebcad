@@ -212,7 +212,7 @@ export class LineEntity implements Entity {
     };
   }
 
-  public async fromJson(
+  public static async fromJson(
     jsonEntity: JsonEntity<LineJsonData>,
   ): Promise<LineEntity> {
     const startPoint = new Point(

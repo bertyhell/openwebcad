@@ -218,7 +218,7 @@ export class ImageEntity implements Entity {
     };
   }
 
-  public async fromJson(
+  public static async fromJson(
     jsonEntity: JsonEntity<ImageJsonData>,
   ): Promise<ImageEntity> {
     const rectangle = new Box(

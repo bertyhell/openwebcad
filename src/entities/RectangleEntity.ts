@@ -4,6 +4,7 @@ import * as Flatten from '@flatten-js/core';
 import { Box, Point, Relations, Segment } from '@flatten-js/core';
 import { worldToScreen } from '../helpers/world-screen-conversion.ts';
 import { getExportColor } from '../helpers/get-export-color.ts';
+import { scalePoint } from '../helpers/scale-point.ts';
 
 export class RectangleEntity implements Entity {
   public id: string = crypto.randomUUID();
@@ -67,6 +68,15 @@ export class RectangleEntity implements Entity {
     if (this.rectangle) {
       this.rectangle = this.rectangle.translate(x, y);
     }
+  }
+
+  public scale(scaleOrigin: Point, scaleFactor: number) {
+    if (!this.rectangle?.low || !this.rectangle.high) {
+      return this;
+    }
+    const low = scalePoint(this.rectangle.low, scaleOrigin, scaleFactor);
+    const high = scalePoint(this.rectangle.high, scaleOrigin, scaleFactor);
+    this.rectangle = new Box(low.x, low.y, high.x, high.y);
   }
 
   public clone(): RectangleEntity | null {

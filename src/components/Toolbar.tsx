@@ -129,8 +129,15 @@ export const Toolbar: FC<ToolbarProps> = () => {
         className="mt-2"
         title="Move"
         icon={IconName.Expand}
+        iconClassname={'transform rotate-45'}
         onClick={() => handleToolClick(Tool.MOVE)}
         active={activeToolLocal === Tool.MOVE}
+      />
+      <Button
+        title="Scale"
+        icon={IconName.Expand}
+        onClick={() => handleToolClick(Tool.SCALE)}
+        active={activeToolLocal === Tool.SCALE}
       />
       <Button
         className="mt-2"

@@ -9,6 +9,7 @@ interface ButtonProps {
   onClick?: () => void;
   children?: ReactNode;
   className?: string;
+  iconClassname?: string;
   style?: CSSProperties;
 }
 
@@ -20,6 +21,7 @@ export const Button: FC<ButtonProps> = ({
   active = false,
   children,
   className,
+  iconClassname,
   style,
 }) => {
   return (
@@ -34,7 +36,7 @@ export const Button: FC<ButtonProps> = ({
         onClick={onClick}
         title={title}
       >
-        {icon && <Icon name={icon} />}
+        {icon && <Icon name={icon} className={iconClassname} />}
         {label && <span>{label}</span>}
         {children}
       </button>

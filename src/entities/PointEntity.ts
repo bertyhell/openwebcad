@@ -5,6 +5,7 @@ import { Box, Point, Segment } from '@flatten-js/core';
 import { worldToScreen } from '../helpers/world-screen-conversion.ts';
 import { isNil } from 'es-toolkit';
 import { getExportColor } from '../helpers/get-export-color.ts';
+import { scalePoint } from '../helpers/scale-point.ts';
 
 export class PointEntity implements Entity {
   public id: string = crypto.randomUUID();
@@ -36,6 +37,13 @@ export class PointEntity implements Entity {
     if (this.point) {
       this.point = this.point.translate(x, y);
     }
+  }
+
+  public scale(scaleOrigin: Point, scaleFactor: number) {
+    if (!this.point) {
+      return this;
+    }
+    this.point = scalePoint(this.point, scaleOrigin, scaleFactor);
   }
 
   public clone(): PointEntity | null {

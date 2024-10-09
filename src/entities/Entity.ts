@@ -21,6 +21,7 @@ export interface Entity {
    * @param y
    */
   move(x: number, y: number): void;
+  scale(scaleOrigin: Point, scaleFactor: number): void;
   clone(): Entity | null;
   getBoundingBox(): Box | null;
   intersectsWithBox(box: Box): boolean;

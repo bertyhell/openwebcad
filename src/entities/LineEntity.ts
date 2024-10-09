@@ -6,6 +6,7 @@ import { sortBy, uniqWith } from 'es-toolkit';
 import { isPointEqual } from '../helpers/is-point-equal.ts';
 import { pointDistance } from '../helpers/distance-between-points.ts';
 import { getExportColor } from '../helpers/get-export-color.ts';
+import { scalePoint } from '../helpers/scale-point.ts';
 
 export class LineEntity implements Entity {
   public id: string = crypto.randomUUID();
@@ -61,6 +62,15 @@ export class LineEntity implements Entity {
     if (this.segment) {
       this.segment = this.segment.translate(x, y);
     }
+  }
+
+  public scale(scaleOrigin: Point, scaleFactor: number) {
+    if (!this.segment?.start || !this.segment.end) {
+      return this;
+    }
+    const newStart = scalePoint(this.segment.start, scaleOrigin, scaleFactor);
+    const newEnd = scalePoint(this.segment.end, scaleOrigin, scaleFactor);
+    this.segment = new Segment(newStart, newEnd);
   }
 
   public clone(): LineEntity | null {

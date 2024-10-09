@@ -6,6 +6,7 @@ import { ArcEntity } from './ArcEntity.ts';
 import { wrapModule } from '../helpers/wrap-module.ts';
 import { pointDistance } from '../helpers/distance-between-points.ts';
 import { getExportColor } from '../helpers/get-export-color.ts';
+import { scalePoint } from '../helpers/scale-point.ts';
 
 export class CircleEntity implements Entity {
   public id: string = crypto.randomUUID();
@@ -68,6 +69,14 @@ export class CircleEntity implements Entity {
     if (this.circle) {
       this.circle = this.circle?.translate(x, y);
     }
+  }
+
+  public scale(scaleOrigin: Point, scaleFactor: number) {
+    if (!this.circle?.center || !this.circle?.r) {
+      return this;
+    }
+    const center = scalePoint(this.circle.center, scaleOrigin, scaleFactor);
+    this.circle = new Circle(center, this.circle.r.valueOf() * scaleFactor);
   }
 
   public clone(): Entity {

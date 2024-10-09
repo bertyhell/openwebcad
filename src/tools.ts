@@ -4,6 +4,7 @@ export enum Tool {
   RECTANGLE = 'RECTANGLE',
   CIRCLE = 'CIRCLE',
   MOVE = 'MOVE',
+  SCALE = 'SCALE',
   ERASER = 'ERASER',
   IMAGE_IMPORT = 'IMAGE_IMPORT',
 }

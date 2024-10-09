@@ -50,7 +50,7 @@ export enum MoveAction {
   ENABLE_HELPERS = 'ENABLE_HELPERS',
   RECORD_START_POINT = 'RECORD_START_POINT',
   COPY_SELECTION_BEFORE_MOVE = 'COPY_SELECTION_BEFORE_MOVE',
-  DRAW_TEMP_MOVE_LINE = 'DRAW_TEMP_MOVE_LINE',
+  DRAW_TEMP_MOVE_ENTITIES = 'DRAW_TEMP_MOVE_ENTITIES',
   MOVE_SELECTION = 'MOVE_SELECTION',
   DESELECT_ENTITIES = 'DESELECT_ENTITIES',
   RESTORE_ORIGINAL_ENTITIES = 'RESTORE_ORIGINAL_ENTITIES',
@@ -183,7 +183,7 @@ export const moveToolStateMachine = createMachine(
         },
         on: {
           DRAW: {
-            actions: [MoveAction.DRAW_TEMP_MOVE_LINE],
+            actions: [MoveAction.DRAW_TEMP_MOVE_ENTITIES],
           },
           MOUSE_CLICK: {
             actions: [MoveAction.MOVE_SELECTION, MoveAction.DESELECT_ENTITIES],
@@ -232,7 +232,7 @@ export const moveToolStateMachine = createMachine(
           ),
         };
       }),
-      [MoveAction.DRAW_TEMP_MOVE_LINE]: assign(({ context, event }) => {
+      [MoveAction.DRAW_TEMP_MOVE_ENTITIES]: assign(({ context, event }) => {
         if (!context.startPoint) {
           throw new Error(
             '[MOVE] Calling draw temp move line without a start point',

@@ -7,6 +7,7 @@ import { uniqWith } from 'es-toolkit';
 import { isPointEqual } from '../helpers/is-point-equal.ts';
 import { sortPointsOnArc } from '../helpers/sort-points-on-arc.ts';
 import { getExportColor } from '../helpers/get-export-color.ts';
+import { scalePoint } from '../helpers/scale-point.ts';
 
 export class ArcEntity implements Entity {
   public id: string = crypto.randomUUID();
@@ -87,6 +88,20 @@ export class ArcEntity implements Entity {
     if (this.arc) {
       this.arc = this.arc.translate(x, y);
     }
+  }
+
+  public scale(scaleOrigin: Point, scaleFactor: number) {
+    if (!this.arc?.center || !this.arc?.r) {
+      return;
+    }
+    const center = scalePoint(this.arc.center, scaleOrigin, scaleFactor);
+    this.arc = new Arc(
+      center,
+      this.arc.r.valueOf() * scaleFactor,
+      this.arc.startAngle,
+      this.arc.endAngle,
+      this.arc.counterClockwise,
+    );
   }
 
   public clone(): Entity {

@@ -14,43 +14,19 @@ export class LineEntity implements Entity {
   public lineWidth: number = 1;
   public lineStyle: number[] | undefined = undefined;
 
-  private segment: Segment | null = null;
-  private startPoint: Point | null = null;
+  private segment: Segment;
 
   constructor(p1?: Point | Segment, p2?: Point) {
     if (p1 instanceof Segment) {
-      this.startPoint = p1.start;
       this.segment = p1;
-    } else if (p1 && p2) {
-      this.startPoint = p1;
+    } else {
       this.segment = new Segment(p1, p2);
-    } else if (p1) {
-      this.startPoint = p1;
     }
   }
 
   public draw(drawInfo: DrawInfo): void {
-    if (!this.startPoint) {
-      return;
-    }
-
-    let startPointTemp: Point;
-    let endPointTemp: Point;
-    if (this.segment) {
-      // Draw the line between the 2 points
-      startPointTemp = this.segment.start;
-      endPointTemp = this.segment.end;
-    } else {
-      // Draw the line between the start point and the mouse
-      startPointTemp = this.startPoint;
-      endPointTemp = new Point(
-        drawInfo.worldMouseLocation.x,
-        drawInfo.worldMouseLocation.y,
-      );
-    }
-
-    const screenStartPoint = worldToScreen(startPointTemp);
-    const screenEndPoint = worldToScreen(endPointTemp);
+    const screenStartPoint = worldToScreen(this.segment.start);
+    const screenEndPoint = worldToScreen(this.segment.end);
 
     drawInfo.context.beginPath();
     drawInfo.context.moveTo(screenStartPoint.x, screenStartPoint.y);
@@ -59,45 +35,28 @@ export class LineEntity implements Entity {
   }
 
   public move(x: number, y: number) {
-    if (this.segment) {
-      this.segment = this.segment.translate(x, y);
-    }
+    this.segment = this.segment.translate(x, y);
   }
 
   public scale(scaleOrigin: Point, scaleFactor: number) {
-    if (!this.segment?.start || !this.segment.end) {
-      return this;
-    }
     const newStart = scalePoint(this.segment.start, scaleOrigin, scaleFactor);
     const newEnd = scalePoint(this.segment.end, scaleOrigin, scaleFactor);
     this.segment = new Segment(newStart, newEnd);
   }
 
   public clone(): LineEntity | null {
-    if (!this.segment) {
-      return null;
-    }
     return new LineEntity(this.segment.clone());
   }
 
   public intersectsWithBox(box: Box): boolean {
-    if (!this.segment) {
-      return false;
-    }
     return this.segment.intersect(box).length > 0;
   }
 
   public isContainedInBox(box: Box): boolean {
-    if (!this.segment) {
-      return false;
-    }
     return box.contains(this.segment);
   }
 
   public getBoundingBox(): Box | null {
-    if (!this.segment) {
-      return null;
-    }
     return this.segment.box;
   }
 
@@ -106,9 +65,6 @@ export class LineEntity implements Entity {
   }
 
   public getSnapPoints(): SnapPoint[] {
-    if (!this.segment?.start || !this.segment?.end) {
-      return [];
-    }
     return [
       {
         point: this.segment.start,
@@ -127,25 +83,21 @@ export class LineEntity implements Entity {
 
   public getIntersections(entity: Entity): Point[] {
     const otherShape = entity.getShape();
-    if (!this.segment || !otherShape) {
+    if (!otherShape) {
       return [];
     }
     return this.segment.intersect(otherShape);
   }
 
   public getFirstPoint(): Point | null {
-    return this.startPoint;
+    return this.segment.start;
   }
 
   public distanceTo(shape: Shape): [number, Segment] | null {
-    if (!this.segment) return null;
     return this.segment.distanceTo(shape);
   }
 
   public getSvgString(): string | null {
-    if (!this.segment) {
-      return null;
-    }
     return (
       this.segment.svg({
         strokeWidth: this.lineWidth,
@@ -159,9 +111,6 @@ export class LineEntity implements Entity {
   }
 
   public containsPointOnShape(point: Point): boolean {
-    if (!this.segment) {
-      return false;
-    }
     return this.segment.contains(point);
   }
 
@@ -170,10 +119,6 @@ export class LineEntity implements Entity {
    * @param pointsOnShape
    */
   public cutAtPoints(pointsOnShape: Point[]): Entity[] {
-    if (!this.segment) {
-      // This entity is not complete, so we cannot cut it yet
-      return [this];
-    }
     const points = uniqWith(
       [this.segment.start, this.segment.end, ...pointsOnShape],
       isPointEqual,
@@ -197,9 +142,6 @@ export class LineEntity implements Entity {
   }
 
   public async toJson(): Promise<JsonEntity<LineJsonData> | null> {
-    if (!this.segment) {
-      return null;
-    }
     return {
       id: this.id,
       type: EntityName.Line,

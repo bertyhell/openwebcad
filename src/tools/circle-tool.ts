@@ -16,6 +16,7 @@ import {
 } from './tool.types.ts';
 import { Tool } from '../tools.ts';
 import { assign, createMachine } from 'xstate';
+import { pointDistance } from '../helpers/distance-between-points.ts';
 
 export interface CircleContext extends ToolContext {
   centerPoint: Point | null;
@@ -106,7 +107,10 @@ export const circleToolStateMachine = createMachine(
 
         const activeCircle = new CircleEntity(
           context.centerPoint as Point,
-          (event as DrawEvent).drawInfo.worldMouseLocation,
+          pointDistance(
+            (event as DrawEvent).drawInfo.worldMouseLocation,
+            context.centerPoint as Point,
+          ),
         );
         activeCircle.lineColor = getActiveLineColor();
         activeCircle.lineWidth = getActiveLineWidth();
@@ -117,7 +121,7 @@ export const circleToolStateMachine = createMachine(
         const pointOnCircle = (event as MouseClickEvent).worldClickPoint;
         const activeCircle = new CircleEntity(
           context.centerPoint as Point,
-          pointOnCircle,
+          pointDistance(pointOnCircle, context.centerPoint as Point),
         );
         activeCircle.lineColor = getActiveLineColor();
         activeCircle.lineWidth = getActiveLineWidth();

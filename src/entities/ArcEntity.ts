@@ -2,7 +2,6 @@ import { Entity, EntityName, JsonEntity } from './Entity.ts';
 import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
 import { Arc, Box, Line, Point, Segment } from '@flatten-js/core';
 import { worldToScreen } from '../helpers/world-screen-conversion.ts';
-import { pointDistance } from '../helpers/distance-between-points.ts';
 import { uniqWith } from 'es-toolkit';
 import { isPointEqual } from '../helpers/is-point-equal.ts';
 import { sortPointsOnArc } from '../helpers/sort-points-on-arc.ts';
@@ -15,9 +14,7 @@ export class ArcEntity implements Entity {
   public lineWidth: number = 1;
   public lineStyle: number[] | undefined = undefined;
 
-  private arc: Arc | null = null;
-  private centerPoint: Point | null = null;
-  private firstPoint: Point | null = null;
+  private arc: Arc;
 
   public static getAngle(centerPoint: Point, pointOnArc: Point): number {
     return new Line(centerPoint, pointOnArc).slope;
@@ -30,7 +27,6 @@ export class ArcEntity implements Entity {
     endAngle: number,
     counterClockwise: boolean = true,
   ) {
-    this.centerPoint = centerPoint;
     this.arc = new Arc(
       centerPoint,
       radius,
@@ -38,27 +34,11 @@ export class ArcEntity implements Entity {
       endAngle,
       counterClockwise,
     );
-    this.firstPoint = this.arc.start;
   }
 
   public draw(drawInfo: DrawInfo): void {
-    if (!this.centerPoint) {
-      return;
-    }
-
-    let radiusTemp: number;
-    if (this.arc) {
-      // Draw the circle with the center point and the radius
-      radiusTemp = this.arc.r.valueOf();
-    } else if (this.centerPoint && this.firstPoint) {
-      // Draw the circle with the center point and the distance between the center and the mouse as the radius
-      radiusTemp = pointDistance(this.centerPoint, this.firstPoint);
-    } else {
-      return; // Can't draw anything yet
-    }
-
-    const screenCenterPoint = worldToScreen(this.centerPoint);
-    const screenRadius = radiusTemp * drawInfo.screenZoom;
+    const screenCenterPoint = worldToScreen(this.arc.center);
+    const screenRadius = this.arc.r.valueOf() * drawInfo.screenZoom;
     drawInfo.context.beginPath();
     drawInfo.context.arc(
       screenCenterPoint.x,
@@ -71,15 +51,10 @@ export class ArcEntity implements Entity {
   }
 
   public move(x: number, y: number) {
-    if (this.arc) {
-      this.arc = this.arc.translate(x, y);
-    }
+    this.arc = this.arc.translate(x, y);
   }
 
   public scale(scaleOrigin: Point, scaleFactor: number) {
-    if (!this.arc?.center || !this.arc?.r) {
-      return;
-    }
     const center = scalePoint(this.arc.center, scaleOrigin, scaleFactor);
     this.arc = new Arc(
       center,
@@ -105,23 +80,14 @@ export class ArcEntity implements Entity {
   }
 
   public intersectsWithBox(box: Box): boolean {
-    if (!this.arc) {
-      return false;
-    }
     return this.arc.intersect(box).length > 0;
   }
 
   public isContainedInBox(box: Box): boolean {
-    if (!this.arc) {
-      return false;
-    }
     return box.contains(this.arc);
   }
 
   public getBoundingBox(): Box | null {
-    if (!this.arc) {
-      return null;
-    }
     return this.arc.box;
   }
 
@@ -130,12 +96,9 @@ export class ArcEntity implements Entity {
   }
 
   public getSnapPoints(): SnapPoint[] {
-    if (this.centerPoint === null || this.arc === null) {
-      return [];
-    }
     return [
       {
-        point: this.centerPoint,
+        point: this.arc.center,
         type: SnapPointType.CircleCenter,
       },
       {
@@ -153,27 +116,21 @@ export class ArcEntity implements Entity {
 
   public getIntersections(entity: Entity): Point[] {
     const otherShape = entity.getShape();
-    if (!this.arc || !otherShape) {
+    if (!otherShape) {
       return [];
     }
     return this.arc.intersect(otherShape);
   }
 
   public getFirstPoint(): Point | null {
-    return this.centerPoint;
+    return this.arc.center;
   }
 
   public distanceTo(shape: Shape): [number, Segment] | null {
-    if (!this.arc) {
-      return null;
-    }
     return this.arc.distanceTo(shape);
   }
 
   public getSvgString(): string | null {
-    if (!this.arc) {
-      return null;
-    }
     return (
       this.arc.svg({
         strokeWidth: this.lineWidth,
@@ -194,10 +151,6 @@ export class ArcEntity implements Entity {
   }
 
   public cutAtPoints(pointsOnShape: Point[]): ArcEntity[] {
-    if (!this.arc) {
-      return [this];
-    }
-
     const points = uniqWith(
       [this.arc.start, this.arc.end, ...pointsOnShape],
       isPointEqual,

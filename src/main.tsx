@@ -252,7 +252,7 @@ function calculateAngleGuidesAndSnapPoints() {
     if (
       activeEntity &&
       !!activeEntity.getShape() &&
-      activeEntity.getFirstPoint()
+      activeEntity.getFirstPoint() // TODO replace by state: lastDrawPoint
     ) {
       firstPoint = activeEntity.getFirstPoint();
     }

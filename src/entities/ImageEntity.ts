@@ -12,8 +12,8 @@ export class ImageEntity implements Entity {
   public lineWidth: number = 1;
   public lineStyle: number[] | undefined = undefined;
 
-  private imageElement: HTMLImageElement | null = null;
-  private rectangle: Box | null = null;
+  private imageElement: HTMLImageElement;
+  private rectangle: Box;
 
   constructor(imgData: HTMLImageElement, rectangle: Box) {
     this.imageElement = imgData;
@@ -21,10 +21,6 @@ export class ImageEntity implements Entity {
   }
 
   public draw(drawInfo: DrawInfo): void {
-    if (!this.rectangle || !this.imageElement) {
-      return;
-    }
-
     const screenStartPoint = worldToScreen(this.rectangle.low);
     const screenEndPoint = worldToScreen(this.rectangle.high);
 
@@ -53,26 +49,16 @@ export class ImageEntity implements Entity {
   }
 
   public move(x: number, y: number) {
-    if (!this.rectangle || !this.imageElement) {
-      return;
-    }
     this.rectangle = this.rectangle.translate(x, y);
   }
 
   public scale(scaleOrigin: Point, scaleFactor: number) {
-    if (!this.rectangle?.low || !this.rectangle.high) {
-      return this;
-    }
     const low = scalePoint(this.rectangle.low, scaleOrigin, scaleFactor);
     const high = scalePoint(this.rectangle.high, scaleOrigin, scaleFactor);
     this.rectangle = new Box(low.x, low.y, high.x, high.y);
   }
 
   public clone(): ImageEntity | null {
-    if (!this.rectangle || !this.imageElement) {
-      return null;
-    }
-
     const clonedImage = document.createElement('img');
     clonedImage.src = this.imageElement.src;
     return new ImageEntity(clonedImage, this.rectangle.clone());
@@ -81,21 +67,14 @@ export class ImageEntity implements Entity {
   // TODO add destroy method to cleanup this.imageElement.src
 
   public intersectsWithBox(selectionBox: Box): boolean {
-    if (!this.rectangle) {
-      return false;
-    }
     return Relations.relate(this.rectangle, selectionBox).B2B.length > 0;
   }
 
   public isContainedInBox(selectionBox: Box): boolean {
-    if (!this.rectangle) {
-      return false;
-    }
     return selectionBox.contains(this.rectangle);
   }
 
   public distanceTo(shape: Shape): [number, Segment] | null {
-    if (!this.rectangle) return null;
     const distanceInfos: [number, Segment][] = this.rectangle
       .toSegments()
       .map(segment => segment.distanceTo(shape));
@@ -112,9 +91,6 @@ export class ImageEntity implements Entity {
   }
 
   public getBoundingBox(): Box | null {
-    if (!this.rectangle) {
-      return null;
-    }
     return this.rectangle;
   }
 
@@ -123,9 +99,6 @@ export class ImageEntity implements Entity {
   }
 
   public getSnapPoints(): SnapPoint[] {
-    if (!this.rectangle) {
-      return [];
-    }
     const corners = this.rectangle.toPoints();
     const edges = this.rectangle.toSegments();
     return [
@@ -166,7 +139,7 @@ export class ImageEntity implements Entity {
 
   public getIntersections(entity: Entity): Point[] {
     const otherShape = entity.getShape();
-    if (!this.rectangle || !otherShape) {
+    if (!otherShape) {
       return [];
     }
     return this.rectangle.toSegments().flatMap(segment => {
@@ -179,9 +152,6 @@ export class ImageEntity implements Entity {
   }
 
   public getSvgString(): string | null {
-    if (!this.rectangle) {
-      return null;
-    }
     return this.rectangle.svg({
       strokeWidth: this.lineWidth,
       stroke: getExportColor(this.lineColor),
@@ -193,16 +163,10 @@ export class ImageEntity implements Entity {
   }
 
   public containsPointOnShape(point: Flatten.Point): boolean {
-    if (!this.rectangle) {
-      return false;
-    }
     return this.rectangle.toSegments().some(segment => segment.contains(point));
   }
 
   public async toJson(): Promise<JsonEntity<ImageJsonData> | null> {
-    if (!this.rectangle || !this.imageElement) {
-      return null;
-    }
     return {
       id: this.id,
       type: EntityName.Image,

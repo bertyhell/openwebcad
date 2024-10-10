@@ -2,8 +2,6 @@ import { Entity, EntityName, JsonEntity } from './Entity.ts';
 import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
 import { Box, Circle, Point, Segment } from '@flatten-js/core';
 import { worldToScreen } from '../helpers/world-screen-conversion.ts';
-import { ArcEntity } from './ArcEntity.ts';
-import { pointDistance } from '../helpers/distance-between-points.ts';
 import { getExportColor } from '../helpers/get-export-color.ts';
 import { scalePoint } from '../helpers/scale-point.ts';
 
@@ -13,46 +11,19 @@ export class CircleEntity implements Entity {
   public lineWidth: number = 1;
   public lineStyle: number[] | undefined = undefined;
 
-  private circle: Circle | null = null;
-  private centerPoint: Point | null = null;
+  private circle: Circle;
 
-  constructor(
-    centerPointOrCircle?: Point | Circle,
-    radiusOrSecondPoint?: number | Point,
-  ) {
+  constructor(centerPointOrCircle?: Point | Circle, radius?: number) {
     if (centerPointOrCircle instanceof Circle) {
-      const circle = centerPointOrCircle as Circle;
-      this.circle = circle;
-      this.centerPoint = circle.center;
-    } else if (centerPointOrCircle instanceof Point && !radiusOrSecondPoint) {
-      this.centerPoint = centerPointOrCircle;
-    } else if (centerPointOrCircle instanceof Point && radiusOrSecondPoint) {
-      this.circle = new Circle(
-        centerPointOrCircle,
-        typeof radiusOrSecondPoint === 'number'
-          ? radiusOrSecondPoint
-          : pointDistance(centerPointOrCircle, radiusOrSecondPoint),
-      );
-      this.centerPoint = this.circle.center;
+      this.circle = centerPointOrCircle as Circle;
+    } else {
+      this.circle = new Circle(centerPointOrCircle as Point, radius as number);
     }
   }
 
   public draw(drawInfo: DrawInfo): void {
-    if (!this.centerPoint) {
-      return;
-    }
-
-    let radiusTemp: number;
-    if (this.circle) {
-      // Draw the circle with the center point and the radius
-      radiusTemp = this.circle.r;
-    } else {
-      // Draw the circle with the center point and the distance between the center and the mouse as the radius
-      radiusTemp = this.centerPoint.distanceTo(drawInfo.worldMouseLocation)[0];
-    }
-
-    const screenCenterPoint = worldToScreen(this.centerPoint);
-    const screenRadius = radiusTemp * drawInfo.screenZoom;
+    const screenCenterPoint = worldToScreen(this.circle.center);
+    const screenRadius = this.circle.r * drawInfo.screenZoom;
     drawInfo.context.beginPath();
     drawInfo.context.arc(
       screenCenterPoint.x,
@@ -71,9 +42,6 @@ export class CircleEntity implements Entity {
   }
 
   public scale(scaleOrigin: Point, scaleFactor: number) {
-    if (!this.circle?.center || !this.circle?.r) {
-      return this;
-    }
     const center = scalePoint(this.circle.center, scaleOrigin, scaleFactor);
     this.circle = new Circle(center, this.circle.r.valueOf() * scaleFactor);
   }
@@ -111,39 +79,39 @@ export class CircleEntity implements Entity {
   }
 
   public getSnapPoints(): SnapPoint[] {
-    if (this.centerPoint === null || this.circle === null) {
+    if (this.circle.center === null || this.circle === null) {
       return [];
     }
     return [
       {
-        point: this.centerPoint,
+        point: this.circle.center,
         type: SnapPointType.CircleCenter,
       },
       {
         point: new Point(
-          this.centerPoint.x + this.circle.r,
-          this.centerPoint.y,
+          this.circle.center.x + this.circle.r,
+          this.circle.center.y,
         ),
         type: SnapPointType.CircleCardinal,
       },
       {
         point: new Point(
-          this.centerPoint.x - this.circle.r,
-          this.centerPoint.y,
+          this.circle.center.x - this.circle.r,
+          this.circle.center.y,
         ),
         type: SnapPointType.CircleCardinal,
       },
       {
         point: new Point(
-          this.centerPoint.x,
-          this.centerPoint.y + this.circle.r,
+          this.circle.center.x,
+          this.circle.center.y + this.circle.r,
         ),
         type: SnapPointType.CircleCardinal,
       },
       {
         point: new Point(
-          this.centerPoint.x,
-          this.centerPoint.y - this.circle.r,
+          this.circle.center.x,
+          this.circle.center.y - this.circle.r,
         ),
         type: SnapPointType.CircleCardinal,
       },
@@ -160,7 +128,7 @@ export class CircleEntity implements Entity {
   }
 
   public getFirstPoint(): Point | null {
-    return this.centerPoint;
+    return this.circle.center;
   }
 
   public distanceTo(shape: Shape): [number, Segment] | null {
@@ -171,9 +139,6 @@ export class CircleEntity implements Entity {
   }
 
   public getSvgString(): string | null {
-    if (!this.circle) {
-      return null;
-    }
     return (
       this.circle.svg({
         strokeWidth: this.lineWidth,
@@ -191,24 +156,6 @@ export class CircleEntity implements Entity {
       return false;
     }
     return this.circle.contains(point);
-  }
-
-  public cutAtPoints(pointsOnShape: Point[]): Entity[] {
-    if (!this.circle || !this.centerPoint) return [this];
-
-    const { centerPoint, circle } = this;
-    return pointsOnShape.map((point, i) => {
-      const nextPoint = pointsOnShape[(i + 1) % pointsOnShape.length];
-      const angle1 = Math.atan2(
-        point.y - centerPoint.y,
-        point.x - centerPoint.x,
-      );
-      const angle2 = Math.atan2(
-        nextPoint.y - centerPoint.y,
-        nextPoint.x - centerPoint.x,
-      );
-      return new ArcEntity(centerPoint, circle.r, angle1, angle2, true);
-    });
   }
 
   public async toJson(): Promise<JsonEntity<CircleJsonData> | null> {

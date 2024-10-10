@@ -3,7 +3,6 @@ import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
 import * as Flatten from '@flatten-js/core';
 import { Box, Point, Segment } from '@flatten-js/core';
 import { worldToScreen } from '../helpers/world-screen-conversion.ts';
-import { isNil } from 'es-toolkit';
 import { getExportColor } from '../helpers/get-export-color.ts';
 import { scalePoint } from '../helpers/scale-point.ts';
 
@@ -13,19 +12,19 @@ export class PointEntity implements Entity {
   public lineWidth: number = 1;
   public lineStyle: number[] | undefined = undefined;
 
-  public point: Point | null = null;
+  public point: Point;
 
-  constructor(x?: Point | number, y?: number) {
-    if (!isNil(x) && !isNil(y)) {
+  constructor(pointOrX?: Point | number, y?: number) {
+    if (pointOrX instanceof Point) {
+      // Passed point
+      this.point = new Point(pointOrX.x, pointOrX.y);
+    } else {
       // Passed x and y coordinates
-      this.point = new Point(x as number, y as number);
+      this.point = new Point(pointOrX as number, y as number);
     }
   }
 
   public draw(drawInfo: DrawInfo): void {
-    if (!this.point) {
-      return;
-    }
     const screenPoint = worldToScreen(this.point);
 
     drawInfo.context.beginPath();
@@ -34,22 +33,14 @@ export class PointEntity implements Entity {
   }
 
   public move(x: number, y: number) {
-    if (this.point) {
-      this.point = this.point.translate(x, y);
-    }
+    this.point = this.point.translate(x, y);
   }
 
   public scale(scaleOrigin: Point, scaleFactor: number) {
-    if (!this.point) {
-      return this;
-    }
     this.point = scalePoint(this.point, scaleOrigin, scaleFactor);
   }
 
   public clone(): PointEntity | null {
-    if (!this.point) {
-      return null;
-    }
     return new PointEntity(this.point.clone());
   }
 
@@ -58,9 +49,6 @@ export class PointEntity implements Entity {
   }
 
   public isContainedInBox(box: Box): boolean {
-    if (!this.point) {
-      return false;
-    }
     return box.contains(this.point);
   }
 
@@ -76,9 +64,6 @@ export class PointEntity implements Entity {
   }
 
   public getSnapPoints(): SnapPoint[] {
-    if (!this.point) {
-      return [];
-    }
     return [
       {
         point: this.point,
@@ -96,16 +81,10 @@ export class PointEntity implements Entity {
   }
 
   public distanceTo(shape: Shape): [number, Segment] | null {
-    if (!this.point) {
-      return null;
-    }
     return this.point.distanceTo(shape);
   }
 
   public getSvgString(): string | null {
-    if (!this.point) {
-      return null;
-    }
     return (
       this.point.svg({
         strokeWidth: this.lineWidth,
@@ -119,16 +98,10 @@ export class PointEntity implements Entity {
   }
 
   public containsPointOnShape(point: Flatten.Point): boolean {
-    if (!this.point) {
-      return false;
-    }
     return this.point.equalTo(point);
   }
 
   public async toJson(): Promise<JsonEntity<PointJsonData> | null> {
-    if (!this.point) {
-      return null;
-    }
     return {
       id: this.id,
       type: EntityName.Point,

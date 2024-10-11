@@ -17,6 +17,8 @@ import FolderIcon from 'teenyicons/outline/folder.svg?react';
 import ExpandIcon from 'teenyicons/outline/expand.svg?react';
 import SaveIcon from 'teenyicons/outline/save.svg?react';
 import ImageIcon from 'teenyicons/outline/image.svg?react';
+import ArrowLeftCircle from 'teenyicons/outline/arrow-left-circle.svg?react';
+import ArrowRightCircle from 'teenyicons/outline/arrow-right-circle.svg?react';
 import { FC } from 'react';
 
 // https://icon-sets.iconify.design/teenyicons
@@ -36,6 +38,8 @@ enum IconName {
   Svg = 'Svg',
   Expand = 'Expand',
   Image = 'Image',
+  ArrowLeftCircle = 'ArrowLeftCircle',
+  ArrowRightCircle = 'ArrowRightCircle',
   SolidDown = 'SolidDown',
   SolidUp = 'SolidUp',
   SolidUpSmall = 'SolidUpSmall',
@@ -58,6 +62,8 @@ const icons: Record<IconName, FC> = {
   [IconName.Svg]: SvgIcon,
   [IconName.Expand]: ExpandIcon,
   [IconName.Image]: ImageIcon,
+  [IconName.ArrowLeftCircle]: ArrowLeftCircle,
+  [IconName.ArrowRightCircle]: ArrowRightCircle,
   [IconName.SolidDown]: SolidDownIcon,
   [IconName.SolidUp]: SolidUpIcon,
   [IconName.SolidUpSmall]: SolidUpSmallIcon,

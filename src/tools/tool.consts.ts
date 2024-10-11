@@ -9,6 +9,7 @@ import { eraserToolStateMachine } from './eraser-tool.ts';
 import { moveToolStateMachine } from './move-tool.ts';
 import { imageImportToolStateMachine } from './image-import-tool.ts';
 import { scaleToolStateMachine } from './scale-tool.ts';
+import { rotateToolStateMachine } from './rotate-tool.ts';
 
 export const toolStateMachines: Record<
   Partial<Tool>,
@@ -36,5 +37,6 @@ export const toolStateMachines: Record<
   [Tool.ERASER]: eraserToolStateMachine,
   [Tool.MOVE]: moveToolStateMachine,
   [Tool.SCALE]: scaleToolStateMachine,
+  [Tool.ROTATE]: rotateToolStateMachine,
   [Tool.IMAGE_IMPORT]: imageImportToolStateMachine,
 };

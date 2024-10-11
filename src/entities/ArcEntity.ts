@@ -65,6 +65,10 @@ export class ArcEntity implements Entity {
     );
   }
 
+  public rotate(rotateOrigin: Point, angle: number) {
+    this.arc = this.arc.rotate(angle, rotateOrigin);
+  }
+
   public clone(): Entity {
     if (this.arc) {
       const { center, r, startAngle, endAngle, counterClockwise } = this.arc;

@@ -40,6 +40,10 @@ export class PointEntity implements Entity {
     this.point = scalePoint(this.point, scaleOrigin, scaleFactor);
   }
 
+  public rotate(rotateOrigin: Point, angle: number) {
+    this.point = this.point.rotate(angle, rotateOrigin);
+  }
+
   public clone(): PointEntity | null {
     return new PointEntity(this.point.clone());
   }

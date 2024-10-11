@@ -1,4 +1,4 @@
-import { Box, Point } from '@flatten-js/core';
+import { Point, Polygon } from '@flatten-js/core';
 import {
   addEntity,
   setActiveEntity,
@@ -21,6 +21,10 @@ import { ImageEntity } from '../entities/ImageEntity.ts';
 import { getContainRectangleInsideRectangle } from './image-import-tool.helpers.ts';
 import { RectangleEntity } from '../entities/RectangleEntity.ts';
 import { selectToolStateMachine } from './select-tool.ts';
+import {
+  boxToPolygon,
+  twoPointBoxToPolygon,
+} from '../helpers/box-to-polygon.ts';
 
 export interface ImageImportContext extends ToolContext {
   startPoint: Point | null;
@@ -155,14 +159,12 @@ export const imageImportToolStateMachine = createMachine(
         }
         const activeImage = new ImageEntity(
           context.imageElement,
-          containRectangle,
+          new Polygon(),
         );
         const draggedRectangle = new RectangleEntity(
-          new Box(
-            context.startPoint.x,
-            context.startPoint.y,
-            (event as DrawEvent).drawInfo.worldMouseLocation.x,
-            (event as DrawEvent).drawInfo.worldMouseLocation.y,
+          twoPointBoxToPolygon(
+            context.startPoint,
+            (event as DrawEvent).drawInfo.worldMouseLocation,
           ),
         );
         setActiveEntity(activeImage);
@@ -199,7 +201,7 @@ export const imageImportToolStateMachine = createMachine(
 
           const activeImage = new ImageEntity(
             context.imageElement,
-            containRectangle,
+            boxToPolygon(containRectangle),
           );
           addEntity(activeImage);
 

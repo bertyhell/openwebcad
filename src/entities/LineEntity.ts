@@ -44,6 +44,10 @@ export class LineEntity implements Entity {
     this.segment = new Segment(newStart, newEnd);
   }
 
+  public rotate(rotateOrigin: Point, angle: number) {
+    this.segment = this.segment.rotate(angle, rotateOrigin);
+  }
+
   public clone(): LineEntity | null {
     return new LineEntity(this.segment.clone());
   }

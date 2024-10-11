@@ -7,4 +7,5 @@ export enum Tool {
   SCALE = 'SCALE',
   ERASER = 'ERASER',
   IMAGE_IMPORT = 'IMAGE_IMPORT',
+  ROTATE = 'ROTATE',
 }

@@ -140,14 +140,20 @@ export const Toolbar: FC<ToolbarProps> = () => {
         active={activeToolLocal === Tool.SCALE}
       />
       <Button
+        title="Rotate"
+        icon={IconName.Clockwise}
+        onClick={() => handleToolClick(Tool.ROTATE)}
+        active={activeToolLocal === Tool.ROTATE}
+      />
+      <Button
         className="mt-2"
         title="Undo (ctrl + z)"
-        icon={IconName.AntiClockwise}
+        icon={IconName.ArrowLeftCircle}
         onClick={() => undo()}
       />
       <Button
         title="Redo (ctrl + shift + z)"
-        icon={IconName.Clockwise}
+        icon={IconName.ArrowRightCircle}
         onClick={() => redo()}
       />
       <Button

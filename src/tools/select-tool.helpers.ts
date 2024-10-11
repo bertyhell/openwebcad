@@ -17,7 +17,7 @@ import { SelectContext } from './select-tool.ts';
 import { MouseClickEvent } from './tool.types.ts';
 import { RectangleEntity } from '../entities/RectangleEntity.ts';
 import { compact } from 'es-toolkit';
-import { Box, Point } from '@flatten-js/core';
+import { Box, Point, Polygon } from '@flatten-js/core';
 import { findClosestEntity } from '../helpers/find-closest-entity.ts';
 
 export function handleFirstSelectionPoint(
@@ -144,7 +144,7 @@ export function drawTempSelectionRectangle(startPoint: Point, endPoint: Point) {
 
 /**
  * Selections to the left of the start point are intersection selections (green), and everything intersecting with the selection rectangle will be selected
- * SElections to the right of the start point are normal selections (blue), and only the entities fully inside the selection rectangle will be selected
+ * Selections to the right of the start point are normal selections (blue), and only the entities fully inside the selection rectangle will be selected
  */
 export function getIsIntersectionSelection(
   rectangleEntity: RectangleEntity,
@@ -153,7 +153,8 @@ export function getIsIntersectionSelection(
   if (!rectangleEntity.getShape() || !startPoint) {
     return false;
   }
-  return (
-    Math.abs(startPoint.x - (rectangleEntity.getShape() as Box).xmin) > EPSILON
+  const selectionRectangleMinX = Math.min(
+    ...(rectangleEntity.getShape() as Polygon).vertices.map(v => v.x),
   );
+  return Math.abs(startPoint.x - selectionRectangleMinX) > EPSILON;
 }

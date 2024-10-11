@@ -46,6 +46,10 @@ export class CircleEntity implements Entity {
     this.circle = new Circle(center, this.circle.r.valueOf() * scaleFactor);
   }
 
+  public rotate(rotateOrigin: Point, angle: number) {
+    this.circle = this.circle.rotate(angle, rotateOrigin);
+  }
+
   public clone(): Entity {
     if (this.circle) {
       return new CircleEntity(this.circle.clone());

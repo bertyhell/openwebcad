@@ -1,10 +1,19 @@
 import { Entity, EntityName, JsonEntity } from './Entity.ts';
 import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
 import * as Flatten from '@flatten-js/core';
-import { Box, Point, Relations, Segment } from '@flatten-js/core';
+import {
+  Box,
+  Point,
+  Polygon,
+  Relations,
+  Segment,
+  Vector,
+} from '@flatten-js/core';
 import { worldToScreen } from '../helpers/world-screen-conversion.ts';
 import { getExportColor } from '../helpers/get-export-color.ts';
 import { scalePoint } from '../helpers/scale-point.ts';
+import { twoPointBoxToPolygon } from '../helpers/box-to-polygon.ts';
+import { polygonToSegments } from '../helpers/polygon-to-segments.ts';
 
 export class ImageEntity implements Entity {
   public id: string = crypto.randomUUID();
@@ -13,71 +22,103 @@ export class ImageEntity implements Entity {
   public lineStyle: number[] | undefined = undefined;
 
   private imageElement: HTMLImageElement;
-  private rectangle: Box;
+  private polygon: Polygon;
+  private angle: number;
 
-  constructor(imgData: HTMLImageElement, rectangle: Box) {
+  constructor(
+    imgData: HTMLImageElement,
+    startPointOrPolygon?: Point | Polygon,
+    endPointOrAngle?: Point | number,
+    angle: number = 0,
+  ) {
     this.imageElement = imgData;
-    this.rectangle = rectangle;
+    if (startPointOrPolygon instanceof Polygon) {
+      this.polygon = startPointOrPolygon as Polygon;
+    } else {
+      this.polygon = twoPointBoxToPolygon(
+        startPointOrPolygon as Point,
+        endPointOrAngle as Point,
+      );
+    }
+    if (endPointOrAngle instanceof Point) {
+      this.angle = angle;
+    } else {
+      this.angle = endPointOrAngle as number;
+    }
   }
 
   public draw(drawInfo: DrawInfo): void {
-    const screenStartPoint = worldToScreen(this.rectangle.low);
-    const screenEndPoint = worldToScreen(this.rectangle.high);
+    polygonToSegments(this.polygon).forEach(edge => {
+      const screenStartPoint = worldToScreen(edge.start);
+      const screenEndPoint = worldToScreen(edge.end);
 
-    const width = Math.abs(screenStartPoint.x - screenEndPoint.x);
-    const height = Math.abs(screenStartPoint.y - screenEndPoint.y);
+      drawInfo.context.beginPath();
+      drawInfo.context.moveTo(screenStartPoint.x, screenStartPoint.y);
+      drawInfo.context.lineTo(screenEndPoint.x, screenEndPoint.y);
+      drawInfo.context.stroke();
+    });
 
-    if (width === 0 || height === 0) {
-      return;
-    }
+    const center = this.polygon.box.center;
+    const centerX = center.x;
+    const centerY = center.y;
+    const width = this.polygon.box.width;
+    const height = this.polygon.box.height;
 
-    drawInfo.context.beginPath();
-    drawInfo.context.strokeRect(
-      screenStartPoint.x,
-      screenStartPoint.y,
-      screenEndPoint.x - screenStartPoint.x,
-      screenEndPoint.y - screenStartPoint.y,
-    );
+    // Rotate and translate context
+    drawInfo.context.translate(centerX, centerY);
+    drawInfo.context.rotate(this.angle);
 
+    // Draw image
     drawInfo.context.drawImage(
       this.imageElement,
-      screenStartPoint.x,
-      screenStartPoint.y,
+      -width / 2,
+      -height / 2,
       width,
       height,
     );
+
+    // Reset context
+    drawInfo.context.rotate(-this.angle);
+    drawInfo.context.translate(-centerX, -centerY);
   }
 
   public move(x: number, y: number) {
-    this.rectangle = this.rectangle.translate(x, y);
+    this.polygon = this.polygon.translate(new Vector(x, y));
   }
 
   public scale(scaleOrigin: Point, scaleFactor: number) {
-    const low = scalePoint(this.rectangle.low, scaleOrigin, scaleFactor);
-    const high = scalePoint(this.rectangle.high, scaleOrigin, scaleFactor);
-    this.rectangle = new Box(low.x, low.y, high.x, high.y);
+    const center = this.polygon.box.center;
+    const newCenter = scalePoint(center, scaleOrigin, scaleFactor);
+    this.polygon = this.polygon.translate(
+      new Vector(newCenter.x - center.x, newCenter.y - center.y),
+    );
+  }
+
+  public rotate(rotateOrigin: Point, angle: number) {
+    this.polygon = this.polygon.rotate(angle, rotateOrigin);
+    this.angle += angle; // Need to keep track of the angle for drawing the image
   }
 
   public clone(): ImageEntity | null {
     const clonedImage = document.createElement('img');
     clonedImage.src = this.imageElement.src;
-    return new ImageEntity(clonedImage, this.rectangle.clone());
+    return new ImageEntity(clonedImage, this.polygon.clone());
   }
 
   // TODO add destroy method to cleanup this.imageElement.src
 
   public intersectsWithBox(selectionBox: Box): boolean {
-    return Relations.relate(this.rectangle, selectionBox).B2B.length > 0;
+    return Relations.relate(this.polygon, selectionBox).B2B.length > 0;
   }
 
   public isContainedInBox(selectionBox: Box): boolean {
-    return selectionBox.contains(this.rectangle);
+    return selectionBox.contains(this.polygon);
   }
 
   public distanceTo(shape: Shape): [number, Segment] | null {
-    const distanceInfos: [number, Segment][] = this.rectangle
-      .toSegments()
-      .map(segment => segment.distanceTo(shape));
+    const distanceInfos: [number, Segment][] = polygonToSegments(
+      this.polygon,
+    ).map(segment => segment.distanceTo(shape));
     let shortestDistanceInfo: [number, Segment | null] = [
       Number.MAX_SAFE_INTEGER,
       null,
@@ -91,16 +132,16 @@ export class ImageEntity implements Entity {
   }
 
   public getBoundingBox(): Box | null {
-    return this.rectangle;
+    return this.polygon.box;
   }
 
   public getShape(): Shape | null {
-    return this.rectangle;
+    return this.polygon;
   }
 
   public getSnapPoints(): SnapPoint[] {
-    const corners = this.rectangle.toPoints();
-    const edges = this.rectangle.toSegments();
+    const corners = this.polygon.vertices;
+    const edges = polygonToSegments(this.polygon);
     return [
       {
         point: corners[0],
@@ -142,17 +183,17 @@ export class ImageEntity implements Entity {
     if (!otherShape) {
       return [];
     }
-    return this.rectangle.toSegments().flatMap(segment => {
+    return polygonToSegments(this.polygon).flatMap(segment => {
       return segment.intersect(otherShape);
     });
   }
 
   public getFirstPoint(): Point | null {
-    return this.rectangle?.low || null;
+    return this.polygon?.vertices[0] || null;
   }
 
   public getSvgString(): string | null {
-    return this.rectangle.svg({
+    return this.polygon.svg({
       strokeWidth: this.lineWidth,
       stroke: getExportColor(this.lineColor),
     });
@@ -163,7 +204,9 @@ export class ImageEntity implements Entity {
   }
 
   public containsPointOnShape(point: Flatten.Point): boolean {
-    return this.rectangle.toSegments().some(segment => segment.contains(point));
+    return polygonToSegments(this.polygon).some(segment =>
+      segment.contains(point),
+    );
   }
 
   public async toJson(): Promise<JsonEntity<ImageJsonData> | null> {
@@ -173,10 +216,10 @@ export class ImageEntity implements Entity {
       lineColor: this.lineColor,
       lineWidth: this.lineWidth,
       shapeData: {
-        xmin: this.rectangle.xmin,
-        ymin: this.rectangle.ymin,
-        xmax: this.rectangle.xmax,
-        ymax: this.rectangle.ymax,
+        points: this.polygon.vertices.map(vertex => ({
+          x: vertex.x,
+          y: vertex.y,
+        })),
         imageData: this.imageElement.currentSrc,
       },
     };
@@ -185,11 +228,8 @@ export class ImageEntity implements Entity {
   public static async fromJson(
     jsonEntity: JsonEntity<ImageJsonData>,
   ): Promise<ImageEntity> {
-    const rectangle = new Box(
-      jsonEntity.shapeData.xmin,
-      jsonEntity.shapeData.ymin,
-      jsonEntity.shapeData.xmax,
-      jsonEntity.shapeData.ymax,
+    const rectangle = new Polygon(
+      jsonEntity.shapeData.points.map(point => new Point(point.x, point.y)),
     );
     const image = new Image();
     image.src = jsonEntity.shapeData.imageData;
@@ -202,9 +242,6 @@ export class ImageEntity implements Entity {
 }
 
 export interface ImageJsonData {
-  xmin: number;
-  ymin: number;
-  xmax: number;
-  ymax: number;
+  points: { x: number; y: number }[];
   imageData: string;
 }

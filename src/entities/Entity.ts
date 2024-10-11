@@ -5,6 +5,7 @@ import { CircleJsonData } from './CircleEntity.ts';
 import { LineJsonData } from './LineEntity.ts';
 import { RectangleJsonData } from './RectangleEntity.ts';
 import { PointJsonData } from './PointEntity.ts';
+import { ImageJsonData } from './ImageEntity.ts';
 
 export interface Entity {
   // Random uuid generated when the Entity is created
@@ -22,6 +23,7 @@ export interface Entity {
    */
   move(x: number, y: number): void;
   scale(scaleOrigin: Point, scaleFactor: number): void;
+  rotate(rotateOrigin: Point, angle: number): void;
   clone(): Entity | null;
   getBoundingBox(): Box | null;
   intersectsWithBox(box: Box): boolean;
@@ -52,7 +54,8 @@ export type ShapeJsonData =
   | CircleJsonData
   | ArcJsonData
   | LineJsonData
-  | PointJsonData;
+  | PointJsonData
+  | ImageJsonData;
 
 export interface JsonEntity<TShapeJsonData = ShapeJsonData> {
   id: string;

@@ -1,8 +1,8 @@
 import { Point } from '@flatten-js/core';
 import {
   getNotSelectedEntities,
-  setActiveEntity,
   setEntities,
+  setGhostHelperEntities,
   setSelectedEntityIds,
   setShouldDrawHelpers,
 } from '../state.ts';
@@ -133,7 +133,7 @@ export const selectToolStateMachine = createMachine(
       INIT_SELECT_TOOL: () => {
         console.log('activate select tool');
         setShouldDrawHelpers(false);
-        setActiveEntity(null);
+        setGhostHelperEntities([]);
         setSelectedEntityIds([]);
       },
       HANDLE_FIRST_SELECT_POINT: assign(
@@ -160,35 +160,36 @@ export const selectToolStateMachine = createMachine(
           (event as DrawEvent).drawInfo.worldMouseLocation,
         );
       },
-      SELECT_ENTITIES_INSIDE_RECTANGLE: assign(
-        ({ context, event }: { context: SelectContext; event: StateEvent }) => {
-          console.log('select entities inside rectangle');
-          if (!context.startPoint) {
-            //
-            throw new Error(
-              '[SELECT] calling SELECT_ENTITIES_INSIDE_RECTANGLE without start point',
-            );
-          }
-          selectEntitiesInsideRectangle(
-            context.startPoint,
-            (event as MouseClickEvent).worldClickPoint,
-            (event as MouseClickEvent).holdingCtrl,
-            // (event as MouseClickEvent).holdingShift,
+      SELECT_ENTITIES_INSIDE_RECTANGLE: ({
+        context,
+        event,
+      }: {
+        context: SelectContext;
+        event: StateEvent;
+      }) => {
+        console.log('select entities inside rectangle');
+        if (!context.startPoint) {
+          //
+          throw new Error(
+            '[SELECT] calling SELECT_ENTITIES_INSIDE_RECTANGLE without start point',
           );
-          setActiveEntity(null);
-          return {
-            startPoint: null,
-          };
-        },
-      ),
+        }
+        selectEntitiesInsideRectangle(
+          context.startPoint,
+          (event as MouseClickEvent).worldClickPoint,
+          (event as MouseClickEvent).holdingCtrl,
+          // (event as MouseClickEvent).holdingShift,
+        );
+        setGhostHelperEntities([]);
+      },
       DELETE_SELECTED_ENTITIES: () => {
         console.log('delete selected entities');
         setEntities(getNotSelectedEntities());
         setSelectedEntityIds([]);
-        setActiveEntity(null);
+        setGhostHelperEntities([]);
       },
       RESET_SELECTION: assign(() => {
-        setActiveEntity(null);
+        setGhostHelperEntities([]);
         setSelectedEntityIds([]);
         return {
           startPoint: null,

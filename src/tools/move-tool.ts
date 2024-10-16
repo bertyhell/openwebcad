@@ -4,10 +4,8 @@ import {
   deleteEntity,
   getActiveToolActor,
   getEntities,
-  getGhostHelperEntities,
   getSelectedEntities,
   getSelectedEntityIds,
-  setActiveEntity,
   setAngleGuideOriginPoint,
   setGhostHelperEntities,
   setSelectedEntityIds,
@@ -35,6 +33,7 @@ import {
 export interface MoveContext extends ToolContext {
   startPoint: Point | null;
   originalSelectedEntities: Entity[];
+  movedEntities: Entity[];
   lastDrawLocation: Point | null;
 }
 
@@ -75,6 +74,7 @@ export const moveToolStateMachine = createMachine(
     context: {
       startPoint: null,
       originalSelectedEntities: [],
+      movedEntities: [],
       lastDrawLocation: null,
       type: Tool.MOVE,
     },
@@ -200,13 +200,19 @@ export const moveToolStateMachine = createMachine(
   },
   {
     actions: {
-      [MoveAction.INIT_MOVE_TOOL]: () => {
+      [MoveAction.INIT_MOVE_TOOL]: assign(() => {
         console.log('activate move tool');
         setShouldDrawHelpers(false);
-        setActiveEntity(null);
+        setGhostHelperEntities([]);
         setSelectedEntityIds([]);
         setAngleGuideOriginPoint(null);
-      },
+        return {
+          startPoint: null,
+          originalSelectedEntities: [],
+          movedEntities: [],
+          lastDrawLocation: null,
+        };
+      }),
       [MoveAction.ENABLE_HELPERS]: () => {
         setShouldDrawHelpers(true);
       },
@@ -233,9 +239,10 @@ export const moveToolStateMachine = createMachine(
           originalSelectedEntities: compact(
             selectedEntities.map(entity => entity.clone()),
           ),
+          movedEntities: selectedEntities,
         };
       }),
-      [MoveAction.DRAW_TEMP_MOVE_ENTITIES]: assign(({ context, event }) => {
+      [MoveAction.DRAW_TEMP_MOVE_ENTITIES]: ({ context, event }) => {
         if (!context.startPoint) {
           throw new Error(
             '[MOVE] Calling draw temp move line without a start point',
@@ -252,22 +259,15 @@ export const moveToolStateMachine = createMachine(
         activeMoveLine.lineColor = GUIDE_LINE_COLOR;
         activeMoveLine.lineWidth = GUIDE_LINE_WIDTH;
         activeMoveLine.lineStyle = GUIDE_LINE_STYLE;
-        setActiveEntity(activeMoveLine);
+        setGhostHelperEntities([activeMoveLine]);
 
-        // Draw all selected entities according to translation vector, so the user gets visual feedback of where the entities will be moved
-        const lastMoveLocationTemp =
-          context.lastDrawLocation || context.startPoint;
+        // Draw all selected entities according to translation vector, so the user gets visual feedback of where the entities will be moved;
         moveEntities(
-          getGhostHelperEntities(),
-          endPointTemp.x - lastMoveLocationTemp.x,
-          endPointTemp.y - lastMoveLocationTemp.y,
+          context.originalSelectedEntities.map(entity => entity.clone()),
+          endPointTemp.x - context.startPoint.x,
+          endPointTemp.y - context.startPoint.y,
         );
-
-        return {
-          ...context,
-          lastDrawLocation: (event as DrawEvent).drawInfo.worldMouseLocation,
-        };
-      }),
+      },
       [MoveAction.MOVE_SELECTION]: ({ context, event }) => {
         if (!context.startPoint) {
           throw new Error(
@@ -276,22 +276,20 @@ export const moveToolStateMachine = createMachine(
         }
 
         // Move the entities one final time
-        const lastMoveLocationTemp =
-          context.lastDrawLocation || context.startPoint;
         const currentEndPoint = (event as MouseClickEvent).worldClickPoint;
         moveEntities(
-          getGhostHelperEntities(),
-          currentEndPoint.x - lastMoveLocationTemp.x,
-          currentEndPoint.y - lastMoveLocationTemp.y,
+          context.originalSelectedEntities,
+          currentEndPoint.x - context.startPoint.x,
+          currentEndPoint.y - context.startPoint.y,
         );
 
         // Switch the moved entities back from the ghost helper entities to the real entities
-        addEntity(...getGhostHelperEntities());
+        addEntity(...context.originalSelectedEntities);
         setGhostHelperEntities([]);
         setSelectedEntityIds([]);
       },
       [MoveAction.DESELECT_ENTITIES]: assign(() => {
-        setActiveEntity(null);
+        setGhostHelperEntities([]);
         setSelectedEntityIds([]);
         return {
           startPoint: null,
@@ -304,7 +302,6 @@ export const moveToolStateMachine = createMachine(
         console.log({ entities });
         addEntity(...context.originalSelectedEntities);
         setGhostHelperEntities([]);
-        setActiveEntity(null);
         setSelectedEntityIds([]);
         return {
           startPoint: null,

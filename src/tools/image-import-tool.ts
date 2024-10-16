@@ -1,7 +1,6 @@
 import { Point, Polygon } from '@flatten-js/core';
 import {
   addEntity,
-  setActiveEntity,
   setActiveToolActor,
   setAngleGuideEntities,
   setAngleGuideOriginPoint,
@@ -173,7 +172,7 @@ export const imageImportToolStateMachine = createMachine(
             (event as DrawEvent).drawInfo.worldMouseLocation,
           ),
         );
-        setActiveEntity(activeImage);
+        setGhostHelperEntities([activeImage]);
         setAngleGuideEntities([draggedRectangle]);
       },
       [ImageImportAction.DRAW_FINAL_IMAGE_IMPORT]: ({ context, event }) => {

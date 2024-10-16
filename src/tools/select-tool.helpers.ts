@@ -2,7 +2,7 @@ import {
   getEntities,
   getSelectedEntityIds,
   isEntitySelected,
-  setActiveEntity,
+  setGhostHelperEntities,
   setSelectedEntityIds,
 } from '../state.ts';
 import {
@@ -139,7 +139,7 @@ export function drawTempSelectionRectangle(startPoint: Point, endPoint: Point) {
     : SELECTION_RECTANGLE_COLOR_CONTAINS;
   activeSelectionRectangle.lineWidth = SELECTION_RECTANGLE_WIDTH;
   activeSelectionRectangle.lineStyle = SELECTION_RECTANGLE_STYLE;
-  setActiveEntity(activeSelectionRectangle);
+  setGhostHelperEntities([activeSelectionRectangle]);
 }
 
 /**

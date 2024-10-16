@@ -4,8 +4,8 @@ import {
   addEntity,
   getActiveLineColor,
   getActiveLineWidth,
-  setActiveEntity,
   setAngleGuideOriginPoint,
+  setGhostHelperEntities,
   setSelectedEntityIds,
   setShouldDrawHelpers,
 } from '../state.ts';
@@ -90,7 +90,7 @@ export const rectangleToolStateMachine = createMachine(
     actions: {
       [RectangleAction.INIT_RECTANGLE_TOOL]: () => {
         setShouldDrawHelpers(true);
-        setActiveEntity(null);
+        setGhostHelperEntities([]);
         setSelectedEntityIds([]);
         setAngleGuideOriginPoint(null);
       },
@@ -112,7 +112,7 @@ export const rectangleToolStateMachine = createMachine(
         );
         activeRectangle.lineColor = getActiveLineColor();
         activeRectangle.lineWidth = getActiveLineWidth();
-        setActiveEntity(activeRectangle);
+        setGhostHelperEntities([activeRectangle]);
       },
       [RectangleAction.DRAW_FINAL_RECTANGLE]: ({ context, event }) => {
         const endPoint = (event as MouseClickEvent).worldClickPoint;

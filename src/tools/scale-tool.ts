@@ -6,7 +6,6 @@ import {
   getEntities,
   getSelectedEntities,
   getSelectedEntityIds,
-  setActiveEntity,
   setAngleGuideOriginPoint,
   setGhostHelperEntities,
   setSelectedEntityIds,
@@ -226,7 +225,7 @@ export const scaleToolStateMachine = createMachine(
       [ScaleAction.INIT_SCALE_TOOL]: () => {
         console.log('activate scale tool');
         setShouldDrawHelpers(false);
-        setActiveEntity(null);
+        setGhostHelperEntities([]);
         setSelectedEntityIds([]);
         setAngleGuideOriginPoint(null);
       },
@@ -317,7 +316,7 @@ export const scaleToolStateMachine = createMachine(
         setSelectedEntityIds([]);
       },
       [ScaleAction.DESELECT_ENTITIES]: assign(() => {
-        setActiveEntity(null);
+        setGhostHelperEntities([]);
         setSelectedEntityIds([]);
         return {
           startPoint: null,
@@ -330,7 +329,7 @@ export const scaleToolStateMachine = createMachine(
         console.log({ entities });
         addEntity(...context.originalSelectedEntities);
         setGhostHelperEntities([]);
-        setActiveEntity(null);
+        setGhostHelperEntities([]);
         setSelectedEntityIds([]);
         return {
           startPoint: null,

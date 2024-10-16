@@ -6,7 +6,6 @@ import {
   getEntities,
   getSelectedEntities,
   getSelectedEntityIds,
-  setActiveEntity,
   setAngleGuideOriginPoint,
   setGhostHelperEntities,
   setSelectedEntityIds,
@@ -221,7 +220,7 @@ export const rotateToolStateMachine = createMachine(
       [RotateAction.INIT_ROTATE_TOOL]: () => {
         console.log('activate rotate tool');
         setShouldDrawHelpers(false);
-        setActiveEntity(null);
+        setGhostHelperEntities([]);
         setSelectedEntityIds([]);
         setAngleGuideOriginPoint(null);
       },
@@ -313,7 +312,7 @@ export const rotateToolStateMachine = createMachine(
         setSelectedEntityIds([]);
       },
       [RotateAction.DESELECT_ENTITIES]: assign(({ context }): RotateContext => {
-        setActiveEntity(null);
+        setGhostHelperEntities([]);
         setSelectedEntityIds([]);
         return {
           ...context,
@@ -328,7 +327,6 @@ export const rotateToolStateMachine = createMachine(
           console.log({ entities });
           addEntity(...context.originalSelectedEntities);
           setGhostHelperEntities([]);
-          setActiveEntity(null);
           setSelectedEntityIds([]);
           return {
             ...context,

@@ -24,7 +24,7 @@ export interface Entity {
   move(x: number, y: number): void;
   scale(scaleOrigin: Point, scaleFactor: number): void;
   rotate(rotateOrigin: Point, angle: number): void;
-  clone(): Entity | null;
+  clone(): Entity;
   getBoundingBox(): Box | null;
   intersectsWithBox(box: Box): boolean;
   isContainedInBox(box: Box): boolean;

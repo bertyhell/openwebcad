@@ -4,7 +4,7 @@ import {
   addEntity,
   deleteEntity,
   getEntities,
-  setActiveEntity,
+  setGhostHelperEntities,
   setSelectedEntityIds,
   setShouldDrawHelpers,
 } from '../state.ts';
@@ -76,8 +76,8 @@ export const eraserToolStateMachine = createMachine(
     actions: {
       [EraserAction.INIT_ERASER_TOOL]: assign(() => {
         console.log('activate eraser tool');
-        setShouldDrawHelpers(true);
-        setActiveEntity(null);
+        setShouldDrawHelpers(false);
+        setGhostHelperEntities([]);
         setSelectedEntityIds([]);
         return {};
       }),
@@ -104,7 +104,8 @@ function handleMouseClick(worldClickPoint: Point) {
     getEntities(),
   );
 
-  switch (closestEntity.entity.getType()) {
+  const entityType = closestEntity.entity.getType();
+  switch (entityType) {
     case EntityName.Line: {
       const line = closestEntity.entity as LineEntity;
       eraseLineSegment(line, clickedPointOnShape, intersections);
@@ -151,6 +152,11 @@ function handleMouseClick(worldClickPoint: Point) {
         lineIntersections,
       );
       break;
+    }
+
+    case EntityName.Image: {
+      // TODO implement image eraser
+      // Switch to rectangle entity and delete the image and the line that was closest to the cursor
     }
   }
 }

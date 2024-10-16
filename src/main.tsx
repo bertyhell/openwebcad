@@ -20,12 +20,11 @@ import {
   getSnapPointOnAngleGuide,
   getWorldMouseLocation,
   redo,
-  setActiveEntity,
   setActiveToolActor,
   setAngleGuideEntities,
   setCanvas,
   setCanvasSize,
-  setContext,
+  setGhostHelperEntities,
   setHighlightedEntityIds,
   setHoveredSnapPoints,
   setLastDrawTimestamp,
@@ -195,7 +194,7 @@ function handleKeyUp(evt: KeyboardEvent) {
   } else if (evt.key === 'z' && evt.ctrlKey && !evt.shiftKey) {
     evt.preventDefault();
     undo();
-    setActiveEntity(null);
+    setGhostHelperEntities([]);
     setSelectedEntityIds([]);
     getActiveToolActor()?.send({
       type: ActorEvent.ESC,
@@ -203,7 +202,7 @@ function handleKeyUp(evt: KeyboardEvent) {
   } else if (evt.key === 'z' && evt.ctrlKey && evt.shiftKey) {
     evt.preventDefault();
     redo();
-    setActiveEntity(null);
+    setGhostHelperEntities([]);
     setSelectedEntityIds([]);
     getActiveToolActor()?.send({
       type: ActorEvent.ESC,
@@ -356,8 +355,6 @@ function initApplication() {
 
     const context = canvas.getContext('2d');
     if (!context) return;
-
-    setContext(context);
 
     startDrawLoop(context, 0);
 

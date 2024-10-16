@@ -9,9 +9,7 @@ import {
 } from './App.types.ts';
 import { createStack, StateVariable, UndoState } from './helpers/undo-stack.ts';
 import { isEqual } from 'es-toolkit';
-import { RectangleEntity } from './entities/RectangleEntity.ts';
 import { Actor, MachineSnapshot } from 'xstate';
-import { Tool } from './tools.ts';
 
 // state variables
 /**
@@ -23,11 +21,6 @@ let canvasSize = new Point(0, 0);
  * Canvas element
  */
 let canvas: HTMLCanvasElement | null = null;
-
-/**
- * Canvas 2d context used for drawing on the canvas
- */
-let context: CanvasRenderingContext2D | null = null;
 
 /**
  * Location of the mouse on the screen
@@ -59,16 +52,6 @@ let highlightedEntityIds: string[] = [];
  * Entities that are selected by the user by clicking on them with the select tool or by selecting them with a selection rectangle
  */
 let selectedEntityIds: string[] = [];
-
-/**
- * Entity/Entities that is currently being drawn, but isn't/aren't complete yet
- */
-let activeEntity: Entity | null = null;
-
-/**
- * Rectangle that indicates the selection rectangle
- */
-let activeSelectionRect: RectangleEntity | null = null;
 
 /**
  * Whether to draw the cursor or not
@@ -156,15 +139,11 @@ let activeLineWidth = 1;
 // getters
 export const getCanvasSize = () => canvasSize;
 export const getCanvas = () => canvas;
-export const getContext = () => context;
 export const getScreenMouseLocation = () => screenMouseLocation;
 export const getActiveToolActor = () => activeToolActor;
 export const getLastStateInstructions = () => lastStateInstructions;
 export const getEntities = (): Entity[] => entities;
-export const getHighlightedEntityIds = () => highlightedEntityIds;
 export const getSelectedEntityIds = () => selectedEntityIds;
-export const getActiveEntity = () => activeEntity;
-export const getActiveSelectionRect = () => activeSelectionRect;
 export const getShouldDrawCursor = () => shouldDrawCursor;
 export const getAngleGuideEntities = () => angleGuideEntities;
 export const getGhostHelperEntities = () => ghostHelperEntities;
@@ -195,15 +174,11 @@ export const isEntitySelected = (entity: Entity) =>
   selectedEntityIds.includes(entity.id);
 export const isEntityHighlighted = (entity: Entity) =>
   highlightedEntityIds.includes(entity.id);
-export const getActiveTool = (): Tool | null =>
-  activeToolActor?.getSnapshot()?.context?.type || null;
 
 // setters
 export const setCanvasSize = (newCanvasSize: Point) =>
   (canvasSize = newCanvasSize);
 export const setCanvas = (newCanvas: HTMLCanvasElement) => (canvas = newCanvas);
-export const setContext = (newContext: CanvasRenderingContext2D) =>
-  (context = newContext);
 export const setScreenMouseLocation = (newLocation: Point) =>
   (screenMouseLocation = newLocation);
 export const setActiveToolActor = (
@@ -245,14 +220,6 @@ export const setLastStateInstructions = (newInstructions: string | null) =>
 export const setEntities = (newEntities: Entity[]) => {
   trackUndoState(StateVariable.entities, entities);
   entities = newEntities;
-};
-export const setActiveEntity = (newActiveEntity: Entity | null) => {
-  activeEntity = newActiveEntity;
-};
-export const setActiveSelectionRect = (
-  newActiveSelectionRect: RectangleEntity,
-) => {
-  activeSelectionRect = newActiveSelectionRect;
 };
 export const setHighlightedEntityIds = (newEntityIds: string[]) =>
   (highlightedEntityIds = newEntityIds);
@@ -388,18 +355,6 @@ function updateStates(undoState: UndoState) {
   switch (variable) {
     case StateVariable.entities:
       entities = value;
-      break;
-    case StateVariable.activeEntity:
-      activeEntity = value;
-      break;
-    case StateVariable.angleStep:
-      angleStep = value;
-      break;
-    case StateVariable.screenOffset:
-      screenOffset = value;
-      break;
-    case StateVariable.screenZoom:
-      screenZoom = value;
       break;
   }
 }

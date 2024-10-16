@@ -4,8 +4,8 @@ import {
   addEntity,
   getActiveLineColor,
   getActiveLineWidth,
-  setActiveEntity,
   setAngleGuideOriginPoint,
+  setGhostHelperEntities,
   setSelectedEntityIds,
   setShouldDrawHelpers,
 } from '../state.ts';
@@ -90,8 +90,8 @@ export const lineToolStateMachine = createMachine(
     actions: {
       [LineAction.INIT_LINE_TOOL]: assign(() => {
         setShouldDrawHelpers(true);
-        setActiveEntity(null);
         setSelectedEntityIds([]);
+        setGhostHelperEntities([]);
         setAngleGuideOriginPoint(null);
         return {
           startPoint: null,
@@ -110,7 +110,7 @@ export const lineToolStateMachine = createMachine(
         );
         activeLine.lineColor = getActiveLineColor();
         activeLine.lineWidth = getActiveLineWidth();
-        setActiveEntity(activeLine);
+        setGhostHelperEntities([activeLine]);
       },
       [LineAction.DRAW_FINAL_LINE]: assign(({ context, event }) => {
         console.log('drawFinalLine', { context, event });
@@ -124,7 +124,8 @@ export const lineToolStateMachine = createMachine(
         addEntity(activeLine);
 
         // Keep drawing from the last point
-        setActiveEntity(new LineEntity(endPoint, endPoint));
+        setGhostHelperEntities([new LineEntity(endPoint, endPoint)]);
+        setAngleGuideOriginPoint(endPoint);
         return {
           startPoint: endPoint,
         };

@@ -99,7 +99,7 @@ export class ImageEntity implements Entity {
     this.angle += angle; // Need to keep track of the angle for drawing the image
   }
 
-  public clone(): ImageEntity | null {
+  public clone(): ImageEntity {
     const clonedImage = document.createElement('img');
     clonedImage.src = this.imageElement.src;
     return new ImageEntity(clonedImage, this.polygon.clone());

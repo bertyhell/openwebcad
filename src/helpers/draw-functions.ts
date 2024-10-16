@@ -214,24 +214,6 @@ export function drawHelpers(drawInfo: DrawInfo, helperEntities: Entity[]) {
   });
 }
 
-export function drawActiveEntity(
-  drawInfo: DrawInfo,
-  activeEntity: Entity | null,
-) {
-  if (!activeEntity) {
-    return;
-  }
-  setLineStyles(
-    drawInfo.context,
-    false,
-    false,
-    activeEntity.lineColor,
-    activeEntity.lineWidth,
-    activeEntity.lineStyle,
-  );
-  activeEntity?.draw(drawInfo);
-}
-
 export function drawCursor(drawInfo: DrawInfo, drawCursor: boolean) {
   if (!drawCursor) return;
 

@@ -1,7 +1,6 @@
 import { DrawInfo } from '../App.types.ts';
 import {
   clearCanvas,
-  drawActiveEntity,
   drawCursor,
   drawDebugEntities,
   drawEntities,
@@ -13,7 +12,6 @@ import { isPointEqual } from './is-point-equal.ts';
 import { HOVERED_SNAP_POINT_TIME } from '../App.consts.ts';
 import { compact } from 'es-toolkit';
 import {
-  getActiveEntity,
   getAngleGuideEntities,
   getDebugEntities,
   getEntities,
@@ -32,7 +30,6 @@ export function draw(drawInfo: DrawInfo) {
   drawEntities(drawInfo, getGhostHelperEntities());
   drawEntities(drawInfo, getEntities());
   drawDebugEntities(drawInfo, getDebugEntities());
-  drawActiveEntity(drawInfo, getActiveEntity());
 
   const { snapPoint: closestSnapPoint } = getClosestSnapPoint(
     compact([getSnapPoint(), getSnapPointOnAngleGuide()]),

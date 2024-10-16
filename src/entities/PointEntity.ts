@@ -44,7 +44,7 @@ export class PointEntity implements Entity {
     this.point = this.point.rotate(angle, rotateOrigin);
   }
 
-  public clone(): PointEntity | null {
+  public clone(): PointEntity {
     return new PointEntity(this.point.clone());
   }
 

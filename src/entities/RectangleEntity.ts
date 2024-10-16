@@ -62,7 +62,7 @@ export class RectangleEntity implements Entity {
     this.polygon = this.polygon.rotate(angle, rotateOrigin);
   }
 
-  public clone(): RectangleEntity | null {
+  public clone(): RectangleEntity {
     return new RectangleEntity(this.polygon.clone());
   }
 
@@ -161,7 +161,7 @@ export class RectangleEntity implements Entity {
   }
 
   public getType(): EntityName {
-    return EntityName.Image;
+    return EntityName.Rectangle;
   }
 
   public containsPointOnShape(point: Flatten.Point): boolean {
@@ -173,7 +173,7 @@ export class RectangleEntity implements Entity {
   public async toJson(): Promise<JsonEntity<RectangleJsonData> | null> {
     return {
       id: this.id,
-      type: EntityName.Image,
+      type: EntityName.Rectangle,
       lineColor: this.lineColor,
       lineWidth: this.lineWidth,
       shapeData: {

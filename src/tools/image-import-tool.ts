@@ -4,6 +4,8 @@ import {
   setActiveEntity,
   setActiveToolActor,
   setAngleGuideEntities,
+  setAngleGuideOriginPoint,
+  setGhostHelperEntities,
   setSelectedEntityIds,
   setShouldDrawHelpers,
 } from '../state.ts';
@@ -106,9 +108,9 @@ export const imageImportToolStateMachine = createMachine(
           MOUSE_CLICK: {
             actions: [
               ImageImportAction.DRAW_FINAL_IMAGE_IMPORT,
+              ImageImportAction.INIT_IMAGE_IMPORT_TOOL,
               ImageImportAction.SWITCH_TO_SELECT_TOOL,
             ],
-            target: ImageImportState.INIT,
           },
           ESC: {
             target: ImageImportState.INIT,
@@ -121,10 +123,12 @@ export const imageImportToolStateMachine = createMachine(
     actions: {
       [ImageImportAction.INIT_IMAGE_IMPORT_TOOL]: assign(() => {
         setShouldDrawHelpers(true);
-        setActiveEntity(null);
+        setGhostHelperEntities([]);
         setSelectedEntityIds([]);
+        setAngleGuideOriginPoint(null);
         return {
           startPoint: null,
+          imageElement: null,
         };
       }),
       [ImageImportAction.STORE_IMAGE_DATA]: assign(({ event }) => {
@@ -132,10 +136,12 @@ export const imageImportToolStateMachine = createMachine(
           imageElement: (event as FileSelectedEvent).image,
         };
       }),
-      [ImageImportAction.RECORD_START_POINT]: assign({
-        startPoint: ({ event }) => {
-          return (event as MouseClickEvent).worldClickPoint;
-        },
+      [ImageImportAction.RECORD_START_POINT]: assign(({ context, event }) => {
+        setAngleGuideOriginPoint((event as MouseClickEvent).worldClickPoint);
+        return {
+          ...context,
+          startPoint: (event as MouseClickEvent).worldClickPoint,
+        };
       }),
       [ImageImportAction.DRAW_TEMP_IMAGE_IMPORT]: ({ context, event }) => {
         if (!context.startPoint) {
@@ -170,47 +176,37 @@ export const imageImportToolStateMachine = createMachine(
         setActiveEntity(activeImage);
         setAngleGuideEntities([draggedRectangle]);
       },
-      [ImageImportAction.DRAW_FINAL_IMAGE_IMPORT]: assign(
-        ({ context, event }) => {
-          console.log('drawFinalImageImport', { context, event });
+      [ImageImportAction.DRAW_FINAL_IMAGE_IMPORT]: ({ context, event }) => {
+        console.log('drawFinalImageImport', { context, event });
 
-          if (!context.startPoint) {
-            throw new Error(
-              '[IMAGE_IMPORT] startPoint is not set when calling DRAW_TEMP_IMAGE_IMPORT',
-            );
-          }
-          if (!context.imageElement) {
-            throw new Error(
-              '[IMAGE_IMPORT] imageArrayBuffer is not set when calling DRAW_TEMP_IMAGE_IMPORT',
-            );
-          }
-
-          const containRectangle = getContainRectangleInsideRectangle(
-            context.imageElement.naturalWidth,
-            context.imageElement.naturalHeight,
-            context.startPoint,
-            (event as MouseClickEvent).worldClickPoint,
+        if (!context.startPoint) {
+          throw new Error(
+            '[IMAGE_IMPORT] startPoint is not set when calling DRAW_TEMP_IMAGE_IMPORT',
           );
-
-          if (!containRectangle) {
-            return {
-              startPoint: null,
-              imageElement: null,
-            };
-          }
-
-          const activeImage = new ImageEntity(
-            context.imageElement,
-            boxToPolygon(containRectangle),
+        }
+        if (!context.imageElement) {
+          throw new Error(
+            '[IMAGE_IMPORT] imageArrayBuffer is not set when calling DRAW_TEMP_IMAGE_IMPORT',
           );
-          addEntity(activeImage);
+        }
 
-          return {
-            startPoint: null,
-            imageArrayBuffer: null,
-          };
-        },
-      ),
+        const containRectangle = getContainRectangleInsideRectangle(
+          context.imageElement.naturalWidth,
+          context.imageElement.naturalHeight,
+          context.startPoint,
+          (event as MouseClickEvent).worldClickPoint,
+        );
+
+        if (!containRectangle) {
+          return;
+        }
+
+        const activeImage = new ImageEntity(
+          context.imageElement,
+          boxToPolygon(containRectangle),
+        );
+        addEntity(activeImage);
+      },
       [ImageImportAction.SWITCH_TO_SELECT_TOOL]: () => {
         setActiveToolActor(new Actor(selectToolStateMachine));
       },

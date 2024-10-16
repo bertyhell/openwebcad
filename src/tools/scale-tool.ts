@@ -7,6 +7,7 @@ import {
   getSelectedEntities,
   getSelectedEntityIds,
   setActiveEntity,
+  setAngleGuideOriginPoint,
   setGhostHelperEntities,
   setSelectedEntityIds,
   setShouldDrawHelpers,
@@ -227,12 +228,14 @@ export const scaleToolStateMachine = createMachine(
         setShouldDrawHelpers(false);
         setActiveEntity(null);
         setSelectedEntityIds([]);
+        setAngleGuideOriginPoint(null);
       },
       [ScaleAction.ENABLE_HELPERS]: () => {
         setShouldDrawHelpers(true);
       },
       [ScaleAction.RECORD_BASE_VECTOR_START_POINT]: assign(
         ({ context, event }) => {
+          setAngleGuideOriginPoint((event as MouseClickEvent).worldClickPoint);
           return {
             ...context,
             baseVectorStartPoint: (event as MouseClickEvent).worldClickPoint,
@@ -266,7 +269,7 @@ export const scaleToolStateMachine = createMachine(
           ),
         };
       }),
-      [ScaleAction.DRAW_TEMP_SCALE_ENTITIES]: assign(({ context, event }) => {
+      [ScaleAction.DRAW_TEMP_SCALE_ENTITIES]: ({ context, event }) => {
         if (!context.baseVectorStartPoint || !context.baseVectorEndPoint) {
           throw new Error(
             '[SCALE] Calling draw temp scale entities without a base start point or base end point',
@@ -288,45 +291,31 @@ export const scaleToolStateMachine = createMachine(
         );
 
         setGhostHelperEntities(scaledEntities);
-
-        return {
-          ...context,
-        };
-      }),
-      [ScaleAction.SCALE_SELECTION]: assign(
-        ({ context, event }): ScaleContext => {
-          if (!context.baseVectorStartPoint || !context.baseVectorEndPoint) {
-            throw new Error(
-              '[SCALE] Calling scale selection without some scale vector endpoints',
-            );
-          }
-          const scaleVectorEndPoint = (event as MouseClickEvent)
-            .worldClickPoint;
-
-          // Scale the entities one final time
-          const scaledEntities = compact(
-            context.originalSelectedEntities.map(entity => entity.clone()),
+      },
+      [ScaleAction.SCALE_SELECTION]: ({ context, event }) => {
+        if (!context.baseVectorStartPoint || !context.baseVectorEndPoint) {
+          throw new Error(
+            '[SCALE] Calling scale selection without some scale vector endpoints',
           );
-          scaleEntities(
-            scaledEntities,
-            context.baseVectorStartPoint,
-            context.baseVectorEndPoint,
-            scaleVectorEndPoint,
-          );
+        }
+        const scaleVectorEndPoint = (event as MouseClickEvent).worldClickPoint;
 
-          // Switch the scaled entities back from the ghost helper entities to the real entities
-          addEntity(...scaledEntities);
-          setGhostHelperEntities([]);
-          setSelectedEntityIds([]);
-          return {
-            ...context,
-            baseVectorStartPoint: null,
-            baseVectorEndPoint: null,
-            scaleVectorEndPoint: null,
-            originalSelectedEntities: [],
-          };
-        },
-      ),
+        // Scale the entities one final time
+        const scaledEntities = compact(
+          context.originalSelectedEntities.map(entity => entity.clone()),
+        );
+        scaleEntities(
+          scaledEntities,
+          context.baseVectorStartPoint,
+          context.baseVectorEndPoint,
+          scaleVectorEndPoint,
+        );
+
+        // Switch the scaled entities back from the ghost helper entities to the real entities
+        addEntity(...scaledEntities);
+        setGhostHelperEntities([]);
+        setSelectedEntityIds([]);
+      },
       [ScaleAction.DESELECT_ENTITIES]: assign(() => {
         setActiveEntity(null);
         setSelectedEntityIds([]);

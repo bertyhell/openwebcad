@@ -4,7 +4,8 @@ import {
   addEntity,
   getActiveLineColor,
   getActiveLineWidth,
-  setActiveEntity,
+  setAngleGuideOriginPoint,
+  setGhostHelperEntities,
   setSelectedEntityIds,
   setShouldDrawHelpers,
 } from '../state.ts';
@@ -91,16 +92,18 @@ export const circleToolStateMachine = createMachine(
       [CircleAction.INIT_CIRCLE_TOOL]: assign(() => {
         console.log('activate circle tool');
         setShouldDrawHelpers(true);
-        setActiveEntity(null);
+        setGhostHelperEntities([]);
         setSelectedEntityIds([]);
+        setAngleGuideOriginPoint(null);
         return {
           centerPoint: null,
         };
       }),
-      [CircleAction.RECORD_START_POINT]: assign({
-        centerPoint: ({ event }) => {
-          return (event as MouseClickEvent).worldClickPoint;
-        },
+      [CircleAction.RECORD_START_POINT]: assign(({ event }) => {
+        setAngleGuideOriginPoint((event as MouseClickEvent).worldClickPoint);
+        return {
+          centerPoint: (event as MouseClickEvent).worldClickPoint,
+        };
       }),
       [CircleAction.DRAW_TEMP_CIRCLE]: ({ context, event }) => {
         console.log('drawTempCircle', { context, event });
@@ -114,7 +117,7 @@ export const circleToolStateMachine = createMachine(
         );
         activeCircle.lineColor = getActiveLineColor();
         activeCircle.lineWidth = getActiveLineWidth();
-        setActiveEntity(activeCircle);
+        setGhostHelperEntities([activeCircle]);
       },
       [CircleAction.DRAW_FINAL_CIRCLE]: assign(({ context, event }) => {
         console.log('drawFinalCircle', { context, event });
@@ -127,7 +130,7 @@ export const circleToolStateMachine = createMachine(
         activeCircle.lineWidth = getActiveLineWidth();
         addEntity(activeCircle);
 
-        setActiveEntity(null);
+        setGhostHelperEntities([]);
         return {
           centerPoint: null,
         };

@@ -5,6 +5,7 @@ import {
   getActiveLineColor,
   getActiveLineWidth,
   setActiveEntity,
+  setAngleGuideOriginPoint,
   setSelectedEntityIds,
   setShouldDrawHelpers,
 } from '../state.ts';
@@ -91,14 +92,16 @@ export const lineToolStateMachine = createMachine(
         setShouldDrawHelpers(true);
         setActiveEntity(null);
         setSelectedEntityIds([]);
+        setAngleGuideOriginPoint(null);
         return {
           startPoint: null,
         };
       }),
-      [LineAction.RECORD_START_POINT]: assign({
-        startPoint: ({ event }) => {
-          return (event as MouseClickEvent).worldClickPoint;
-        },
+      [LineAction.RECORD_START_POINT]: assign(({ event }) => {
+        setAngleGuideOriginPoint((event as MouseClickEvent).worldClickPoint);
+        return {
+          startPoint: (event as MouseClickEvent).worldClickPoint,
+        };
       }),
       [LineAction.DRAW_TEMP_LINE]: ({ context, event }) => {
         const activeLine = new LineEntity(

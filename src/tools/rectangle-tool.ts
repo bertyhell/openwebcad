@@ -5,6 +5,7 @@ import {
   getActiveLineColor,
   getActiveLineWidth,
   setActiveEntity,
+  setAngleGuideOriginPoint,
   setSelectedEntityIds,
   setShouldDrawHelpers,
 } from '../state.ts';
@@ -91,8 +92,10 @@ export const rectangleToolStateMachine = createMachine(
         setShouldDrawHelpers(true);
         setActiveEntity(null);
         setSelectedEntityIds([]);
+        setAngleGuideOriginPoint(null);
       },
       [RectangleAction.RECORD_START_POINT]: assign(({ event }) => {
+        setAngleGuideOriginPoint((event as MouseClickEvent).worldClickPoint);
         return {
           startPoint: (event as MouseClickEvent).worldClickPoint,
         };
@@ -111,7 +114,7 @@ export const rectangleToolStateMachine = createMachine(
         activeRectangle.lineWidth = getActiveLineWidth();
         setActiveEntity(activeRectangle);
       },
-      [RectangleAction.DRAW_FINAL_RECTANGLE]: assign(({ context, event }) => {
+      [RectangleAction.DRAW_FINAL_RECTANGLE]: ({ context, event }) => {
         const endPoint = (event as MouseClickEvent).worldClickPoint;
         const activeRectangle = new RectangleEntity(
           context.startPoint as Point,
@@ -120,12 +123,7 @@ export const rectangleToolStateMachine = createMachine(
         activeRectangle.lineColor = getActiveLineColor();
         activeRectangle.lineWidth = getActiveLineWidth();
         addEntity(activeRectangle);
-
-        setActiveEntity(null);
-        return {
-          startPoint: null,
-        };
-      }),
+      },
     },
   },
 );

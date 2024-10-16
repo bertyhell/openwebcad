@@ -3,8 +3,8 @@ import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 import './index.scss';
 import {
-  getActiveEntity,
   getActiveToolActor,
+  getAngleGuideOriginPoint,
   getAngleStep,
   getCanvas,
   getCanvasSize,
@@ -231,7 +231,6 @@ function handleKeyUp(evt: KeyboardEvent) {
  */
 function calculateAngleGuidesAndSnapPoints() {
   const angleStep = getAngleStep();
-  const activeEntity = getActiveEntity();
   const entities = getEntities();
   const screenScale = getScreenZoom();
   const worldMouseLocation = getWorldMouseLocation();
@@ -247,19 +246,9 @@ function calculateAngleGuidesAndSnapPoints() {
   );
 
   if (getShouldDrawHelpers()) {
-    // If you're in the progress of drawing a shape, show the angle guides and closest snap point
-    let firstPoint: Point | null = null;
-    if (
-      activeEntity &&
-      !!activeEntity.getShape() &&
-      activeEntity.getFirstPoint() // TODO replace by state: lastDrawPoint
-    ) {
-      firstPoint = activeEntity.getFirstPoint();
-    }
-
     const { angleGuides, entitySnapPoint, angleSnapPoint } = getDrawHelpers(
       entities,
-      compact([firstPoint, ...eligibleHoveredPoints]),
+      compact([getAngleGuideOriginPoint(), ...eligibleHoveredPoints]),
       worldMouseLocation,
       angleStep,
       SNAP_POINT_DISTANCE / screenScale,

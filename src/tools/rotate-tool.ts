@@ -7,6 +7,7 @@ import {
   getSelectedEntities,
   getSelectedEntityIds,
   setActiveEntity,
+  setAngleGuideOriginPoint,
   setGhostHelperEntities,
   setSelectedEntityIds,
   setShouldDrawHelpers,
@@ -222,12 +223,14 @@ export const rotateToolStateMachine = createMachine(
         setShouldDrawHelpers(false);
         setActiveEntity(null);
         setSelectedEntityIds([]);
+        setAngleGuideOriginPoint(null);
       },
       [RotateAction.ENABLE_HELPERS]: () => {
         setShouldDrawHelpers(true);
       },
       [RotateAction.RECORD_ROTATION_ORIGIN]: assign(
         ({ context, event }): RotateContext => {
+          setAngleGuideOriginPoint((event as MouseClickEvent).worldClickPoint);
           return {
             ...context,
             rotationOrigin: (event as MouseClickEvent).worldClickPoint,
@@ -263,67 +266,52 @@ export const rotateToolStateMachine = createMachine(
           };
         },
       ),
-      [RotateAction.DRAW_TEMP_ROTATE_ENTITIES]: assign(
-        ({ context, event }): RotateContext => {
-          if (!context.rotationOrigin || !context.angleStartPoint) {
-            throw new Error(
-              '[ROTATE] Calling draw temp rotate entities without a base start point or base end point',
-            );
-          }
-
-          const angleEndpoint = (event as DrawEvent).drawInfo
-            .worldMouseLocation;
-
-          // Draw all selected entities according to rotate vector, so the user gets visual feedback of where the entities will be end up after rotating
-          const rotatedEntities = compact(
-            context.originalSelectedEntities.map(entity => entity.clone()),
+      [RotateAction.DRAW_TEMP_ROTATE_ENTITIES]: ({ context, event }) => {
+        if (!context.rotationOrigin || !context.angleStartPoint) {
+          throw new Error(
+            '[ROTATE] Calling draw temp rotate entities without a base start point or base end point',
           );
-          rotateEntities(
-            rotatedEntities,
-            context.rotationOrigin,
-            context.angleStartPoint,
-            angleEndpoint,
+        }
+
+        const angleEndpoint = (event as DrawEvent).drawInfo.worldMouseLocation;
+
+        // Draw all selected entities according to rotate vector, so the user gets visual feedback of where the entities will be end up after rotating
+        const rotatedEntities = compact(
+          context.originalSelectedEntities.map(entity => entity.clone()),
+        );
+        rotateEntities(
+          rotatedEntities,
+          context.rotationOrigin,
+          context.angleStartPoint,
+          angleEndpoint,
+        );
+
+        setGhostHelperEntities(rotatedEntities);
+      },
+      [RotateAction.ROTATE_SELECTION]: ({ context, event }) => {
+        if (!context.rotationOrigin || !context.angleStartPoint) {
+          throw new Error(
+            '[ROTATE] Calling rotate selection without some rotate vector endpoints',
           );
+        }
+        const angleEndpoint = (event as MouseClickEvent).worldClickPoint;
 
-          setGhostHelperEntities(rotatedEntities);
+        // Rotate the entities one final time
+        const rotatedEntities = compact(
+          context.originalSelectedEntities.map(entity => entity.clone()),
+        );
+        rotateEntities(
+          rotatedEntities,
+          context.rotationOrigin,
+          context.angleStartPoint,
+          angleEndpoint,
+        );
 
-          return {
-            ...context,
-          };
-        },
-      ),
-      [RotateAction.ROTATE_SELECTION]: assign(
-        ({ context, event }): RotateContext => {
-          if (!context.rotationOrigin || !context.angleStartPoint) {
-            throw new Error(
-              '[ROTATE] Calling rotate selection without some rotate vector endpoints',
-            );
-          }
-          const angleEndpoint = (event as MouseClickEvent).worldClickPoint;
-
-          // Rotate the entities one final time
-          const rotatedEntities = compact(
-            context.originalSelectedEntities.map(entity => entity.clone()),
-          );
-          rotateEntities(
-            rotatedEntities,
-            context.rotationOrigin,
-            context.angleStartPoint,
-            angleEndpoint,
-          );
-
-          // Switch the rotated entities back from the ghost helper entities to the real entities
-          addEntity(...rotatedEntities);
-          setGhostHelperEntities([]);
-          setSelectedEntityIds([]);
-          return {
-            ...context,
-            rotationOrigin: null,
-            angleStartPoint: null,
-            originalSelectedEntities: [],
-          };
-        },
-      ),
+        // Switch the rotated entities back from the ghost helper entities to the real entities
+        addEntity(...rotatedEntities);
+        setGhostHelperEntities([]);
+        setSelectedEntityIds([]);
+      },
       [RotateAction.DESELECT_ENTITIES]: assign(({ context }): RotateContext => {
         setActiveEntity(null);
         setSelectedEntityIds([]);

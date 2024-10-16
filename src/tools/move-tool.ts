@@ -8,6 +8,7 @@ import {
   getSelectedEntities,
   getSelectedEntityIds,
   setActiveEntity,
+  setAngleGuideOriginPoint,
   setGhostHelperEntities,
   setSelectedEntityIds,
   setShouldDrawHelpers,
@@ -204,11 +205,13 @@ export const moveToolStateMachine = createMachine(
         setShouldDrawHelpers(false);
         setActiveEntity(null);
         setSelectedEntityIds([]);
+        setAngleGuideOriginPoint(null);
       },
       [MoveAction.ENABLE_HELPERS]: () => {
         setShouldDrawHelpers(true);
       },
       [MoveAction.RECORD_START_POINT]: assign(({ event }) => {
+        setAngleGuideOriginPoint((event as MouseClickEvent).worldClickPoint);
         return {
           startPoint: (event as MouseClickEvent).worldClickPoint,
         };
@@ -265,7 +268,7 @@ export const moveToolStateMachine = createMachine(
           lastDrawLocation: (event as DrawEvent).drawInfo.worldMouseLocation,
         };
       }),
-      [MoveAction.MOVE_SELECTION]: assign(({ context, event }): MoveContext => {
+      [MoveAction.MOVE_SELECTION]: ({ context, event }) => {
         if (!context.startPoint) {
           throw new Error(
             '[MOVE] Calling move selection without a start point',
@@ -286,13 +289,7 @@ export const moveToolStateMachine = createMachine(
         addEntity(...getGhostHelperEntities());
         setGhostHelperEntities([]);
         setSelectedEntityIds([]);
-        return {
-          ...context,
-          startPoint: null,
-          lastDrawLocation: null,
-          originalSelectedEntities: [],
-        };
-      }),
+      },
       [MoveAction.DESELECT_ENTITIES]: assign(() => {
         setActiveEntity(null);
         setSelectedEntityIds([]);

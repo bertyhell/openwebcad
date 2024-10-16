@@ -119,7 +119,7 @@ let screenZoom = 1;
 let panStartLocation: Point | null = null;
 
 /**
- * Entity snap point like endpoint of a line or mid point of a line or circle center point or the intersection of 2 lines
+ * Entity snap point like endpoint of a line or mid-point of a line or circle center point or the intersection of 2 lines
  */
 let snapPoint: SnapPoint | null = null;
 
@@ -127,6 +127,11 @@ let snapPoint: SnapPoint | null = null;
  * Snap point on angle guide
  */
 let snapPointOnAngleGuide: SnapPoint | null = null;
+
+/**
+ * Last drawn point of an entity that is being drawn to be used as angle guide origin
+ */
+let angleGuideOriginPoint: Point | null = null;
 
 /**
  * Snap points that are hovered for a certain amount of time
@@ -171,6 +176,7 @@ export const getScreenZoom = () => screenZoom;
 export const getPanStartLocation = () => panStartLocation;
 export const getSnapPoint = () => snapPoint;
 export const getSnapPointOnAngleGuide = () => snapPointOnAngleGuide;
+export const getAngleGuideOriginPoint = () => angleGuideOriginPoint;
 export const getHoveredSnapPoints = () => hoveredSnapPoints;
 export const getLastDrawTimestamp = () => lastDrawTimestamp;
 export const getActiveLineColor = () => activeLineColor;
@@ -288,6 +294,9 @@ export const setSnapPoint = (newSnapPoint: SnapPoint | null) =>
 export const setSnapPointOnAngleGuide = (
   newSnapPointOnAngleGuide: SnapPoint | null,
 ) => (snapPointOnAngleGuide = newSnapPointOnAngleGuide);
+export const setAngleGuideOriginPoint = (
+  newAngleGuideOriginPoint: Point | null,
+) => (angleGuideOriginPoint = newAngleGuideOriginPoint);
 export const setHoveredSnapPoints = (newHoveredSnapPoints: HoverPoint[]) =>
   (hoveredSnapPoints = newHoveredSnapPoints);
 export const setLastDrawTimestamp = (newTimestamp: DOMHighResTimeStamp) =>

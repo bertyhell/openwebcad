@@ -1,5 +1,5 @@
 import { CSSProperties, FC, ReactNode, useState } from 'react';
-import { Icon, IconName } from './icon.tsx';
+import { Icon, IconName } from './Icon/Icon.tsx';
 import { Button } from './Button.tsx';
 
 interface DropdownButtonProps {

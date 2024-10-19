@@ -19,10 +19,12 @@ import SaveIcon from 'teenyicons/outline/save.svg?react';
 import ImageIcon from 'teenyicons/outline/image.svg?react';
 import ArrowLeftCircle from 'teenyicons/outline/arrow-left-circle.svg?react';
 import ArrowRightCircle from 'teenyicons/outline/arrow-right-circle.svg?react';
+import ScaleIcon from './custom-icons/scale.svg?react';
 import { FC } from 'react';
 
 // https://icon-sets.iconify.design/teenyicons
 enum IconName {
+  // Outline icons
   Line = 'Line',
   Square = 'Square',
   Circle = 'Circle',
@@ -40,13 +42,19 @@ enum IconName {
   Image = 'Image',
   ArrowLeftCircle = 'ArrowLeftCircle',
   ArrowRightCircle = 'ArrowRightCircle',
+
+  // Solid icons
   SolidDown = 'SolidDown',
   SolidUp = 'SolidUp',
   SolidUpSmall = 'SolidUpSmall',
   SolidDownSmall = 'SolidDownSmall',
+
+  // Custom icons
+  Scale = 'Scale',
 }
 
 const icons: Record<IconName, FC> = {
+  // Outline icons
   [IconName.Line]: LineIcon,
   [IconName.Square]: SquareIcon,
   [IconName.Circle]: CircleIcon,
@@ -64,10 +72,15 @@ const icons: Record<IconName, FC> = {
   [IconName.Image]: ImageIcon,
   [IconName.ArrowLeftCircle]: ArrowLeftCircle,
   [IconName.ArrowRightCircle]: ArrowRightCircle,
+
+  // Solid icons
   [IconName.SolidDown]: SolidDownIcon,
   [IconName.SolidUp]: SolidUpIcon,
   [IconName.SolidUpSmall]: SolidUpSmallIcon,
   [IconName.SolidDownSmall]: SolidDownSmallIcon,
+
+  // Custom icons
+  [IconName.Scale]: ScaleIcon,
 };
 
 export { IconName };

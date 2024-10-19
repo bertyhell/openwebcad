@@ -1,5 +1,5 @@
 import { CSSProperties, FC, ReactNode } from 'react';
-import { Icon, IconName } from './icon.tsx';
+import { Icon, IconName } from './Icon/Icon.tsx';
 
 interface ButtonProps {
   label?: string;

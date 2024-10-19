@@ -1,5 +1,5 @@
 import { FC, useCallback, useEffect, useState } from 'react';
-import { IconName } from './icon.tsx';
+import { IconName } from './Icon/Icon.tsx';
 import { Tool } from '../tools.ts';
 import { DropdownButton } from './DropdownButton.tsx';
 import { Button } from './Button.tsx';
@@ -135,7 +135,7 @@ export const Toolbar: FC<ToolbarProps> = () => {
       />
       <Button
         title="Scale"
-        icon={IconName.Expand}
+        icon={IconName.Scale}
         onClick={() => handleToolClick(Tool.SCALE)}
         active={activeToolLocal === Tool.SCALE}
       />

@@ -63,6 +63,7 @@ export const eraserToolStateMachine = createMachine(
           instructions: 'Select a line segment to delete',
         },
         on: {
+          // TODO implement a DRAW action to draw the segment that will be erased in dotted line
           MOUSE_CLICK: {
             actions: EraserAction.HANDLE_MOUSE_CLICK,
             target: EraserState.WAITING_FOR_FIRST_CLICK,

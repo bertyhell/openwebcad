@@ -24,36 +24,52 @@ This is a React-based canvas drawing application that allows users to draw vario
   - Use shift to add to the current selection
   - drag left, to select by intersecting
   - drag right, to select by containing
-- Move selected lines
+- Move
+- Rotate
+- Scale
 - Import images into the drawing
 - Export drawing as an SVG file
 - Export drawing as an PNG file
 - Save and load drawings from/to json files
 - Select line color and thickness
+- Eraser tool to delete segments
 
 
 ### Possible future feature ideas (TODO) in order of likelihood
 - Eraser tool to delete segments
   - Max distance to delete
-- Draw with snap points for
-  - circle tangents
-  - nearest point on line
-  - prioritize certain snap points over others
-- Edit existing lines and circles by dragging endpoints/middle points
-- rotate, scale shapes
 - Align shapes to each other
 - Add measurement indicators
 - Layers for drawing shapes in different layers that can be toggled on or off
 - Array copy shapes
 - Array radial copy shapes
+- Copy
+- Mirror
+- Offset
+- Add text
+- Ellipses
+- Regular polygons (pentagon, hexagon, etc)
+- Combine lines into a polygon
+- Explode polygons into lines
+- Polygon circumference
+- Polygon area
+- Chamfer, Round corners
+- Draw with snap points for
+  - circle tangents
+  - nearest point on line
+  - prioritize certain snap points over others (eg: midpoint over nearest)
+- Edit existing lines and circles by dragging endpoints/middle points
 - Hatching and fill areas
 - gradient fills
 - Import SVG files
-- Import images
-- Export to dwg
-- Export to dxf
 - Import DXF files
 - Import DWG files
+- Export to DWG
+- Export to DXF
+
+### Maintenance
+
+- replace react with webcomponents (Lit)
 
 
 ## Technologies Used

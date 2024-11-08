@@ -13,6 +13,10 @@ export function worldToScreen(worldCoordinate: Point): Point {
   );
 }
 
+export function worldsToScreens(worldCoordinates: Point[]): Point[] {
+  return worldCoordinates.map(worldToScreen);
+}
+
 /**
  * Convert coordinates from Screen Space --> World Space
  */
@@ -23,4 +27,8 @@ export function screenToWorld(screenCoordinate: Point): Point {
     screenCoordinate.x / screenScale + screenOffset.x,
     screenCoordinate.y / screenScale + screenOffset.y,
   );
+}
+
+export function screensToWorlds(screenCoordinates: Point[]): Point[] {
+  return screenCoordinates.map(screenToWorld);
 }

@@ -1,16 +1,25 @@
 import { DrawInfo, SnapPoint, SnapPointType } from '../App.types.ts';
 import { Entity } from '../entities/Entity.ts';
 import {
+  ARROW_HEAD_LENGTH,
+  ARROW_HEAD_WIDTH,
   CANVAS_BACKGROUND_COLOR,
   CURSOR_SIZE,
   GUIDE_LINE_COLOR,
   GUIDE_LINE_STYLE,
   GUIDE_LINE_WIDTH,
+  MEASUREMENT_FONT_SIZE,
   SNAP_POINT_COLOR,
   SNAP_POINT_SIZE,
+  TO_RADIANS,
 } from '../App.consts.ts';
-import { worldToScreen } from './world-screen-conversion.ts';
-import { isEntityHighlighted, isEntitySelected } from '../state.ts';
+import { worldsToScreens, worldToScreen } from './world-screen-conversion.ts';
+import {
+  getScreenZoom,
+  isEntityHighlighted,
+  isEntitySelected,
+} from '../state.ts';
+import { Point, Vector } from '@flatten-js/core';
 
 export function setLineStyles(
   context: CanvasRenderingContext2D,
@@ -251,4 +260,91 @@ export function clearCanvas(drawInfo: DrawInfo) {
     drawInfo.canvasSize?.x,
     drawInfo.canvasSize?.y,
   );
+}
+
+/**
+ * Draws a line from startPoint to endPoint and auto converts to screen space first
+ * @param context
+ * @param startPoint
+ * @param endPoint
+ */
+export function drawLine(
+  context: CanvasRenderingContext2D,
+  startPoint: Point,
+  endPoint: Point,
+): void {
+  const [screenStartPoint, screenEndPoint] = worldsToScreens([
+    startPoint,
+    endPoint,
+  ]);
+
+  context.beginPath();
+  context.moveTo(screenStartPoint.x, screenStartPoint.y);
+  context.lineTo(screenEndPoint.x, screenEndPoint.y);
+  context.stroke();
+}
+
+/**
+ * Draws an arrow head which ends at the endPoint
+ * The start point doesn't really matter, only the direction
+ * the size of the arrow is determined by ARROW_HEAD_SIZE
+ * @param context
+ * @param startPoint
+ * @param endPoint
+ */
+export function drawArrowHead(
+  context: CanvasRenderingContext2D,
+  startPoint: Point,
+  endPoint: Point,
+): void {
+  const vectorFromEndToStart = new Vector(endPoint, startPoint);
+  const vectorFromEndToStartUnit = vectorFromEndToStart.normalize();
+  const baseOfArrow = endPoint
+    .clone()
+    .translate(
+      vectorFromEndToStartUnit.multiply(ARROW_HEAD_LENGTH * getScreenZoom()),
+    );
+  const perpendicularVector1 = vectorFromEndToStartUnit.rotate(90 * TO_RADIANS);
+  const perpendicularVector2 = vectorFromEndToStartUnit.rotate(
+    -90 * TO_RADIANS,
+  );
+  const leftCornerOfArrow = baseOfArrow
+    .clone()
+    .translate(
+      perpendicularVector1.multiply(ARROW_HEAD_WIDTH * getScreenZoom()),
+    );
+  const rightCornerOfArrow = baseOfArrow
+    .clone()
+    .translate(
+      perpendicularVector2.multiply(ARROW_HEAD_WIDTH * getScreenZoom()),
+    );
+
+  const [screenEndPoint, screenLeftCornerOfArrow, screenRightCornerOfArrow] =
+    worldsToScreens([endPoint, leftCornerOfArrow, rightCornerOfArrow]);
+
+  context.beginPath();
+  context.moveTo(screenEndPoint.x, screenEndPoint.y);
+  context.lineTo(screenLeftCornerOfArrow.x, screenLeftCornerOfArrow.y);
+  context.lineTo(screenRightCornerOfArrow.x, screenRightCornerOfArrow.y);
+  context.lineTo(screenEndPoint.x, screenEndPoint.y);
+  context.fillStyle = '#FFF';
+  context.stroke();
+  context.fill();
+}
+
+export function drawText(
+  context: CanvasRenderingContext2D,
+  label: string,
+  basePoint: Point,
+  normalUnit: Vector,
+): void {
+  const screenBasePoint = worldToScreen(basePoint);
+  context.save();
+  context.translate(screenBasePoint.x, screenBasePoint.y);
+  const angle = Math.atan2(normalUnit.y, normalUnit.x);
+  context.rotate(angle);
+  context.font = `${MEASUREMENT_FONT_SIZE * getScreenZoom()}px sans-serif`;
+  context.textAlign = 'center';
+  context.fillText(label, 0, 0);
+  context.restore();
 }

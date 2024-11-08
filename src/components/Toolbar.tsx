@@ -145,6 +145,15 @@ export const Toolbar: FC<ToolbarProps> = () => {
         onClick={() => handleToolClick(Tool.ROTATE)}
         active={activeToolLocal === Tool.ROTATE}
       />
+
+      <Button
+        className="mt-2"
+        title="Add measurements"
+        icon={IconName.Measurement}
+        onClick={() => handleToolClick(Tool.MEASUREMENT)}
+        active={activeToolLocal === Tool.MEASUREMENT}
+      />
+
       <Button
         className="mt-2"
         title="Undo (ctrl + z)"

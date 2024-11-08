@@ -20,6 +20,7 @@ import ImageIcon from 'teenyicons/outline/image.svg?react';
 import ArrowLeftCircle from 'teenyicons/outline/arrow-left-circle.svg?react';
 import ArrowRightCircle from 'teenyicons/outline/arrow-right-circle.svg?react';
 import ScaleIcon from './custom-icons/scale.svg?react';
+import MeasurementIcon from './custom-icons/measurement.svg?react';
 import { FC } from 'react';
 
 // https://icon-sets.iconify.design/teenyicons
@@ -42,6 +43,7 @@ enum IconName {
   Image = 'Image',
   ArrowLeftCircle = 'ArrowLeftCircle',
   ArrowRightCircle = 'ArrowRightCircle',
+  Measurement = 'Measurement',
 
   // Solid icons
   SolidDown = 'SolidDown',
@@ -72,6 +74,7 @@ const icons: Record<IconName, FC> = {
   [IconName.Image]: ImageIcon,
   [IconName.ArrowLeftCircle]: ArrowLeftCircle,
   [IconName.ArrowRightCircle]: ArrowRightCircle,
+  [IconName.Measurement]: MeasurementIcon,
 
   // Solid icons
   [IconName.SolidDown]: SolidDownIcon,

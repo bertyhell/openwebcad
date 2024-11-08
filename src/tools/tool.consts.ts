@@ -10,6 +10,7 @@ import { moveToolStateMachine } from './move-tool.ts';
 import { imageImportToolStateMachine } from './image-import-tool.ts';
 import { scaleToolStateMachine } from './scale-tool.ts';
 import { rotateToolStateMachine } from './rotate-tool.ts';
+import { measurementToolStateMachine } from './measurement-tool.ts';
 
 export const toolStateMachines: Record<
   Partial<Tool>,
@@ -39,4 +40,5 @@ export const toolStateMachines: Record<
   [Tool.SCALE]: scaleToolStateMachine,
   [Tool.ROTATE]: rotateToolStateMachine,
   [Tool.IMAGE_IMPORT]: imageImportToolStateMachine,
+  [Tool.MEASUREMENT]: measurementToolStateMachine,
 };

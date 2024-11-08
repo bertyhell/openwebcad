@@ -47,6 +47,7 @@ export enum EntityName {
   Rectangle = 'Rectangle',
   Point = 'Point',
   Image = 'Image',
+  Measurement = 'Measurement',
 }
 
 export type ShapeJsonData =

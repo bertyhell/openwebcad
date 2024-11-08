@@ -8,4 +8,5 @@ export enum Tool {
   ERASER = 'ERASER',
   IMAGE_IMPORT = 'IMAGE_IMPORT',
   ROTATE = 'ROTATE',
+  MEASUREMENT = 'MEASUREMENT',
 }

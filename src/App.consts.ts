@@ -69,6 +69,46 @@ export const HOVERED_SNAP_POINT_TIME = 1000;
 export const MAX_MARKED_SNAP_POINTS = 3;
 
 /**
+ * Length of the extensions that extend past the measurement arrows of a measurement
+ */
+export const MEASUREMENT_EXTENSION_LENGTH = 20;
+
+/**
+ * Distance that measurement lines stay away from the point of origin of the measurement
+ */
+export const MEASUREMENT_ORIGIN_MARGIN = 20;
+
+/**
+ * Distance the measurement is drawn while drawing the start and endpoints of the measurements but before the user decides the offset point
+ */
+export const MEASUREMENT_DEFAULT_OFFSET = 200;
+
+/**
+ * Length of the arrow heads for measurements
+ */
+export const ARROW_HEAD_LENGTH = 20;
+
+/**
+ * Width of the arrow heads for measurements
+ */
+export const ARROW_HEAD_WIDTH = 7;
+
+/**
+ * Number of decimals to show on measurements. eg: 2 would give a measurement of: 503.32
+ */
+export const MEASUREMENT_DECIMAL_PLACES = 2;
+
+/**
+ * Distance between the measurement line and the label of the measurement
+ */
+export const MEASUREMENT_LABEL_OFFSET = 20;
+
+/**
+ * Size of the measurement labels containing the length of the measurements
+ */
+export const MEASUREMENT_FONT_SIZE = 40;
+
+/**
  * Colors for the selection rectangle
  */
 export const SELECTION_RECTANGLE_COLOR_INTERSECTION = '#b6ff9a';
@@ -106,3 +146,8 @@ export const COLOR_LIST = [
   '#ff1493',
   '#98fb98',
 ];
+
+/**
+ * Number to multiply degrees with to end up with the equivalent radians
+ */
+export const TO_RADIANS = Math.PI / 180;

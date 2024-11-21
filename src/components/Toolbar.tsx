@@ -1,6 +1,6 @@
 import { FC, useCallback, useEffect, useState } from 'react';
 import { IconName } from './Icon/Icon.tsx';
-import { Tool } from '../tools.ts';
+import { Tool } from '../tools';
 import { DropdownButton } from './DropdownButton.tsx';
 import { Button } from './Button.tsx';
 import {
@@ -8,30 +8,28 @@ import {
   getActiveLineWidth,
   getActiveToolActor,
   getAngleStep,
-  getScreenZoom,
+  getScreenCanvasDrawController,
   redo,
   setActiveLineColor,
   setActiveLineWidth,
   setActiveToolActor,
   setAngleStep,
-  setScreenOffset,
-  setScreenZoom,
   undo,
-} from '../state.ts';
+} from '../state';
 import { noop } from 'es-toolkit';
-import { importEntitiesFromJsonFile } from '../helpers/import-export-handlers/import-entities-from-json.ts';
-import { exportEntitiesToJsonFile } from '../helpers/import-export-handlers/export-entities-to-json.ts';
-import { exportEntitiesToSvgFile } from '../helpers/import-export-handlers/export-entities-to-svg.ts';
-import { exportEntitiesToPngFile } from '../helpers/import-export-handlers/export-entities-to-png.ts';
-import { COLOR_LIST } from '../App.consts.ts';
-import { times } from '../helpers/times.ts';
-import { toolStateMachines } from '../tools/tool.consts.ts';
+import { importEntitiesFromJsonFile } from '../helpers/import-export-handlers/import-entities-from-json';
+import { exportEntitiesToJsonFile } from '../helpers/import-export-handlers/export-entities-to-json';
+import { exportEntitiesToSvgFile } from '../helpers/import-export-handlers/export-entities-to-svg';
+import { exportEntitiesToPngFile } from '../helpers/import-export-handlers/export-entities-to-png';
+import { COLOR_LIST } from '../App.consts';
+import { times } from '../helpers/times';
+import { toolStateMachines } from '../tools/tool.consts';
 import { Actor } from 'xstate';
-import { HtmlEvent } from '../App.types.ts';
+import { HtmlEvent } from '../App.types';
 import { Point } from '@flatten-js/core';
-import { importImageFromFile } from '../helpers/import-export-handlers/import-image-from-file.ts';
-import { ActorEvent } from '../tools/tool.types.ts';
-import { imageImportToolStateMachine } from '../tools/image-import-tool.ts';
+import { importImageFromFile } from '../helpers/import-export-handlers/import-image-from-file';
+import { ActorEvent } from '../tools/tool.types';
+import { imageImportToolStateMachine } from '../tools/image-import-tool';
 
 interface ToolbarProps {}
 
@@ -48,7 +46,7 @@ export const Toolbar: FC<ToolbarProps> = () => {
     setAngleStepLocal(getAngleStep());
     setActiveLineColorLocal(getActiveLineColor());
     setActiveLineWidthLocal(getActiveLineWidth());
-    setScreenZoomLocal(getScreenZoom());
+    setScreenZoomLocal(getScreenCanvasDrawController().getScreenScale());
   }, []);
 
   const handleWheel = (event: WheelEvent) => {
@@ -87,8 +85,8 @@ export const Toolbar: FC<ToolbarProps> = () => {
   }, []);
 
   const handleZoomLevelClicked = useCallback(() => {
-    setScreenZoom(1);
-    setScreenOffset(new Point(0, 0));
+    getScreenCanvasDrawController().setScreenScale(1);
+    getScreenCanvasDrawController().setScreenOffset(new Point(0, 0));
   }, []);
 
   return (

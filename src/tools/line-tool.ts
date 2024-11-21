@@ -1,5 +1,5 @@
 import { Point } from '@flatten-js/core';
-import { LineEntity } from '../entities/LineEntity.ts';
+import { LineEntity } from '../entities/LineEntity';
 import {
   addEntity,
   getActiveLineColor,
@@ -8,15 +8,15 @@ import {
   setGhostHelperEntities,
   setSelectedEntityIds,
   setShouldDrawHelpers,
-} from '../state.ts';
-import { Tool } from '../tools.ts';
+} from '../state';
+import { Tool } from '../tools';
 import { assign, createMachine } from 'xstate';
 import {
   DrawEvent,
   MouseClickEvent,
   StateEvent,
   ToolContext,
-} from './tool.types.ts';
+} from './tool.types';
 
 export interface LineContext extends ToolContext {
   startPoint: Point | null;
@@ -106,7 +106,7 @@ export const lineToolStateMachine = createMachine(
       [LineAction.DRAW_TEMP_LINE]: ({ context, event }) => {
         const activeLine = new LineEntity(
           context.startPoint as Point,
-          (event as DrawEvent).drawInfo.worldMouseLocation,
+          (event as DrawEvent).drawController.getWorldMouseLocation(),
         );
         activeLine.lineColor = getActiveLineColor();
         activeLine.lineWidth = getActiveLineWidth();

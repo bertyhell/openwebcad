@@ -1,15 +1,13 @@
-import { DrawInfo } from '../App.types.ts';
 import {
-  clearCanvas,
   drawCursor,
   drawDebugEntities,
   drawEntities,
   drawHelpers,
   drawSnapPoint,
-} from './draw-functions.ts';
-import { getClosestSnapPoint } from './get-closest-snap-point.ts';
-import { isPointEqual } from './is-point-equal.ts';
-import { HOVERED_SNAP_POINT_TIME } from '../App.consts.ts';
+} from './draw-functions';
+import { getClosestSnapPoint } from './get-closest-snap-point';
+import { isPointEqual } from './is-point-equal';
+import { HOVERED_SNAP_POINT_TIME } from '../App.consts';
 import { compact } from 'es-toolkit';
 import {
   getAngleGuideEntities,
@@ -20,20 +18,20 @@ import {
   getShouldDrawCursor,
   getSnapPoint,
   getSnapPointOnAngleGuide,
-  getWorldMouseLocation,
-} from '../state.ts';
+} from '../state';
+import { ScreenCanvasDrawController } from '../drawControllers/screenCanvas.drawController';
 
-export function draw(drawInfo: DrawInfo) {
-  clearCanvas(drawInfo);
+export function draw(drawController: ScreenCanvasDrawController) {
+  drawController.clearCanvas();
 
-  drawHelpers(drawInfo, getAngleGuideEntities());
-  drawEntities(drawInfo, getGhostHelperEntities());
-  drawEntities(drawInfo, getEntities());
-  drawDebugEntities(drawInfo, getDebugEntities());
+  drawHelpers(drawController, getAngleGuideEntities());
+  drawEntities(drawController, getGhostHelperEntities());
+  drawEntities(drawController, getEntities());
+  drawDebugEntities(drawController, getDebugEntities());
 
   const { snapPoint: closestSnapPoint } = getClosestSnapPoint(
     compact([getSnapPoint(), getSnapPointOnAngleGuide()]),
-    getWorldMouseLocation(),
+    drawController.getWorldMouseLocation(),
   );
   const isMarked =
     !!closestSnapPoint &&
@@ -42,7 +40,7 @@ export function draw(drawInfo: DrawInfo) {
         hoveredSnapPoint.milliSecondsHovered > HOVERED_SNAP_POINT_TIME &&
         isPointEqual(hoveredSnapPoint.snapPoint.point, closestSnapPoint.point),
     );
-  drawSnapPoint(drawInfo, closestSnapPoint, isMarked);
+  drawSnapPoint(drawController, closestSnapPoint, isMarked);
 
-  drawCursor(drawInfo, getShouldDrawCursor());
+  drawCursor(drawController, getShouldDrawCursor());
 }

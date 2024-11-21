@@ -1,16 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Tool } from '../tools.ts';
+import { Tool } from '../tools';
 import { StateMachine } from 'xstate';
-import { lineToolStateMachine } from './line-tool.ts';
-import { rectangleToolStateMachine } from './rectangle-tool.ts';
-import { circleToolStateMachine } from './circle-tool.ts';
-import { selectToolStateMachine } from './select-tool.ts';
-import { eraserToolStateMachine } from './eraser-tool.ts';
-import { moveToolStateMachine } from './move-tool.ts';
-import { imageImportToolStateMachine } from './image-import-tool.ts';
-import { scaleToolStateMachine } from './scale-tool.ts';
-import { rotateToolStateMachine } from './rotate-tool.ts';
-import { measurementToolStateMachine } from './measurement-tool.ts';
+import { lineToolStateMachine } from './line-tool';
+import { rectangleToolStateMachine } from './rectangle-tool';
+import { circleToolStateMachine } from './circle-tool';
+import { selectToolStateMachine } from './select-tool';
+import { eraserToolStateMachine } from './eraser-tool';
+import { moveToolStateMachine } from './move-tool';
+import { imageImportToolStateMachine } from './image-import-tool';
+import { scaleToolStateMachine } from './scale-tool';
+import { rotateToolStateMachine } from './rotate-tool';
+import { measurementToolStateMachine } from './measurement-tool';
 
 export const toolStateMachines: Record<
   Partial<Tool>,

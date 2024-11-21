@@ -1,6 +1,6 @@
 import { Line, Point } from '@flatten-js/core';
 import { sortBy } from 'es-toolkit';
-import { PointWithAngle } from './helpers.types.ts';
+import { PointWithAngle } from './helpers.types';
 
 /**
  * Sorts points that lie on a circle by angle around the circle, angle from 0 => 360

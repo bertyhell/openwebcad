@@ -1,4 +1,4 @@
-import { CircleEntity } from '../entities/CircleEntity.ts';
+import { CircleEntity } from '../entities/CircleEntity';
 import { Point } from '@flatten-js/core';
 import {
   addEntity,
@@ -8,16 +8,16 @@ import {
   setGhostHelperEntities,
   setSelectedEntityIds,
   setShouldDrawHelpers,
-} from '../state.ts';
+} from '../state';
 import {
   DrawEvent,
   MouseClickEvent,
   StateEvent,
   ToolContext,
-} from './tool.types.ts';
-import { Tool } from '../tools.ts';
+} from './tool.types';
+import { Tool } from '../tools';
 import { assign, createMachine } from 'xstate';
-import { pointDistance } from '../helpers/distance-between-points.ts';
+import { pointDistance } from '../helpers/distance-between-points';
 
 export interface CircleContext extends ToolContext {
   centerPoint: Point | null;
@@ -111,7 +111,7 @@ export const circleToolStateMachine = createMachine(
         const activeCircle = new CircleEntity(
           context.centerPoint as Point,
           pointDistance(
-            (event as DrawEvent).drawInfo.worldMouseLocation,
+            (event as DrawEvent).drawController.getWorldMouseLocation(),
             context.centerPoint as Point,
           ),
         );

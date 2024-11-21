@@ -1,7 +1,7 @@
 import { Point } from '@flatten-js/core';
 import { sortBy, uniqWith } from 'es-toolkit';
-import { isPointEqual } from './is-point-equal.ts';
-import { pointDistance } from './distance-between-points.ts';
+import { isPointEqual } from './is-point-equal';
+import { pointDistance } from './distance-between-points';
 
 /**
  * Find the closest points on both sides of the clicked point

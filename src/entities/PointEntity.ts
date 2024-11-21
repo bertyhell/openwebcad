@@ -1,10 +1,10 @@
-import { Entity, EntityName, JsonEntity } from './Entity.ts';
-import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
+import { Entity, EntityName, JsonEntity } from './Entity';
+import { Shape, SnapPoint, SnapPointType } from '../App.types';
 import * as Flatten from '@flatten-js/core';
 import { Box, Point, Segment } from '@flatten-js/core';
-import { worldToScreen } from '../helpers/world-screen-conversion.ts';
-import { getExportColor } from '../helpers/get-export-color.ts';
-import { scalePoint } from '../helpers/scale-point.ts';
+import { getExportColor } from '../helpers/get-export-color';
+import { scalePoint } from '../helpers/scale-point';
+import { DrawController } from '../drawControllers/DrawController';
 
 export class PointEntity implements Entity {
   public id: string = crypto.randomUUID();
@@ -24,12 +24,8 @@ export class PointEntity implements Entity {
     }
   }
 
-  public draw(drawInfo: DrawInfo): void {
-    const screenPoint = worldToScreen(this.point);
-
-    drawInfo.context.beginPath();
-    drawInfo.context.arc(screenPoint.x, screenPoint.y, 5, 0, Math.PI * 2);
-    drawInfo.context.stroke();
+  public draw(drawController: DrawController): void {
+    drawController.drawArc(this.point, 5, 0, Math.PI * 2);
   }
 
   public move(x: number, y: number) {

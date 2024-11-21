@@ -1,5 +1,5 @@
 import { Point, Polygon } from '@flatten-js/core';
-import { findClosestEntity } from '../helpers/find-closest-entity.ts';
+import { findClosestEntity } from '../helpers/find-closest-entity';
 import {
   addEntity,
   deleteEntity,
@@ -7,22 +7,22 @@ import {
   setGhostHelperEntities,
   setSelectedEntityIds,
   setShouldDrawHelpers,
-} from '../state.ts';
-import { EntityName } from '../entities/Entity.ts';
-import { LineEntity } from '../entities/LineEntity.ts';
-import { CircleEntity } from '../entities/CircleEntity.ts';
-import { RectangleEntity } from '../entities/RectangleEntity.ts';
-import { ArcEntity } from '../entities/ArcEntity.ts';
-import { MouseClickEvent, StateEvent, ToolContext } from './tool.types.ts';
-import { Tool } from '../tools.ts';
+} from '../state';
+import { EntityName } from '../entities/Entity';
+import { LineEntity } from '../entities/LineEntity';
+import { CircleEntity } from '../entities/CircleEntity';
+import { RectangleEntity } from '../entities/RectangleEntity';
+import { ArcEntity } from '../entities/ArcEntity';
+import { MouseClickEvent, StateEvent, ToolContext } from './tool.types';
+import { Tool } from '../tools';
 import { assign, createMachine } from 'xstate';
 import {
   eraseArcSegment,
   eraseCircleSegment,
   eraseLineSegment,
   getAllIntersectionPoints,
-} from './eraser-tool.helpers.ts';
-import { polygonToSegments } from '../helpers/polygon-to-segments.ts';
+} from './eraser-tool.helpers';
+import { polygonToSegments } from '../helpers/polygon-to-segments';
 
 export interface EraserContext extends ToolContext {
   startPoint: Point | null;

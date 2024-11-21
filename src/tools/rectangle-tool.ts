@@ -1,5 +1,5 @@
 import { Point } from '@flatten-js/core';
-import { RectangleEntity } from '../entities/RectangleEntity.ts';
+import { RectangleEntity } from '../entities/RectangleEntity';
 import {
   addEntity,
   getActiveLineColor,
@@ -8,14 +8,14 @@ import {
   setGhostHelperEntities,
   setSelectedEntityIds,
   setShouldDrawHelpers,
-} from '../state.ts';
+} from '../state';
 import {
   DrawEvent,
   MouseClickEvent,
   StateEvent,
   ToolContext,
-} from './tool.types.ts';
-import { Tool } from '../tools.ts';
+} from './tool.types';
+import { Tool } from '../tools';
 import { assign, createMachine } from 'xstate';
 
 export interface RectangleContext extends ToolContext {
@@ -108,7 +108,7 @@ export const rectangleToolStateMachine = createMachine(
         }
         const activeRectangle = new RectangleEntity(
           context.startPoint as Point,
-          (event as DrawEvent).drawInfo.worldMouseLocation,
+          (event as DrawEvent).drawController.getWorldMouseLocation(),
         );
         activeRectangle.lineColor = getActiveLineColor();
         activeRectangle.lineWidth = getActiveLineWidth();

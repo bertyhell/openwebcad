@@ -1,12 +1,12 @@
-import { Entity, EntityName, JsonEntity } from './Entity.ts';
-import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
+import { Entity, EntityName, JsonEntity } from './Entity';
+import { Shape, SnapPoint, SnapPointType } from '../App.types';
 import { Arc, Box, Line, Point, Segment } from '@flatten-js/core';
-import { worldToScreen } from '../helpers/world-screen-conversion.ts';
 import { uniqWith } from 'es-toolkit';
-import { isPointEqual } from '../helpers/is-point-equal.ts';
-import { sortPointsOnArc } from '../helpers/sort-points-on-arc.ts';
-import { getExportColor } from '../helpers/get-export-color.ts';
-import { scalePoint } from '../helpers/scale-point.ts';
+import { isPointEqual } from '../helpers/is-point-equal';
+import { sortPointsOnArc } from '../helpers/sort-points-on-arc';
+import { getExportColor } from '../helpers/get-export-color';
+import { scalePoint } from '../helpers/scale-point';
+import { DrawController } from '../drawControllers/DrawController.ts';
 
 export class ArcEntity implements Entity {
   public id: string = crypto.randomUUID();
@@ -36,18 +36,13 @@ export class ArcEntity implements Entity {
     );
   }
 
-  public draw(drawInfo: DrawInfo): void {
-    const screenCenterPoint = worldToScreen(this.arc.center);
-    const screenRadius = this.arc.r.valueOf() * drawInfo.screenZoom;
-    drawInfo.context.beginPath();
-    drawInfo.context.arc(
-      screenCenterPoint.x,
-      screenCenterPoint.y,
-      screenRadius,
+  public draw(drawController: DrawController): void {
+    drawController.drawArc(
+      this.arc.center,
+      this.arc.r.valueOf(),
       this.arc?.startAngle || 0,
       this.arc?.endAngle || 2 * Math.PI,
     );
-    drawInfo.context.stroke();
   }
 
   public move(x: number, y: number) {

@@ -4,7 +4,7 @@ import {
   isEntitySelected,
   setGhostHelperEntities,
   setSelectedEntityIds,
-} from '../state.ts';
+} from '../state';
 import {
   EPSILON,
   HIGHLIGHT_ENTITY_DISTANCE,
@@ -12,13 +12,13 @@ import {
   SELECTION_RECTANGLE_COLOR_INTERSECTION,
   SELECTION_RECTANGLE_STYLE,
   SELECTION_RECTANGLE_WIDTH,
-} from '../App.consts.ts';
-import { SelectContext } from './select-tool.ts';
-import { MouseClickEvent } from './tool.types.ts';
-import { RectangleEntity } from '../entities/RectangleEntity.ts';
+} from '../App.consts';
+import { SelectContext } from './select-tool';
+import { MouseClickEvent } from './tool.types';
+import { RectangleEntity } from '../entities/RectangleEntity';
 import { compact } from 'es-toolkit';
 import { Box, Point, Polygon } from '@flatten-js/core';
-import { findClosestEntity } from '../helpers/find-closest-entity.ts';
+import { findClosestEntity } from '../helpers/find-closest-entity';
 
 export function handleFirstSelectionPoint(
   context: SelectContext,

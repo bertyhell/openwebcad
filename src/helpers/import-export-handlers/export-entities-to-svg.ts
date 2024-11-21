@@ -1,10 +1,10 @@
 import { saveAs } from 'file-saver';
-import { Entity } from '../../entities/Entity.ts';
+import { Entity } from '../../entities/Entity';
 import { Point, Vector } from '@flatten-js/core';
-import { SVG_MARGIN } from '../../App.consts.ts';
-import { Shape } from '../../App.types.ts';
-import { getCanvasSize, getEntities } from '../../state.ts';
-import { getExportColor } from '../get-export-color.ts';
+import { SVG_MARGIN } from '../../App.consts';
+import { Shape } from '../../App.types';
+import { getCanvasSize, getEntities } from '../../state';
+import { getExportColor } from '../get-export-color';
 
 export function convertEntitiesToSvgString(
   entities: Entity[],

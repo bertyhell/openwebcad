@@ -1,6 +1,6 @@
-import { Entity } from '../entities/Entity.ts';
+import { Entity } from '../entities/Entity';
 import { Point } from '@flatten-js/core';
-import { pointDistance } from '../helpers/distance-between-points.ts';
+import { pointDistance } from '../helpers/distance-between-points';
 
 /**
  * Scale entities by base vector to destination scale vector

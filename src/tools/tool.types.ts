@@ -1,7 +1,7 @@
 import { Point } from '@flatten-js/core';
-import { DrawInfo } from '../App.types.ts';
-import { Tool } from '../tools.ts';
+import { Tool } from '../tools';
 import { EventObject } from 'xstate';
+import { ScreenCanvasDrawController } from '../drawControllers/screenCanvas.drawController';
 
 export enum ActionType {
   Click = 'Click',
@@ -64,7 +64,7 @@ export interface FileSelectedEvent extends EventObject {
 
 export interface DrawEvent extends EventObject {
   type: ActorEvent.DRAW;
-  drawInfo: DrawInfo;
+  drawController: ScreenCanvasDrawController;
 }
 
 export type StateEvent =

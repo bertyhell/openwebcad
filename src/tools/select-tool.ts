@@ -5,20 +5,20 @@ import {
   setGhostHelperEntities,
   setSelectedEntityIds,
   setShouldDrawHelpers,
-} from '../state.ts';
+} from '../state';
 import {
   DrawEvent,
   MouseClickEvent,
   StateEvent,
   ToolContext,
-} from './tool.types.ts';
-import { Tool } from '../tools.ts';
+} from './tool.types';
+import { Tool } from '../tools';
 import { assign, createMachine } from 'xstate';
 import {
   drawTempSelectionRectangle,
   handleFirstSelectionPoint,
   selectEntitiesInsideRectangle,
-} from './select-tool.helpers.ts';
+} from './select-tool.helpers';
 
 export interface SelectContext extends ToolContext {
   startPoint: Point | null;
@@ -157,7 +157,7 @@ export const selectToolStateMachine = createMachine(
         }
         drawTempSelectionRectangle(
           context.startPoint as Point,
-          (event as DrawEvent).drawInfo.worldMouseLocation,
+          (event as DrawEvent).drawController.getWorldMouseLocation(),
         );
       },
       SELECT_ENTITIES_INSIDE_RECTANGLE: ({

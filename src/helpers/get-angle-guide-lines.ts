@@ -1,5 +1,5 @@
-import { LineEntity } from '../entities/LineEntity.ts';
-import { times } from './times.ts';
+import { LineEntity } from '../entities/LineEntity';
+import { times } from './times';
 import { Point } from '@flatten-js/core';
 
 export function getAngleGuideLines(

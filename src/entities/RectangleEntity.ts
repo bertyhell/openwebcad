@@ -1,5 +1,5 @@
-import { Entity, EntityName, JsonEntity } from './Entity.ts';
-import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
+import { Entity, EntityName, JsonEntity } from './Entity';
+import { Shape, SnapPoint, SnapPointType } from '../App.types';
 import * as Flatten from '@flatten-js/core';
 import {
   Box,
@@ -9,11 +9,11 @@ import {
   Segment,
   Vector,
 } from '@flatten-js/core';
-import { worldToScreen } from '../helpers/world-screen-conversion.ts';
-import { getExportColor } from '../helpers/get-export-color.ts';
-import { scalePoint } from '../helpers/scale-point.ts';
-import { twoPointBoxToPolygon } from '../helpers/box-to-polygon.ts';
-import { polygonToSegments } from '../helpers/polygon-to-segments.ts';
+import { getExportColor } from '../helpers/get-export-color';
+import { scalePoint } from '../helpers/scale-point';
+import { twoPointBoxToPolygon } from '../helpers/box-to-polygon';
+import { polygonToSegments } from '../helpers/polygon-to-segments';
+import { DrawController } from '../drawControllers/DrawController';
 
 export class RectangleEntity implements Entity {
   public id: string = crypto.randomUUID();
@@ -34,15 +34,11 @@ export class RectangleEntity implements Entity {
     }
   }
 
-  public draw(drawInfo: DrawInfo): void {
+  public draw(drawController: DrawController): void {
     polygonToSegments(this.polygon).forEach(edge => {
-      const screenStartPoint = worldToScreen(edge.start);
-      const screenEndPoint = worldToScreen(edge.end);
-
-      drawInfo.context.beginPath();
-      drawInfo.context.moveTo(screenStartPoint.x, screenStartPoint.y);
-      drawInfo.context.lineTo(screenEndPoint.x, screenEndPoint.y);
-      drawInfo.context.stroke();
+      const startPoint = new Point(edge.start.x, edge.start.y);
+      const endPoint = new Point(edge.end.x, edge.end.y);
+      drawController.drawLine(startPoint, endPoint);
     });
   }
 
@@ -81,7 +77,7 @@ export class RectangleEntity implements Entity {
       return segment.distanceTo(shape);
     });
     let shortestDistanceInfo: [number, Segment | null] = [
-      Number.MAX_SAFE_INTEGER,
+      Number.MAX_VALUE,
       null,
     ];
     distanceInfos.forEach(distanceInfo => {

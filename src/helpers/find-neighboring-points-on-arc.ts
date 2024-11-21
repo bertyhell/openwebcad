@@ -1,8 +1,8 @@
 import { Arc, Point } from '@flatten-js/core';
 import { uniqWith } from 'es-toolkit';
-import { isPointEqual } from './is-point-equal.ts';
-import { ArcEntity } from '../entities/ArcEntity.ts';
-import { sortPointsOnArc } from './sort-points-on-arc.ts';
+import { isPointEqual } from './is-point-equal';
+import { ArcEntity } from '../entities/ArcEntity';
+import { sortPointsOnArc } from './sort-points-on-arc';
 
 /**
  * Find the closest points on the arc on both sides of the clicked point

@@ -1,8 +1,8 @@
 import { Circle, Point } from '@flatten-js/core';
 import { uniqWith } from 'es-toolkit';
-import { isPointEqual } from './is-point-equal.ts';
-import { CircleEntity } from '../entities/CircleEntity.ts';
-import { sortPointsOnCircle } from './sort-points-on-circle.ts';
+import { isPointEqual } from './is-point-equal';
+import { CircleEntity } from '../entities/CircleEntity';
+import { sortPointsOnCircle } from './sort-points-on-circle';
 
 /**
  * Find the closest points on the circle on both sides of the clicked point

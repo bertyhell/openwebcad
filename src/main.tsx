@@ -12,13 +12,10 @@ import {
   getHoveredSnapPoints,
   getLastDrawTimestamp,
   getPanStartLocation,
-  getScreenMouseLocation,
-  getScreenOffset,
-  getScreenZoom,
+  getScreenCanvasDrawController,
   getShouldDrawHelpers,
   getSnapPoint,
   getSnapPointOnAngleGuide,
-  getWorldMouseLocation,
   redo,
   setActiveToolActor,
   setAngleGuideEntities,
@@ -29,39 +26,36 @@ import {
   setHoveredSnapPoints,
   setLastDrawTimestamp,
   setPanStartLocation,
-  setScreenMouseLocation,
-  setScreenOffset,
-  setScreenZoom,
+  setScreenCanvasDrawController,
   setSelectedEntityIds,
   setShouldDrawCursor,
   setSnapPoint,
   setSnapPointOnAngleGuide,
   undo,
-} from './state.ts';
-import { DrawInfo, MouseButton } from './App.types.ts';
-import { Tool } from './tools.ts';
+} from './state';
+import { MouseButton } from './App.types';
+import { Tool } from './tools';
 import { Point } from '@flatten-js/core';
-import { getDrawHelpers } from './helpers/get-draw-guides.ts';
+import { getDrawHelpers } from './helpers/get-draw-guides';
 import {
   HIGHLIGHT_ENTITY_DISTANCE,
   HOVERED_SNAP_POINT_TIME,
-  MOUSE_ZOOM_MULTIPLIER,
   SNAP_POINT_DISTANCE,
-} from './App.consts.ts';
-import { draw } from './helpers/draw.ts';
-import { screenToWorld } from './helpers/world-screen-conversion.ts';
-import { getClosestSnapPointWithinRadius } from './helpers/get-closest-snap-point.ts';
-import { findClosestEntity } from './helpers/find-closest-entity.ts';
-import { trackHoveredSnapPoint } from './helpers/track-hovered-snap-points.ts';
+} from './App.consts';
+import { draw } from './helpers/draw';
+import { getClosestSnapPointWithinRadius } from './helpers/get-closest-snap-point';
+import { findClosestEntity } from './helpers/find-closest-entity';
+import { trackHoveredSnapPoint } from './helpers/track-hovered-snap-points';
 import { compact } from 'es-toolkit';
-import { toolStateMachines } from './tools/tool.consts.ts';
-import { ActorEvent, DrawEvent, MouseClickEvent } from './tools/tool.types.ts';
+import { toolStateMachines } from './tools/tool.consts';
+import { ActorEvent, DrawEvent, MouseClickEvent } from './tools/tool.types';
 import { Actor } from 'xstate';
-import { lineToolStateMachine } from './tools/line-tool.ts';
-import { circleToolStateMachine } from './tools/circle-tool.ts';
-import { rectangleToolStateMachine } from './tools/rectangle-tool.ts';
-import { selectToolStateMachine } from './tools/select-tool.ts';
-import { moveToolStateMachine } from './tools/move-tool.ts';
+import { lineToolStateMachine } from './tools/line-tool';
+import { circleToolStateMachine } from './tools/circle-tool';
+import { rectangleToolStateMachine } from './tools/rectangle-tool';
+import { selectToolStateMachine } from './tools/select-tool';
+import { moveToolStateMachine } from './tools/move-tool';
+import { ScreenCanvasDrawController } from './drawControllers/screenCanvas.drawController';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -75,20 +69,18 @@ function handleMouseEnter() {
 
 function handleMouseMove(evt: MouseEvent) {
   setShouldDrawCursor(true);
-  setScreenMouseLocation(new Point(evt.clientX, evt.clientY));
+  const newScreenMouseLocation = new Point(evt.clientX, evt.clientY);
+  const screenCanvasDrawController = getScreenCanvasDrawController();
+  screenCanvasDrawController.setScreenMouseLocation(newScreenMouseLocation);
 
   // If the middle mouse button is pressed, pan the screen
   const panStartLocation = getPanStartLocation();
-  const screenOffset = getScreenOffset();
-  const screenScale = getScreenZoom();
   if (panStartLocation) {
-    // Pan the screen by the last mouse movement
-    const newOffset = new Point(
-      screenOffset.x - (evt.clientX - panStartLocation.x) / screenScale,
-      screenOffset.y - (evt.clientY - panStartLocation.y) / screenScale,
+    screenCanvasDrawController.panScreen(
+      evt.clientX - panStartLocation.x,
+      evt.clientY - panStartLocation.y,
     );
-    setPanStartLocation(new Point(evt.clientX, evt.clientY));
-    setScreenOffset(newOffset);
+    setPanStartLocation(newScreenMouseLocation);
   }
 
   // Calculate angle guides and snap points
@@ -97,7 +89,7 @@ function handleMouseMove(evt: MouseEvent) {
   // Highlight the entity closest to the mouse when the select tool is active
   if (getActiveToolActor()?.getSnapshot()?.context.type === Tool.SELECT) {
     const closestEntityInfo = findClosestEntity(
-      getWorldMouseLocation(),
+      screenCanvasDrawController.screenToWorld(newScreenMouseLocation),
       getEntities(),
     );
     if (closestEntityInfo.distance < HIGHLIGHT_ENTITY_DISTANCE) {
@@ -117,28 +109,8 @@ function handleMouseOut() {
  * @param evt
  */
 function handleMouseWheel(evt: WheelEvent) {
-  const screenOffset = getScreenOffset();
-  const screenScale = getScreenZoom();
-  const worldMouseLocationBeforeZoom = getWorldMouseLocation();
-  const newScreenScale =
-    screenScale *
-    (1 - MOUSE_ZOOM_MULTIPLIER * (evt.deltaY / Math.abs(evt.deltaY)));
-  setScreenZoom(newScreenScale);
-
-  // now get the location of the cursor in world space again
-  // It will have changed because the scale has changed,
-  // but we can offset our world now to fix the zoom location in screen space,
-  // because we know how much it changed laterally between the two spatial scales.
-  const worldMouseLocationAfterZoom = screenToWorld(getScreenMouseLocation());
-
-  setScreenOffset(
-    new Point(
-      screenOffset.x +
-        (worldMouseLocationBeforeZoom.x - worldMouseLocationAfterZoom.x),
-      screenOffset.y +
-        (worldMouseLocationBeforeZoom.y - worldMouseLocationAfterZoom.y),
-    ),
-  );
+  const drawController = getScreenCanvasDrawController();
+  drawController.zoomScreen(evt.deltaY);
 }
 
 function handleMouseDown(evt: MouseEvent) {
@@ -152,15 +124,17 @@ function handleMouseUp(evt: MouseEvent) {
     setPanStartLocation(null);
   }
   if (evt.button === MouseButton.Left) {
+    const screenCanvasDrawController = getScreenCanvasDrawController();
     const closestSnapPoint = getClosestSnapPointWithinRadius(
       compact([getSnapPoint(), getSnapPointOnAngleGuide()]),
-      getWorldMouseLocation(),
-      SNAP_POINT_DISTANCE / getScreenZoom(),
+      screenCanvasDrawController.getWorldMouseLocation(),
+      SNAP_POINT_DISTANCE / screenCanvasDrawController.getScreenScale(),
     );
 
-    const worldMouseLocationTemp = screenToWorld(
-      new Point(evt.clientX, evt.clientY),
-    );
+    const worldMouseLocationTemp =
+      getScreenCanvasDrawController().screenToWorld(
+        new Point(evt.clientX, evt.clientY),
+      );
     const worldClickPoint = closestSnapPoint
       ? closestSnapPoint.point
       : worldMouseLocationTemp;
@@ -230,9 +204,10 @@ function handleKeyUp(evt: KeyboardEvent) {
  */
 function calculateAngleGuidesAndSnapPoints() {
   const angleStep = getAngleStep();
+  const screenCanvasDrawController = getScreenCanvasDrawController();
   const entities = getEntities();
-  const screenScale = getScreenZoom();
-  const worldMouseLocation = getWorldMouseLocation();
+  const screenScale = screenCanvasDrawController.getScreenScale();
+  const worldMouseLocation = screenCanvasDrawController.getWorldMouseLocation();
   const hoveredSnapPoints = getHoveredSnapPoints();
 
   const eligibleHoveredSnapPoints = hoveredSnapPoints.filter(
@@ -259,32 +234,18 @@ function calculateAngleGuidesAndSnapPoints() {
 }
 
 function startDrawLoop(
-  context: CanvasRenderingContext2D,
+  screenCanvasDrawController: ScreenCanvasDrawController,
   timestamp: DOMHighResTimeStamp,
 ) {
-  const canvasSize = getCanvasSize();
-  const screenMouseLocation = getScreenMouseLocation();
-  const worldMouseLocation = getWorldMouseLocation();
-  const screenScale = getScreenZoom();
-  const screenOffset = getScreenOffset();
   const lastDrawTimestamp = getLastDrawTimestamp();
 
   const elapsedTime = timestamp - lastDrawTimestamp;
   setLastDrawTimestamp(timestamp);
 
-  const drawInfo: DrawInfo = {
-    context,
-    canvasSize,
-    worldMouseLocation: worldMouseLocation,
-    screenMouseLocation: screenMouseLocation,
-    screenOffset,
-    screenZoom: screenScale,
-  };
-
   if (getActiveToolActor()?.getSnapshot().can({ type: ActorEvent.DRAW })) {
     getActiveToolActor()?.send({
       type: ActorEvent.DRAW,
-      drawInfo,
+      drawController: screenCanvasDrawController,
     } as DrawEvent);
   }
 
@@ -292,8 +253,12 @@ function startDrawLoop(
    * Highlight the entity closest to the mouse when the select tool is active
    */
   if (getActiveToolActor()?.getSnapshot()?.context?.type === Tool.SELECT) {
+    const screenCanvasDrawController = getScreenCanvasDrawController();
+    if (!screenCanvasDrawController) {
+      throw new Error('getScreenCanvasDrawController() returned null');
+    }
     const { distance, entity: closestEntity } = findClosestEntity(
-      screenToWorld(screenMouseLocation),
+      screenCanvasDrawController.getWorldMouseLocation(),
       getEntities(),
     );
 
@@ -309,17 +274,17 @@ function startDrawLoop(
     getSnapPoint(),
     getHoveredSnapPoints(),
     setHoveredSnapPoints,
-    SNAP_POINT_DISTANCE / getScreenZoom(),
+    SNAP_POINT_DISTANCE / screenCanvasDrawController.getScreenScale(),
     elapsedTime,
   );
 
   /**
    * Draw everything on the canvas
    */
-  draw(drawInfo);
+  draw(screenCanvasDrawController);
 
   requestAnimationFrame((newTimestamp: DOMHighResTimeStamp) => {
-    startDrawLoop(context, newTimestamp);
+    startDrawLoop(screenCanvasDrawController, newTimestamp);
   });
 }
 
@@ -356,7 +321,12 @@ function initApplication() {
     const context = canvas.getContext('2d');
     if (!context) return;
 
-    startDrawLoop(context, 0);
+    const screenCanvasDrawController = new ScreenCanvasDrawController(
+      context,
+      getCanvasSize(),
+    );
+    setScreenCanvasDrawController(screenCanvasDrawController);
+    startDrawLoop(screenCanvasDrawController, 0);
 
     const lineToolActor = new Actor(toolStateMachines[Tool.LINE]);
     lineToolActor.start();

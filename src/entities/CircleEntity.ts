@@ -1,9 +1,9 @@
-import { Entity, EntityName, JsonEntity } from './Entity.ts';
-import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
+import { Entity, EntityName, JsonEntity } from './Entity';
+import { Shape, SnapPoint, SnapPointType } from '../App.types';
 import { Box, Circle, Point, Segment } from '@flatten-js/core';
-import { worldToScreen } from '../helpers/world-screen-conversion.ts';
-import { getExportColor } from '../helpers/get-export-color.ts';
-import { scalePoint } from '../helpers/scale-point.ts';
+import { getExportColor } from '../helpers/get-export-color';
+import { scalePoint } from '../helpers/scale-point';
+import { DrawController } from '../drawControllers/DrawController';
 
 export class CircleEntity implements Entity {
   public id: string = crypto.randomUUID();
@@ -21,18 +21,8 @@ export class CircleEntity implements Entity {
     }
   }
 
-  public draw(drawInfo: DrawInfo): void {
-    const screenCenterPoint = worldToScreen(this.circle.center);
-    const screenRadius = this.circle.r * drawInfo.screenZoom;
-    drawInfo.context.beginPath();
-    drawInfo.context.arc(
-      screenCenterPoint.x,
-      screenCenterPoint.y,
-      screenRadius,
-      0,
-      2 * Math.PI,
-    );
-    drawInfo.context.stroke();
+  public draw(drawController: DrawController): void {
+    drawController.drawArc(this.circle.center, this.circle.r, 0, 2 * Math.PI);
   }
 
   public move(x: number, y: number) {
@@ -83,7 +73,7 @@ export class CircleEntity implements Entity {
   }
 
   public getSnapPoints(): SnapPoint[] {
-    if (this.circle.center === null || this.circle === null) {
+    if (!this.circle?.center) {
       return [];
     }
     return [

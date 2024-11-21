@@ -1,11 +1,12 @@
-import { DrawInfo, Shape, SnapPoint } from '../App.types.ts';
+import { Shape, SnapPoint } from '../App.types';
 import { Box, Point, Segment } from '@flatten-js/core';
-import { ArcJsonData } from './ArcEntity.ts';
-import { CircleJsonData } from './CircleEntity.ts';
-import { LineJsonData } from './LineEntity.ts';
-import { RectangleJsonData } from './RectangleEntity.ts';
-import { PointJsonData } from './PointEntity.ts';
-import { ImageJsonData } from './ImageEntity.ts';
+import { ArcJsonData } from './ArcEntity';
+import { CircleJsonData } from './CircleEntity';
+import { LineJsonData } from './LineEntity';
+import { RectangleJsonData } from './RectangleEntity';
+import { PointJsonData } from './PointEntity';
+import { ImageJsonData } from './ImageEntity';
+import { DrawController } from '../drawControllers/DrawController.ts';
 
 export interface Entity {
   // Random uuid generated when the Entity is created
@@ -14,7 +15,7 @@ export interface Entity {
   lineColor: string;
   lineWidth: number;
   lineStyle: number[] | undefined;
-  draw(drawInfo: DrawInfo): void;
+  draw(drawController: DrawController): void;
 
   /**
    * Translate an entity by x and y amount

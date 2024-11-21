@@ -1,9 +1,6 @@
-import { HoverPoint, SnapPoint } from '../App.types.ts';
-import { pointDistance } from './distance-between-points.ts';
-import {
-  HOVERED_SNAP_POINT_TIME,
-  MAX_MARKED_SNAP_POINTS,
-} from '../App.consts.ts';
+import { HoverPoint, SnapPoint } from '../App.types';
+import { pointDistance } from './distance-between-points';
+import { HOVERED_SNAP_POINT_TIME, MAX_MARKED_SNAP_POINTS } from '../App.consts';
 
 /**
  * Checks the current snap point every 100ms to mark certain snap points when they are hovered for a certain amount of time (marked)

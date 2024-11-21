@@ -1,4 +1,4 @@
-import { Entity } from '../entities/Entity.ts';
+import { Entity } from '../entities/Entity';
 
 /**
  * Move entities by the difference between the start and end points

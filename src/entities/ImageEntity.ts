@@ -1,5 +1,5 @@
-import { Entity, EntityName, JsonEntity } from './Entity.ts';
-import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
+import { Entity, EntityName, JsonEntity } from './Entity';
+import { Shape, SnapPoint, SnapPointType } from '../App.types';
 import * as Flatten from '@flatten-js/core';
 import {
   Box,
@@ -9,11 +9,11 @@ import {
   Segment,
   Vector,
 } from '@flatten-js/core';
-import { worldToScreen } from '../helpers/world-screen-conversion.ts';
-import { getExportColor } from '../helpers/get-export-color.ts';
-import { scalePoint } from '../helpers/scale-point.ts';
-import { twoPointBoxToPolygon } from '../helpers/box-to-polygon.ts';
-import { polygonToSegments } from '../helpers/polygon-to-segments.ts';
+import { getExportColor } from '../helpers/get-export-color';
+import { scalePoint } from '../helpers/scale-point';
+import { twoPointBoxToPolygon } from '../helpers/box-to-polygon';
+import { polygonToSegments } from '../helpers/polygon-to-segments';
+import { DrawController } from '../drawControllers/DrawController.ts';
 
 export class ImageEntity implements Entity {
   public id: string = crypto.randomUUID();
@@ -47,39 +47,23 @@ export class ImageEntity implements Entity {
     }
   }
 
-  public draw(drawInfo: DrawInfo): void {
+  public draw(drawController: DrawController): void {
     polygonToSegments(this.polygon).forEach(edge => {
-      const screenStartPoint = worldToScreen(edge.start);
-      const screenEndPoint = worldToScreen(edge.end);
-
-      drawInfo.context.beginPath();
-      drawInfo.context.moveTo(screenStartPoint.x, screenStartPoint.y);
-      drawInfo.context.lineTo(screenEndPoint.x, screenEndPoint.y);
-      drawInfo.context.stroke();
+      drawController.drawLine(edge.start, edge.end);
     });
 
-    const center = this.polygon.box.center;
-    const centerX = center.x;
-    const centerY = center.y;
     const width = this.polygon.box.width;
     const height = this.polygon.box.height;
 
-    // Rotate and translate context
-    drawInfo.context.translate(centerX, centerY);
-    drawInfo.context.rotate(this.angle);
-
     // Draw image
-    drawInfo.context.drawImage(
+    drawController.drawImage(
       this.imageElement,
-      -width / 2,
-      -height / 2,
+      this.polygon.box.xmin,
+      this.polygon.box.ymin,
       width,
       height,
+      this.angle,
     );
-
-    // Reset context
-    drawInfo.context.rotate(-this.angle);
-    drawInfo.context.translate(-centerX, -centerY);
   }
 
   public move(x: number, y: number) {

@@ -10,19 +10,19 @@ import {
   setGhostHelperEntities,
   setSelectedEntityIds,
   setShouldDrawHelpers,
-} from '../state.ts';
-import { Tool } from '../tools.ts';
+} from '../state';
+import { Tool } from '../tools';
 import {
   DrawEvent,
   MouseClickEvent,
   StateEvent,
   ToolContext,
-} from './tool.types.ts';
+} from './tool.types';
 import { assign, createMachine, sendTo } from 'xstate';
-import { selectToolStateMachine } from './select-tool.ts';
-import { Entity } from '../entities/Entity.ts';
+import { selectToolStateMachine } from './select-tool';
+import { Entity } from '../entities/Entity';
 import { compact } from 'es-toolkit';
-import { scaleEntities } from './scale-tool.helpers.ts';
+import { scaleEntities } from './scale-tool.helpers';
 
 export interface ScaleContext extends ToolContext {
   baseVectorStartPoint: Point | null;
@@ -275,8 +275,9 @@ export const scaleToolStateMachine = createMachine(
           );
         }
 
-        const scaleVectorEndPointTemp = (event as DrawEvent).drawInfo
-          .worldMouseLocation;
+        const scaleVectorEndPointTemp = (
+          event as DrawEvent
+        ).drawController.getWorldMouseLocation();
 
         // Draw all selected entities according to scale vector, so the user gets visual feedback of where the entities will be end up after scaling
         const scaledEntities = compact(

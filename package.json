@@ -1,5 +1,5 @@
 {
-  "name": "my-vue-app",
+  "name": "openwebcad",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build --base=/openwebcad/",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "stats": "npx cloc ./src"
+    "stats": "npx cloc ./src",
+    "check-types": "tsc -p tsconfig.app.json --noEmit"
   },
   "dependencies": {
     "@flatten-js/core": "^1.6.1",
@@ -24,6 +25,7 @@
   },
   "devDependencies": {
     "@types/file-saver": "^2.0.7",
+    "@types/node": "^22.9.1",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@typescript-eslint/eslint-plugin": "^7.15.0",

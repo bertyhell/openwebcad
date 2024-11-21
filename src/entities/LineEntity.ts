@@ -1,12 +1,12 @@
-import { Entity, EntityName, JsonEntity } from './Entity.ts';
-import { DrawInfo, Shape, SnapPoint, SnapPointType } from '../App.types.ts';
+import { Entity, EntityName, JsonEntity } from './Entity';
+import { Shape, SnapPoint, SnapPointType } from '../App.types';
 import { Box, Point, Segment } from '@flatten-js/core';
-import { worldToScreen } from '../helpers/world-screen-conversion.ts';
 import { sortBy, uniqWith } from 'es-toolkit';
-import { isPointEqual } from '../helpers/is-point-equal.ts';
-import { pointDistance } from '../helpers/distance-between-points.ts';
-import { getExportColor } from '../helpers/get-export-color.ts';
-import { scalePoint } from '../helpers/scale-point.ts';
+import { isPointEqual } from '../helpers/is-point-equal';
+import { pointDistance } from '../helpers/distance-between-points';
+import { getExportColor } from '../helpers/get-export-color';
+import { scalePoint } from '../helpers/scale-point';
+import { DrawController } from '../drawControllers/DrawController';
 
 export class LineEntity implements Entity {
   public id: string = crypto.randomUUID();
@@ -24,14 +24,10 @@ export class LineEntity implements Entity {
     }
   }
 
-  public draw(drawInfo: DrawInfo): void {
-    const screenStartPoint = worldToScreen(this.segment.start);
-    const screenEndPoint = worldToScreen(this.segment.end);
-
-    drawInfo.context.beginPath();
-    drawInfo.context.moveTo(screenStartPoint.x, screenStartPoint.y);
-    drawInfo.context.lineTo(screenEndPoint.x, screenEndPoint.y);
-    drawInfo.context.stroke();
+  public draw(drawController: DrawController): void {
+    const startPoint = new Point(this.segment.start.x, this.segment.start.y);
+    const endPoint = new Point(this.segment.end.x, this.segment.end.y);
+    drawController.drawLine(startPoint, endPoint);
   }
 
   public move(x: number, y: number) {

@@ -1,7 +1,7 @@
 import { Line, Point } from '@flatten-js/core';
 import { sortBy } from 'es-toolkit';
-import { PointWithAngle } from './helpers.types.ts';
-import { ArcEntity } from '../entities/ArcEntity.ts';
+import { PointWithAngle } from './helpers.types';
+import { ArcEntity } from '../entities/ArcEntity';
 
 /**
  * Sorts points that lie on an arc by angle around the arc, from start point to end point.

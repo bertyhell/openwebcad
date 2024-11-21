@@ -1,15 +1,10 @@
-import { Entity } from './entities/Entity.ts';
+import { Entity } from './entities/Entity';
 import { Point } from '@flatten-js/core';
-import { screenToWorld } from './helpers/world-screen-conversion.ts';
-import {
-  HoverPoint,
-  HtmlEvent,
-  SnapPoint,
-  StateMetaData,
-} from './App.types.ts';
-import { createStack, StateVariable, UndoState } from './helpers/undo-stack.ts';
+import { HoverPoint, HtmlEvent, SnapPoint, StateMetaData } from './App.types';
+import { createStack, StateVariable, UndoState } from './helpers/undo-stack';
 import { isEqual } from 'es-toolkit';
 import { Actor, MachineSnapshot } from 'xstate';
+import { ScreenCanvasDrawController } from './drawControllers/screenCanvas.drawController';
 
 // state variables
 /**
@@ -21,11 +16,6 @@ let canvasSize = new Point(0, 0);
  * Canvas element
  */
 let canvas: HTMLCanvasElement | null = null;
-
-/**
- * Location of the mouse on the screen
- */
-let screenMouseLocation = new Point(0, 0);
 
 /**
  * Active tool xstate actor
@@ -85,15 +75,10 @@ let debugEntities: Entity[] = [];
 let angleStep = 45;
 
 /**
- * Offset by which the screen is panned. Starts at 0,0 which coincides with the world origin
- * But the user can move it by dragging the mouse while holding the middle mouse button
+ * Draw controller to draw lines to the screen while taking zoom level and screen offset into account
+ * We use a drawController, so we can reuse draw logic of the entities for printing to PDF and possibly more formats in the future
  */
-let screenOffset = new Point(0, 0);
-
-/**
- * Scale by which the screen is zoomed in or out. Starts at 1 when it coincides with the world scale
- */
-let screenZoom = 1;
+let screenCanvasDrawController: ScreenCanvasDrawController | null = null;
 
 /**
  * Location where the user started dragging their mouse
@@ -139,7 +124,6 @@ let activeLineWidth = 1;
 // getters
 export const getCanvasSize = () => canvasSize;
 export const getCanvas = () => canvas;
-export const getScreenMouseLocation = () => screenMouseLocation;
 export const getActiveToolActor = () => activeToolActor;
 export const getLastStateInstructions = () => lastStateInstructions;
 export const getEntities = (): Entity[] => entities;
@@ -150,8 +134,6 @@ export const getGhostHelperEntities = () => ghostHelperEntities;
 export const getShouldDrawHelpers = () => shouldDrawHelpers;
 export const getDebugEntities = () => debugEntities;
 export const getAngleStep = () => angleStep;
-export const getScreenOffset = () => screenOffset;
-export const getScreenZoom = () => screenZoom;
 export const getPanStartLocation = () => panStartLocation;
 export const getSnapPoint = () => snapPoint;
 export const getSnapPointOnAngleGuide = () => snapPointOnAngleGuide;
@@ -160,9 +142,12 @@ export const getHoveredSnapPoints = () => hoveredSnapPoints;
 export const getLastDrawTimestamp = () => lastDrawTimestamp;
 export const getActiveLineColor = () => activeLineColor;
 export const getActiveLineWidth = () => activeLineWidth;
-
-// computed getters
-export const getWorldMouseLocation = () => screenToWorld(screenMouseLocation);
+export const getScreenCanvasDrawController = (): ScreenCanvasDrawController => {
+  if (!screenCanvasDrawController) {
+    throw new Error('getScreenCanvasDrawController() returned null');
+  }
+  return screenCanvasDrawController;
+};
 
 export const getSelectedEntities = (): Entity[] => {
   return entities.filter(e => selectedEntityIds.includes(e.id));
@@ -179,8 +164,6 @@ export const isEntityHighlighted = (entity: Entity) =>
 export const setCanvasSize = (newCanvasSize: Point) =>
   (canvasSize = newCanvasSize);
 export const setCanvas = (newCanvas: HTMLCanvasElement) => (canvas = newCanvas);
-export const setScreenMouseLocation = (newLocation: Point) =>
-  (screenMouseLocation = newLocation);
 export const setActiveToolActor = (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   newToolActor: Actor<any>,
@@ -247,13 +230,9 @@ export const setAngleStep = (newStep: number, triggerReact: boolean = true) => {
     triggerReactUpdate(StateVariable.activeTool);
   }
 };
-export const setScreenOffset = (newOffset: Point) => {
-  screenOffset = newOffset;
-};
-export const setScreenZoom = (newZoom: number) => {
-  screenZoom = newZoom;
-  triggerReactUpdate(StateVariable.screenZoom);
-};
+export const setScreenCanvasDrawController = (
+  newScreenCanvasDrawController: ScreenCanvasDrawController,
+) => (screenCanvasDrawController = newScreenCanvasDrawController);
 export const setPanStartLocation = (newLocation: Point | null) =>
   (panStartLocation = newLocation);
 export const setSnapPoint = (newSnapPoint: SnapPoint | null) =>

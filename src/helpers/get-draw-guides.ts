@@ -1,12 +1,12 @@
 import { Point } from '@flatten-js/core';
-import { getIntersectionPoints } from './get-intersection-points.ts';
-import { SnapPoint, SnapPointType } from '../App.types.ts';
-import { getClosestSnapPointWithinRadius } from './get-closest-snap-point.ts';
-import { SNAP_ANGLE_DISTANCE } from '../App.consts.ts';
-import { getAngleGuideLines } from './get-angle-guide-lines.ts';
-import { findClosestEntity } from './find-closest-entity.ts';
-import { Entity } from '../entities/Entity.ts';
-import { LineEntity } from '../entities/LineEntity.ts';
+import { getIntersectionPoints } from './get-intersection-points';
+import { SnapPoint, SnapPointType } from '../App.types';
+import { getClosestSnapPointWithinRadius } from './get-closest-snap-point';
+import { SNAP_ANGLE_DISTANCE } from '../App.consts';
+import { getAngleGuideLines } from './get-angle-guide-lines';
+import { findClosestEntity } from './find-closest-entity';
+import { Entity } from '../entities/Entity';
+import { LineEntity } from '../entities/LineEntity';
 import { compact } from 'es-toolkit';
 
 /**

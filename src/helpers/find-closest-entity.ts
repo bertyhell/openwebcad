@@ -1,5 +1,5 @@
 import { Point, Segment } from '@flatten-js/core';
-import { Entity } from '../entities/Entity.ts';
+import { Entity } from '../entities/Entity';
 
 export function findClosestEntity<EntityType = Entity>(
   worldPoint: Point,

@@ -1,14 +1,5 @@
 import { Arc, Circle, Point, Polygon, Segment } from '@flatten-js/core';
 
-export interface DrawInfo {
-  context: CanvasRenderingContext2D;
-  canvasSize: { x: number; y: number };
-  worldMouseLocation: Point;
-  screenMouseLocation: Point;
-  screenOffset: Point;
-  screenZoom: number;
-}
-
 export type Shape = Polygon | Segment | Point | Circle | Arc;
 
 export enum SnapPointType {

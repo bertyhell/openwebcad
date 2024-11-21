@@ -7,8 +7,8 @@ import {
   setGhostHelperEntities,
   setSelectedEntityIds,
   setShouldDrawHelpers,
-} from '../state.ts';
-import { Tool } from '../tools.ts';
+} from '../state';
+import { Tool } from '../tools';
 import { Actor, assign, createMachine } from 'xstate';
 import {
   ActorEvent,
@@ -17,15 +17,12 @@ import {
   MouseClickEvent,
   StateEvent,
   ToolContext,
-} from './tool.types.ts';
-import { ImageEntity } from '../entities/ImageEntity.ts';
-import { getContainRectangleInsideRectangle } from './image-import-tool.helpers.ts';
-import { RectangleEntity } from '../entities/RectangleEntity.ts';
-import { selectToolStateMachine } from './select-tool.ts';
-import {
-  boxToPolygon,
-  twoPointBoxToPolygon,
-} from '../helpers/box-to-polygon.ts';
+} from './tool.types';
+import { ImageEntity } from '../entities/ImageEntity';
+import { getContainRectangleInsideRectangle } from './image-import-tool.helpers';
+import { RectangleEntity } from '../entities/RectangleEntity';
+import { selectToolStateMachine } from './select-tool';
+import { boxToPolygon, twoPointBoxToPolygon } from '../helpers/box-to-polygon';
 
 export interface ImageImportContext extends ToolContext {
   startPoint: Point | null;
@@ -157,7 +154,7 @@ export const imageImportToolStateMachine = createMachine(
           context.imageElement.naturalWidth,
           context.imageElement.naturalHeight,
           context.startPoint,
-          (event as DrawEvent).drawInfo.worldMouseLocation,
+          (event as DrawEvent).drawController.getWorldMouseLocation(),
         );
         if (!containRectangle) {
           return;
@@ -169,7 +166,7 @@ export const imageImportToolStateMachine = createMachine(
         const draggedRectangle = new RectangleEntity(
           twoPointBoxToPolygon(
             context.startPoint,
-            (event as DrawEvent).drawInfo.worldMouseLocation,
+            (event as DrawEvent).drawController.getWorldMouseLocation(),
           ),
         );
         setGhostHelperEntities([activeImage]);

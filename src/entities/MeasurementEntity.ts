@@ -1,21 +1,18 @@
-import { Entity, EntityName, JsonEntity } from './Entity.ts';
-import { DrawInfo, Shape, SnapPoint } from '../App.types.ts';
+import { Entity, EntityName, JsonEntity } from './Entity';
+import { Shape, SnapPoint } from '../App.types';
 import { Box, Line, Point, Segment, Vector } from '@flatten-js/core';
-import { scalePoint } from '../helpers/scale-point.ts';
+import { scalePoint } from '../helpers/scale-point';
 import {
   MEASUREMENT_DECIMAL_PLACES,
   MEASUREMENT_EXTENSION_LENGTH,
   MEASUREMENT_LABEL_OFFSET,
   MEASUREMENT_ORIGIN_MARGIN,
-} from '../App.consts.ts';
-import { isPointEqual } from '../helpers/is-point-equal.ts';
-import {
-  drawArrowHead,
-  drawLine,
-  drawText,
-} from '../helpers/draw-functions.ts';
+} from '../App.consts';
+import { isPointEqual } from '../helpers/is-point-equal';
 import { minBy, round } from 'es-toolkit';
-import { pointDistance } from '../helpers/distance-between-points.ts';
+import { pointDistance } from '../helpers/distance-between-points';
+import { DrawController } from '../drawControllers/DrawController';
+import { max, min } from 'es-toolkit/compat';
 
 export class MeasurementEntity implements Entity {
   public id: string = crypto.randomUUID();
@@ -130,9 +127,9 @@ export class MeasurementEntity implements Entity {
    *                        x
    *                          startPoint
    *
-   * @param drawInfo
+   * @param drawController
    */
-  public draw(drawInfo: DrawInfo): void {
+  public draw(drawController: DrawController): void {
     const drawPoints = this.getDrawPoints();
     if (!drawPoints) {
       return;
@@ -148,18 +145,17 @@ export class MeasurementEntity implements Entity {
       normalUnit,
     } = drawPoints;
 
-    drawArrowHead(drawInfo.context, offsetStartPoint, offsetEndPoint);
-    drawArrowHead(drawInfo.context, offsetEndPoint, offsetStartPoint);
-    drawLine(drawInfo.context, offsetStartPoint, offsetEndPoint);
-    drawLine(drawInfo.context, offsetStartPointMargin, offsetStartPointExtend);
-    drawLine(drawInfo.context, offsetEndPointMargin, offsetEndPointExtend);
+    drawController.drawArrowHead(offsetStartPoint, offsetEndPoint);
+    drawController.drawArrowHead(offsetEndPoint, offsetStartPoint);
+    drawController.drawLine(offsetStartPoint, offsetEndPoint);
+    drawController.drawLine(offsetStartPointMargin, offsetStartPointExtend);
+    drawController.drawLine(offsetEndPointMargin, offsetEndPointExtend);
 
     const distance = round(
       pointDistance(this.startPoint, this.endPoint),
       MEASUREMENT_DECIMAL_PLACES,
     );
-    drawText(
-      drawInfo.context,
+    drawController.drawText(
       String(distance),
       midpointMeasurementLineOffset,
       normalUnit.rotate90CCW(),
@@ -192,25 +188,76 @@ export class MeasurementEntity implements Entity {
     );
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public intersectsWithBox(_box: Box): boolean {
-    throw new Error(
-      'intersectsWithBox for MeasurementEntity not yet implemented',
-    );
-    // return this.segment.intersect(box).length > 0;
+  public intersectsWithBox(box: Box): boolean {
+    const drawPoints = this.getDrawPoints();
+
+    const measurementLines = [
+      new Segment(drawPoints.offsetStartPoint, drawPoints.offsetEndPoint),
+      new Segment(
+        drawPoints.offsetStartPointMargin,
+        drawPoints.offsetStartPointExtend,
+      ),
+      new Segment(
+        drawPoints.offsetEndPointMargin,
+        drawPoints.offsetEndPointExtend,
+      ),
+    ];
+
+    for (const line of measurementLines) {
+      if (line.intersect(box).length > 0) {
+        return true;
+      }
+      if (box.contains(line)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public isContainedInBox(_box: Box): boolean {
-    throw new Error(
-      'isContainedInBox for MeasurementEntity not yet implemented',
-    );
-    // return box.contains(this.segment);
+  public isContainedInBox(box: Box): boolean {
+    const drawPoints = this.getDrawPoints();
+
+    const measurementLines = [
+      new Segment(drawPoints.offsetStartPoint, drawPoints.offsetEndPoint),
+      new Segment(
+        drawPoints.offsetStartPointMargin,
+        drawPoints.offsetStartPointExtend,
+      ),
+      new Segment(
+        drawPoints.offsetEndPointMargin,
+        drawPoints.offsetEndPointExtend,
+      ),
+    ];
+
+    for (const line of measurementLines) {
+      if (!box.contains(line)) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   public getBoundingBox(): Box | null {
-    throw new Error('getBoundingBox for MeasurementEntity not yet implemented');
-    // return this.segment.box;
+    const drawPoints = this.getDrawPoints();
+    if (!drawPoints) {
+      return null;
+    }
+
+    const extremePoints = [
+      drawPoints.offsetStartPointMargin,
+      drawPoints.offsetStartPointExtend,
+      drawPoints.offsetEndPointMargin,
+      drawPoints.offsetEndPointExtend,
+    ];
+
+    return new Box(
+      min(extremePoints.map(point => point.x)),
+      min(extremePoints.map(point => point.y)),
+      max(extremePoints.map(point => point.x)),
+      max(extremePoints.map(point => point.y)),
+    );
   }
 
   public getShape(): Shape | null {

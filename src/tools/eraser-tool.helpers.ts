@@ -1,15 +1,15 @@
-import { Entity } from '../entities/Entity.ts';
+import { Entity } from '../entities/Entity';
 import { Circle, Point, Segment } from '@flatten-js/core';
 import { compact } from 'es-toolkit';
-import { LineEntity } from '../entities/LineEntity.ts';
-import { findNeighboringPointsOnLine } from '../helpers/find-neighboring-points-on-line.ts';
-import { addEntity, deleteEntity, setDebugEntities } from '../state.ts';
-import { PointEntity } from '../entities/PointEntity.ts';
-import { CircleEntity } from '../entities/CircleEntity.ts';
-import { findNeighboringPointsOnCircle } from '../helpers/find-neighboring-points-on-circle.ts';
-import { isPointEqual } from '../helpers/is-point-equal.ts';
-import { ArcEntity } from '../entities/ArcEntity.ts';
-import { findNeighboringPointsOnArc } from '../helpers/find-neighboring-points-on-arc.ts';
+import { LineEntity } from '../entities/LineEntity';
+import { findNeighboringPointsOnLine } from '../helpers/find-neighboring-points-on-line';
+import { addEntity, deleteEntity, setDebugEntities } from '../state';
+import { PointEntity } from '../entities/PointEntity';
+import { CircleEntity } from '../entities/CircleEntity';
+import { findNeighboringPointsOnCircle } from '../helpers/find-neighboring-points-on-circle';
+import { isPointEqual } from '../helpers/is-point-equal';
+import { ArcEntity } from '../entities/ArcEntity';
+import { findNeighboringPointsOnArc } from '../helpers/find-neighboring-points-on-arc';
 
 export function getAllIntersectionPoints(
   entity: Entity,
@@ -70,16 +70,26 @@ export function eraseCircleSegment(
 
   const circleShape = circle.getShape() as Circle;
   const center = circleShape.center;
-  
-  const angles = [firstCutPoint, secondCutPoint, clickedPointOnShape].map(p => 
-    Math.atan2(p.y - center.y, p.x - center.x));
-  
-  const [startAngle, endAngle] = isAngleBetween(angles[2], angles[0], angles[1]) 
-    ? [angles[1], angles[0]] 
+
+  const angles = [firstCutPoint, secondCutPoint, clickedPointOnShape].map(p =>
+    Math.atan2(p.y - center.y, p.x - center.x),
+  );
+
+  const [startAngle, endAngle] = isAngleBetween(angles[2], angles[0], angles[1])
+    ? [angles[1], angles[0]]
     : [angles[0], angles[1]];
 
-  const newArc = new ArcEntity(center, circleShape.r, startAngle, endAngle, true);
-  Object.assign(newArc, { lineColor: circle.lineColor, lineWidth: circle.lineWidth });
+  const newArc = new ArcEntity(
+    center,
+    circleShape.r,
+    startAngle,
+    endAngle,
+    true,
+  );
+  Object.assign(newArc, {
+    lineColor: circle.lineColor,
+    lineWidth: circle.lineWidth,
+  });
 
   deleteEntity(circle);
   addEntity(newArc);
@@ -87,11 +97,19 @@ export function eraseCircleSegment(
 
 function isAngleBetween(angle: number, start: number, end: number): boolean {
   const twoPi = 2 * Math.PI;
-  return ((angle - start + twoPi) % twoPi) <= ((end - start + twoPi) % twoPi);
+  return (angle - start + twoPi) % twoPi <= (end - start + twoPi) % twoPi;
 }
 
-export function eraseArcSegment(arc: ArcEntity, clickedPointOnShape: Point, intersections: Point[]): void {
-  const [first, second] = findNeighboringPointsOnArc(clickedPointOnShape, arc, intersections);
+export function eraseArcSegment(
+  arc: ArcEntity,
+  clickedPointOnShape: Point,
+  intersections: Point[],
+): void {
+  const [first, second] = findNeighboringPointsOnArc(
+    clickedPointOnShape,
+    arc,
+    intersections,
+  );
 
   if (isPointEqual(first, second)) {
     deleteEntity(arc);
@@ -99,10 +117,14 @@ export function eraseArcSegment(arc: ArcEntity, clickedPointOnShape: Point, inte
   }
 
   deleteEntity(arc);
-  arc.cutAtPoints([first, second])
+  arc
+    .cutAtPoints([first, second])
     .filter(cutArc => !cutArc.containsPointOnShape(clickedPointOnShape))
     .forEach(newArc => {
-      Object.assign(newArc, { lineColor: arc.lineColor, lineWidth: arc.lineWidth });
+      Object.assign(newArc, {
+        lineColor: arc.lineColor,
+        lineWidth: arc.lineWidth,
+      });
       addEntity(newArc);
     });
 }

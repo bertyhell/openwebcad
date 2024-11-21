@@ -1,4 +1,4 @@
-import { Entity } from '../entities/Entity.ts';
+import { Entity } from '../entities/Entity';
 import { Line, Point } from '@flatten-js/core';
 
 /**

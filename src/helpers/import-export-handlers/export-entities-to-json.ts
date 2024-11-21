@@ -1,7 +1,7 @@
 import { saveAs } from 'file-saver';
 import { compact } from 'es-toolkit';
-import { getEntities } from '../../state.ts';
-import { JsonEntity } from '../../entities/Entity.ts';
+import { getEntities } from '../../state';
+import { JsonEntity } from '../../entities/Entity';
 
 export async function exportEntitiesToJsonFile() {
   const entities = getEntities();

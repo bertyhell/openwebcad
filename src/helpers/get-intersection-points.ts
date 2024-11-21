@@ -1,4 +1,4 @@
-import { Entity } from '../entities/Entity.ts';
+import { Entity } from '../entities/Entity';
 import { Point } from '@flatten-js/core';
 
 // TODO in the future we could optimize this by only calculating intersection points near the mouse

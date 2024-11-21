@@ -1,5 +1,5 @@
 import { Point, Vector } from '@flatten-js/core';
-import { MeasurementEntity } from '../entities/MeasurementEntity.ts';
+import { MeasurementEntity } from '../entities/MeasurementEntity';
 import {
   addEntity,
   getActiveLineColor,
@@ -8,16 +8,16 @@ import {
   setGhostHelperEntities,
   setSelectedEntityIds,
   setShouldDrawHelpers,
-} from '../state.ts';
-import { Tool } from '../tools.ts';
+} from '../state';
+import { Tool } from '../tools';
 import { assign, createMachine } from 'xstate';
 import {
   DrawEvent,
   MouseClickEvent,
   StateEvent,
   ToolContext,
-} from './tool.types.ts';
-import { MEASUREMENT_DEFAULT_OFFSET, TO_RADIANS } from '../App.consts.ts';
+} from './tool.types';
+import { MEASUREMENT_DEFAULT_OFFSET, TO_RADIANS } from '../App.consts';
 
 export interface MeasurementContext extends ToolContext {
   startPoint: Point | null;
@@ -141,7 +141,9 @@ export const measurementToolStateMachine = createMachine(
         if (!context.endPoint) {
           // User has drawn startPoint, but not yet endPoint
           // Endpoint should be the mouse location and offset should be MEASUREMENT_DEFAULT_OFFSET to either direction
-          endPoint = (event as DrawEvent).drawInfo.worldMouseLocation;
+          endPoint = (
+            event as DrawEvent
+          ).drawController.getWorldMouseLocation();
           const normalVector = new Vector(startPoint, endPoint)
             .rotate(-90 * TO_RADIANS)
             .normalize();
@@ -152,7 +154,9 @@ export const measurementToolStateMachine = createMachine(
           // User has already selected a startPoint and endPoint
           // The offsetPoint should be set to the mouse location
           endPoint = context.endPoint as Point;
-          offsetPoint = (event as DrawEvent).drawInfo.worldMouseLocation;
+          offsetPoint = (
+            event as DrawEvent
+          ).drawController.getWorldMouseLocation();
         }
 
         const activeMeasurement = new MeasurementEntity(

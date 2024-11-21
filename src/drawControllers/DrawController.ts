@@ -17,7 +17,17 @@ export interface DrawController {
     endAngle: number,
   ): void;
   drawArrowHead(startPoint: Point, endPoint: Point): void;
-  drawText(label: string, basePoint: Point, normalUnit: Vector): void;
+  drawText(
+    label: string,
+    basePoint: Point,
+    options: Partial<{
+      textDirection?: Vector;
+      textAlign: 'left' | 'center' | 'right';
+      textColor: string;
+      fontSize: number;
+      fontFamily: string;
+    }>,
+  ): void;
   drawImage(
     imageElement: HTMLImageElement,
     xMin: number,

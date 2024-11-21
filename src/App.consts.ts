@@ -128,6 +128,46 @@ export const GUIDE_LINE_STYLE = [5, 5]; // Dashed line
  */
 export const MOUSE_ZOOM_MULTIPLIER = 0.1;
 
+/**
+ * Canvas input field offset to mouse location
+ */
+export const CANVAS_INPUT_FIELD_MOUSE_OFFSET = 20;
+
+/**
+ * Canvas input field width
+ */
+export const CANVAS_INPUT_FIELD_WIDTH = 150;
+
+/**
+ * Canvas input field height
+ */
+export const CANVAS_INPUT_FIELD_HEIGHT = 20;
+
+/**
+ * Canvas input field background color
+ */
+export const CANVAS_INPUT_FIELD_BACKGROUND_COLOR = '#161616';
+
+/**
+ * Canvas input field text color
+ */
+export const CANVAS_INPUT_FIELD_TEXT_COLOR = '#FFF';
+
+/**
+ * Canvas input field background color when text is selected
+ */
+export const CANVAS_INPUT_FIELD_SELECTION_BACKGROUND_COLOR = '#1e90ff';
+
+/**
+ * Canvas input field text color when text is selected
+ */
+export const CANVAS_INPUT_FIELD_SELECTION_TEXT_COLOR = '#000';
+
+/**
+ * Canvas input field text size in pixels
+ */
+export const CANVAS_INPUT_FIELD_FONT_SIZE = 16;
+
 export const COLOR_LIST = [
   '#ffffff',
   '#2f4f4f',

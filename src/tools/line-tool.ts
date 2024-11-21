@@ -1,4 +1,4 @@
-import { Point } from '@flatten-js/core';
+import { Point, Vector } from '@flatten-js/core';
 import { LineEntity } from '../entities/LineEntity';
 import {
   addEntity,
@@ -14,6 +14,7 @@ import { assign, createMachine } from 'xstate';
 import {
   DrawEvent,
   MouseClickEvent,
+  NumberInputEvent,
   StateEvent,
   ToolContext,
 } from './tool.types';
@@ -79,6 +80,10 @@ export const lineToolStateMachine = createMachine(
             actions: LineAction.DRAW_FINAL_LINE,
             target: LineState.WAITING_FOR_END_POINT,
           },
+          NUMBER_INPUT: {
+            actions: LineAction.DRAW_FINAL_LINE,
+            target: LineState.WAITING_FOR_END_POINT,
+          },
           ESC: {
             target: LineState.INIT,
           },
@@ -114,7 +119,30 @@ export const lineToolStateMachine = createMachine(
       },
       [LineAction.DRAW_FINAL_LINE]: assign(({ context, event }) => {
         console.log('drawFinalLine', { context, event });
-        const endPoint = (event as MouseClickEvent).worldClickPoint;
+        if (!context.startPoint) {
+          throw new Error(
+            'Start point is not set during DRAW_FINAL_LINE in LineEntity',
+          );
+        }
+        let endPoint;
+        if (event.type === 'NUMBER_INPUT') {
+          const distance = (event as NumberInputEvent).value;
+          // Direction indicated by the startPoint and the mouse location
+          const direction = new Vector(
+            event.worldClickPoint.x - context.startPoint.x,
+            event.worldClickPoint.y - context.startPoint.y,
+          );
+          const unitDirection = direction.normalize();
+          endPoint = context.startPoint.translate(
+            unitDirection.multiply(distance),
+          );
+        } else if (event.type === 'MOUSE_CLICK') {
+          endPoint = (event as MouseClickEvent).worldClickPoint;
+        } else {
+          throw new Error(
+            'Received unexpected event type in DRAW_FINAL_LINE of LineEntity',
+          );
+        }
         const activeLine = new LineEntity(
           context.startPoint as Point,
           endPoint,

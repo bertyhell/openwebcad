@@ -2,7 +2,7 @@ import {
   ARROW_HEAD_LENGTH,
   ARROW_HEAD_WIDTH,
   CANVAS_BACKGROUND_COLOR,
-  MEASUREMENT_FONT_SIZE,
+  CANVAS_INPUT_FIELD_FONT_SIZE,
   MOUSE_ZOOM_MULTIPLIER,
   TO_RADIANS,
 } from '../App.consts';
@@ -168,19 +168,64 @@ export class ScreenCanvasDrawController implements DrawController {
 
   /**
    * Draw some text at the base location
-   * The normal unit vector points from the bottom of the letters to the top of the letters to indicate the rotation of the text
+   * The direction vector points from the bottom of the first letter towards the bottom of the last letter indicate the rotation of the text   * @param label
    * @param label
    * @param basePoint
-   * @param normalUnit
+   * @param options
    */
-  public drawText(label: string, basePoint: Point, normalUnit: Vector): void {
+  public drawText(
+    label: string,
+    basePoint: Point,
+    options: Partial<{
+      textDirection?: Vector;
+      textAlign: 'left' | 'center' | 'right';
+      textColor: string;
+      fontSize: number;
+      fontFamily: string;
+    }> = {},
+  ): void {
     const screenBasePoint = this.worldToScreen(basePoint);
+    this.drawTextScreen(label, screenBasePoint, {
+      ...options,
+      fontSize: options.fontSize
+        ? options.fontSize * this.screenScale
+        : undefined,
+    });
+  }
+
+  /**
+   * Draw some text at the base location
+   * The direction vector points from the bottom of the first letter towards the bottom of the last letter indicate the rotation of the text
+   * @param label
+   * @param basePoint
+   * @param options
+   */
+  public drawTextScreen(
+    label: string,
+    basePoint: Point,
+    options: Partial<{
+      textDirection?: Vector;
+      textAlign: 'left' | 'center' | 'right';
+      textColor: string;
+      fontSize: number;
+      fontFamily: string;
+    }> = {},
+  ): void {
+    const opts = {
+      textDirection: new Vector(1, 0),
+      textAlign: 'center' as const,
+      textColor: '#FFF',
+      fontSize: CANVAS_INPUT_FIELD_FONT_SIZE,
+      fontFamily: 'sans-serif',
+      ...options,
+    };
     this.context.save();
-    this.context.translate(screenBasePoint.x, screenBasePoint.y);
-    const angle = Math.atan2(normalUnit.y, normalUnit.x);
+    this.context.translate(basePoint.x, basePoint.y);
+    const angle = Math.atan2(opts.textDirection.y, opts.textDirection.x);
     this.context.rotate(angle);
-    this.context.font = `${MEASUREMENT_FONT_SIZE * this.screenScale}px sans-serif`;
-    this.context.textAlign = 'center';
+    this.context.font = `${opts.fontSize}px ${opts.fontFamily}`;
+    this.context.textAlign = opts.textAlign;
+    this.context.fillStyle = opts.textColor;
     this.context.fillText(label, 0, 0);
     this.context.restore();
   }
@@ -266,5 +311,24 @@ export class ScreenCanvasDrawController implements DrawController {
       worldMouseLocationBeforeZoom.x - worldMouseLocationAfterZoom.x,
       worldMouseLocationBeforeZoom.y - worldMouseLocationAfterZoom.y,
     );
+  }
+
+  /**
+   * Fill rectangle with color, but interpret the provided coordinates as screen coordinates
+   * @param xMin
+   * @param yMin
+   * @param width
+   * @param height
+   * @param color
+   */
+  fillRectScreen(
+    xMin: number,
+    yMin: number,
+    width: number,
+    height: number,
+    color: string,
+  ) {
+    this.context.fillStyle = color;
+    this.context.fillRect(xMin, yMin, width, height);
   }
 }

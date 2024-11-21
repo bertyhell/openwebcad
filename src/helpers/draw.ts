@@ -11,6 +11,7 @@ import { HOVERED_SNAP_POINT_TIME } from '../App.consts';
 import { compact } from 'es-toolkit';
 import {
   getAngleGuideEntities,
+  getCanvasInputField,
   getDebugEntities,
   getEntities,
   getGhostHelperEntities,
@@ -43,4 +44,5 @@ export function draw(drawController: ScreenCanvasDrawController) {
   drawSnapPoint(drawController, closestSnapPoint, isMarked);
 
   drawCursor(drawController, getShouldDrawCursor());
+  getCanvasInputField().draw(drawController);
 }

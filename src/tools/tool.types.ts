@@ -36,6 +36,10 @@ export enum ActorEvent {
   DELETE = 'DELETE',
   DRAW = 'DRAW',
   FILE_SELECTED = 'FILE_SELECTED',
+  NUMBER_INPUT = 'NUMBER_INPUT',
+  TEXT_INPUT = 'TEXT_INPUT',
+  ABSOLUTE_POINT_INPUT = 'ABSOLUTE_POINT_INPUT',
+  RELATIVE_POINT_INPUT = 'RELATIVE_POINT_INPUT',
 }
 
 export interface MouseClickEvent extends EventObject {
@@ -57,6 +61,28 @@ export interface KeyboardDeleteEvent extends EventObject {
   type: ActorEvent.DELETE;
 }
 
+export interface NumberInputEvent extends EventObject {
+  type: ActorEvent.NUMBER_INPUT;
+  value: number;
+  worldClickPoint: Point;
+}
+
+export interface TextInputEvent extends EventObject {
+  type: ActorEvent.TEXT_INPUT;
+  value: string;
+}
+
+export interface AbsolutePointInputEvent extends EventObject {
+  type: ActorEvent.ABSOLUTE_POINT_INPUT;
+  value: Point;
+}
+
+export interface RelativePointInputEvent extends EventObject {
+  type: ActorEvent.RELATIVE_POINT_INPUT;
+  value: Point;
+  worldClickPoint: Point;
+}
+
 export interface FileSelectedEvent extends EventObject {
   type: ActorEvent.FILE_SELECTED;
   image: HTMLImageElement;
@@ -72,6 +98,10 @@ export type StateEvent =
   | KeyboardEscEvent
   | KeyboardEnterEvent
   | KeyboardDeleteEvent
+  | NumberInputEvent
+  | TextInputEvent
+  | AbsolutePointInputEvent
+  | RelativePointInputEvent
   | FileSelectedEvent
   | DrawEvent;
 

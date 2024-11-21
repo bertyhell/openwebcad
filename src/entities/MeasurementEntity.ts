@@ -5,6 +5,7 @@ import { scalePoint } from '../helpers/scale-point';
 import {
   MEASUREMENT_DECIMAL_PLACES,
   MEASUREMENT_EXTENSION_LENGTH,
+  MEASUREMENT_FONT_SIZE,
   MEASUREMENT_LABEL_OFFSET,
   MEASUREMENT_ORIGIN_MARGIN,
 } from '../App.consts';
@@ -155,11 +156,11 @@ export class MeasurementEntity implements Entity {
       pointDistance(this.startPoint, this.endPoint),
       MEASUREMENT_DECIMAL_PLACES,
     );
-    drawController.drawText(
-      String(distance),
-      midpointMeasurementLineOffset,
-      normalUnit.rotate90CCW(),
-    );
+    drawController.drawText(String(distance), midpointMeasurementLineOffset, {
+      textAlign: 'center',
+      textDirection: normalUnit.rotate90CCW(),
+      fontSize: MEASUREMENT_FONT_SIZE,
+    });
   }
 
   public move(x: number, y: number) {

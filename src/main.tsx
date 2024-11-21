@@ -16,22 +16,19 @@ import {
   getShouldDrawHelpers,
   getSnapPoint,
   getSnapPointOnAngleGuide,
-  redo,
   setActiveToolActor,
   setAngleGuideEntities,
   setCanvas,
+  setCanvasInputField,
   setCanvasSize,
-  setGhostHelperEntities,
   setHighlightedEntityIds,
   setHoveredSnapPoints,
   setLastDrawTimestamp,
   setPanStartLocation,
   setScreenCanvasDrawController,
-  setSelectedEntityIds,
   setShouldDrawCursor,
   setSnapPoint,
   setSnapPointOnAngleGuide,
-  undo,
 } from './state';
 import { MouseButton } from './App.types';
 import { Tool } from './tools';
@@ -50,12 +47,8 @@ import { compact } from 'es-toolkit';
 import { toolStateMachines } from './tools/tool.consts';
 import { ActorEvent, DrawEvent, MouseClickEvent } from './tools/tool.types';
 import { Actor } from 'xstate';
-import { lineToolStateMachine } from './tools/line-tool';
-import { circleToolStateMachine } from './tools/circle-tool';
-import { rectangleToolStateMachine } from './tools/rectangle-tool';
-import { selectToolStateMachine } from './tools/select-tool';
-import { moveToolStateMachine } from './tools/move-tool';
 import { ScreenCanvasDrawController } from './drawControllers/screenCanvas.drawController';
+import { CanvasInputField } from './helpers/CanvasInputField.ts';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -149,55 +142,55 @@ function handleMouseUp(evt: MouseEvent) {
   }
 }
 
-function handleKeyUp(evt: KeyboardEvent) {
-  if (evt.key === 'Escape') {
-    evt.preventDefault();
-    getActiveToolActor()?.send({
-      type: ActorEvent.ESC,
-    });
-  } else if (evt.key === 'Enter') {
-    evt.preventDefault();
-    getActiveToolActor()?.send({
-      type: ActorEvent.ENTER,
-    });
-  } else if (evt.key === 'Delete') {
-    evt.preventDefault();
-    getActiveToolActor()?.send({
-      type: ActorEvent.DELETE,
-    });
-  } else if (evt.key === 'z' && evt.ctrlKey && !evt.shiftKey) {
-    evt.preventDefault();
-    undo();
-    setGhostHelperEntities([]);
-    setSelectedEntityIds([]);
-    getActiveToolActor()?.send({
-      type: ActorEvent.ESC,
-    });
-  } else if (evt.key === 'z' && evt.ctrlKey && evt.shiftKey) {
-    evt.preventDefault();
-    redo();
-    setGhostHelperEntities([]);
-    setSelectedEntityIds([]);
-    getActiveToolActor()?.send({
-      type: ActorEvent.ESC,
-    });
-  } else if (evt.key === 'l') {
-    evt.preventDefault();
-    setActiveToolActor(new Actor(lineToolStateMachine));
-  } else if (evt.key === 'c') {
-    evt.preventDefault();
-    setActiveToolActor(new Actor(circleToolStateMachine));
-  } else if (evt.key === 'r') {
-    evt.preventDefault();
-    setActiveToolActor(new Actor(rectangleToolStateMachine));
-  } else if (evt.key === 's') {
-    evt.preventDefault();
-    setActiveToolActor(new Actor(selectToolStateMachine));
-  } else if (evt.key === 'm') {
-    evt.preventDefault();
-    setActiveToolActor(new Actor(moveToolStateMachine));
-  }
-}
+// function handleKeyUp(evt: KeyboardEvent) {
+//   if (evt.key === 'Escape') {
+//     evt.preventDefault();
+//     getActiveToolActor()?.send({
+//       type: ActorEvent.ESC,
+//     });
+//   } else if (evt.key === 'Enter') {
+//     evt.preventDefault();
+//     getActiveToolActor()?.send({
+//       type: ActorEvent.ENTER,
+//     });
+//   } else if (evt.key === 'Delete') {
+//     evt.preventDefault();
+//     getActiveToolActor()?.send({
+//       type: ActorEvent.DELETE,
+//     });
+//   } else if (evt.key === 'z' && evt.ctrlKey && !evt.shiftKey) {
+//     evt.preventDefault();
+//     undo();
+//     setGhostHelperEntities([]);
+//     setSelectedEntityIds([]);
+//     getActiveToolActor()?.send({
+//       type: ActorEvent.ESC,
+//     });
+//   } else if (evt.key === 'z' && evt.ctrlKey && evt.shiftKey) {
+//     evt.preventDefault();
+//     redo();
+//     setGhostHelperEntities([]);
+//     setSelectedEntityIds([]);
+//     getActiveToolActor()?.send({
+//       type: ActorEvent.ESC,
+//     });
+//   } else if (evt.key === 'l') {
+//     evt.preventDefault();
+//     setActiveToolActor(new Actor(lineToolStateMachine));
+//   } else if (evt.key === 'c') {
+//     evt.preventDefault();
+//     setActiveToolActor(new Actor(circleToolStateMachine));
+//   } else if (evt.key === 'r') {
+//     evt.preventDefault();
+//     setActiveToolActor(new Actor(rectangleToolStateMachine));
+//   } else if (evt.key === 's') {
+//     evt.preventDefault();
+//     setActiveToolActor(new Actor(selectToolStateMachine));
+//   } else if (evt.key === 'm') {
+//     evt.preventDefault();
+//     setActiveToolActor(new Actor(moveToolStateMachine));
+//   }
+// }
 
 /**
  * Calculate angle guides and snap points
@@ -313,8 +306,9 @@ function initApplication() {
     canvas.addEventListener('wheel', handleMouseWheel);
     canvas.addEventListener('mouseout', handleMouseOut);
     canvas.addEventListener('mouseenter', handleMouseEnter);
-    document.addEventListener('keyup', handleKeyUp);
     window.addEventListener('resize', handleWindowResize);
+    const canvasInputField = new CanvasInputField();
+    setCanvasInputField(canvasInputField);
 
     handleWindowResize();
 

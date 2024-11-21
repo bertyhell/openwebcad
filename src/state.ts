@@ -5,6 +5,7 @@ import { createStack, StateVariable, UndoState } from './helpers/undo-stack';
 import { isEqual } from 'es-toolkit';
 import { Actor, MachineSnapshot } from 'xstate';
 import { ScreenCanvasDrawController } from './drawControllers/screenCanvas.drawController';
+import { CanvasInputField } from './helpers/CanvasInputField.ts';
 
 // state variables
 /**
@@ -81,6 +82,12 @@ let angleStep = 45;
 let screenCanvasDrawController: ScreenCanvasDrawController | null = null;
 
 /**
+ * Class object to manage keyboard input while drawing
+ * It also draws the inputted text to the canvas, next to the cursor
+ */
+let canvasInputField: CanvasInputField | null = null;
+
+/**
  * Location where the user started dragging their mouse
  * Used for panning the screen
  */
@@ -147,6 +154,12 @@ export const getScreenCanvasDrawController = (): ScreenCanvasDrawController => {
     throw new Error('getScreenCanvasDrawController() returned null');
   }
   return screenCanvasDrawController;
+};
+export const getCanvasInputField = (): CanvasInputField => {
+  if (!canvasInputField) {
+    throw new Error('getCanvasInputField() returned null');
+  }
+  return canvasInputField;
 };
 
 export const getSelectedEntities = (): Entity[] => {
@@ -233,6 +246,8 @@ export const setAngleStep = (newStep: number, triggerReact: boolean = true) => {
 export const setScreenCanvasDrawController = (
   newScreenCanvasDrawController: ScreenCanvasDrawController,
 ) => (screenCanvasDrawController = newScreenCanvasDrawController);
+export const setCanvasInputField = (newCanvasInputField: CanvasInputField) =>
+  (canvasInputField = newCanvasInputField);
 export const setPanStartLocation = (newLocation: Point | null) =>
   (panStartLocation = newLocation);
 export const setSnapPoint = (newSnapPoint: SnapPoint | null) =>

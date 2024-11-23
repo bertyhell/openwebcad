@@ -2,8 +2,6 @@ import { Point } from '@flatten-js/core';
 import {
   addEntity,
   deleteEntity,
-  getActiveToolActor,
-  getEntities,
   getSelectedEntities,
   getSelectedEntityIds,
   setAngleGuideOriginPoint,
@@ -92,20 +90,12 @@ export const moveToolStateMachine = createMachine(
         always: [
           {
             guard: () => {
-              console.log(
-                'check selection: selected entities length > 0: ',
-                getSelectedEntityIds().length > 0,
-              );
               return getSelectedEntityIds().length > 0;
             },
             target: MoveState.WAITING_FOR_START_MOVE_POINT,
           },
           {
             guard: () => {
-              console.log(
-                'check selection: selected entities length === 0: ',
-                getSelectedEntityIds().length === 0,
-              );
               return getSelectedEntityIds().length === 0;
             },
             target: MoveState.WAITING_FOR_SELECTION,
@@ -122,8 +112,6 @@ export const moveToolStateMachine = createMachine(
           src: selectToolStateMachine,
           onDone: {
             actions: assign(() => {
-              console.log('select tool finished selection');
-              console.log('actor: ', getActiveToolActor()?.getSnapshot());
               return {
                 startPoint: null,
               };
@@ -201,7 +189,6 @@ export const moveToolStateMachine = createMachine(
   {
     actions: {
       [MoveAction.INIT_MOVE_TOOL]: assign(() => {
-        console.log('activate move tool');
         setShouldDrawHelpers(false);
         setGhostHelperEntities([]);
         setSelectedEntityIds([]);
@@ -304,8 +291,6 @@ export const moveToolStateMachine = createMachine(
         };
       }),
       [MoveAction.RESTORE_ORIGINAL_ENTITIES]: assign(({ context }) => {
-        const entities = getEntities();
-        console.log({ entities });
         addEntity(...context.originalSelectedEntities);
         setGhostHelperEntities([]);
         setSelectedEntityIds([]);

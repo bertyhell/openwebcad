@@ -37,11 +37,11 @@ const ABSOLUTE_POINT_REGEXP =
 const RELATIVE_POINT_REGEXP =
   /^@([0-9]+([.][0-9]+))\s*,\s*([0-9]+([.][0-9]+)?)$/;
 
-export class CanvasInputField {
+export class InputController {
   private text: string = '';
 
   constructor() {
-    // Listen for key strokes
+    // Listen for keystrokes
     document.addEventListener('keydown', evt => {
       this.handleKeyStroke(evt);
     });
@@ -49,7 +49,7 @@ export class CanvasInputField {
     document.addEventListener('mouseup', evt => {
       this.handleMouseUp(evt);
     });
-    // Stop the context menu from appearing when right clicking
+    // Stop the context menu from appearing when right-clicking
     document.addEventListener('contextmenu', evt => {
       evt.preventDefault();
     });
@@ -99,7 +99,6 @@ export class CanvasInputField {
   private handleMouseUp(evt: MouseEvent) {
     if (evt.button === 2) {
       // Right click => confirm action (ENTER)
-      console.log('right mouse button');
       evt.preventDefault();
       evt.stopPropagation();
       this.handleEnterKey();

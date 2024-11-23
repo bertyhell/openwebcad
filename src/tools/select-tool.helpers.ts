@@ -36,7 +36,6 @@ export function handleFirstSelectionPoint(
   ) {
     // Select the entity close to the mouse
     const closestEntity = closestEntityInfo.entity;
-    console.log('selecting entity close to the mouse: ', closestEntity);
     if (!event.holdingCtrl && !event.holdingShift) {
       setSelectedEntityIds([closestEntity.id]);
     } else if (event.holdingCtrl) {
@@ -61,7 +60,6 @@ export function handleFirstSelectionPoint(
   }
 
   // No elements are close to the mouse and no selection dragging is in progress
-  console.log('Start a new selection rectangle drag');
   // Start a new selection rectangle drag
   return {
     ...context,
@@ -77,7 +75,6 @@ export function selectEntitiesInsideRectangle(
 ): void {
   // Finish the selection
   const activeSelectionRectangle = new RectangleEntity(startPoint, endPoint);
-  console.log('Finish selection: ', activeSelectionRectangle);
   const intersectionSelection = getIsIntersectionSelection(
     activeSelectionRectangle,
     startPoint,

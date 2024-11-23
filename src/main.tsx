@@ -19,10 +19,10 @@ import {
   setActiveToolActor,
   setAngleGuideEntities,
   setCanvas,
-  setCanvasInputField,
   setCanvasSize,
   setHighlightedEntityIds,
   setHoveredSnapPoints,
+  setInputController,
   setLastDrawTimestamp,
   setPanStartLocation,
   setScreenCanvasDrawController,
@@ -48,7 +48,7 @@ import { TOOL_STATE_MACHINES } from './tools/tool.consts';
 import { ActorEvent, DrawEvent, MouseClickEvent } from './tools/tool.types';
 import { Actor } from 'xstate';
 import { ScreenCanvasDrawController } from './drawControllers/screenCanvas.drawController';
-import { CanvasInputField } from './helpers/CanvasInputField.ts';
+import { InputController } from './helpers/input-controller.ts';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -232,10 +232,6 @@ function startDrawLoop(
 }
 
 function handleWindowResize() {
-  console.log('handle window resize', {
-    width: window.innerWidth,
-    height: window.innerHeight,
-  });
   setCanvasSize(new Point(window.innerWidth, window.innerHeight));
   const canvas = getCanvas();
   if (canvas) {
@@ -257,8 +253,8 @@ function initApplication() {
     canvas.addEventListener('mouseout', handleMouseOut);
     canvas.addEventListener('mouseenter', handleMouseEnter);
     window.addEventListener('resize', handleWindowResize);
-    const canvasInputField = new CanvasInputField();
-    setCanvasInputField(canvasInputField);
+    const inputController = new InputController();
+    setInputController(inputController);
 
     handleWindowResize();
 

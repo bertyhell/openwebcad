@@ -58,18 +58,19 @@ export function drawSnapPoint(
 ) {
   if (!snapPointInfo) return;
   const snapPoint = snapPointInfo.point;
+  const screenSnapPoint = drawController.worldToScreen(snapPoint);
 
   drawController.setLineStyles(false, false, SNAP_POINT_COLOR, 1, []);
 
   if (isMarked) {
     // We will draw a plus sign inside the current snap point to indicate that it is marked
-    drawController.drawLine(
-      new Point(snapPoint.x - SNAP_POINT_SIZE / 2, snapPoint.y),
-      new Point(snapPoint.x + SNAP_POINT_SIZE / 2, snapPoint.y),
+    drawController.screenDrawLine(
+      new Point(screenSnapPoint.x - SNAP_POINT_SIZE / 2, screenSnapPoint.y),
+      new Point(screenSnapPoint.x + SNAP_POINT_SIZE / 2, screenSnapPoint.y),
     );
-    drawController.drawLine(
-      new Point(snapPoint.x, snapPoint.y - SNAP_POINT_SIZE / 2),
-      new Point(snapPoint.x, snapPoint.y + SNAP_POINT_SIZE / 2),
+    drawController.screenDrawLine(
+      new Point(screenSnapPoint.x, screenSnapPoint.y - SNAP_POINT_SIZE / 2),
+      new Point(screenSnapPoint.x, screenSnapPoint.y + SNAP_POINT_SIZE / 2),
     );
   }
 
@@ -80,48 +81,48 @@ export function drawSnapPoint(
       // top
       drawController.screenDrawLine(
         new Point(
-          snapPoint.x - SNAP_POINT_SIZE / 2,
-          snapPoint.y - SNAP_POINT_SIZE / 2,
+          screenSnapPoint.x - SNAP_POINT_SIZE / 2,
+          screenSnapPoint.y - SNAP_POINT_SIZE / 2,
         ),
         new Point(
-          snapPoint.x + SNAP_POINT_SIZE / 2,
-          snapPoint.y - SNAP_POINT_SIZE / 2,
+          screenSnapPoint.x + SNAP_POINT_SIZE / 2,
+          screenSnapPoint.y - SNAP_POINT_SIZE / 2,
         ),
       );
 
       // right
       drawController.screenDrawLine(
         new Point(
-          snapPoint.x + SNAP_POINT_SIZE / 2,
-          snapPoint.y - SNAP_POINT_SIZE / 2,
+          screenSnapPoint.x + SNAP_POINT_SIZE / 2,
+          screenSnapPoint.y - SNAP_POINT_SIZE / 2,
         ),
         new Point(
-          snapPoint.x + SNAP_POINT_SIZE / 2,
-          snapPoint.y + SNAP_POINT_SIZE / 2,
+          screenSnapPoint.x + SNAP_POINT_SIZE / 2,
+          screenSnapPoint.y + SNAP_POINT_SIZE / 2,
         ),
       );
 
       // bottom
       drawController.screenDrawLine(
         new Point(
-          snapPoint.x - SNAP_POINT_SIZE / 2,
-          snapPoint.y + SNAP_POINT_SIZE / 2,
+          screenSnapPoint.x - SNAP_POINT_SIZE / 2,
+          screenSnapPoint.y + SNAP_POINT_SIZE / 2,
         ),
         new Point(
-          snapPoint.x + SNAP_POINT_SIZE / 2,
-          snapPoint.y + SNAP_POINT_SIZE / 2,
+          screenSnapPoint.x + SNAP_POINT_SIZE / 2,
+          screenSnapPoint.y + SNAP_POINT_SIZE / 2,
         ),
       );
 
       // left
       drawController.screenDrawLine(
         new Point(
-          snapPoint.x - SNAP_POINT_SIZE / 2,
-          snapPoint.y - SNAP_POINT_SIZE / 2,
+          screenSnapPoint.x - SNAP_POINT_SIZE / 2,
+          screenSnapPoint.y - SNAP_POINT_SIZE / 2,
         ),
         new Point(
-          snapPoint.x - SNAP_POINT_SIZE / 2,
-          snapPoint.y + SNAP_POINT_SIZE / 2,
+          screenSnapPoint.x - SNAP_POINT_SIZE / 2,
+          screenSnapPoint.y + SNAP_POINT_SIZE / 2,
         ),
       );
 
@@ -131,30 +132,30 @@ export function drawSnapPoint(
       // Midpoint is shown with a triangle
 
       drawController.screenDrawLine(
-        new Point(snapPoint.x, snapPoint.y - SNAP_POINT_SIZE / 2),
+        new Point(screenSnapPoint.x, screenSnapPoint.y - SNAP_POINT_SIZE / 2),
         new Point(
-          snapPoint.x - SNAP_POINT_SIZE / 2,
-          snapPoint.y + SNAP_POINT_SIZE / 2,
+          screenSnapPoint.x - SNAP_POINT_SIZE / 2,
+          screenSnapPoint.y + SNAP_POINT_SIZE / 2,
         ),
       );
 
       drawController.screenDrawLine(
         new Point(
-          snapPoint.x - SNAP_POINT_SIZE / 2,
-          snapPoint.y + SNAP_POINT_SIZE / 2,
+          screenSnapPoint.x - SNAP_POINT_SIZE / 2,
+          screenSnapPoint.y + SNAP_POINT_SIZE / 2,
         ),
         new Point(
-          snapPoint.x + SNAP_POINT_SIZE / 2,
-          snapPoint.y + SNAP_POINT_SIZE / 2,
+          screenSnapPoint.x + SNAP_POINT_SIZE / 2,
+          screenSnapPoint.y + SNAP_POINT_SIZE / 2,
         ),
       );
 
       drawController.screenDrawLine(
         new Point(
-          snapPoint.x + SNAP_POINT_SIZE / 2,
-          snapPoint.y + SNAP_POINT_SIZE / 2,
+          screenSnapPoint.x + SNAP_POINT_SIZE / 2,
+          screenSnapPoint.y + SNAP_POINT_SIZE / 2,
         ),
-        new Point(snapPoint.x, snapPoint.y - SNAP_POINT_SIZE / 2),
+        new Point(screenSnapPoint.x, screenSnapPoint.y - SNAP_POINT_SIZE / 2),
       );
       break;
 
@@ -163,45 +164,45 @@ export function drawSnapPoint(
 
       drawController.screenDrawLine(
         new Point(
-          snapPoint.x - SNAP_POINT_SIZE / 2,
-          snapPoint.y - SNAP_POINT_SIZE / 2,
+          screenSnapPoint.x - SNAP_POINT_SIZE / 2,
+          screenSnapPoint.y - SNAP_POINT_SIZE / 2,
         ),
         new Point(
-          snapPoint.x + SNAP_POINT_SIZE / 2,
-          snapPoint.y - SNAP_POINT_SIZE / 2,
-        ),
-      );
-
-      drawController.screenDrawLine(
-        new Point(
-          snapPoint.x + SNAP_POINT_SIZE / 2,
-          snapPoint.y - SNAP_POINT_SIZE / 2,
-        ),
-        new Point(
-          snapPoint.x - SNAP_POINT_SIZE / 2,
-          snapPoint.y + SNAP_POINT_SIZE / 2,
+          screenSnapPoint.x + SNAP_POINT_SIZE / 2,
+          screenSnapPoint.y - SNAP_POINT_SIZE / 2,
         ),
       );
 
       drawController.screenDrawLine(
         new Point(
-          snapPoint.x - SNAP_POINT_SIZE / 2,
-          snapPoint.y + SNAP_POINT_SIZE / 2,
+          screenSnapPoint.x + SNAP_POINT_SIZE / 2,
+          screenSnapPoint.y - SNAP_POINT_SIZE / 2,
         ),
         new Point(
-          snapPoint.x + SNAP_POINT_SIZE / 2,
-          snapPoint.y + SNAP_POINT_SIZE / 2,
+          screenSnapPoint.x - SNAP_POINT_SIZE / 2,
+          screenSnapPoint.y + SNAP_POINT_SIZE / 2,
         ),
       );
 
       drawController.screenDrawLine(
         new Point(
-          snapPoint.x + SNAP_POINT_SIZE / 2,
-          snapPoint.y + SNAP_POINT_SIZE / 2,
+          screenSnapPoint.x - SNAP_POINT_SIZE / 2,
+          screenSnapPoint.y + SNAP_POINT_SIZE / 2,
         ),
         new Point(
-          snapPoint.x - SNAP_POINT_SIZE / 2,
-          snapPoint.y - SNAP_POINT_SIZE / 2,
+          screenSnapPoint.x + SNAP_POINT_SIZE / 2,
+          screenSnapPoint.y + SNAP_POINT_SIZE / 2,
+        ),
+      );
+
+      drawController.screenDrawLine(
+        new Point(
+          screenSnapPoint.x + SNAP_POINT_SIZE / 2,
+          screenSnapPoint.y + SNAP_POINT_SIZE / 2,
+        ),
+        new Point(
+          screenSnapPoint.x - SNAP_POINT_SIZE / 2,
+          screenSnapPoint.y - SNAP_POINT_SIZE / 2,
         ),
       );
       break;
@@ -211,49 +212,54 @@ export function drawSnapPoint(
 
       drawController.screenDrawLine(
         new Point(
-          snapPoint.x - SNAP_POINT_SIZE / 2,
-          snapPoint.y - SNAP_POINT_SIZE / 2,
+          screenSnapPoint.x - SNAP_POINT_SIZE / 2,
+          screenSnapPoint.y - SNAP_POINT_SIZE / 2,
         ),
         new Point(
-          snapPoint.x + SNAP_POINT_SIZE / 2,
-          snapPoint.y + SNAP_POINT_SIZE / 2,
+          screenSnapPoint.x + SNAP_POINT_SIZE / 2,
+          screenSnapPoint.y + SNAP_POINT_SIZE / 2,
         ),
       );
 
       drawController.screenDrawLine(
         new Point(
-          snapPoint.x + SNAP_POINT_SIZE / 2,
-          snapPoint.y - SNAP_POINT_SIZE / 2,
+          screenSnapPoint.x + SNAP_POINT_SIZE / 2,
+          screenSnapPoint.y - SNAP_POINT_SIZE / 2,
         ),
         new Point(
-          snapPoint.x - SNAP_POINT_SIZE / 2,
-          snapPoint.y + SNAP_POINT_SIZE / 2,
+          screenSnapPoint.x - SNAP_POINT_SIZE / 2,
+          screenSnapPoint.y + SNAP_POINT_SIZE / 2,
         ),
       );
       break;
 
     case SnapPointType.CircleCenter:
       // Circle center is shown with a circle
-      drawController.drawArc(snapPoint, SNAP_POINT_SIZE / 2, 0, 2 * Math.PI);
+      drawController.drawArc(
+        screenSnapPoint,
+        SNAP_POINT_SIZE / 2,
+        0,
+        2 * Math.PI,
+      );
       break;
 
     case SnapPointType.CircleCardinal:
       // Circle cardinal is shown with a diamond
       drawController.screenDrawLine(
-        new Point(snapPoint.x, snapPoint.y - SNAP_POINT_SIZE / 2),
-        new Point(snapPoint.x - SNAP_POINT_SIZE / 2, snapPoint.y),
+        new Point(screenSnapPoint.x, screenSnapPoint.y - SNAP_POINT_SIZE / 2),
+        new Point(screenSnapPoint.x - SNAP_POINT_SIZE / 2, screenSnapPoint.y),
       );
       drawController.screenDrawLine(
-        new Point(snapPoint.x - SNAP_POINT_SIZE / 2, snapPoint.y),
-        new Point(snapPoint.x, snapPoint.y + SNAP_POINT_SIZE / 2),
+        new Point(screenSnapPoint.x - SNAP_POINT_SIZE / 2, screenSnapPoint.y),
+        new Point(screenSnapPoint.x, screenSnapPoint.y + SNAP_POINT_SIZE / 2),
       );
       drawController.screenDrawLine(
-        new Point(snapPoint.x, snapPoint.y + SNAP_POINT_SIZE / 2),
-        new Point(snapPoint.x + SNAP_POINT_SIZE / 2, snapPoint.y),
+        new Point(screenSnapPoint.x, screenSnapPoint.y + SNAP_POINT_SIZE / 2),
+        new Point(screenSnapPoint.x + SNAP_POINT_SIZE / 2, screenSnapPoint.y),
       );
       drawController.screenDrawLine(
-        new Point(snapPoint.x + SNAP_POINT_SIZE / 2, snapPoint.y),
-        new Point(snapPoint.x, snapPoint.y - SNAP_POINT_SIZE / 2),
+        new Point(screenSnapPoint.x + SNAP_POINT_SIZE / 2, screenSnapPoint.y),
+        new Point(screenSnapPoint.x, screenSnapPoint.y - SNAP_POINT_SIZE / 2),
       );
       break;
   }

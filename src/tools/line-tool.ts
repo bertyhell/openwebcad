@@ -127,7 +127,6 @@ export const lineToolStateMachine = createMachine(
         setGhostHelperEntities([activeLine]);
       },
       [LineAction.DRAW_FINAL_LINE]: assign(({ context, event }) => {
-        console.log('drawFinalLine', { context, event });
         if (!context.startPoint) {
           throw new Error(
             'Start point is not set during DRAW_FINAL_LINE in LineEntity',

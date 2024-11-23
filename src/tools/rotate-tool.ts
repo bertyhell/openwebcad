@@ -2,8 +2,6 @@ import { Point } from '@flatten-js/core';
 import {
   addEntity,
   deleteEntity,
-  getActiveToolActor,
-  getEntities,
   getSelectedEntities,
   getSelectedEntityIds,
   setAngleGuideOriginPoint,
@@ -87,20 +85,12 @@ export const rotateToolStateMachine = createMachine(
         always: [
           {
             guard: () => {
-              console.log(
-                'check selection: selected entities length > 0: ',
-                getSelectedEntityIds().length > 0,
-              );
               return getSelectedEntityIds().length > 0;
             },
             target: RotateState.WAITING_FOR_ROTATION_ORIGIN,
           },
           {
             guard: () => {
-              console.log(
-                'check selection: selected entities length === 0: ',
-                getSelectedEntityIds().length === 0,
-              );
               return getSelectedEntityIds().length === 0;
             },
             target: RotateState.WAITING_FOR_SELECTION,
@@ -117,8 +107,6 @@ export const rotateToolStateMachine = createMachine(
           src: selectToolStateMachine,
           onDone: {
             actions: assign(({ context }) => {
-              console.log('select tool finished selection');
-              console.log('actor: ', getActiveToolActor()?.getSnapshot());
               return {
                 ...context,
               };
@@ -218,7 +206,6 @@ export const rotateToolStateMachine = createMachine(
   {
     actions: {
       [RotateAction.INIT_ROTATE_TOOL]: () => {
-        console.log('activate rotate tool');
         setShouldDrawHelpers(false);
         setGhostHelperEntities([]);
         setSelectedEntityIds([]);
@@ -325,8 +312,6 @@ export const rotateToolStateMachine = createMachine(
       }),
       [RotateAction.RESTORE_ORIGINAL_ENTITIES]: assign(
         ({ context }): RotateContext => {
-          const entities = getEntities();
-          console.log({ entities });
           addEntity(...context.originalSelectedEntities);
           setGhostHelperEntities([]);
           setSelectedEntityIds([]);

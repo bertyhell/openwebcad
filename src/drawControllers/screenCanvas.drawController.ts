@@ -8,6 +8,8 @@ import {
 } from '../App.consts';
 import { Point, Vector } from '@flatten-js/core';
 import { DrawController } from './DrawController';
+import { triggerReactUpdate } from '../state.ts';
+import { StateVariable } from '../helpers/undo-stack.ts';
 
 export class ScreenCanvasDrawController implements DrawController {
   private screenOffset: Point = new Point(0, 0);
@@ -27,6 +29,7 @@ export class ScreenCanvasDrawController implements DrawController {
 
   public setScreenScale(newScreenScale: number) {
     this.screenScale = newScreenScale;
+    triggerReactUpdate(StateVariable.screenZoom);
   }
 
   public getScreenOffset() {
@@ -35,6 +38,7 @@ export class ScreenCanvasDrawController implements DrawController {
 
   public setScreenOffset(newScreenOffset: Point) {
     this.screenOffset = newScreenOffset;
+    triggerReactUpdate(StateVariable.screenOffset);
   }
 
   public getScreenMouseLocation(): Point {
@@ -43,6 +47,7 @@ export class ScreenCanvasDrawController implements DrawController {
 
   public setScreenMouseLocation(newScreenMouseLocation: Point): void {
     this.screenMouseLocation = newScreenMouseLocation;
+    triggerReactUpdate(StateVariable.screenMouseLocation);
   }
 
   public getWorldMouseLocation(): Point {
@@ -51,8 +56,8 @@ export class ScreenCanvasDrawController implements DrawController {
 
   public panScreen(screenOffsetX: number, screenOffsetY: number) {
     this.screenOffset = new Point(
-      this.screenOffset.x - screenOffsetX,
-      this.screenOffset.y - screenOffsetY,
+      this.screenOffset.x - screenOffsetX / this.screenScale,
+      this.screenOffset.y - screenOffsetY / this.screenScale,
     );
   }
 
@@ -128,7 +133,6 @@ export class ScreenCanvasDrawController implements DrawController {
 
   public screenDrawLine(screenStartPoint: Point, screenEndPoint: Point): void {
     this.context.beginPath();
-    console.log('draw line: ', screenStartPoint, screenEndPoint);
     this.context.moveTo(screenStartPoint.x, screenStartPoint.y);
     this.context.lineTo(screenEndPoint.x, screenEndPoint.y);
     this.context.stroke();

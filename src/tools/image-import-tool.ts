@@ -184,8 +184,6 @@ export const imageImportToolStateMachine = createMachine(
         setAngleGuideEntities([draggedRectangle]);
       },
       [ImageImportAction.DRAW_FINAL_IMAGE_IMPORT]: ({ context, event }) => {
-        console.log('drawFinalImageImport', { context, event });
-
         if (!context.startPoint) {
           throw new Error(
             '[IMAGE_IMPORT] startPoint is not set when calling DRAW_TEMP_IMAGE_IMPORT',

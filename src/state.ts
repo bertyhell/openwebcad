@@ -5,7 +5,7 @@ import { createStack, StateVariable, UndoState } from './helpers/undo-stack';
 import { isEqual } from 'es-toolkit';
 import { Actor, MachineSnapshot } from 'xstate';
 import { ScreenCanvasDrawController } from './drawControllers/screenCanvas.drawController';
-import { CanvasInputField } from './helpers/CanvasInputField.ts';
+import { InputController } from './helpers/input-controller.ts'; // state variables
 
 // state variables
 /**
@@ -85,7 +85,7 @@ let screenCanvasDrawController: ScreenCanvasDrawController | null = null;
  * Class object to manage keyboard input while drawing
  * It also draws the inputted text to the canvas, next to the cursor
  */
-let canvasInputField: CanvasInputField | null = null;
+let inputController: InputController | null = null;
 
 /**
  * Location where the user started dragging their mouse
@@ -155,11 +155,11 @@ export const getScreenCanvasDrawController = (): ScreenCanvasDrawController => {
   }
   return screenCanvasDrawController;
 };
-export const getCanvasInputField = (): CanvasInputField => {
-  if (!canvasInputField) {
-    throw new Error('getCanvasInputField() returned null');
+export const getInputController = (): InputController => {
+  if (!inputController) {
+    throw new Error('getInputController() returned null');
   }
-  return canvasInputField;
+  return inputController;
 };
 
 export const getSelectedEntities = (): Entity[] => {
@@ -222,7 +222,6 @@ export const setAngleGuideEntities = (newAngleGuideEntities: Entity[]) =>
 export const setGhostHelperEntities = (newGhostHelperEntities: Entity[]) =>
   (ghostHelperEntities = newGhostHelperEntities);
 export const setShouldDrawHelpers = (shouldDraw: boolean) => {
-  console.log('setShouldDrawHelpers', shouldDraw);
   setSnapPoint(null);
   setSnapPointOnAngleGuide(null);
   setAngleGuideEntities([]);
@@ -240,8 +239,8 @@ export const setAngleStep = (newStep: number, triggerReact: boolean = true) => {
 export const setScreenCanvasDrawController = (
   newScreenCanvasDrawController: ScreenCanvasDrawController,
 ) => (screenCanvasDrawController = newScreenCanvasDrawController);
-export const setCanvasInputField = (newCanvasInputField: CanvasInputField) =>
-  (canvasInputField = newCanvasInputField);
+export const setInputController = (newInputController: InputController) =>
+  (inputController = newInputController);
 export const setPanStartLocation = (newLocation: Point | null) =>
   (panStartLocation = newLocation);
 export const setSnapPoint = (newSnapPoint: SnapPoint | null) =>
@@ -361,7 +360,7 @@ export function redo() {
   updateStates(redoState);
 }
 
-function triggerReactUpdate(variable: StateVariable) {
+export function triggerReactUpdate(variable: StateVariable) {
   if (!reactStateVariables.includes(variable)) return;
 
   window.dispatchEvent(new CustomEvent(HtmlEvent.UPDATE_STATE));

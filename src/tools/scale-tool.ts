@@ -2,8 +2,6 @@ import { Point } from '@flatten-js/core';
 import {
   addEntity,
   deleteEntity,
-  getActiveToolActor,
-  getEntities,
   getSelectedEntities,
   getSelectedEntityIds,
   setAngleGuideOriginPoint,
@@ -89,20 +87,12 @@ export const scaleToolStateMachine = createMachine(
         always: [
           {
             guard: () => {
-              console.log(
-                'check selection: selected entities length > 0: ',
-                getSelectedEntityIds().length > 0,
-              );
               return getSelectedEntityIds().length > 0;
             },
             target: ScaleState.WAITING_FOR_BASE_VECTOR_START_POINT,
           },
           {
             guard: () => {
-              console.log(
-                'check selection: selected entities length === 0: ',
-                getSelectedEntityIds().length === 0,
-              );
               return getSelectedEntityIds().length === 0;
             },
             target: ScaleState.WAITING_FOR_SELECTION,
@@ -119,8 +109,6 @@ export const scaleToolStateMachine = createMachine(
           src: selectToolStateMachine,
           onDone: {
             actions: assign(() => {
-              console.log('select tool finished selection');
-              console.log('actor: ', getActiveToolActor()?.getSnapshot());
               return {
                 baseVectorStartPoint: null,
                 baseVectorEndPoint: null,
@@ -223,7 +211,6 @@ export const scaleToolStateMachine = createMachine(
   {
     actions: {
       [ScaleAction.INIT_SCALE_TOOL]: () => {
-        console.log('activate scale tool');
         setShouldDrawHelpers(false);
         setGhostHelperEntities([]);
         setSelectedEntityIds([]);
@@ -326,8 +313,6 @@ export const scaleToolStateMachine = createMachine(
         };
       }),
       [ScaleAction.RESTORE_ORIGINAL_ENTITIES]: assign(({ context }) => {
-        const entities = getEntities();
-        console.log({ entities });
         addEntity(...context.originalSelectedEntities);
         setGhostHelperEntities([]);
         setGhostHelperEntities([]);

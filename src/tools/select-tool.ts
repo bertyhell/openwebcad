@@ -131,14 +131,12 @@ export const selectToolStateMachine = createMachine(
   {
     actions: {
       INIT_SELECT_TOOL: () => {
-        console.log('activate select tool');
         setShouldDrawHelpers(false);
         setGhostHelperEntities([]);
         setSelectedEntityIds([]);
       },
       HANDLE_FIRST_SELECT_POINT: assign(
         ({ context, event }: { context: SelectContext; event: StateEvent }) => {
-          console.log('handle first select point');
           return handleFirstSelectionPoint(context, event as MouseClickEvent);
         },
       ),
@@ -167,7 +165,6 @@ export const selectToolStateMachine = createMachine(
         context: SelectContext;
         event: StateEvent;
       }) => {
-        console.log('select entities inside rectangle');
         if (!context.startPoint) {
           //
           throw new Error(
@@ -183,7 +180,6 @@ export const selectToolStateMachine = createMachine(
         setGhostHelperEntities([]);
       },
       DELETE_SELECTED_ENTITIES: () => {
-        console.log('delete selected entities');
         setEntities(getNotSelectedEntities());
         setSelectedEntityIds([]);
         setGhostHelperEntities([]);

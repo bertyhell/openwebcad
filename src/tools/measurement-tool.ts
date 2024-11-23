@@ -169,7 +169,6 @@ export const measurementToolStateMachine = createMachine(
         setGhostHelperEntities([activeMeasurement]);
       },
       [MeasurementAction.DRAW_FINAL_MEASUREMENT]: ({ context, event }) => {
-        console.log('drawFinalMeasurement', { context, event });
         const offsetPoint = (event as MouseClickEvent).worldClickPoint;
         const activeMeasurement = new MeasurementEntity(
           context.startPoint as Point,

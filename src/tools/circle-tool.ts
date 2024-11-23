@@ -90,7 +90,6 @@ export const circleToolStateMachine = createMachine(
   {
     actions: {
       [CircleAction.INIT_CIRCLE_TOOL]: assign(() => {
-        console.log('activate circle tool');
         setShouldDrawHelpers(true);
         setGhostHelperEntities([]);
         setSelectedEntityIds([]);
@@ -106,8 +105,6 @@ export const circleToolStateMachine = createMachine(
         };
       }),
       [CircleAction.DRAW_TEMP_CIRCLE]: ({ context, event }) => {
-        console.log('drawTempCircle', { context, event });
-
         const activeCircle = new CircleEntity(
           context.centerPoint as Point,
           pointDistance(
@@ -120,7 +117,6 @@ export const circleToolStateMachine = createMachine(
         setGhostHelperEntities([activeCircle]);
       },
       [CircleAction.DRAW_FINAL_CIRCLE]: assign(({ context, event }) => {
-        console.log('drawFinalCircle', { context, event });
         const pointOnCircle = (event as MouseClickEvent).worldClickPoint;
         const activeCircle = new CircleEntity(
           context.centerPoint as Point,

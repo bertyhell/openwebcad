@@ -76,7 +76,6 @@ export const eraserToolStateMachine = createMachine(
   {
     actions: {
       [EraserAction.INIT_ERASER_TOOL]: assign(() => {
-        console.log('activate eraser tool');
         setShouldDrawHelpers(false);
         setGhostHelperEntities([]);
         setSelectedEntityIds([]);

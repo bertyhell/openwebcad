@@ -44,7 +44,7 @@ import { getClosestSnapPointWithinRadius } from './helpers/get-closest-snap-poin
 import { findClosestEntity } from './helpers/find-closest-entity';
 import { trackHoveredSnapPoint } from './helpers/track-hovered-snap-points';
 import { compact } from 'es-toolkit';
-import { toolStateMachines } from './tools/tool.consts';
+import { TOOL_STATE_MACHINES } from './tools/tool.consts';
 import { ActorEvent, DrawEvent, MouseClickEvent } from './tools/tool.types';
 import { Actor } from 'xstate';
 import { ScreenCanvasDrawController } from './drawControllers/screenCanvas.drawController';
@@ -141,56 +141,6 @@ function handleMouseUp(evt: MouseEvent) {
     } as MouseClickEvent);
   }
 }
-
-// function handleKeyUp(evt: KeyboardEvent) {
-//   if (evt.key === 'Escape') {
-//     evt.preventDefault();
-//     getActiveToolActor()?.send({
-//       type: ActorEvent.ESC,
-//     });
-//   } else if (evt.key === 'Enter') {
-//     evt.preventDefault();
-//     getActiveToolActor()?.send({
-//       type: ActorEvent.ENTER,
-//     });
-//   } else if (evt.key === 'Delete') {
-//     evt.preventDefault();
-//     getActiveToolActor()?.send({
-//       type: ActorEvent.DELETE,
-//     });
-//   } else if (evt.key === 'z' && evt.ctrlKey && !evt.shiftKey) {
-//     evt.preventDefault();
-//     undo();
-//     setGhostHelperEntities([]);
-//     setSelectedEntityIds([]);
-//     getActiveToolActor()?.send({
-//       type: ActorEvent.ESC,
-//     });
-//   } else if (evt.key === 'z' && evt.ctrlKey && evt.shiftKey) {
-//     evt.preventDefault();
-//     redo();
-//     setGhostHelperEntities([]);
-//     setSelectedEntityIds([]);
-//     getActiveToolActor()?.send({
-//       type: ActorEvent.ESC,
-//     });
-//   } else if (evt.key === 'l') {
-//     evt.preventDefault();
-//     setActiveToolActor(new Actor(lineToolStateMachine));
-//   } else if (evt.key === 'c') {
-//     evt.preventDefault();
-//     setActiveToolActor(new Actor(circleToolStateMachine));
-//   } else if (evt.key === 'r') {
-//     evt.preventDefault();
-//     setActiveToolActor(new Actor(rectangleToolStateMachine));
-//   } else if (evt.key === 's') {
-//     evt.preventDefault();
-//     setActiveToolActor(new Actor(selectToolStateMachine));
-//   } else if (evt.key === 'm') {
-//     evt.preventDefault();
-//     setActiveToolActor(new Actor(moveToolStateMachine));
-//   }
-// }
 
 /**
  * Calculate angle guides and snap points
@@ -322,7 +272,7 @@ function initApplication() {
     setScreenCanvasDrawController(screenCanvasDrawController);
     startDrawLoop(screenCanvasDrawController, 0);
 
-    const lineToolActor = new Actor(toolStateMachines[Tool.LINE]);
+    const lineToolActor = new Actor(TOOL_STATE_MACHINES[Tool.LINE]);
     lineToolActor.start();
     setActiveToolActor(lineToolActor);
   }

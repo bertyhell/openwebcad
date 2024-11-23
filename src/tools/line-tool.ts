@@ -87,6 +87,9 @@ export const lineToolStateMachine = createMachine(
           ESC: {
             target: LineState.INIT,
           },
+          ENTER: {
+            target: LineState.INIT,
+          },
         },
       },
     },

@@ -3,8 +3,7 @@ import { Circle, Point, Segment } from '@flatten-js/core';
 import { compact } from 'es-toolkit';
 import { LineEntity } from '../entities/LineEntity';
 import { findNeighboringPointsOnLine } from '../helpers/find-neighboring-points-on-line';
-import { addEntity, deleteEntity, setDebugEntities } from '../state';
-import { PointEntity } from '../entities/PointEntity';
+import { addEntity, deleteEntity } from '../state';
 import { CircleEntity } from '../entities/CircleEntity';
 import { findNeighboringPointsOnCircle } from '../helpers/find-neighboring-points-on-circle';
 import { isPointEqual } from '../helpers/is-point-equal';
@@ -37,10 +36,6 @@ export function eraseLineSegment(
     segment.start,
     segment.end,
     intersections,
-  );
-
-  setDebugEntities(
-    [firstCutPoint, secondCutPoint].map(point => new PointEntity(point)),
   );
 
   const cutLines: Entity[] = line.cutAtPoints([firstCutPoint, secondCutPoint]);

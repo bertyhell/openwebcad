@@ -12,7 +12,7 @@ import { scaleToolStateMachine } from './scale-tool';
 import { rotateToolStateMachine } from './rotate-tool';
 import { measurementToolStateMachine } from './measurement-tool';
 
-export const toolStateMachines: Record<
+export const TOOL_STATE_MACHINES: Record<
   Partial<Tool>,
   StateMachine<
     any,

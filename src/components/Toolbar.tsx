@@ -23,7 +23,7 @@ import { exportEntitiesToSvgFile } from '../helpers/import-export-handlers/expor
 import { exportEntitiesToPngFile } from '../helpers/import-export-handlers/export-entities-to-png';
 import { COLOR_LIST } from '../App.consts';
 import { times } from '../helpers/times';
-import { toolStateMachines } from '../tools/tool.consts';
+import { TOOL_STATE_MACHINES } from '../tools/tool.consts';
 import { Actor } from 'xstate';
 import { HtmlEvent } from '../App.types';
 import { Point } from '@flatten-js/core';
@@ -74,8 +74,8 @@ export const Toolbar: FC<ToolbarProps> = () => {
   const handleToolClick = useCallback((tool: Tool) => {
     getActiveToolActor()?.stop();
 
-    const newToolActor = new Actor(toolStateMachines[tool]);
-    setActiveToolActor(newToolActor);
+    const newToolActor = new Actor(TOOL_STATE_MACHINES[tool]);
+    setActiveToolActor(newToolActor, false);
     setActiveToolLocal(tool);
   }, []);
 

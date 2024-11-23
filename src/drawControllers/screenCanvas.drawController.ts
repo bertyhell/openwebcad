@@ -230,7 +230,16 @@ export class ScreenCanvasDrawController implements DrawController {
     this.context.restore();
   }
 
-  drawImage(
+  /**
+   * Draw an image to the canvas using world coordinates
+   * @param imageElement
+   * @param xMin
+   * @param yMin
+   * @param width
+   * @param height
+   * @param angle
+   */
+  public drawImage(
     imageElement: HTMLImageElement,
     xMin: number,
     yMin: number,
@@ -238,25 +247,33 @@ export class ScreenCanvasDrawController implements DrawController {
     height: number,
     angle: number,
   ): void {
-    const centerX = xMin + width / 2;
-    const centerY = yMin + height / 2;
+    const [screenBasePoint, screenDimensions] = this.worldsToScreens([
+      new Point(xMin, yMin),
+      new Point(width, height),
+    ]);
+    const screenXMin = screenBasePoint.x;
+    const screenYMin = screenBasePoint.y;
+    const screenWidth = screenDimensions.x;
+    const screenHeight = screenDimensions.y;
+    const screenCenterX = screenXMin + screenWidth / 2;
+    const screenCenterY = screenYMin + screenHeight / 2;
 
     // Rotate and translate context
-    this.context.translate(centerX, centerY);
+    this.context.translate(screenCenterX, screenCenterY);
     this.context.rotate(angle);
 
     // Draw image
     this.context.drawImage(
       imageElement,
-      -width / 2,
-      -height / 2,
-      width,
-      height,
+      -screenWidth / 2,
+      -screenHeight / 2,
+      screenWidth,
+      screenHeight,
     );
 
     // Reset context
     this.context.rotate(-angle);
-    this.context.translate(-centerX, -centerY);
+    this.context.translate(-screenCenterX, -screenCenterY);
   }
 
   /**

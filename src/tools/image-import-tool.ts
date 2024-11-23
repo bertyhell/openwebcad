@@ -1,4 +1,4 @@
-import { Point, Polygon } from '@flatten-js/core';
+import { Point } from '@flatten-js/core';
 import {
   addEntity,
   setActiveToolActor,
@@ -23,6 +23,7 @@ import { getContainRectangleInsideRectangle } from './image-import-tool.helpers'
 import { RectangleEntity } from '../entities/RectangleEntity';
 import { selectToolStateMachine } from './select-tool';
 import { boxToPolygon, twoPointBoxToPolygon } from '../helpers/box-to-polygon';
+import { isPointEqual } from '../helpers/is-point-equal.ts';
 
 export interface ImageImportContext extends ToolContext {
   startPoint: Point | null;
@@ -76,7 +77,7 @@ export const imageImportToolStateMachine = createMachine(
             target: ImageImportState.WAITING_FOR_START_POINT,
           },
           ESC: {
-            target: ImageImportState.INIT,
+            actions: ImageImportAction.SWITCH_TO_SELECT_TOOL,
           },
         },
       },
@@ -109,7 +110,7 @@ export const imageImportToolStateMachine = createMachine(
             ],
           },
           ESC: {
-            target: ImageImportState.INIT,
+            actions: ImageImportAction.SWITCH_TO_SELECT_TOOL,
           },
         },
       },
@@ -150,6 +151,14 @@ export const imageImportToolStateMachine = createMachine(
             '[IMAGE_IMPORT] imageElement is not set when calling DRAW_TEMP_IMAGE_IMPORT',
           );
         }
+        if (
+          isPointEqual(
+            context.startPoint,
+            (event as DrawEvent).drawController.getWorldMouseLocation(),
+          )
+        ) {
+          return; // Can't draw an image that is 0 pixels wide
+        }
         const containRectangle = getContainRectangleInsideRectangle(
           context.imageElement.naturalWidth,
           context.imageElement.naturalHeight,
@@ -161,7 +170,9 @@ export const imageImportToolStateMachine = createMachine(
         }
         const activeImage = new ImageEntity(
           context.imageElement,
-          new Polygon(),
+          containRectangle.low,
+          containRectangle.high,
+          0,
         );
         const draggedRectangle = new RectangleEntity(
           twoPointBoxToPolygon(

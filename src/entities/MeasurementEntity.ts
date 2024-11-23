@@ -131,6 +131,9 @@ export class MeasurementEntity implements Entity {
    * @param drawController
    */
   public draw(drawController: DrawController): void {
+    if (isPointEqual(this.startPoint, this.endPoint)) {
+      return; // We can't draw a measurement with 0 length
+    }
     const drawPoints = this.getDrawPoints();
     if (!drawPoints) {
       return;

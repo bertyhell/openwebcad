@@ -4,13 +4,14 @@ import {
   addEntity,
   getActiveLineColor,
   getActiveLineWidth,
+  setActiveToolActor,
   setAngleGuideOriginPoint,
   setGhostHelperEntities,
   setSelectedEntityIds,
   setShouldDrawHelpers,
 } from '../state';
 import { Tool } from '../tools';
-import { assign, createMachine } from 'xstate';
+import { Actor, assign, createMachine } from 'xstate';
 import {
   DrawEvent,
   MouseClickEvent,
@@ -18,6 +19,7 @@ import {
   StateEvent,
   ToolContext,
 } from './tool.types';
+import { selectToolStateMachine } from './select-tool.ts';
 
 export interface LineContext extends ToolContext {
   startPoint: Point | null;
@@ -34,6 +36,7 @@ export enum LineAction {
   RECORD_START_POINT = 'RECORD_START_POINT',
   DRAW_TEMP_LINE = 'DRAW_TEMP_LINE',
   DRAW_FINAL_LINE = 'DRAW_FINAL_LINE',
+  SWITCH_TO_SELECT_TOOL = 'SWITCH_TO_SELECT_TOOL',
 }
 
 export const lineToolStateMachine = createMachine(
@@ -64,6 +67,9 @@ export const lineToolStateMachine = createMachine(
           MOUSE_CLICK: {
             actions: LineAction.RECORD_START_POINT,
             target: LineState.WAITING_FOR_END_POINT,
+          },
+          ESC: {
+            actions: LineAction.SWITCH_TO_SELECT_TOOL,
           },
         },
       },
@@ -161,6 +167,9 @@ export const lineToolStateMachine = createMachine(
           startPoint: endPoint,
         };
       }),
+      [LineAction.SWITCH_TO_SELECT_TOOL]: () => {
+        setActiveToolActor(new Actor(selectToolStateMachine));
+      },
     },
   },
 );

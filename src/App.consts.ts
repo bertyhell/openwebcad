@@ -168,6 +168,11 @@ export const CANVAS_INPUT_FIELD_SELECTION_TEXT_COLOR = '#000';
  */
 export const CANVAS_INPUT_FIELD_FONT_SIZE = 16;
 
+/**
+ * Canvas input field instruction text color
+ */
+export const CANVAS_INPUT_FIELD_INSTRUCTION_TEXT_COLOR = '#999';
+
 export const COLOR_LIST = [
   '#ffffff',
   '#2f4f4f',

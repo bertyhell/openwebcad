@@ -253,6 +253,17 @@ export const moveToolStateMachine = createMachine(
           event as DrawEvent
         ).drawController.getWorldMouseLocation();
 
+        // Move the entities to the new location
+        // Draw all selected entities according to translation vector, so the user gets visual feedback of where the entities will be moved;
+        const movedEntities = context.originalSelectedEntities.map(entity =>
+          entity.clone(),
+        );
+        moveEntities(
+          movedEntities,
+          endPointTemp.x - context.startPoint.x,
+          endPointTemp.y - context.startPoint.y,
+        );
+
         // // Draw a dashed line between the start move point and the current mouse location
         const activeMoveLine = new LineEntity(
           context.startPoint as Point,
@@ -261,14 +272,7 @@ export const moveToolStateMachine = createMachine(
         activeMoveLine.lineColor = GUIDE_LINE_COLOR;
         activeMoveLine.lineWidth = GUIDE_LINE_WIDTH;
         activeMoveLine.lineStyle = GUIDE_LINE_STYLE;
-        setGhostHelperEntities([activeMoveLine]);
-
-        // Draw all selected entities according to translation vector, so the user gets visual feedback of where the entities will be moved;
-        moveEntities(
-          context.originalSelectedEntities.map(entity => entity.clone()),
-          endPointTemp.x - context.startPoint.x,
-          endPointTemp.y - context.startPoint.y,
-        );
+        setGhostHelperEntities([activeMoveLine, ...movedEntities]);
       },
       [MoveAction.MOVE_SELECTION]: ({ context, event }) => {
         if (!context.startPoint) {

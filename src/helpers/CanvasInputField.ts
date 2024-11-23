@@ -1,5 +1,6 @@
 import {
   getActiveToolActor,
+  getLastStateInstructions,
   getScreenCanvasDrawController,
   getSnapPoint,
   getSnapPointOnAngleGuide,
@@ -16,6 +17,7 @@ import { Point } from '@flatten-js/core';
 import {
   CANVAS_INPUT_FIELD_BACKGROUND_COLOR,
   CANVAS_INPUT_FIELD_HEIGHT,
+  CANVAS_INPUT_FIELD_INSTRUCTION_TEXT_COLOR,
   CANVAS_INPUT_FIELD_MOUSE_OFFSET,
   CANVAS_INPUT_FIELD_TEXT_COLOR,
   CANVAS_INPUT_FIELD_WIDTH,
@@ -38,6 +40,8 @@ export class CanvasInputField {
 
   public draw(drawController: ScreenCanvasDrawController) {
     const screenMouseLocation = drawController.getScreenMouseLocation();
+
+    // draw input field
     drawController.fillRectScreen(
       screenMouseLocation.x + CANVAS_INPUT_FIELD_MOUSE_OFFSET,
       screenMouseLocation.y + CANVAS_INPUT_FIELD_MOUSE_OFFSET,
@@ -60,6 +64,26 @@ export class CanvasInputField {
         fontSize: 18,
       },
     );
+
+    // Draw tool instruction
+    const toolInstruction = getLastStateInstructions();
+    if (toolInstruction) {
+      drawController.drawTextScreen(
+        toolInstruction,
+        new Point(
+          screenMouseLocation.x + CANVAS_INPUT_FIELD_MOUSE_OFFSET + 2,
+          screenMouseLocation.y +
+            CANVAS_INPUT_FIELD_MOUSE_OFFSET +
+            CANVAS_INPUT_FIELD_HEIGHT * 2 +
+            2,
+        ),
+        {
+          textAlign: 'left',
+          textColor: CANVAS_INPUT_FIELD_INSTRUCTION_TEXT_COLOR,
+          fontSize: 18,
+        },
+      );
+    }
   }
 
   public handleKeyStroke(evt: KeyboardEvent) {

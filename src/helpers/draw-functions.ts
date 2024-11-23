@@ -283,24 +283,14 @@ export function drawCursor(
 
   drawController.setLineStyles(false, false, '#FFF', 1, []);
 
-  drawController.drawLine(
-    new Point(
-      drawController.getScreenMouseLocation().x,
-      drawController.getScreenMouseLocation().y - CURSOR_SIZE,
-    ),
-    new Point(
-      drawController.getScreenMouseLocation().x,
-      drawController.getScreenMouseLocation().y + CURSOR_SIZE,
-    ),
+  const screenMouseLocation = drawController.getScreenMouseLocation();
+
+  drawController.screenDrawLine(
+    new Point(screenMouseLocation.x, screenMouseLocation.y - CURSOR_SIZE),
+    new Point(screenMouseLocation.x, screenMouseLocation.y + CURSOR_SIZE),
   );
-  drawController.drawLine(
-    new Point(
-      drawController.getScreenMouseLocation().x - CURSOR_SIZE,
-      drawController.getScreenMouseLocation().y,
-    ),
-    new Point(
-      drawController.getScreenMouseLocation().x + CURSOR_SIZE,
-      drawController.getScreenMouseLocation().y,
-    ),
+  drawController.screenDrawLine(
+    new Point(screenMouseLocation.x - CURSOR_SIZE, screenMouseLocation.y),
+    new Point(screenMouseLocation.x + CURSOR_SIZE, screenMouseLocation.y),
   );
 }

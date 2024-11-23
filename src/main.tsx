@@ -70,8 +70,8 @@ function handleMouseMove(evt: MouseEvent) {
   const panStartLocation = getPanStartLocation();
   if (panStartLocation) {
     screenCanvasDrawController.panScreen(
-      evt.clientX - panStartLocation.x,
-      evt.clientY - panStartLocation.y,
+      newScreenMouseLocation.x - panStartLocation.x,
+      newScreenMouseLocation.y - panStartLocation.y,
     );
     setPanStartLocation(newScreenMouseLocation);
   }

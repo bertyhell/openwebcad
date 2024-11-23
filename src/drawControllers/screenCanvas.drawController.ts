@@ -49,6 +49,40 @@ export class ScreenCanvasDrawController implements DrawController {
     return this.screenToWorld(this.screenMouseLocation);
   }
 
+  public panScreen(screenOffsetX: number, screenOffsetY: number) {
+    this.screenOffset = new Point(
+      this.screenOffset.x - screenOffsetX,
+      this.screenOffset.y - screenOffsetY,
+    );
+  }
+
+  /**
+   * This function takes the deltaY from the mouse wheel event and zooms the screen in or out
+   * The location of the mouse in world space is preserved
+   * @param deltaY
+   */
+  public zoomScreen(deltaY: number) {
+    const worldMouseLocationBeforeZoom = this.getWorldMouseLocation();
+    const newScreenScale =
+      this.getScreenScale() *
+      (1 - MOUSE_ZOOM_MULTIPLIER * (deltaY / Math.abs(deltaY)));
+    this.setScreenScale(newScreenScale);
+
+    // now get the location of the cursor in world space again
+    // It will have changed because the scale has changed,
+    // but we can offset our world now to fix the zoom location in screen space,
+    // because we know how much it changed laterally between the two spatial scales.
+    const worldMouseLocationAfterZoom = this.getWorldMouseLocation();
+
+    // Adjust the screen offset to maintain the cursor position
+    this.screenOffset = new Point(
+      this.screenOffset.x +
+        (worldMouseLocationBeforeZoom.x - worldMouseLocationAfterZoom.x),
+      this.screenOffset.y +
+        (worldMouseLocationBeforeZoom.y - worldMouseLocationAfterZoom.y),
+    );
+  }
+
   public setLineStyles(
     isHighlighted: boolean,
     isSelected: boolean,
@@ -89,7 +123,12 @@ export class ScreenCanvasDrawController implements DrawController {
       endPoint,
     ]);
 
+    this.screenDrawLine(screenStartPoint, screenEndPoint);
+  }
+
+  public screenDrawLine(screenStartPoint: Point, screenEndPoint: Point): void {
     this.context.beginPath();
+    console.log('draw line: ', screenStartPoint, screenEndPoint);
     this.context.moveTo(screenStartPoint.x, screenStartPoint.y);
     this.context.lineTo(screenEndPoint.x, screenEndPoint.y);
     this.context.stroke();
@@ -302,32 +341,6 @@ export class ScreenCanvasDrawController implements DrawController {
 
   public screensToWorlds(screenCoordinates: Point[]): Point[] {
     return screenCoordinates.map(this.screenToWorld.bind(this));
-  }
-
-  panScreen(offsetX: number, offsetY: number) {
-    this.screenOffset = new Point(
-      this.screenOffset.x - offsetX / this.screenScale,
-      this.screenOffset.y - offsetY / this.screenScale,
-    );
-  }
-
-  zoomScreen(deltaY: number) {
-    const worldMouseLocationBeforeZoom = this.getWorldMouseLocation();
-    const newScreenScale =
-      this.getScreenScale() *
-      (1 - MOUSE_ZOOM_MULTIPLIER * (deltaY / Math.abs(deltaY)));
-    this.setScreenScale(newScreenScale);
-
-    // now get the location of the cursor in world space again
-    // It will have changed because the scale has changed,
-    // but we can offset our world now to fix the zoom location in screen space,
-    // because we know how much it changed laterally between the two spatial scales.
-    const worldMouseLocationAfterZoom = this.getWorldMouseLocation();
-
-    this.panScreen(
-      worldMouseLocationBeforeZoom.x - worldMouseLocationAfterZoom.x,
-      worldMouseLocationBeforeZoom.y - worldMouseLocationAfterZoom.y,
-    );
   }
 
   /**

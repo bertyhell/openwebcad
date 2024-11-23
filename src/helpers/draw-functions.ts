@@ -52,7 +52,7 @@ export function drawDebugEntities(
  * @param isMarked indicates that the point has been hovered lang enough to draw guides from this point
  */
 export function drawSnapPoint(
-  drawController: DrawController,
+  drawController: ScreenCanvasDrawController,
   snapPointInfo: SnapPoint | null,
   isMarked: boolean,
 ) {
@@ -78,7 +78,7 @@ export function drawSnapPoint(
       // Endpoint is marked with a square
 
       // top
-      drawController.drawLine(
+      drawController.screenDrawLine(
         new Point(
           snapPoint.x - SNAP_POINT_SIZE / 2,
           snapPoint.y - SNAP_POINT_SIZE / 2,
@@ -90,7 +90,7 @@ export function drawSnapPoint(
       );
 
       // right
-      drawController.drawLine(
+      drawController.screenDrawLine(
         new Point(
           snapPoint.x + SNAP_POINT_SIZE / 2,
           snapPoint.y - SNAP_POINT_SIZE / 2,
@@ -102,7 +102,7 @@ export function drawSnapPoint(
       );
 
       // bottom
-      drawController.drawLine(
+      drawController.screenDrawLine(
         new Point(
           snapPoint.x - SNAP_POINT_SIZE / 2,
           snapPoint.y + SNAP_POINT_SIZE / 2,
@@ -114,7 +114,7 @@ export function drawSnapPoint(
       );
 
       // left
-      drawController.drawLine(
+      drawController.screenDrawLine(
         new Point(
           snapPoint.x - SNAP_POINT_SIZE / 2,
           snapPoint.y - SNAP_POINT_SIZE / 2,
@@ -130,7 +130,7 @@ export function drawSnapPoint(
     case SnapPointType.LineMidPoint:
       // Midpoint is shown with a triangle
 
-      drawController.drawLine(
+      drawController.screenDrawLine(
         new Point(snapPoint.x, snapPoint.y - SNAP_POINT_SIZE / 2),
         new Point(
           snapPoint.x - SNAP_POINT_SIZE / 2,
@@ -138,7 +138,7 @@ export function drawSnapPoint(
         ),
       );
 
-      drawController.drawLine(
+      drawController.screenDrawLine(
         new Point(
           snapPoint.x - SNAP_POINT_SIZE / 2,
           snapPoint.y + SNAP_POINT_SIZE / 2,
@@ -149,7 +149,7 @@ export function drawSnapPoint(
         ),
       );
 
-      drawController.drawLine(
+      drawController.screenDrawLine(
         new Point(
           snapPoint.x + SNAP_POINT_SIZE / 2,
           snapPoint.y + SNAP_POINT_SIZE / 2,
@@ -161,7 +161,7 @@ export function drawSnapPoint(
     case SnapPointType.AngleGuide:
       // Angle guide is shown with an hourglass
 
-      drawController.drawLine(
+      drawController.screenDrawLine(
         new Point(
           snapPoint.x - SNAP_POINT_SIZE / 2,
           snapPoint.y - SNAP_POINT_SIZE / 2,
@@ -172,7 +172,7 @@ export function drawSnapPoint(
         ),
       );
 
-      drawController.drawLine(
+      drawController.screenDrawLine(
         new Point(
           snapPoint.x + SNAP_POINT_SIZE / 2,
           snapPoint.y - SNAP_POINT_SIZE / 2,
@@ -183,7 +183,7 @@ export function drawSnapPoint(
         ),
       );
 
-      drawController.drawLine(
+      drawController.screenDrawLine(
         new Point(
           snapPoint.x - SNAP_POINT_SIZE / 2,
           snapPoint.y + SNAP_POINT_SIZE / 2,
@@ -194,7 +194,7 @@ export function drawSnapPoint(
         ),
       );
 
-      drawController.drawLine(
+      drawController.screenDrawLine(
         new Point(
           snapPoint.x + SNAP_POINT_SIZE / 2,
           snapPoint.y + SNAP_POINT_SIZE / 2,
@@ -209,7 +209,7 @@ export function drawSnapPoint(
     case SnapPointType.Intersection:
       // Intersection is shown with a cross
 
-      drawController.drawLine(
+      drawController.screenDrawLine(
         new Point(
           snapPoint.x - SNAP_POINT_SIZE / 2,
           snapPoint.y - SNAP_POINT_SIZE / 2,
@@ -220,7 +220,7 @@ export function drawSnapPoint(
         ),
       );
 
-      drawController.drawLine(
+      drawController.screenDrawLine(
         new Point(
           snapPoint.x + SNAP_POINT_SIZE / 2,
           snapPoint.y - SNAP_POINT_SIZE / 2,
@@ -239,19 +239,19 @@ export function drawSnapPoint(
 
     case SnapPointType.CircleCardinal:
       // Circle cardinal is shown with a diamond
-      drawController.drawLine(
+      drawController.screenDrawLine(
         new Point(snapPoint.x, snapPoint.y - SNAP_POINT_SIZE / 2),
         new Point(snapPoint.x - SNAP_POINT_SIZE / 2, snapPoint.y),
       );
-      drawController.drawLine(
+      drawController.screenDrawLine(
         new Point(snapPoint.x - SNAP_POINT_SIZE / 2, snapPoint.y),
         new Point(snapPoint.x, snapPoint.y + SNAP_POINT_SIZE / 2),
       );
-      drawController.drawLine(
+      drawController.screenDrawLine(
         new Point(snapPoint.x, snapPoint.y + SNAP_POINT_SIZE / 2),
         new Point(snapPoint.x + SNAP_POINT_SIZE / 2, snapPoint.y),
       );
-      drawController.drawLine(
+      drawController.screenDrawLine(
         new Point(snapPoint.x + SNAP_POINT_SIZE / 2, snapPoint.y),
         new Point(snapPoint.x, snapPoint.y - SNAP_POINT_SIZE / 2),
       );

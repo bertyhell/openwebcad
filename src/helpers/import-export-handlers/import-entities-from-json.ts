@@ -55,7 +55,7 @@ export function importEntitiesFromJsonFile(file: File | null | undefined) {
         }),
       );
 
-      setEntities(compact(await Promise.all(entityPromises)));
+      setEntities(compact(await Promise.all(entityPromises)), true);
       resolve();
     });
     reader.readAsText(file, 'utf-8');

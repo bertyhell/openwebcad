@@ -1,7 +1,7 @@
 import { Point, Vector } from '@flatten-js/core';
 import { MeasurementEntity } from '../entities/MeasurementEntity';
 import {
-  addEntity,
+  addEntities,
   getActiveLineColor,
   getActiveLineWidth,
   setAngleGuideOriginPoint,
@@ -177,7 +177,7 @@ export const measurementToolStateMachine = createMachine(
         );
         activeMeasurement.lineColor = getActiveLineColor();
         activeMeasurement.lineWidth = getActiveLineWidth();
-        addEntity(activeMeasurement);
+        addEntities([activeMeasurement], true);
       },
     },
   },

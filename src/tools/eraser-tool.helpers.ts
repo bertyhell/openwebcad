@@ -3,7 +3,7 @@ import { Circle, Point, Segment } from '@flatten-js/core';
 import { compact } from 'es-toolkit';
 import { LineEntity } from '../entities/LineEntity';
 import { findNeighboringPointsOnLine } from '../helpers/find-neighboring-points-on-line';
-import { addEntity, deleteEntity } from '../state';
+import { addEntities, deleteEntities } from '../state';
 import { CircleEntity } from '../entities/CircleEntity';
 import { findNeighboringPointsOnCircle } from '../helpers/find-neighboring-points-on-circle';
 import { isPointEqual } from '../helpers/is-point-equal';
@@ -43,8 +43,10 @@ export function eraseLineSegment(
   const remainingLines = cutLines.filter(
     line => !line.containsPointOnShape(clickedPointOnShape),
   );
-  deleteEntity(line);
-  addEntity(...remainingLines);
+  deleteEntities([line], false);
+
+  // Helper functions should never trigger an undo state, since they can be called multiple times during one user operation
+  addEntities(remainingLines, false);
 }
 
 export function eraseCircleSegment(
@@ -53,7 +55,7 @@ export function eraseCircleSegment(
   intersections: Point[],
 ): void {
   if (intersections.length === 0) {
-    deleteEntity(circle);
+    deleteEntities([circle], false);
     return;
   }
 
@@ -86,8 +88,10 @@ export function eraseCircleSegment(
     lineWidth: circle.lineWidth,
   });
 
-  deleteEntity(circle);
-  addEntity(newArc);
+  deleteEntities([circle], false);
+
+  // Helper functions should never trigger an undo state, since they can be called multiple times during one user operation
+  addEntities([newArc], false);
 }
 
 function isAngleBetween(angle: number, start: number, end: number): boolean {
@@ -107,11 +111,10 @@ export function eraseArcSegment(
   );
 
   if (isPointEqual(first, second)) {
-    deleteEntity(arc);
+    deleteEntities([arc], true);
     return;
   }
 
-  deleteEntity(arc);
   arc
     .cutAtPoints([first, second])
     .filter(cutArc => !cutArc.containsPointOnShape(clickedPointOnShape))
@@ -120,6 +123,9 @@ export function eraseArcSegment(
         lineColor: arc.lineColor,
         lineWidth: arc.lineWidth,
       });
-      addEntity(newArc);
+      addEntities([newArc], false);
     });
+
+  // Helper functions should never trigger an undo state, since they can be called multiple times during one user operation
+  deleteEntities([arc], false);
 }

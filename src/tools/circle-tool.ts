@@ -1,7 +1,7 @@
 import { CircleEntity } from '../entities/CircleEntity';
 import { Point } from '@flatten-js/core';
 import {
-  addEntity,
+  addEntities,
   getActiveLineColor,
   getActiveLineWidth,
   setAngleGuideOriginPoint,
@@ -124,7 +124,7 @@ export const circleToolStateMachine = createMachine(
         );
         activeCircle.lineColor = getActiveLineColor();
         activeCircle.lineWidth = getActiveLineWidth();
-        addEntity(activeCircle);
+        addEntities([activeCircle], true);
 
         setGhostHelperEntities([]);
         return {

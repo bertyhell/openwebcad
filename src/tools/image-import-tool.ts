@@ -1,6 +1,6 @@
 import { Point } from '@flatten-js/core';
 import {
-  addEntity,
+  addEntities,
   setActiveToolActor,
   setAngleGuideEntities,
   setAngleGuideOriginPoint,
@@ -210,7 +210,7 @@ export const imageImportToolStateMachine = createMachine(
           context.imageElement,
           boxToPolygon(containRectangle),
         );
-        addEntity(activeImage);
+        addEntities([activeImage], true);
       },
       [ImageImportAction.SWITCH_TO_SELECT_TOOL]: () => {
         setActiveToolActor(new Actor(selectToolStateMachine));

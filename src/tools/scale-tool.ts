@@ -1,7 +1,7 @@
 import { Point } from '@flatten-js/core';
 import {
-  addEntity,
-  deleteEntity,
+  addEntities,
+  deleteEntities,
   getSelectedEntities,
   getSelectedEntityIds,
   setAngleGuideOriginPoint,
@@ -242,7 +242,7 @@ export const scaleToolStateMachine = createMachine(
         // Scale the selected entities to the ghost helper entities, so they are drawn on the canvas, but do not interact with the snap points / angle guides
         setGhostHelperEntities(selectedEntities);
         // Rescale the selected entities from the regular entity list, so they do not get used for determining snap points / angle guides
-        deleteEntity(...selectedEntities);
+        deleteEntities(selectedEntities, false);
 
         // TODO keep a copy of the original entities in the entities list, but set their line color to grey, so the user can see where the entities were before being scaled and the original entities also are used for snap points / angle guides
 
@@ -299,7 +299,7 @@ export const scaleToolStateMachine = createMachine(
         );
 
         // Switch the scaled entities back from the ghost helper entities to the real entities
-        addEntity(...scaledEntities);
+        addEntities(scaledEntities, true);
         setGhostHelperEntities([]);
         setSelectedEntityIds([]);
       },
@@ -313,7 +313,7 @@ export const scaleToolStateMachine = createMachine(
         };
       }),
       [ScaleAction.RESTORE_ORIGINAL_ENTITIES]: assign(({ context }) => {
-        addEntity(...context.originalSelectedEntities);
+        addEntities(context.originalSelectedEntities, false); // This should already be the last state on the undo stack
         setGhostHelperEntities([]);
         setGhostHelperEntities([]);
         setSelectedEntityIds([]);

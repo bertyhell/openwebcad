@@ -20,6 +20,7 @@ import {
   setAngleGuideEntities,
   setCanvas,
   setCanvasSize,
+  setEntities,
   setHighlightedEntityIds,
   setHoveredSnapPoints,
   setInputController,
@@ -261,6 +262,7 @@ function initApplication() {
     const context = canvas.getContext('2d');
     if (!context) return;
 
+    setEntities([], true); // Creates the first undo entry
     const screenCanvasDrawController = new ScreenCanvasDrawController(
       context,
       getCanvasSize(),

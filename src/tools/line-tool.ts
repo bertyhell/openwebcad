@@ -1,7 +1,7 @@
 import { Point, Vector } from '@flatten-js/core';
 import { LineEntity } from '../entities/LineEntity';
 import {
-  addEntity,
+  addEntities,
   getActiveLineColor,
   getActiveLineWidth,
   setActiveToolActor,
@@ -157,7 +157,7 @@ export const lineToolStateMachine = createMachine(
         );
         activeLine.lineColor = getActiveLineColor();
         activeLine.lineWidth = getActiveLineWidth();
-        addEntity(activeLine);
+        addEntities([activeLine], true);
 
         // Keep drawing from the last point
         setGhostHelperEntities([new LineEntity(endPoint, endPoint)]);

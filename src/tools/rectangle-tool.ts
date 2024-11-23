@@ -1,7 +1,7 @@
 import { Point } from '@flatten-js/core';
 import { RectangleEntity } from '../entities/RectangleEntity';
 import {
-  addEntity,
+  addEntities,
   getActiveLineColor,
   getActiveLineWidth,
   setAngleGuideOriginPoint,
@@ -122,7 +122,7 @@ export const rectangleToolStateMachine = createMachine(
         );
         activeRectangle.lineColor = getActiveLineColor();
         activeRectangle.lineWidth = getActiveLineWidth();
-        addEntity(activeRectangle);
+        addEntities([activeRectangle], true);
       },
     },
   },

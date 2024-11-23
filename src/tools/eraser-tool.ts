@@ -1,9 +1,10 @@
 import { Point, Polygon } from '@flatten-js/core';
 import { findClosestEntity } from '../helpers/find-closest-entity';
 import {
-  addEntity,
-  deleteEntity,
+  addEntities,
+  deleteEntities,
   getEntities,
+  setEntities,
   setGhostHelperEntities,
   setSelectedEntityIds,
   setShouldDrawHelpers,
@@ -136,10 +137,10 @@ function handleMouseClick(worldClickPoint: Point) {
       );
 
       // Remove the rectangle
-      deleteEntity(rectangle);
+      deleteEntities([rectangle], false);
 
       // Add 4 lines instead of the rectangle
-      addEntity(...segmentEntities);
+      addEntities(segmentEntities, false);
 
       // Remove (a segment) of the 4th line closest to the cursor
       const lineIntersections = getAllIntersectionPoints(
@@ -159,4 +160,6 @@ function handleMouseClick(worldClickPoint: Point) {
       // Switch to rectangle entity and delete the image and the line that was closest to the cursor
     }
   }
+
+  setEntities(getEntities(), true); // Force a new undo state entry
 }

@@ -207,8 +207,13 @@ export const setActiveToolActor = (
 };
 export const setLastStateInstructions = (newInstructions: string | null) =>
   (lastStateInstructions = newInstructions);
-export const setEntities = (newEntities: Entity[]) => {
-  trackUndoState(StateVariable.entities, entities);
+export const setEntities = (
+  newEntities: Entity[],
+  trackInUndoStack: boolean = false,
+) => {
+  if (trackInUndoStack) {
+    trackUndoState(StateVariable.entities, newEntities);
+  }
   entities = newEntities;
 };
 export const setHighlightedEntityIds = (newEntityIds: string[]) =>
@@ -277,17 +282,23 @@ export const setActiveLineWidth = (
 };
 
 // Computed setters
-export const deleteEntity = (...entitiesToDelete: Entity[]): Entity[] => {
+export const deleteEntities = (
+  entitiesToDelete: Entity[],
+  trackInUndoStack: boolean,
+): Entity[] => {
   const entityIdsToBeDeleted = entitiesToDelete.map(entity => entity.id);
   const newEntities = getEntities().filter(
     entity => !entityIdsToBeDeleted.includes(entity.id),
   );
-  setEntities(newEntities);
+  setEntities(newEntities, trackInUndoStack);
   return newEntities;
 };
-export const addEntity = (...entitiesToAdd: Entity[]): Entity[] => {
+export const addEntities = (
+  entitiesToAdd: Entity[],
+  trackInUndoStack: boolean,
+): Entity[] => {
   const newEntities = [...getEntities(), ...entitiesToAdd];
-  setEntities(newEntities);
+  setEntities(newEntities, trackInUndoStack);
   return newEntities;
 };
 
@@ -302,36 +313,20 @@ const reactStateVariables: StateVariable[] = [
 
 const undoableStateVariables: StateVariable[] = [StateVariable.entities];
 
-const undoableAndCompactableStateVariables: StateVariable[] = [];
-
 const undoStack = createStack();
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function trackUndoState(variable: StateVariable, oldValue: any) {
+function trackUndoState(variable: StateVariable, value: any) {
   if (!undoableStateVariables.includes(variable)) return;
 
   const lastUndoState = undoStack.peek();
-  if (isEqual(oldValue, lastUndoState?.value)) {
+  if (isEqual(value, lastUndoState?.value)) {
     return; // Sometimes entities are updated because of highlighting, but not actually differ with the last list of entities
   }
 
-  if (variable !== StateVariable.activeEntity) {
-    // Clear active entity changes from the undo history when anything else changes
-    // Since we don't want to undo drawing old entities point by point
-    undoStack.clear(StateVariable.activeEntity);
-  }
-
-  if (undoableAndCompactableStateVariables.includes(variable)) {
-    // See if we need to merge with the last state to avoid a million undo states for eg pan or zoom actions
-
-    if (lastUndoState?.variable === variable) {
-      // Replace the old undo state
-      undoStack.replace({ variable: variable, value: oldValue });
-      return;
-    }
-  }
   // Push the new undo state
-  undoStack.push({ variable: variable, value: oldValue });
+  console.log('Pushing undo state', variable, value);
+  undoStack.push({ variable: variable, value: value });
 }
 
 function updateStates(undoState: UndoState) {

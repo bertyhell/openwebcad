@@ -1,7 +1,7 @@
 import { Point } from '@flatten-js/core';
 import {
-  addEntity,
-  deleteEntity,
+  addEntities,
+  deleteEntities,
   getSelectedEntities,
   getSelectedEntityIds,
   setAngleGuideOriginPoint,
@@ -238,7 +238,7 @@ export const rotateToolStateMachine = createMachine(
           // Rotate the selected entities to the ghost helper entities, so they are drawn on the canvas, but do not interact with the snap points / angle guides
           setGhostHelperEntities(selectedEntities);
           // Re-rotate the selected entities from the regular entity list, so they do not get used for determining snap points / angle guides
-          deleteEntity(...selectedEntities);
+          deleteEntities(selectedEntities, false);
 
           // TODO keep a copy of the original entities in the entities list, but set their line color to grey, so the user can see where the entities were before being rotated and the original entities also are used for snap points / angle guides
 
@@ -296,7 +296,7 @@ export const rotateToolStateMachine = createMachine(
         );
 
         // Switch the rotated entities back from the ghost helper entities to the real entities
-        addEntity(...rotatedEntities);
+        addEntities(rotatedEntities, true);
         setGhostHelperEntities([]);
         setSelectedEntityIds([]);
       },
@@ -312,7 +312,7 @@ export const rotateToolStateMachine = createMachine(
       }),
       [RotateAction.RESTORE_ORIGINAL_ENTITIES]: assign(
         ({ context }): RotateContext => {
-          addEntity(...context.originalSelectedEntities);
+          addEntities(context.originalSelectedEntities, false); // This should already be the last state on the undo stack
           setGhostHelperEntities([]);
           setSelectedEntityIds([]);
           return {

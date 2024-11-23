@@ -180,7 +180,7 @@ export const selectToolStateMachine = createMachine(
         setGhostHelperEntities([]);
       },
       DELETE_SELECTED_ENTITIES: () => {
-        setEntities(getNotSelectedEntities());
+        setEntities(getNotSelectedEntities(), true);
         setSelectedEntityIds([]);
         setGhostHelperEntities([]);
       },

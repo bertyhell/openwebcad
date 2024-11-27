@@ -106,6 +106,8 @@ export class InputController {
   }
 
   public handleKeyStroke(evt: KeyboardEvent) {
+    evt.preventDefault();
+    evt.stopPropagation();
     if (evt.ctrlKey && evt.key === 'v') {
       // User wants to paste the clipboard
     } else if (evt.ctrlKey && !evt.shiftKey && evt.key === 'z') {
@@ -163,6 +165,10 @@ export class InputController {
   private handleEnterKey() {
     // submit the text as input to the active tool and clear the input field
     if (this.text === '') {
+      console.log('ENTER: ', {
+        text: this.text,
+        activeTool: getActiveToolActor(),
+      });
       // Send the ENTER event to the active tool
       getActiveToolActor()?.send({
         type: ActorEvent.ENTER,
@@ -176,8 +182,18 @@ export class InputController {
       const newToolActor = new Actor(TOOL_STATE_MACHINES[toolName]);
       setActiveToolActor(newToolActor);
 
+      console.log('SWITCH TO TOOL: ', {
+        toolName,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        activeTool: (getActiveToolActor()?.src as any).config.context.type,
+      });
+
       this.text = '';
     } else if (NUMBER_REGEXP.test(this.text)) {
+      console.log(' NUMBER_INPUT: ', {
+        text: this.text,
+        activeTool: getActiveToolActor(),
+      });
       // User entered a number. eg: 100
       getActiveToolActor()?.send({
         type: ActorEvent.NUMBER_INPUT,
@@ -189,6 +205,10 @@ export class InputController {
       } as NumberInputEvent);
       this.text = '';
     } else if (ABSOLUTE_POINT_REGEXP.test(this.text)) {
+      console.log('ABSOLUTE_POINT_INPUT: ', {
+        text: this.text,
+        activeTool: getActiveToolActor(),
+      });
       // User entered coordinates to an absolute point on the canvas. eg: 100, 200
       const match = ABSOLUTE_POINT_REGEXP.exec(this.text);
       if (!match) {
@@ -202,6 +222,10 @@ export class InputController {
       } as AbsolutePointInputEvent);
       this.text = '';
     } else if (RELATIVE_POINT_REGEXP.test(this.text)) {
+      console.log('RELATIVE_POINT_INPUT: ', {
+        text: this.text,
+        activeTool: getActiveToolActor(),
+      });
       // User entered coordinates to a relative point on the canvas. eg: @100, 200
       const match = RELATIVE_POINT_REGEXP.exec(this.text);
       if (!match) {
@@ -215,6 +239,10 @@ export class InputController {
       } as RelativePointInputEvent);
       this.text = '';
     } else {
+      console.log('TEXT_INPUT: ', {
+        text: this.text,
+        activeTool: getActiveToolActor(),
+      });
       // Send the text to the active tool
       getActiveToolActor()?.send({
         type: ActorEvent.TEXT_INPUT,

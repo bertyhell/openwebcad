@@ -13,11 +13,12 @@ import { Tool } from '../tools';
 import { assign, createMachine } from 'xstate';
 import {
   DrawEvent,
-  MouseClickEvent,
+  PointInputEvent,
   StateEvent,
   ToolContext,
 } from './tool.types';
 import { MEASUREMENT_DEFAULT_OFFSET, TO_RADIANS } from '../App.consts';
+import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
 
 export interface MeasurementContext extends ToolContext {
   startPoint: Point | null;
@@ -69,6 +70,10 @@ export const measurementToolStateMachine = createMachine(
             actions: MeasurementAction.RECORD_START_POINT,
             target: MeasurementState.WAITING_FOR_END_POINT,
           },
+          ABSOLUTE_POINT_INPUT: {
+            actions: MeasurementAction.RECORD_START_POINT,
+            target: MeasurementState.WAITING_FOR_END_POINT,
+          },
         },
       },
       [MeasurementState.WAITING_FOR_END_POINT]: {
@@ -81,6 +86,18 @@ export const measurementToolStateMachine = createMachine(
             actions: MeasurementAction.DRAW_TEMP_MEASUREMENT,
           },
           MOUSE_CLICK: {
+            actions: MeasurementAction.RECORD_END_POINT,
+            target: MeasurementState.WAITING_FOR_OFFSET,
+          },
+          NUMBER_INPUT: {
+            actions: MeasurementAction.RECORD_END_POINT,
+            target: MeasurementState.WAITING_FOR_OFFSET,
+          },
+          ABSOLUTE_POINT_INPUT: {
+            actions: MeasurementAction.RECORD_END_POINT,
+            target: MeasurementState.WAITING_FOR_OFFSET,
+          },
+          RELATIVE_POINT_INPUT: {
             actions: MeasurementAction.RECORD_END_POINT,
             target: MeasurementState.WAITING_FOR_OFFSET,
           },
@@ -99,6 +116,18 @@ export const measurementToolStateMachine = createMachine(
             actions: MeasurementAction.DRAW_TEMP_MEASUREMENT,
           },
           MOUSE_CLICK: {
+            actions: MeasurementAction.DRAW_FINAL_MEASUREMENT,
+            target: MeasurementState.INIT,
+          },
+          NUMBER_INPUT: {
+            actions: MeasurementAction.DRAW_FINAL_MEASUREMENT,
+            target: MeasurementState.INIT,
+          },
+          ABSOLUTE_POINT_INPUT: {
+            actions: MeasurementAction.DRAW_FINAL_MEASUREMENT,
+            target: MeasurementState.INIT,
+          },
+          RELATIVE_POINT_INPUT: {
             actions: MeasurementAction.DRAW_FINAL_MEASUREMENT,
             target: MeasurementState.INIT,
           },
@@ -121,16 +150,21 @@ export const measurementToolStateMachine = createMachine(
         };
       }),
       [MeasurementAction.RECORD_START_POINT]: assign(({ event }) => {
-        setAngleGuideOriginPoint((event as MouseClickEvent).worldMouseLocation);
+        const startPoint = getPointFromEvent(null, event as PointInputEvent);
+        setAngleGuideOriginPoint(startPoint);
         return {
-          startPoint: (event as MouseClickEvent).worldMouseLocation,
+          startPoint,
         };
       }),
       [MeasurementAction.RECORD_END_POINT]: assign(({ context, event }) => {
-        setAngleGuideOriginPoint((event as MouseClickEvent).worldMouseLocation);
+        const endPoint = getPointFromEvent(
+          context.startPoint,
+          event as PointInputEvent,
+        );
+        setAngleGuideOriginPoint(endPoint);
         return {
           ...context,
-          endPoint: (event as MouseClickEvent).worldMouseLocation,
+          endPoint,
         };
       }),
       [MeasurementAction.DRAW_TEMP_MEASUREMENT]: ({ context, event }) => {
@@ -169,7 +203,10 @@ export const measurementToolStateMachine = createMachine(
         setGhostHelperEntities([activeMeasurement]);
       },
       [MeasurementAction.DRAW_FINAL_MEASUREMENT]: ({ context, event }) => {
-        const offsetPoint = (event as MouseClickEvent).worldMouseLocation;
+        const offsetPoint = getPointFromEvent(
+          context.endPoint,
+          event as PointInputEvent,
+        );
         const activeMeasurement = new MeasurementEntity(
           context.startPoint as Point,
           context.endPoint as Point,

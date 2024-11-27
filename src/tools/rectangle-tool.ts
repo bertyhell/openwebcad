@@ -11,7 +11,6 @@ import {
 } from '../state';
 import {
   DrawEvent,
-  MouseClickEvent,
   PointInputEvent,
   StateEvent,
   ToolContext,
@@ -66,6 +65,10 @@ export const rectangleToolStateMachine = createMachine(
             actions: RectangleAction.RECORD_START_POINT,
             target: RectangleState.WAITING_FOR_END_POINT,
           },
+          ABSOLUTE_POINT_INPUT: {
+            actions: RectangleAction.RECORD_START_POINT,
+            target: RectangleState.WAITING_FOR_END_POINT,
+          },
         },
       },
       [RectangleState.WAITING_FOR_END_POINT]: {
@@ -109,9 +112,10 @@ export const rectangleToolStateMachine = createMachine(
         setAngleGuideOriginPoint(null);
       },
       [RectangleAction.RECORD_START_POINT]: assign(({ event }) => {
-        setAngleGuideOriginPoint((event as MouseClickEvent).worldMouseLocation);
+        const startPoint = getPointFromEvent(null, event as PointInputEvent);
+        setAngleGuideOriginPoint(startPoint);
         return {
-          startPoint: (event as MouseClickEvent).worldMouseLocation,
+          startPoint,
         };
       }),
       [RectangleAction.DRAW_TEMP_RECTANGLE]: ({ context, event }) => {

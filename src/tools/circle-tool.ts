@@ -11,7 +11,6 @@ import {
 } from '../state';
 import {
   DrawEvent,
-  MouseClickEvent,
   PointInputEvent,
   StateEvent,
   ToolContext,
@@ -68,6 +67,10 @@ export const circleToolStateMachine = createMachine(
             actions: CircleAction.RECORD_START_POINT,
             target: CircleState.WAITING_FOR_POINT_ON_CIRCLE,
           },
+          ABSOLUTE_POINT_INPUT: {
+            actions: CircleAction.RECORD_START_POINT,
+            target: CircleState.WAITING_FOR_POINT_ON_CIRCLE,
+          },
         },
       },
       [CircleState.WAITING_FOR_POINT_ON_CIRCLE]: {
@@ -114,9 +117,10 @@ export const circleToolStateMachine = createMachine(
         };
       }),
       [CircleAction.RECORD_START_POINT]: assign(({ event }) => {
-        setAngleGuideOriginPoint((event as MouseClickEvent).worldMouseLocation);
+        const startPoint = getPointFromEvent(null, event as PointInputEvent);
+        setAngleGuideOriginPoint(startPoint);
         return {
-          centerPoint: (event as MouseClickEvent).worldMouseLocation,
+          centerPoint: startPoint,
         };
       }),
       [CircleAction.DRAW_TEMP_CIRCLE]: ({ context, event }) => {

@@ -21,6 +21,7 @@ export class ScreenCanvasDrawController implements DrawController {
     private canvasSize: { x: number; y: number },
   ) {
     this.screenMouseLocation = new Point(canvasSize.x / 2, canvasSize.y / 2);
+    this.setScreenOffset(new Point(0, -canvasSize.y)); // User expects mathematical coordinates, where y axis goes up, but canvas y axis goes down
   }
 
   public getScreenScale() {

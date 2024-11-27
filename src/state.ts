@@ -201,6 +201,11 @@ export const setActiveToolActor = (
   );
   activeToolActor.start();
 
+  console.log('User clicked on tool: ', {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    activeTool: (activeToolActor.src as any).config.context.type,
+  });
+
   if (triggerReact) {
     triggerReactUpdate(StateVariable.activeTool);
   }

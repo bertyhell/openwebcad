@@ -14,7 +14,6 @@ import { Tool } from '../tools';
 import { Actor, assign, createMachine } from 'xstate';
 import {
   DrawEvent,
-  MouseClickEvent,
   PointInputEvent,
   StateEvent,
   ToolContext,
@@ -66,6 +65,10 @@ export const lineToolStateMachine = createMachine(
         },
         on: {
           MOUSE_CLICK: {
+            actions: LineAction.RECORD_START_POINT,
+            target: LineState.WAITING_FOR_END_POINT,
+          },
+          ABSOLUTE_POINT_INPUT: {
             actions: LineAction.RECORD_START_POINT,
             target: LineState.WAITING_FOR_END_POINT,
           },
@@ -121,9 +124,10 @@ export const lineToolStateMachine = createMachine(
         };
       }),
       [LineAction.RECORD_START_POINT]: assign(({ event }) => {
-        setAngleGuideOriginPoint((event as MouseClickEvent).worldMouseLocation);
+        const startPoint = getPointFromEvent(null, event as PointInputEvent);
+        setAngleGuideOriginPoint(startPoint);
         return {
-          startPoint: (event as MouseClickEvent).worldMouseLocation,
+          startPoint,
         };
       }),
       [LineAction.DRAW_TEMP_LINE]: ({ context, event }) => {

@@ -15,12 +15,17 @@ import { Point, Vector } from '@flatten-js/core';
  * @param event
  */
 export function getPointFromEvent(
-  startPoint: Point,
+  startPoint: Point | null,
   event: PointInputEvent,
 ): Point {
   if (event.type === 'MOUSE_CLICK') {
     return (event as MouseClickEvent).worldMouseLocation;
   } else if (event.type === 'NUMBER_INPUT') {
+    if (!startPoint) {
+      throw new Error(
+        'Cannot get relative point by distance if no start point is provided',
+      );
+    }
     const distance = (event as NumberInputEvent).value;
     // Direction indicated by the startPoint and the mouse location
     const direction = new Vector(
@@ -32,6 +37,11 @@ export function getPointFromEvent(
   } else if (event.type === ActorEvent.ABSOLUTE_POINT_INPUT) {
     return (event as AbsolutePointInputEvent).value;
   } else if (event.type === ActorEvent.RELATIVE_POINT_INPUT) {
+    if (!startPoint) {
+      throw new Error(
+        'Cannot get relative point by coordinates if no start point is provided',
+      );
+    }
     const relativeCoordinates = (event as RelativePointInputEvent).value;
     return startPoint
       .clone()

@@ -15,6 +15,7 @@ import {
   DrawEvent,
   FileSelectedEvent,
   MouseClickEvent,
+  PointInputEvent,
   StateEvent,
   ToolContext,
 } from './tool.types';
@@ -24,6 +25,7 @@ import { RectangleEntity } from '../entities/RectangleEntity';
 import { selectToolStateMachine } from './select-tool';
 import { boxToPolygon, twoPointBoxToPolygon } from '../helpers/box-to-polygon';
 import { isPointEqual } from '../helpers/is-point-equal.ts';
+import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
 
 export interface ImageImportContext extends ToolContext {
   startPoint: Point | null;
@@ -91,6 +93,10 @@ export const imageImportToolStateMachine = createMachine(
             actions: ImageImportAction.RECORD_START_POINT,
             target: ImageImportState.WAITING_FOR_END_POINT,
           },
+          ABSOLUTE_POINT_INPUT: {
+            actions: ImageImportAction.RECORD_START_POINT,
+            target: ImageImportState.WAITING_FOR_END_POINT,
+          },
         },
       },
       [ImageImportState.WAITING_FOR_END_POINT]: {
@@ -103,6 +109,27 @@ export const imageImportToolStateMachine = createMachine(
             actions: ImageImportAction.DRAW_TEMP_IMAGE_IMPORT,
           },
           MOUSE_CLICK: {
+            actions: [
+              ImageImportAction.DRAW_FINAL_IMAGE_IMPORT,
+              ImageImportAction.INIT_IMAGE_IMPORT_TOOL,
+              ImageImportAction.SWITCH_TO_SELECT_TOOL,
+            ],
+          },
+          NUMBER_INPUT: {
+            actions: [
+              ImageImportAction.DRAW_FINAL_IMAGE_IMPORT,
+              ImageImportAction.INIT_IMAGE_IMPORT_TOOL,
+              ImageImportAction.SWITCH_TO_SELECT_TOOL,
+            ],
+          },
+          ABSOLUTE_POINT_INPUT: {
+            actions: [
+              ImageImportAction.DRAW_FINAL_IMAGE_IMPORT,
+              ImageImportAction.INIT_IMAGE_IMPORT_TOOL,
+              ImageImportAction.SWITCH_TO_SELECT_TOOL,
+            ],
+          },
+          RELATIVE_POINT_INPUT: {
             actions: [
               ImageImportAction.DRAW_FINAL_IMAGE_IMPORT,
               ImageImportAction.INIT_IMAGE_IMPORT_TOOL,
@@ -134,10 +161,11 @@ export const imageImportToolStateMachine = createMachine(
         };
       }),
       [ImageImportAction.RECORD_START_POINT]: assign(({ context, event }) => {
-        setAngleGuideOriginPoint((event as MouseClickEvent).worldMouseLocation);
+        const startPoint = getPointFromEvent(null, event as PointInputEvent);
+        setAngleGuideOriginPoint(startPoint);
         return {
           ...context,
-          startPoint: (event as MouseClickEvent).worldMouseLocation,
+          startPoint: startPoint,
         };
       }),
       [ImageImportAction.DRAW_TEMP_IMAGE_IMPORT]: ({ context, event }) => {
@@ -159,11 +187,15 @@ export const imageImportToolStateMachine = createMachine(
         ) {
           return; // Can't draw an image that is 0 pixels wide
         }
+        const endPoint = getPointFromEvent(
+          context.startPoint,
+          event as PointInputEvent,
+        );
         const containRectangle = getContainRectangleInsideRectangle(
           context.imageElement.naturalWidth,
           context.imageElement.naturalHeight,
           context.startPoint,
-          (event as DrawEvent).drawController.getWorldMouseLocation(),
+          endPoint,
         );
         if (!containRectangle) {
           return;
@@ -175,10 +207,7 @@ export const imageImportToolStateMachine = createMachine(
           0,
         );
         const draggedRectangle = new RectangleEntity(
-          twoPointBoxToPolygon(
-            context.startPoint,
-            (event as DrawEvent).drawController.getWorldMouseLocation(),
-          ),
+          twoPointBoxToPolygon(context.startPoint, endPoint),
         );
         setGhostHelperEntities([activeImage]);
         setAngleGuideEntities([draggedRectangle]);

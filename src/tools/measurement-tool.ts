@@ -147,6 +147,7 @@ export const measurementToolStateMachine = createMachine(
         setAngleGuideOriginPoint(null);
         return {
           startPoint: null,
+          endPoint: null,
         };
       }),
       [MeasurementAction.RECORD_START_POINT]: assign(({ event }) => {

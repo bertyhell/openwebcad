@@ -12,11 +12,13 @@ import {
 import {
   DrawEvent,
   MouseClickEvent,
+  PointInputEvent,
   StateEvent,
   ToolContext,
 } from './tool.types';
 import { Tool } from '../tools';
 import { assign, createMachine } from 'xstate';
+import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
 
 export interface RectangleContext extends ToolContext {
   startPoint: Point | null;
@@ -79,6 +81,10 @@ export const rectangleToolStateMachine = createMachine(
             actions: RectangleAction.DRAW_FINAL_RECTANGLE,
             target: RectangleState.INIT,
           },
+          NUMBER_INPUT: {
+            actions: RectangleAction.DRAW_FINAL_RECTANGLE, // TODO see if we want to add a flow where you enter the width and then the height if one of the dimensions of the "direction + distance" comes out to 0
+            target: RectangleState.INIT,
+          },
           ESC: {
             target: RectangleState.INIT,
           },
@@ -115,7 +121,16 @@ export const rectangleToolStateMachine = createMachine(
         setGhostHelperEntities([activeRectangle]);
       },
       [RectangleAction.DRAW_FINAL_RECTANGLE]: ({ context, event }) => {
-        const endPoint = (event as MouseClickEvent).worldClickPoint;
+        if (!context.startPoint) {
+          throw Error(
+            'Trying to DRAW_FINAL_RECTANGLE when startPoint is not defined in rectangle-tool',
+          );
+        }
+        const endPoint = getPointFromEvent(
+          context.startPoint,
+          event as PointInputEvent,
+        );
+
         const activeRectangle = new RectangleEntity(
           context.startPoint as Point,
           endPoint,

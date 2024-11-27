@@ -93,6 +93,12 @@ export interface DrawEvent extends EventObject {
   drawController: ScreenCanvasDrawController;
 }
 
+export type PointInputEvent =
+  | MouseClickEvent
+  | NumberInputEvent
+  | AbsolutePointInputEvent
+  | RelativePointInputEvent;
+
 export type StateEvent =
   | MouseClickEvent
   | KeyboardEscEvent

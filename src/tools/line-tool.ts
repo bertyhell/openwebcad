@@ -1,4 +1,4 @@
-import { Point, Vector } from '@flatten-js/core';
+import { Point } from '@flatten-js/core';
 import { LineEntity } from '../entities/LineEntity';
 import {
   addEntities,
@@ -15,11 +15,12 @@ import { Actor, assign, createMachine } from 'xstate';
 import {
   DrawEvent,
   MouseClickEvent,
-  NumberInputEvent,
+  PointInputEvent,
   StateEvent,
   ToolContext,
 } from './tool.types';
 import { selectToolStateMachine } from './select-tool.ts';
+import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
 
 export interface LineContext extends ToolContext {
   startPoint: Point | null;
@@ -132,25 +133,11 @@ export const lineToolStateMachine = createMachine(
             'Start point is not set during DRAW_FINAL_LINE in LineEntity',
           );
         }
-        let endPoint;
-        if (event.type === 'NUMBER_INPUT') {
-          const distance = (event as NumberInputEvent).value;
-          // Direction indicated by the startPoint and the mouse location
-          const direction = new Vector(
-            event.worldClickPoint.x - context.startPoint.x,
-            event.worldClickPoint.y - context.startPoint.y,
-          );
-          const unitDirection = direction.normalize();
-          endPoint = context.startPoint.translate(
-            unitDirection.multiply(distance),
-          );
-        } else if (event.type === 'MOUSE_CLICK') {
-          endPoint = (event as MouseClickEvent).worldClickPoint;
-        } else {
-          throw new Error(
-            'Received unexpected event type in DRAW_FINAL_LINE of LineEntity',
-          );
-        }
+
+        const endPoint = getPointFromEvent(
+          context.startPoint,
+          event as PointInputEvent,
+        );
         const activeLine = new LineEntity(
           context.startPoint as Point,
           endPoint,

@@ -129,14 +129,14 @@ function handleMouseUp(evt: MouseEvent) {
       getScreenCanvasDrawController().screenToWorld(
         new Point(evt.clientX, evt.clientY),
       );
-    const worldClickPoint = closestSnapPoint
+    const worldMouseLocation = closestSnapPoint
       ? closestSnapPoint.point
       : worldMouseLocationTemp;
 
     const activeToolActor = getActiveToolActor();
     activeToolActor?.send({
       type: ActorEvent.MOUSE_CLICK,
-      worldClickPoint,
+      worldMouseLocation,
       holdingCtrl: evt.ctrlKey,
       holdingShift: evt.shiftKey,
     } as MouseClickEvent);

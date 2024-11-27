@@ -10,7 +10,7 @@ export enum ActionType {
 }
 
 export interface ClickEvent {
-  worldClickPoint: Point;
+  worldMouseLocation: Point;
   holdingCtrl: boolean;
   holdingShift: boolean;
 }
@@ -22,7 +22,7 @@ export interface TypedCommandEvent {
 export interface ToolHandler {
   handleToolActivate(): void;
   handleToolClick(
-    worldClickPoint: Point,
+    worldMouseLocation: Point,
     holdingCtrl: boolean,
     holdingShift: boolean,
   ): void;
@@ -44,7 +44,7 @@ export enum ActorEvent {
 
 export interface MouseClickEvent extends EventObject {
   type: ActorEvent.MOUSE_CLICK;
-  worldClickPoint: Point;
+  worldMouseLocation: Point;
   holdingCtrl: boolean;
   holdingShift: boolean;
 }
@@ -64,7 +64,7 @@ export interface KeyboardDeleteEvent extends EventObject {
 export interface NumberInputEvent extends EventObject {
   type: ActorEvent.NUMBER_INPUT;
   value: number;
-  worldClickPoint: Point;
+  worldMouseLocation: Point;
 }
 
 export interface TextInputEvent extends EventObject {
@@ -80,7 +80,6 @@ export interface AbsolutePointInputEvent extends EventObject {
 export interface RelativePointInputEvent extends EventObject {
   type: ActorEvent.RELATIVE_POINT_INPUT;
   value: Point;
-  worldClickPoint: Point;
 }
 
 export interface FileSelectedEvent extends EventObject {

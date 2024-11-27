@@ -91,6 +91,14 @@ export const lineToolStateMachine = createMachine(
             actions: LineAction.DRAW_FINAL_LINE,
             target: LineState.WAITING_FOR_END_POINT,
           },
+          ABSOLUTE_POINT_INPUT: {
+            actions: LineAction.DRAW_FINAL_LINE,
+            target: LineState.WAITING_FOR_END_POINT,
+          },
+          RELATIVE_POINT_INPUT: {
+            actions: LineAction.DRAW_FINAL_LINE,
+            target: LineState.WAITING_FOR_END_POINT,
+          },
           ESC: {
             target: LineState.INIT,
           },
@@ -113,9 +121,9 @@ export const lineToolStateMachine = createMachine(
         };
       }),
       [LineAction.RECORD_START_POINT]: assign(({ event }) => {
-        setAngleGuideOriginPoint((event as MouseClickEvent).worldClickPoint);
+        setAngleGuideOriginPoint((event as MouseClickEvent).worldMouseLocation);
         return {
-          startPoint: (event as MouseClickEvent).worldClickPoint,
+          startPoint: (event as MouseClickEvent).worldMouseLocation,
         };
       }),
       [LineAction.DRAW_TEMP_LINE]: ({ context, event }) => {

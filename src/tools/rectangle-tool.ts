@@ -85,6 +85,14 @@ export const rectangleToolStateMachine = createMachine(
             actions: RectangleAction.DRAW_FINAL_RECTANGLE, // TODO see if we want to add a flow where you enter the width and then the height if one of the dimensions of the "direction + distance" comes out to 0
             target: RectangleState.INIT,
           },
+          ABSOLUTE_POINT_INPUT: {
+            actions: RectangleAction.DRAW_FINAL_RECTANGLE,
+            target: RectangleState.INIT,
+          },
+          RELATIVE_POINT_INPUT: {
+            actions: RectangleAction.DRAW_FINAL_RECTANGLE,
+            target: RectangleState.INIT,
+          },
           ESC: {
             target: RectangleState.INIT,
           },
@@ -101,9 +109,9 @@ export const rectangleToolStateMachine = createMachine(
         setAngleGuideOriginPoint(null);
       },
       [RectangleAction.RECORD_START_POINT]: assign(({ event }) => {
-        setAngleGuideOriginPoint((event as MouseClickEvent).worldClickPoint);
+        setAngleGuideOriginPoint((event as MouseClickEvent).worldMouseLocation);
         return {
-          startPoint: (event as MouseClickEvent).worldClickPoint,
+          startPoint: (event as MouseClickEvent).worldMouseLocation,
         };
       }),
       [RectangleAction.DRAW_TEMP_RECTANGLE]: ({ context, event }) => {

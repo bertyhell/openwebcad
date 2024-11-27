@@ -121,16 +121,16 @@ export const measurementToolStateMachine = createMachine(
         };
       }),
       [MeasurementAction.RECORD_START_POINT]: assign(({ event }) => {
-        setAngleGuideOriginPoint((event as MouseClickEvent).worldClickPoint);
+        setAngleGuideOriginPoint((event as MouseClickEvent).worldMouseLocation);
         return {
-          startPoint: (event as MouseClickEvent).worldClickPoint,
+          startPoint: (event as MouseClickEvent).worldMouseLocation,
         };
       }),
       [MeasurementAction.RECORD_END_POINT]: assign(({ context, event }) => {
-        setAngleGuideOriginPoint((event as MouseClickEvent).worldClickPoint);
+        setAngleGuideOriginPoint((event as MouseClickEvent).worldMouseLocation);
         return {
           ...context,
-          endPoint: (event as MouseClickEvent).worldClickPoint,
+          endPoint: (event as MouseClickEvent).worldMouseLocation,
         };
       }),
       [MeasurementAction.DRAW_TEMP_MEASUREMENT]: ({ context, event }) => {
@@ -169,7 +169,7 @@ export const measurementToolStateMachine = createMachine(
         setGhostHelperEntities([activeMeasurement]);
       },
       [MeasurementAction.DRAW_FINAL_MEASUREMENT]: ({ context, event }) => {
-        const offsetPoint = (event as MouseClickEvent).worldClickPoint;
+        const offsetPoint = (event as MouseClickEvent).worldMouseLocation;
         const activeMeasurement = new MeasurementEntity(
           context.startPoint as Point,
           context.endPoint as Point,

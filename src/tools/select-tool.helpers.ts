@@ -25,7 +25,7 @@ export function handleFirstSelectionPoint(
   event: MouseClickEvent,
 ): SelectContext {
   const closestEntityInfo = findClosestEntity(
-    event.worldClickPoint,
+    event.worldMouseLocation,
     getEntities(),
   );
 
@@ -63,7 +63,7 @@ export function handleFirstSelectionPoint(
   // Start a new selection rectangle drag
   return {
     ...context,
-    startPoint: event.worldClickPoint,
+    startPoint: event.worldMouseLocation,
   };
 }
 

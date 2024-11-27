@@ -204,9 +204,9 @@ export const moveToolStateMachine = createMachine(
         setShouldDrawHelpers(true);
       },
       [MoveAction.RECORD_START_POINT]: assign(({ event }) => {
-        setAngleGuideOriginPoint((event as MouseClickEvent).worldClickPoint);
+        setAngleGuideOriginPoint((event as MouseClickEvent).worldMouseLocation);
         return {
-          startPoint: (event as MouseClickEvent).worldClickPoint,
+          startPoint: (event as MouseClickEvent).worldMouseLocation,
         };
       }),
       [MoveAction.COPY_SELECTION_BEFORE_MOVE]: assign(({ context }) => {
@@ -269,7 +269,7 @@ export const moveToolStateMachine = createMachine(
         }
 
         // Move the entities one final time
-        const currentEndPoint = (event as MouseClickEvent).worldClickPoint;
+        const currentEndPoint = (event as MouseClickEvent).worldMouseLocation;
         moveEntities(
           context.originalSelectedEntities,
           currentEndPoint.x - context.startPoint.x,

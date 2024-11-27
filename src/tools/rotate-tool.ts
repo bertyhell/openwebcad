@@ -216,10 +216,12 @@ export const rotateToolStateMachine = createMachine(
       },
       [RotateAction.RECORD_ROTATION_ORIGIN]: assign(
         ({ context, event }): RotateContext => {
-          setAngleGuideOriginPoint((event as MouseClickEvent).worldClickPoint);
+          setAngleGuideOriginPoint(
+            (event as MouseClickEvent).worldMouseLocation,
+          );
           return {
             ...context,
-            rotationOrigin: (event as MouseClickEvent).worldClickPoint,
+            rotationOrigin: (event as MouseClickEvent).worldMouseLocation,
           };
         },
       ),
@@ -227,7 +229,7 @@ export const rotateToolStateMachine = createMachine(
         ({ context, event }): RotateContext => {
           return {
             ...context,
-            angleStartPoint: (event as MouseClickEvent).worldClickPoint,
+            angleStartPoint: (event as MouseClickEvent).worldMouseLocation,
           };
         },
       ),
@@ -282,7 +284,7 @@ export const rotateToolStateMachine = createMachine(
             '[ROTATE] Calling rotate selection without some rotate vector endpoints',
           );
         }
-        const angleEndpoint = (event as MouseClickEvent).worldClickPoint;
+        const angleEndpoint = (event as MouseClickEvent).worldMouseLocation;
 
         // Rotate the entities one final time
         const rotatedEntities = compact(

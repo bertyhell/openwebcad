@@ -83,7 +83,7 @@ export const eraserToolStateMachine = createMachine(
         return {};
       }),
       [EraserAction.HANDLE_MOUSE_CLICK]: assign(({ context, event }) => {
-        handleMouseClick((event as MouseClickEvent).worldClickPoint);
+        handleMouseClick((event as MouseClickEvent).worldMouseLocation);
 
         return context;
       }),
@@ -91,8 +91,8 @@ export const eraserToolStateMachine = createMachine(
   },
 );
 
-function handleMouseClick(worldClickPoint: Point) {
-  const closestEntity = findClosestEntity(worldClickPoint, getEntities());
+function handleMouseClick(worldMouseLocation: Point) {
+  const closestEntity = findClosestEntity(worldMouseLocation, getEntities());
   if (!closestEntity) {
     return;
   }
@@ -132,7 +132,7 @@ function handleMouseClick(worldClickPoint: Point) {
 
       // Find the closest segment to the clicked point
       const closestSegmentInfo = findClosestEntity(
-        worldClickPoint,
+        worldMouseLocation,
         segmentEntities,
       );
 

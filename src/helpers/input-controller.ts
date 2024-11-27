@@ -33,9 +33,9 @@ import { Tool } from '../tools.ts';
 
 const NUMBER_REGEXP = /^[0-9]+([.][0-9]+)?$/;
 const ABSOLUTE_POINT_REGEXP =
-  /^([0-9]+([.][0-9]+))\s*,\s*([0-9]+([.][0-9]+)?)$/;
+  /^([0-9]+([.][0-9]+)?)\s*,\s*([0-9]+([.][0-9]+)?)$/;
 const RELATIVE_POINT_REGEXP =
-  /^@([0-9]+([.][0-9]+))\s*,\s*([0-9]+([.][0-9]+)?)$/;
+  /^@([0-9]+([.][0-9]+)?)\s*,\s*([0-9]+([.][0-9]+)?)$/;
 
 export class InputController {
   private text: string = '';
@@ -182,7 +182,7 @@ export class InputController {
       getActiveToolActor()?.send({
         type: ActorEvent.NUMBER_INPUT,
         value: parseFloat(this.text),
-        worldClickPoint:
+        worldMouseLocation:
           getSnapPointOnAngleGuide()?.point ||
           getSnapPoint()?.point ||
           getScreenCanvasDrawController().getWorldMouseLocation(),
@@ -198,7 +198,7 @@ export class InputController {
       const y = parseFloat(match[3]);
       getActiveToolActor()?.send({
         type: ActorEvent.ABSOLUTE_POINT_INPUT,
-        value: new Point(x, y),
+        value: new Point(x, -y), // User expects mathematical coordinates, where y axis goes up, but canvas y axis goes down
       } as AbsolutePointInputEvent);
       this.text = '';
     } else if (RELATIVE_POINT_REGEXP.test(this.text)) {
@@ -211,11 +211,7 @@ export class InputController {
       const y = parseFloat(match[3]);
       getActiveToolActor()?.send({
         type: ActorEvent.RELATIVE_POINT_INPUT,
-        value: new Point(x, y),
-        worldClickPoint:
-          getSnapPointOnAngleGuide()?.point ||
-          getSnapPoint()?.point ||
-          getScreenCanvasDrawController().getWorldMouseLocation(),
+        value: new Point(x, -y), // User expects mathematical coordinates, where y axis goes up, but canvas y axis goes down
       } as RelativePointInputEvent);
       this.text = '';
     } else {

@@ -87,6 +87,14 @@ export const circleToolStateMachine = createMachine(
             actions: CircleAction.DRAW_FINAL_CIRCLE,
             target: LineState.INIT,
           },
+          ABSOLUTE_POINT_INPUT: {
+            actions: CircleAction.DRAW_FINAL_CIRCLE,
+            target: LineState.INIT,
+          },
+          RELATIVE_POINT_INPUT: {
+            actions: CircleAction.DRAW_FINAL_CIRCLE,
+            target: LineState.INIT,
+          },
           ESC: {
             target: CircleState.INIT,
           },
@@ -106,9 +114,9 @@ export const circleToolStateMachine = createMachine(
         };
       }),
       [CircleAction.RECORD_START_POINT]: assign(({ event }) => {
-        setAngleGuideOriginPoint((event as MouseClickEvent).worldClickPoint);
+        setAngleGuideOriginPoint((event as MouseClickEvent).worldMouseLocation);
         return {
-          centerPoint: (event as MouseClickEvent).worldClickPoint,
+          centerPoint: (event as MouseClickEvent).worldMouseLocation,
         };
       }),
       [CircleAction.DRAW_TEMP_CIRCLE]: ({ context, event }) => {

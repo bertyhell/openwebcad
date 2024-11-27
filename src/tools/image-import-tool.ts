@@ -134,10 +134,10 @@ export const imageImportToolStateMachine = createMachine(
         };
       }),
       [ImageImportAction.RECORD_START_POINT]: assign(({ context, event }) => {
-        setAngleGuideOriginPoint((event as MouseClickEvent).worldClickPoint);
+        setAngleGuideOriginPoint((event as MouseClickEvent).worldMouseLocation);
         return {
           ...context,
-          startPoint: (event as MouseClickEvent).worldClickPoint,
+          startPoint: (event as MouseClickEvent).worldMouseLocation,
         };
       }),
       [ImageImportAction.DRAW_TEMP_IMAGE_IMPORT]: ({ context, event }) => {
@@ -199,7 +199,7 @@ export const imageImportToolStateMachine = createMachine(
           context.imageElement.naturalWidth,
           context.imageElement.naturalHeight,
           context.startPoint,
-          (event as MouseClickEvent).worldClickPoint,
+          (event as MouseClickEvent).worldMouseLocation,
         );
 
         if (!containRectangle) {

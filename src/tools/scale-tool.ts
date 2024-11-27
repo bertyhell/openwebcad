@@ -221,10 +221,12 @@ export const scaleToolStateMachine = createMachine(
       },
       [ScaleAction.RECORD_BASE_VECTOR_START_POINT]: assign(
         ({ context, event }) => {
-          setAngleGuideOriginPoint((event as MouseClickEvent).worldClickPoint);
+          setAngleGuideOriginPoint(
+            (event as MouseClickEvent).worldMouseLocation,
+          );
           return {
             ...context,
-            baseVectorStartPoint: (event as MouseClickEvent).worldClickPoint,
+            baseVectorStartPoint: (event as MouseClickEvent).worldMouseLocation,
           };
         },
       ),
@@ -232,7 +234,7 @@ export const scaleToolStateMachine = createMachine(
         ({ context, event }) => {
           return {
             ...context,
-            baseVectorEndPoint: (event as MouseClickEvent).worldClickPoint,
+            baseVectorEndPoint: (event as MouseClickEvent).worldMouseLocation,
           };
         },
       ),
@@ -285,7 +287,8 @@ export const scaleToolStateMachine = createMachine(
             '[SCALE] Calling scale selection without some scale vector endpoints',
           );
         }
-        const scaleVectorEndPoint = (event as MouseClickEvent).worldClickPoint;
+        const scaleVectorEndPoint = (event as MouseClickEvent)
+          .worldMouseLocation;
 
         // Scale the entities one final time
         const scaledEntities = compact(

@@ -173,7 +173,7 @@ export const selectToolStateMachine = createMachine(
         }
         selectEntitiesInsideRectangle(
           context.startPoint,
-          (event as MouseClickEvent).worldClickPoint,
+          (event as MouseClickEvent).worldMouseLocation,
           (event as MouseClickEvent).holdingCtrl,
           // (event as MouseClickEvent).holdingShift,
         );

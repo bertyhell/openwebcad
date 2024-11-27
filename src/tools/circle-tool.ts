@@ -1,5 +1,5 @@
 import { CircleEntity } from '../entities/CircleEntity';
-import { Point } from '@flatten-js/core';
+import { Point, Vector } from '@flatten-js/core';
 import {
   addEntities,
   getActiveLineColor,
@@ -12,12 +12,14 @@ import {
 import {
   DrawEvent,
   MouseClickEvent,
+  NumberInputEvent,
   StateEvent,
   ToolContext,
 } from './tool.types';
 import { Tool } from '../tools';
 import { assign, createMachine } from 'xstate';
 import { pointDistance } from '../helpers/distance-between-points';
+import { LineState } from './line-tool.ts';
 
 export interface CircleContext extends ToolContext {
   centerPoint: Point | null;
@@ -80,6 +82,10 @@ export const circleToolStateMachine = createMachine(
             actions: CircleAction.DRAW_FINAL_CIRCLE,
             target: CircleState.INIT,
           },
+          NUMBER_INPUT: {
+            actions: CircleAction.DRAW_FINAL_CIRCLE,
+            target: LineState.INIT,
+          },
           ESC: {
             target: CircleState.INIT,
           },
@@ -117,7 +123,30 @@ export const circleToolStateMachine = createMachine(
         setGhostHelperEntities([activeCircle]);
       },
       [CircleAction.DRAW_FINAL_CIRCLE]: assign(({ context, event }) => {
-        const pointOnCircle = (event as MouseClickEvent).worldClickPoint;
+        if (!context.centerPoint) {
+          throw new Error(
+            'Trying to DRAW_FINAL_CIRCLE when centerPoint is not yet defined in circle tool',
+          );
+        }
+        let pointOnCircle: Point;
+        if (event.type === 'NUMBER_INPUT') {
+          const distance = (event as NumberInputEvent).value;
+          // Direction indicated by the startPoint and the mouse location
+          const direction = new Vector(
+            event.worldClickPoint.x - context.centerPoint.x,
+            event.worldClickPoint.y - context.centerPoint.y,
+          );
+          const unitDirection = direction.normalize();
+          pointOnCircle = context.centerPoint.translate(
+            unitDirection.multiply(distance),
+          );
+        } else if (event.type === 'MOUSE_CLICK') {
+          pointOnCircle = (event as MouseClickEvent).worldClickPoint;
+        } else {
+          throw new Error(
+            'Received unexpected event type in DRAW_FINAL_LINE of LineEntity',
+          );
+        }
         const activeCircle = new CircleEntity(
           context.centerPoint as Point,
           pointDistance(pointOnCircle, context.centerPoint as Point),

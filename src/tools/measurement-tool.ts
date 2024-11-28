@@ -19,6 +19,7 @@ import {
 } from './tool.types';
 import { MEASUREMENT_DEFAULT_OFFSET, TO_RADIANS } from '../App.consts';
 import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
+import { isPointEqual } from '../helpers/is-point-equal.ts';
 
 export interface MeasurementContext extends ToolContext {
   startPoint: Point | null;
@@ -179,6 +180,11 @@ export const measurementToolStateMachine = createMachine(
           endPoint = (
             event as DrawEvent
           ).drawController.getWorldMouseLocation();
+
+          if (isPointEqual(startPoint, endPoint)) {
+            return; // Cannot draw temp measurement when start and endpoint are equal
+          }
+
           const normalVector = new Vector(startPoint, endPoint)
             .rotate(-90 * TO_RADIANS)
             .normalize();

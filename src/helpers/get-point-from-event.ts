@@ -1,6 +1,7 @@
 import {
   AbsolutePointInputEvent,
   ActorEvent,
+  DrawEvent,
   MouseClickEvent,
   NumberInputEvent,
   PointInputEvent,
@@ -18,7 +19,9 @@ export function getPointFromEvent(
   startPoint: Point | null,
   event: PointInputEvent,
 ): Point {
-  if (event.type === 'MOUSE_CLICK') {
+  if (event.type === 'DRAW') {
+    return (event as DrawEvent).drawController.getWorldMouseLocation();
+  } else if (event.type === 'MOUSE_CLICK') {
     return (event as MouseClickEvent).worldMouseLocation;
   } else if (event.type === 'NUMBER_INPUT') {
     if (!startPoint) {

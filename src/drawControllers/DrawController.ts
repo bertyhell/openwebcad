@@ -1,6 +1,18 @@
 import { Point, Vector } from '@flatten-js/core';
+import { CANVAS_INPUT_FIELD_FONT_SIZE } from '../App.consts.ts';
 
 export interface DrawController {
+  getCanvasSize(): Point;
+  getScreenScale(): number;
+  setScreenScale(newScreenScale: number): void;
+  getScreenOffset(): Point;
+  setScreenOffset(newScreenOffset: Point): void;
+
+  worldToScreen(worldCoordinate: Point): Point;
+  worldsToScreens(worldCoordinates: Point[]): Point[];
+  screenToWorld(screenCoordinate: Point): Point;
+  screensToWorlds(screenCoordinates: Point[]): Point[];
+
   setLineStyles(
     isHighlighted: boolean,
     isSelected: boolean,
@@ -8,7 +20,8 @@ export interface DrawController {
     lineWidth: number,
     dash: number[],
   ): void;
-  clearCanvas(): void;
+  setFillStyles(fillColor: string): void;
+  clear(): void;
   drawLine(startPoint: Point, endPoint: Point): void;
   drawArc(
     centerPoint: Point,
@@ -16,7 +29,6 @@ export interface DrawController {
     startAngle: number,
     endAngle: number,
   ): void;
-  drawArrowHead(startPoint: Point, endPoint: Point): void;
   drawText(
     label: string,
     basePoint: Point,
@@ -36,4 +48,13 @@ export interface DrawController {
     height: number,
     angle: number,
   ): void;
+  fillPolygon(...points: Point[]): void;
 }
+
+export const DEFAULT_TEXT_OPTIONS = {
+  textDirection: new Vector(1, 0),
+  textAlign: 'center' as const,
+  textColor: '#FFF',
+  fontSize: CANVAS_INPUT_FIELD_FONT_SIZE,
+  fontFamily: 'sans-serif',
+};

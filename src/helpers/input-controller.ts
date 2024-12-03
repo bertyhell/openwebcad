@@ -1,18 +1,24 @@
 import {
   getActiveToolActor,
+  getEntities,
   getLastStateInstructions,
+  getPanStartLocation,
   getScreenCanvasDrawController,
   getSnapPoint,
   getSnapPointOnAngleGuide,
   redo,
   setActiveToolActor,
   setGhostHelperEntities,
+  setHighlightedEntityIds,
+  setPanStartLocation,
   setSelectedEntityIds,
+  setShouldDrawCursor,
   undo,
 } from '../state.ts';
 import {
   AbsolutePointInputEvent,
   ActorEvent,
+  MouseClickEvent,
   NumberInputEvent,
   RelativePointInputEvent,
   TextInputEvent,
@@ -26,10 +32,17 @@ import {
   CANVAS_INPUT_FIELD_MOUSE_OFFSET,
   CANVAS_INPUT_FIELD_TEXT_COLOR,
   CANVAS_INPUT_FIELD_WIDTH,
+  HIGHLIGHT_ENTITY_DISTANCE,
+  SNAP_POINT_DISTANCE,
 } from '../App.consts.ts';
 import { TOOL_STATE_MACHINES } from '../tools/tool.consts.ts';
 import { Actor } from 'xstate';
 import { Tool } from '../tools.ts';
+import { compact, round } from 'es-toolkit';
+import { findClosestEntity } from './find-closest-entity.ts';
+import { MouseButton } from '../App.types.ts';
+import { getClosestSnapPointWithinRadius } from './get-closest-snap-point.ts';
+import { calculateAngleGuidesAndSnapPoints } from './calculate-angle-guides-and-snap-points.ts';
 
 const NUMBER_REGEXP = /^[0-9]+([.][0-9]+)?$/;
 const ABSOLUTE_POINT_REGEXP =
@@ -46,9 +59,12 @@ export class InputController {
       this.handleKeyStroke(evt);
     });
     // Listen for right mouse button click => perform the same action as ENTER
-    document.addEventListener('mouseup', evt => {
-      this.handleMouseUp(evt);
-    });
+    document.addEventListener('mousedown', this.handleMouseDown);
+    document.addEventListener('mousemove', this.handleMouseMove);
+    document.addEventListener('mouseup', this.handleMouseUp);
+    document.addEventListener('wheel', this.handleMouseWheel);
+    document.addEventListener('mouseout', this.handleMouseOut);
+    document.addEventListener('mouseenter', this.handleMouseEnter);
     // Stop the context menu from appearing when right-clicking
     document.addEventListener('contextmenu', evt => {
       evt.preventDefault();
@@ -56,7 +72,9 @@ export class InputController {
   }
 
   public draw(drawController: ScreenCanvasDrawController) {
-    const screenMouseLocation = drawController.getScreenMouseLocation();
+    const screenMouseLocation = drawController.worldToScreen(
+      drawController.getWorldMouseLocation(),
+    );
 
     // draw input field
     drawController.fillRectScreen(
@@ -88,6 +106,11 @@ export class InputController {
     if (toolInstruction) {
       // Draw tool instruction
       texts.push(toolInstruction);
+      texts.push(
+        round(drawController.getWorldMouseLocation().x, 2) +
+          ',' +
+          round(-drawController.getWorldMouseLocation().y, 2),
+      );
     }
     if (matchingToolNames.length) {
       // Draw list of matching tools. eg: C => CIRCLE, COPY, ...
@@ -97,15 +120,108 @@ export class InputController {
   }
 
   private handleMouseUp(evt: MouseEvent) {
-    if (evt.button === 2) {
+    if (evt.button === MouseButton.Right) {
       // Right click => confirm action (ENTER)
       evt.preventDefault();
       evt.stopPropagation();
       this.handleEnterKey();
     }
+    if (evt.button === MouseButton.Middle) {
+      setPanStartLocation(null);
+    }
+    if (evt.button === MouseButton.Left) {
+      const screenCanvasDrawController = getScreenCanvasDrawController();
+      const closestSnapPoint = getClosestSnapPointWithinRadius(
+        compact([getSnapPoint(), getSnapPointOnAngleGuide()]),
+        screenCanvasDrawController.getWorldMouseLocation(),
+        SNAP_POINT_DISTANCE / screenCanvasDrawController.getScreenScale(),
+      );
+
+      const worldMouseLocationTemp =
+        getScreenCanvasDrawController().screenToWorld(
+          new Point(evt.clientX, evt.clientY),
+        );
+      const worldMouseLocation = closestSnapPoint
+        ? closestSnapPoint.point
+        : worldMouseLocationTemp;
+
+      const activeToolActor = getActiveToolActor();
+      activeToolActor?.send({
+        type: ActorEvent.MOUSE_CLICK,
+        worldMouseLocation,
+        screenMouseLocation:
+          screenCanvasDrawController.worldToScreen(worldMouseLocation),
+        holdingCtrl: evt.ctrlKey,
+        holdingShift: evt.shiftKey,
+      } as MouseClickEvent);
+    }
+  }
+
+  private handleMouseEnter() {
+    setShouldDrawCursor(true);
+  }
+
+  private handleMouseMove(evt: MouseEvent) {
+    setShouldDrawCursor(true);
+    const screenCanvasDrawController = getScreenCanvasDrawController();
+    const newScreenMouseLocation = new Point(evt.clientX, evt.clientY);
+    screenCanvasDrawController.setScreenMouseLocation(newScreenMouseLocation);
+
+    // If the middle mouse button is pressed, pan the screen
+    const panStartLocation = getPanStartLocation();
+    if (panStartLocation) {
+      screenCanvasDrawController.panScreen(
+        newScreenMouseLocation.x - panStartLocation.x,
+        newScreenMouseLocation.y - panStartLocation.y,
+      );
+      setPanStartLocation(newScreenMouseLocation);
+    }
+
+    // Calculate angle guides and snap points
+    calculateAngleGuidesAndSnapPoints();
+
+    // Highlight the entity closest to the mouse when the select tool is active
+    if (getActiveToolActor()?.getSnapshot()?.context.type === Tool.SELECT) {
+      const closestEntityInfo = findClosestEntity(
+        screenCanvasDrawController.screenToWorld(newScreenMouseLocation),
+        getEntities(),
+      );
+      if (closestEntityInfo.distance < HIGHLIGHT_ENTITY_DISTANCE) {
+        setHighlightedEntityIds([closestEntityInfo.entity.id]);
+      } else {
+        setHighlightedEntityIds([]);
+      }
+    }
+  }
+
+  private handleMouseOut() {
+    setShouldDrawCursor(false);
+  }
+
+  /**
+   * Change the zoom level of screen space
+   * @param evt
+   */
+  private handleMouseWheel(evt: WheelEvent) {
+    const drawController = getScreenCanvasDrawController();
+    drawController.zoomScreen(evt.deltaY);
+  }
+
+  private handleMouseDown(evt: MouseEvent) {
+    if (evt.button !== MouseButton.Middle) return;
+
+    setPanStartLocation(new Point(evt.clientX, evt.clientY));
   }
 
   public handleKeyStroke(evt: KeyboardEvent) {
+    if (evt.key === 'F12') {
+      // F12 => open developer tools
+      return;
+    }
+    if (evt.key === 'F5') {
+      // F5 => reload the page
+      return;
+    }
     evt.preventDefault();
     evt.stopPropagation();
     if (evt.ctrlKey && evt.key === 'v') {
@@ -218,7 +334,7 @@ export class InputController {
       const y = parseFloat(match[3]);
       getActiveToolActor()?.send({
         type: ActorEvent.ABSOLUTE_POINT_INPUT,
-        value: new Point(x, -y), // User expects mathematical coordinates, where y axis goes up, but canvas y axis goes down
+        value: new Point(x, y),
       } as AbsolutePointInputEvent);
       this.text = '';
     } else if (RELATIVE_POINT_REGEXP.test(this.text)) {
@@ -235,7 +351,7 @@ export class InputController {
       const y = parseFloat(match[3]);
       getActiveToolActor()?.send({
         type: ActorEvent.RELATIVE_POINT_INPUT,
-        value: new Point(x, -y), // User expects mathematical coordinates, where y axis goes up, but canvas y axis goes down
+        value: new Point(x, y),
       } as RelativePointInputEvent);
       this.text = '';
     } else {
@@ -276,7 +392,9 @@ export class InputController {
     drawController: ScreenCanvasDrawController,
     texts: string[],
   ): void {
-    const screenMouseLocation = drawController.getScreenMouseLocation();
+    const screenMouseLocation = drawController.worldToScreen(
+      drawController.getWorldMouseLocation(),
+    );
     const startY =
       screenMouseLocation.y +
       CANVAS_INPUT_FIELD_MOUSE_OFFSET +

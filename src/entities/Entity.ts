@@ -7,6 +7,8 @@ import { RectangleJsonData } from './RectangleEntity';
 import { PointJsonData } from './PointEntity';
 import { ImageJsonData } from './ImageEntity';
 import { DrawController } from '../drawControllers/DrawController.ts';
+import { ArrowHeadJsonData } from './ArrowHeadEntity.ts';
+import { TextJsonData } from './TextEntity.ts';
 
 export interface Entity {
   // Random uuid generated when the Entity is created
@@ -49,6 +51,8 @@ export enum EntityName {
   Point = 'Point',
   Image = 'Image',
   Measurement = 'Measurement',
+  ArrowHead = 'ArrowHead',
+  Text = 'Text',
 }
 
 export type ShapeJsonData =
@@ -57,7 +61,9 @@ export type ShapeJsonData =
   | ArcJsonData
   | LineJsonData
   | PointJsonData
-  | ImageJsonData;
+  | ImageJsonData
+  | ArrowHeadJsonData
+  | TextJsonData;
 
 export interface JsonEntity<TShapeJsonData = ShapeJsonData> {
   id: string;

@@ -3,11 +3,14 @@ import { Shape, SnapPoint } from '../App.types';
 import { Box, Line, Point, Segment, Vector } from '@flatten-js/core';
 import { scalePoint } from '../helpers/scale-point';
 import {
+  ARROW_HEAD_LENGTH,
+  ARROW_HEAD_WIDTH,
   MEASUREMENT_DECIMAL_PLACES,
   MEASUREMENT_EXTENSION_LENGTH,
   MEASUREMENT_FONT_SIZE,
   MEASUREMENT_LABEL_OFFSET,
   MEASUREMENT_ORIGIN_MARGIN,
+  TO_RADIANS,
 } from '../App.consts';
 import { isPointEqual } from '../helpers/is-point-equal';
 import { minBy, round } from 'es-toolkit';
@@ -117,6 +120,54 @@ export class MeasurementEntity implements Entity {
   }
 
   /**
+   * Draws an arrow head which ends at the endPoint
+   * The start point doesn't really matter, only the direction
+   * the size of the arrow is determined by ARROW_HEAD_SIZE
+   * @param drawController
+   * @param startPoint
+   * @param endPoint
+   */
+  private drawArrowHead = (
+    drawController: DrawController,
+    startPoint: Point,
+    endPoint: Point,
+  ): void => {
+    const screenScale = drawController.getScreenScale();
+    const vectorFromEndToStart = new Vector(endPoint, startPoint);
+    const vectorFromEndToStartUnit = vectorFromEndToStart.normalize();
+    const baseOfArrow = endPoint
+      .clone()
+      .translate(
+        vectorFromEndToStartUnit.multiply(ARROW_HEAD_LENGTH * screenScale),
+      );
+    const perpendicularVector1 = vectorFromEndToStartUnit.rotate(
+      90 * TO_RADIANS,
+    );
+    const perpendicularVector2 = vectorFromEndToStartUnit.rotate(
+      -90 * TO_RADIANS,
+    );
+    const leftCornerOfArrow = baseOfArrow
+      .clone()
+      .translate(perpendicularVector1.multiply(ARROW_HEAD_WIDTH * screenScale));
+    const rightCornerOfArrow = baseOfArrow
+      .clone()
+      .translate(perpendicularVector2.multiply(ARROW_HEAD_WIDTH * screenScale));
+
+    drawController.setLineStyles(
+      false,
+      false,
+      this.lineColor,
+      this.lineWidth,
+      [],
+    );
+    drawController.drawLine(endPoint, leftCornerOfArrow);
+    drawController.drawLine(endPoint, rightCornerOfArrow);
+    drawController.drawLine(leftCornerOfArrow, rightCornerOfArrow);
+    drawController.setFillStyles('#FFF');
+    drawController.fillPolygon(endPoint, leftCornerOfArrow, rightCornerOfArrow);
+  };
+
+  /**
    * Drawing of measurement:
    *
    *                            offsetPoint           offsetEndPoint
@@ -149,8 +200,8 @@ export class MeasurementEntity implements Entity {
       normalUnit,
     } = drawPoints;
 
-    drawController.drawArrowHead(offsetStartPoint, offsetEndPoint);
-    drawController.drawArrowHead(offsetEndPoint, offsetStartPoint);
+    this.drawArrowHead(drawController, offsetStartPoint, offsetEndPoint);
+    this.drawArrowHead(drawController, offsetEndPoint, offsetStartPoint);
     drawController.drawLine(offsetStartPoint, offsetEndPoint);
     drawController.drawLine(offsetStartPointMargin, offsetStartPointExtend);
     drawController.drawLine(offsetEndPointMargin, offsetEndPointExtend);
@@ -161,7 +212,7 @@ export class MeasurementEntity implements Entity {
     );
     drawController.drawText(String(distance), midpointMeasurementLineOffset, {
       textAlign: 'center',
-      textDirection: normalUnit.rotate90CCW(),
+      textDirection: normalUnit.rotate90CW(),
       fontSize: MEASUREMENT_FONT_SIZE,
     });
   }

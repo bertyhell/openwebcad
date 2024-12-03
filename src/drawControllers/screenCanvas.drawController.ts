@@ -1,27 +1,47 @@
-import {
-  ARROW_HEAD_LENGTH,
-  ARROW_HEAD_WIDTH,
-  CANVAS_BACKGROUND_COLOR,
-  CANVAS_INPUT_FIELD_FONT_SIZE,
-  MOUSE_ZOOM_MULTIPLIER,
-  TO_RADIANS,
-} from '../App.consts';
+import { CANVAS_BACKGROUND_COLOR, MOUSE_ZOOM_MULTIPLIER } from '../App.consts';
 import { Point, Vector } from '@flatten-js/core';
-import { DrawController } from './DrawController';
+import { DEFAULT_TEXT_OPTIONS, DrawController } from './DrawController';
 import { triggerReactUpdate } from '../state.ts';
 import { StateVariable } from '../helpers/undo-stack.ts';
 
+/**
+ * Screen coordinate system:
+ *  0, 0         X
+ *    +---------->
+ *    |
+ *    |
+ *    |
+ * Y  v
+ *
+ *
+ * World coordinate system:
+ * Y  ^
+ *    |
+ *    |
+ *    |
+ *    +---------->
+ *  0, 0         X
+ *
+ * To convert between the 2 coordinate systems, you need the screenOffset and screenScale
+ */
 export class ScreenCanvasDrawController implements DrawController {
   private screenOffset: Point = new Point(0, 0);
   private screenScale: number = 1;
-  private screenMouseLocation: Point;
+  private worldMouseLocation: Point;
 
   constructor(
     private context: CanvasRenderingContext2D,
-    private canvasSize: { x: number; y: number },
+    private canvasSize: Point,
   ) {
-    this.screenMouseLocation = new Point(canvasSize.x / 2, canvasSize.y / 2);
-    this.setScreenOffset(new Point(0, -canvasSize.y)); // User expects mathematical coordinates, where y axis goes up, but canvas y axis goes down
+    this.worldMouseLocation = this.screenToWorld(
+      new Point(canvasSize.x / 2, canvasSize.y / 2),
+    );
+    console.log('setting screen offset: ', 0, 0);
+    this.setScreenOffset(new Point(0, 0)); // User expects mathematical coordinates, where y axis goes up, but canvas y axis goes down
+  }
+
+  public getCanvasSize() {
+    return this.canvasSize;
   }
 
   public getScreenScale() {
@@ -42,17 +62,28 @@ export class ScreenCanvasDrawController implements DrawController {
     triggerReactUpdate(StateVariable.screenOffset);
   }
 
-  public getScreenMouseLocation(): Point {
-    return this.screenMouseLocation;
-  }
-
   public setScreenMouseLocation(newScreenMouseLocation: Point): void {
-    this.screenMouseLocation = newScreenMouseLocation;
+    this.worldMouseLocation = this.screenToWorld(newScreenMouseLocation);
+    console.log(
+      'mouse move: screen:(' +
+        newScreenMouseLocation.x +
+        ', ' +
+        newScreenMouseLocation.y +
+        ')  world:(' +
+        this.worldMouseLocation.x +
+        ', ' +
+        this.worldMouseLocation.y +
+        ')',
+    );
     triggerReactUpdate(StateVariable.screenMouseLocation);
   }
 
   public getWorldMouseLocation(): Point {
-    return this.screenToWorld(this.screenMouseLocation);
+    return this.worldMouseLocation;
+  }
+
+  public getScreenMouseLocation(): Point {
+    return this.worldToScreen(this.worldMouseLocation);
   }
 
   public panScreen(screenOffsetX: number, screenOffsetY: number) {
@@ -89,6 +120,47 @@ export class ScreenCanvasDrawController implements DrawController {
     );
   }
 
+  /**
+   * Convert coordinates from World Space --> Screen Space
+   */
+  public worldToScreen(worldCoordinate: Point): Point {
+    return new Point(
+      (worldCoordinate.x - this.screenOffset.x) * this.screenScale,
+      -1 *
+        ((worldCoordinate.y - this.screenOffset.y) * this.screenScale -
+          this.canvasSize.y),
+    );
+  }
+
+  public worldsToScreens(worldCoordinates: Point[]): Point[] {
+    return worldCoordinates.map(this.worldToScreen.bind(this));
+  }
+
+  /**
+   * Convert coordinates from Screen Space --> World Space
+   * (0, 0)       (1920, 0)
+   *
+   * (0, 1080)    (1920, 1080)
+   *
+   * convert to
+   *
+   * (0, 1080)    (1920, 1080)
+   *
+   * (0, 0)       (1920, 0)
+   */
+  public screenToWorld(screenCoordinate: Point): Point {
+    return new Point(
+      screenCoordinate.x / this.screenScale + this.screenOffset.x,
+      this.canvasSize.y -
+        screenCoordinate.y / this.screenScale +
+        this.screenOffset.y,
+    );
+  }
+
+  public screensToWorlds(screenCoordinates: Point[]): Point[] {
+    return screenCoordinates.map(this.screenToWorld.bind(this));
+  }
+
   public setLineStyles(
     isHighlighted: boolean,
     isSelected: boolean,
@@ -109,7 +181,11 @@ export class ScreenCanvasDrawController implements DrawController {
     }
   }
 
-  public clearCanvas() {
+  public setFillStyles(fillColor: string) {
+    this.context.fillStyle = fillColor;
+  }
+
+  public clear() {
     if (this.canvasSize === null) return;
 
     if (!this.context) return;
@@ -120,19 +196,24 @@ export class ScreenCanvasDrawController implements DrawController {
 
   /**
    * Draws a line from startPoint to endPoint and auto converts to screen space first
-   * @param startPoint
-   * @param endPoint
+   * @param worldStartPoint
+   * @param worldEndPoint
    */
-  public drawLine(startPoint: Point, endPoint: Point): void {
+  public drawLine(worldStartPoint: Point, worldEndPoint: Point): void {
     const [screenStartPoint, screenEndPoint] = this.worldsToScreens([
-      startPoint,
-      endPoint,
+      worldStartPoint,
+      worldEndPoint,
     ]);
 
-    this.screenDrawLine(screenStartPoint, screenEndPoint);
+    this.drawLineScreen(screenStartPoint, screenEndPoint);
   }
 
-  public screenDrawLine(screenStartPoint: Point, screenEndPoint: Point): void {
+  /**
+   * Needs to be public to draw UI that is zoom independent, like snap point indicators
+   * @param screenStartPoint
+   * @param screenEndPoint
+   */
+  public drawLineScreen(screenStartPoint: Point, screenEndPoint: Point): void {
     this.context.beginPath();
     this.context.moveTo(screenStartPoint.x, screenStartPoint.y);
     this.context.lineTo(screenEndPoint.x, screenEndPoint.y);
@@ -154,6 +235,15 @@ export class ScreenCanvasDrawController implements DrawController {
   ) {
     const screenCenterPoint = this.worldToScreen(centerPoint);
     const screenRadius = radius * this.screenScale;
+    this.drawArcScreen(screenCenterPoint, screenRadius, startAngle, endAngle);
+  }
+
+  public drawArcScreen(
+    screenCenterPoint: Point,
+    screenRadius: number,
+    startAngle: number,
+    endAngle: number,
+  ) {
     this.context.beginPath();
     this.context.arc(
       screenCenterPoint.x,
@@ -163,51 +253,6 @@ export class ScreenCanvasDrawController implements DrawController {
       endAngle,
     );
     this.context.stroke();
-  }
-
-  /**
-   * Draws an arrow head which ends at the endPoint
-   * The start point doesn't really matter, only the direction
-   * the size of the arrow is determined by ARROW_HEAD_SIZE
-   * @param startPoint
-   * @param endPoint
-   */
-  public drawArrowHead(startPoint: Point, endPoint: Point): void {
-    const vectorFromEndToStart = new Vector(endPoint, startPoint);
-    const vectorFromEndToStartUnit = vectorFromEndToStart.normalize();
-    const baseOfArrow = endPoint
-      .clone()
-      .translate(
-        vectorFromEndToStartUnit.multiply(ARROW_HEAD_LENGTH * this.screenScale),
-      );
-    const perpendicularVector1 = vectorFromEndToStartUnit.rotate(
-      90 * TO_RADIANS,
-    );
-    const perpendicularVector2 = vectorFromEndToStartUnit.rotate(
-      -90 * TO_RADIANS,
-    );
-    const leftCornerOfArrow = baseOfArrow
-      .clone()
-      .translate(
-        perpendicularVector1.multiply(ARROW_HEAD_WIDTH * this.screenScale),
-      );
-    const rightCornerOfArrow = baseOfArrow
-      .clone()
-      .translate(
-        perpendicularVector2.multiply(ARROW_HEAD_WIDTH * this.screenScale),
-      );
-
-    const [screenEndPoint, screenLeftCornerOfArrow, screenRightCornerOfArrow] =
-      this.worldsToScreens([endPoint, leftCornerOfArrow, rightCornerOfArrow]);
-
-    this.context.beginPath();
-    this.context.moveTo(screenEndPoint.x, screenEndPoint.y);
-    this.context.lineTo(screenLeftCornerOfArrow.x, screenLeftCornerOfArrow.y);
-    this.context.lineTo(screenRightCornerOfArrow.x, screenRightCornerOfArrow.y);
-    this.context.lineTo(screenEndPoint.x, screenEndPoint.y);
-    this.context.fillStyle = '#FFF';
-    this.context.stroke();
-    this.context.fill();
   }
 
   /**
@@ -256,16 +301,12 @@ export class ScreenCanvasDrawController implements DrawController {
     }> = {},
   ): void {
     const opts = {
-      textDirection: new Vector(1, 0),
-      textAlign: 'center' as const,
-      textColor: '#FFF',
-      fontSize: CANVAS_INPUT_FIELD_FONT_SIZE,
-      fontFamily: 'sans-serif',
+      ...DEFAULT_TEXT_OPTIONS,
       ...options,
     };
     this.context.save();
     this.context.translate(basePoint.x, basePoint.y);
-    const angle = Math.atan2(opts.textDirection.y, opts.textDirection.x);
+    const angle = Math.atan2(-opts.textDirection.y, opts.textDirection.x);
     this.context.rotate(angle);
     this.context.font = `${opts.fontSize}px ${opts.fontFamily}`;
     this.context.textAlign = opts.textAlign;
@@ -320,32 +361,22 @@ export class ScreenCanvasDrawController implements DrawController {
     this.context.translate(-screenCenterX, -screenCenterY);
   }
 
-  /**
-   * Convert coordinates from World Space --> Screen Space
-   */
-  public worldToScreen(worldCoordinate: Point): Point {
-    return new Point(
-      (worldCoordinate.x - this.screenOffset.x) * this.screenScale,
-      (worldCoordinate.y - this.screenOffset.y) * this.screenScale,
+  public fillRect(
+    xMin: number,
+    yMin: number,
+    width: number,
+    height: number,
+    color: string,
+  ) {
+    const screenMinPoint = this.worldToScreen(new Point(xMin, yMin));
+
+    this.fillRectScreen(
+      screenMinPoint.x,
+      screenMinPoint.y,
+      width * this.screenScale,
+      height * this.screenScale,
+      color,
     );
-  }
-
-  public worldsToScreens(worldCoordinates: Point[]): Point[] {
-    return worldCoordinates.map(this.worldToScreen.bind(this));
-  }
-
-  /**
-   * Convert coordinates from Screen Space --> World Space
-   */
-  public screenToWorld(screenCoordinate: Point): Point {
-    return new Point(
-      screenCoordinate.x / this.screenScale + this.screenOffset.x,
-      screenCoordinate.y / this.screenScale + this.screenOffset.y,
-    );
-  }
-
-  public screensToWorlds(screenCoordinates: Point[]): Point[] {
-    return screenCoordinates.map(this.screenToWorld.bind(this));
   }
 
   /**
@@ -356,14 +387,33 @@ export class ScreenCanvasDrawController implements DrawController {
    * @param height
    * @param color
    */
-  fillRectScreen(
+  public fillRectScreen(
     xMin: number,
     yMin: number,
     width: number,
     height: number,
     color: string,
   ) {
+    // TODO see if we need to replace this with a call to fillPolygon
     this.context.fillStyle = color;
     this.context.fillRect(xMin, yMin, width, height);
+  }
+
+  /**
+   * Fill polygon with color
+   * @param points
+   */
+  public fillPolygon(...points: Point[]) {
+    const screenPoints = points.map(this.worldToScreen.bind(this));
+    this.context.beginPath();
+    screenPoints.forEach((screenPoint, index) => {
+      if (index === 0) {
+        this.context.moveTo(screenPoint.x, screenPoint.y);
+      } else {
+        this.context.lineTo(screenPoint.x, screenPoint.y);
+      }
+    });
+    this.context.closePath();
+    this.context.fill();
   }
 }

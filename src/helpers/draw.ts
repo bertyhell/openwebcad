@@ -23,7 +23,7 @@ import {
 import { ScreenCanvasDrawController } from '../drawControllers/screenCanvas.drawController';
 
 export function draw(drawController: ScreenCanvasDrawController) {
-  drawController.clearCanvas();
+  drawController.clear();
 
   drawHelpers(drawController, getAngleGuideEntities());
   drawEntities(drawController, getGhostHelperEntities());

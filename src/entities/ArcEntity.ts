@@ -42,6 +42,7 @@ export class ArcEntity implements Entity {
       this.arc.r.valueOf(),
       this.arc?.startAngle || 0,
       this.arc?.endAngle || 2 * Math.PI,
+      this.arc.counterClockwise,
     );
   }
 

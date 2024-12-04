@@ -25,7 +25,7 @@ export class PointEntity implements Entity {
   }
 
   public draw(drawController: DrawController): void {
-    drawController.drawArc(this.point, 5, 0, Math.PI * 2);
+    drawController.drawArc(this.point, 5, 0, Math.PI * 2, false);
   }
 
   public move(x: number, y: number) {

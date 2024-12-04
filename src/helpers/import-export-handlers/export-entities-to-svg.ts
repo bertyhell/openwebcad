@@ -8,7 +8,7 @@ import { SvgDrawController } from '../../drawControllers/svg.drawController.ts';
 export function convertEntitiesToSvgString(
   entities: Entity[],
   canvasSize: Point,
-): { svgString: string; width: number; height: number } {
+): { svgLines: string[]; width: number; height: number } {
   let boundingBoxMinX = canvasSize.x;
   let boundingBoxMinY = canvasSize.y;
   let boundingBoxMaxX = 0;
@@ -30,6 +30,10 @@ export function convertEntitiesToSvgString(
     boundingBoxMaxX + SVG_MARGIN,
     boundingBoxMaxY + SVG_MARGIN,
   );
+  svgDrawController.setScreenOffset(
+    new Point(boundingBoxMinX, boundingBoxMinY),
+  );
+
   entities.forEach(entity => {
     entity.draw(svgDrawController);
   });
@@ -43,6 +47,6 @@ export function exportEntitiesToSvgFile() {
 
   const svg = convertEntitiesToSvgString(entities, canvasSize);
 
-  const blob = new Blob([svg.svgString], { type: 'text/svg;charset=utf-8' });
+  const blob = new Blob(svg.svgLines, { type: 'text/svg;charset=utf-8' });
   saveAs(blob, 'open-web-cad--drawing.svg');
 }

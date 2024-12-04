@@ -64,17 +64,6 @@ export class ScreenCanvasDrawController implements DrawController {
 
   public setScreenMouseLocation(newScreenMouseLocation: Point): void {
     this.worldMouseLocation = this.screenToWorld(newScreenMouseLocation);
-    console.log(
-      'mouse move: screen:(' +
-        newScreenMouseLocation.x +
-        ', ' +
-        newScreenMouseLocation.y +
-        ')  world:(' +
-        this.worldMouseLocation.x +
-        ', ' +
-        this.worldMouseLocation.y +
-        ')',
-    );
     triggerReactUpdate(StateVariable.screenMouseLocation);
   }
 

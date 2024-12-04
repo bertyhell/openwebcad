@@ -22,7 +22,13 @@ export class CircleEntity implements Entity {
   }
 
   public draw(drawController: DrawController): void {
-    drawController.drawArc(this.circle.center, this.circle.r, 0, 2 * Math.PI);
+    drawController.drawArc(
+      this.circle.center,
+      this.circle.r,
+      0,
+      2 * Math.PI,
+      false,
+    );
   }
 
   public move(x: number, y: number) {

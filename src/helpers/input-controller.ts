@@ -126,6 +126,13 @@ export class InputController {
       evt.stopPropagation();
       this.handleEnterKey();
     }
+
+    // If ancestor parent exist with class .controls => ignore clicks, since a button was clicked instead of the canvas
+    const controlsParent = (evt?.target as HTMLElement)?.closest('.controls');
+    if (controlsParent) {
+      return;
+    }
+
     if (evt.button === MouseButton.Middle) {
       setPanStartLocation(null);
     }

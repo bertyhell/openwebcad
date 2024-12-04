@@ -52,8 +52,9 @@ export class SvgDrawController implements DrawController {
   public worldToScreen(worldCoordinate: Point): Point {
     return new Point(
       (worldCoordinate.x - this.screenOffset.x) * this.screenScale,
-      (worldCoordinate.y - this.screenOffset.y) * this.screenScale +
-        this.getCanvasSize().y,
+      -1 *
+        ((worldCoordinate.y - this.screenOffset.y) * this.screenScale -
+          this.getCanvasSize().y),
     );
   }
 
@@ -113,23 +114,27 @@ export class SvgDrawController implements DrawController {
     const boundingBoxHeight =
       this.boundingBoxMaxY - this.boundingBoxMinY + SVG_MARGIN * 2;
 
-    const svgString = `
-      <svg width="${boundingBoxWidth}" height="${boundingBoxHeight}" xmlns="http://www.w3.org/2000/svg">
-        <rect x="0" y="0" width="${boundingBoxWidth}" height="${boundingBoxHeight}" fill="white" />
-        ${this.svgStrings.join('')}
-      </svg>
-    `;
+    const svgLines = [
+      `<svg width="${boundingBoxWidth}" height="${boundingBoxHeight}" xmlns="http://www.w3.org/2000/svg">\n`,
+      `    <rect x="0" y="0" width="${boundingBoxWidth}" height="${boundingBoxHeight}" fill="white" />\n`,
+      ...this.svgStrings.map(svgString => '\t' + svgString + '\n'),
+      '</svg>',
+    ];
 
     return {
-      svgString,
+      svgLines,
       width: boundingBoxWidth,
       height: boundingBoxHeight,
     };
   }
 
   public drawLine(startPoint: Point, endPoint: Point): void {
+    const [canvasStartPoint, canvasEndPoint] = this.worldsToScreens([
+      startPoint,
+      endPoint,
+    ]);
     this.svgStrings.push(
-      `<line x1="${startPoint.x}" y1="${startPoint.y}" x2="${endPoint.x}" y2="${endPoint.y}" stroke="${this.lineColor}" stroke-width="${this.lineWidth}" stroke-dasharray="${JSON.stringify(this.lineDash)}" />`,
+      `<line x1="${canvasStartPoint.x}" y1="${canvasStartPoint.y}" x2="${canvasEndPoint.x}" y2="${canvasEndPoint.y}" stroke="${this.lineColor}" stroke-width="${this.lineWidth}" stroke-dasharray="${this.lineDash.join(',')}" />`,
     );
   }
 
@@ -138,16 +143,28 @@ export class SvgDrawController implements DrawController {
     radius: number,
     startAngle: number,
     endAngle: number,
+    counterClockwise: boolean,
   ) {
-    const startX = centerPoint.x + radius * Math.cos(startAngle);
-    const startY = centerPoint.y + radius * Math.sin(startAngle);
-    const endX = centerPoint.x + radius * Math.cos(endAngle);
-    const endY = centerPoint.y + radius * Math.sin(endAngle);
+    const canvasCenterPoint = this.worldToScreen(centerPoint);
+    const canvasRadius = radius * this.screenScale;
+
+    // Calculate start and end points of the arc
+    const startX = canvasCenterPoint.x + canvasRadius * Math.cos(startAngle);
+    const startY = canvasCenterPoint.y + canvasRadius * Math.sin(startAngle);
+    const endX = canvasCenterPoint.x + canvasRadius * Math.cos(endAngle);
+    const endY = canvasCenterPoint.y + canvasRadius * Math.sin(endAngle);
+
+    // Determine the large-arc-flag (1 if the arc spans more than 180 degrees)
     const largeArcFlag = endAngle - startAngle <= Math.PI ? 0 : 1;
 
-    this.svgStrings.push(
-      `<path d="M ${startX} ${startY} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${endX} ${endY}" stroke="${this.lineColor}" stroke-width="${this.lineWidth}" fill="none" />`,
-    );
+    // Sweep flag (1 for clockwise, 0 for counterclockwise)
+    const sweepFlag = counterClockwise ? 0 : 1;
+
+    // Generate the SVG path data string
+    const svgPath = `<path d="M ${startX} ${startY} A ${canvasRadius} ${canvasRadius} 0 ${largeArcFlag} ${sweepFlag} ${endX} ${endY}" fill="none" stroke="black" />`;
+
+    // Push the SVG path data string to the svgStrings array
+    this.svgStrings.push(svgPath);
   }
 
   public drawText(

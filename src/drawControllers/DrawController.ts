@@ -28,6 +28,7 @@ export interface DrawController {
     radius: number,
     startAngle: number,
     endAngle: number,
+    counterClockwise: boolean,
   ): void;
   drawText(
     label: string,

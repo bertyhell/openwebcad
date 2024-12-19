@@ -16,7 +16,7 @@ export interface Entity {
   id: string;
   lineColor: string;
   lineWidth: number;
-  lineStyle: number[] | undefined;
+  lineDash: number[] | undefined;
   draw(drawController: DrawController): void;
 
   /**

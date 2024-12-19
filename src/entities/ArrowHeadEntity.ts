@@ -10,7 +10,7 @@ export class ArrowHeadEntity implements Entity {
   public fillColor: string = '#fff';
   public lineColor: string = '#fff';
   public lineWidth: number = 1;
-  public lineStyle: number[] = [];
+  public lineDash: number[] = [];
 
   // 3 corners of the arrow head
   constructor(
@@ -25,7 +25,7 @@ export class ArrowHeadEntity implements Entity {
       false,
       this.lineColor,
       this.lineWidth,
-      this.lineStyle,
+      this.lineDash,
     );
     drawController.drawLine(this.p1, this.p2);
     drawController.drawLine(this.p2, this.p3);

@@ -7,6 +7,7 @@ import {
 } from '../drawControllers/DrawController';
 import { cloneDeep } from 'es-toolkit/compat';
 import { scalePoint } from '../helpers/scale-point.ts';
+import { isEntityHighlighted, isEntitySelected } from '../state.ts';
 
 export interface TextOptions {
   textDirection: Vector;
@@ -20,7 +21,7 @@ export class TextEntity implements Entity {
   public id: string = crypto.randomUUID();
   public lineColor: string = '#fff';
   public lineWidth: number = 1;
-  public lineStyle: number[] = [];
+  public lineDash: number[] = [];
   private readonly options: TextOptions;
 
   constructor(
@@ -35,6 +36,13 @@ export class TextEntity implements Entity {
   }
 
   public draw(drawController: DrawController): void {
+    drawController.setLineStyles(
+      isEntityHighlighted(this),
+      isEntitySelected(this),
+      this.lineColor,
+      this.lineWidth,
+      this.lineDash,
+    );
     drawController.drawText(this.label, this.basePoint, this.options);
   }
 

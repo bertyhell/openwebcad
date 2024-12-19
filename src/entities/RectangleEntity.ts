@@ -14,12 +14,13 @@ import { scalePoint } from '../helpers/scale-point';
 import { twoPointBoxToPolygon } from '../helpers/box-to-polygon';
 import { polygonToSegments } from '../helpers/polygon-to-segments';
 import { DrawController } from '../drawControllers/DrawController';
+import { isEntityHighlighted, isEntitySelected } from '../state.ts';
 
 export class RectangleEntity implements Entity {
   public id: string = crypto.randomUUID();
   public lineColor: string = '#fff';
   public lineWidth: number = 1;
-  public lineStyle: number[] | undefined = undefined;
+  public lineDash: number[] | undefined = undefined;
 
   private polygon: Polygon;
 
@@ -35,6 +36,13 @@ export class RectangleEntity implements Entity {
   }
 
   public draw(drawController: DrawController): void {
+    drawController.setLineStyles(
+      isEntityHighlighted(this),
+      isEntitySelected(this),
+      this.lineColor,
+      this.lineWidth,
+      this.lineDash,
+    );
     polygonToSegments(this.polygon).forEach(edge => {
       const startPoint = new Point(edge.start.x, edge.start.y);
       const endPoint = new Point(edge.end.x, edge.end.y);

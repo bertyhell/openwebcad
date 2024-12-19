@@ -7,12 +7,13 @@ import { sortPointsOnArc } from '../helpers/sort-points-on-arc';
 import { getExportColor } from '../helpers/get-export-color';
 import { scalePoint } from '../helpers/scale-point';
 import { DrawController } from '../drawControllers/DrawController.ts';
+import { isEntityHighlighted, isEntitySelected } from '../state.ts';
 
 export class ArcEntity implements Entity {
   public id: string = crypto.randomUUID();
   public lineColor: string = '#fff';
   public lineWidth: number = 1;
-  public lineStyle: number[] | undefined = undefined;
+  public lineDash: number[] | undefined = undefined;
 
   private arc: Arc;
 
@@ -37,6 +38,13 @@ export class ArcEntity implements Entity {
   }
 
   public draw(drawController: DrawController): void {
+    drawController.setLineStyles(
+      isEntityHighlighted(this),
+      isEntitySelected(this),
+      this.lineColor,
+      this.lineWidth,
+      this.lineDash,
+    );
     drawController.drawArc(
       this.arc.center,
       this.arc.r.valueOf(),

@@ -135,7 +135,7 @@ export function drawTempSelectionRectangle(startPoint: Point, endPoint: Point) {
     ? SELECTION_RECTANGLE_COLOR_INTERSECTION
     : SELECTION_RECTANGLE_COLOR_CONTAINS;
   activeSelectionRectangle.lineWidth = SELECTION_RECTANGLE_WIDTH;
-  activeSelectionRectangle.lineStyle = SELECTION_RECTANGLE_STYLE;
+  activeSelectionRectangle.lineDash = SELECTION_RECTANGLE_STYLE;
   setGhostHelperEntities([activeSelectionRectangle]);
 }
 

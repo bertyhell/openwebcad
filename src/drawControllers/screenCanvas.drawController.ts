@@ -3,6 +3,7 @@ import { Point, Vector } from '@flatten-js/core';
 import { DEFAULT_TEXT_OPTIONS, DrawController } from './DrawController';
 import { triggerReactUpdate } from '../state.ts';
 import { StateVariable } from '../helpers/undo-stack.ts';
+import { mapNumberRange } from '../helpers/map-number-range.ts';
 
 /**
  * Screen coordinate system:
@@ -116,10 +117,20 @@ export class ScreenCanvasDrawController implements DrawController {
      */
     public worldToTarget(worldCoordinate: Point): Point {
         return new Point(
-            (worldCoordinate.x - this.screenOffset.x) * this.screenScale,
-            -1 *
-                ((worldCoordinate.y - this.screenOffset.y) * this.screenScale -
-                    this.canvasSize.y),
+            mapNumberRange(
+                worldCoordinate.x,
+                this.screenOffset.x,
+                this.screenOffset.x + this.canvasSize.x / this.screenScale,
+                0,
+                this.canvasSize.x,
+            ),
+            mapNumberRange(
+                worldCoordinate.y,
+                this.screenOffset.y + this.canvasSize.y / this.screenScale, // inverted since world origin is bottom left and screen  origin is top left
+                this.screenOffset.y,
+                0,
+                this.canvasSize.y,
+            ),
         );
     }
 
@@ -140,11 +151,22 @@ export class ScreenCanvasDrawController implements DrawController {
      * (0, 0)       (1920, 0)
      */
     public targetToWorld(screenCoordinate: Point): Point {
+        // map the screen coordinate to the world coordinate based on this.getScreenOffset() and the this.getScreenScale()
         return new Point(
-            screenCoordinate.x / this.screenScale + this.screenOffset.x,
-            this.canvasSize.y -
-                screenCoordinate.y / this.screenScale +
+            mapNumberRange(
+                screenCoordinate.x,
+                0,
+                this.canvasSize.x,
+                this.screenOffset.x,
+                this.screenOffset.x + this.canvasSize.x / this.screenScale,
+            ),
+            mapNumberRange(
+                screenCoordinate.y,
+                0,
+                this.canvasSize.y,
+                this.screenOffset.y + this.canvasSize.y / this.screenScale,
                 this.screenOffset.y,
+            ),
         );
     }
 

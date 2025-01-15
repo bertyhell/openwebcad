@@ -109,7 +109,7 @@ export class InputController {
             texts.push(
                 round(drawController.getWorldMouseLocation().x, 2) +
                     ',' +
-                    round(-drawController.getWorldMouseLocation().y, 2),
+                    round(drawController.getWorldMouseLocation().y, 2),
             );
         }
         if (matchingToolNames.length) {

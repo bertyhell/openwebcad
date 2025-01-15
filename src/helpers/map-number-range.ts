@@ -1,3 +1,7 @@
+/**
+ * Convert numbers in a specific range to another range
+ * This is moslty used to convert screen space coordinates to world space coordinates and vice versa
+ */
 export function mapNumberRange(
     num: number,
     startSourceRange: number,
@@ -5,11 +9,6 @@ export function mapNumberRange(
     startTargetRange: number,
     endTargetRange: number,
 ): number {
-    // Normalize the source range so that startSourceRange < endSourceRange
-    if (startSourceRange > endSourceRange) {
-        [startSourceRange, endSourceRange] = [endSourceRange, startSourceRange];
-    }
-
     // Handle the case where source range has zero length
     if (startSourceRange === endSourceRange) {
         return startTargetRange;

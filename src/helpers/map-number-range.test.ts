@@ -19,8 +19,8 @@ describe('mapNumberRange', () => {
         expect(mapNumberRange(5, 10, 0, 100, 0)).toBe(50);
 
         // Outside inverted range
-        expect(mapNumberRange(15, 10, 0, 100, 0)).toBe(-50);
-        expect(mapNumberRange(-5, 10, 0, 100, 0)).toBe(150);
+        expect(mapNumberRange(15, 10, 0, 100, 0)).toBe(150);
+        expect(mapNumberRange(-5, 10, 0, 100, 0)).toBe(-50);
     });
 
     it('should handle inverted target ranges', () => {
@@ -49,5 +49,13 @@ describe('mapNumberRange', () => {
 
     it('should handle large ranges', () => {
         expect(mapNumberRange(500, 0, 1000, 0, 1_000_000)).toBe(500_000);
+    });
+
+    it('should handle screen coordinates to world correctly', () => {
+        expect(mapNumberRange(100, 0, 1000, 1000, 0)).toBe(900);
+    });
+
+    it('should handle world coordinates to screen correctly', () => {
+        expect(mapNumberRange(900, 1000, 0, 0, 1000)).toBe(100);
     });
 });

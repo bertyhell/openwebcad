@@ -3,19 +3,20 @@ import { DEFAULT_TEXT_OPTIONS, DrawController } from './DrawController';
 import { TextOptions } from '../entities/TextEntity.ts';
 import jsPDF from 'jspdf';
 import { mapNumberRange } from '../helpers/map-number-range.ts';
+import { TO_RADIANS } from '../App.consts.ts';
 
 export class PdfDrawController implements DrawController {
     private doc: jsPDF;
 
     constructor(
-        private sourceBoundingBoxMinX: number,
-        private sourceBoundingBoxMinY: number,
-        private sourceBoundingBoxMaxX: number,
-        private sourceBoundingBoxMaxY: number,
-        private targetBoundingBoxMinX: number,
-        private targetBoundingBoxMinY: number,
-        private targetBoundingBoxMaxX: number,
-        private targetBoundingBoxMaxY: number,
+        private worldBoundingBoxMinX: number,
+        private worldBoundingBoxMinY: number,
+        private worldBoundingBoxMaxX: number,
+        private worldBoundingBoxMaxY: number,
+        private canvasBoundingBoxMinX: number,
+        private canvasBoundingBoxMinY: number,
+        private canvasBoundingBoxMaxX: number,
+        private canvasBoundingBoxMaxY: number,
     ) {
         this.doc = new jsPDF({
             orientation: 'portrait',
@@ -26,22 +27,22 @@ export class PdfDrawController implements DrawController {
 
     getCanvasSize(): Point {
         return new Point(
-            this.targetBoundingBoxMaxX - this.targetBoundingBoxMinX,
-            this.targetBoundingBoxMaxY - this.targetBoundingBoxMinY,
+            this.canvasBoundingBoxMaxX - this.canvasBoundingBoxMinX,
+            this.canvasBoundingBoxMaxY - this.canvasBoundingBoxMinY,
         );
     }
 
     public getScreenScale() {
         return (
-            (this.targetBoundingBoxMaxX - this.targetBoundingBoxMinX) /
-            (this.sourceBoundingBoxMaxY - this.sourceBoundingBoxMinY)
+            (this.canvasBoundingBoxMaxX - this.canvasBoundingBoxMinX) /
+            (this.worldBoundingBoxMaxY - this.worldBoundingBoxMinY)
         );
     }
 
     public getScreenOffset() {
         return new Point(
-            this.targetBoundingBoxMinX,
-            this.targetBoundingBoxMinY,
+            this.canvasBoundingBoxMinX,
+            this.canvasBoundingBoxMinY,
         );
     }
 
@@ -52,17 +53,17 @@ export class PdfDrawController implements DrawController {
         return new Point(
             mapNumberRange(
                 worldCoordinate.x,
-                this.sourceBoundingBoxMinX,
-                this.sourceBoundingBoxMaxX,
-                this.targetBoundingBoxMinX,
-                this.targetBoundingBoxMaxX,
+                this.worldBoundingBoxMinX,
+                this.worldBoundingBoxMaxX,
+                this.canvasBoundingBoxMinX,
+                this.canvasBoundingBoxMaxX,
             ),
             mapNumberRange(
                 worldCoordinate.y,
-                this.sourceBoundingBoxMinY,
-                this.sourceBoundingBoxMaxY,
-                this.targetBoundingBoxMinY,
-                this.targetBoundingBoxMaxY,
+                this.worldBoundingBoxMinY,
+                this.worldBoundingBoxMaxY,
+                this.canvasBoundingBoxMaxY, // inverted since world origin is bottom left and pdf origin is top left
+                this.canvasBoundingBoxMinY,
             ),
         );
     }
@@ -78,17 +79,17 @@ export class PdfDrawController implements DrawController {
         return new Point(
             mapNumberRange(
                 targetCoordinate.x,
-                this.targetBoundingBoxMinX,
-                this.targetBoundingBoxMaxX,
-                this.sourceBoundingBoxMinX,
-                this.sourceBoundingBoxMaxX,
+                this.canvasBoundingBoxMinX,
+                this.canvasBoundingBoxMaxX,
+                this.worldBoundingBoxMinX,
+                this.worldBoundingBoxMaxX,
             ),
             mapNumberRange(
                 targetCoordinate.y,
-                this.targetBoundingBoxMinY,
-                this.targetBoundingBoxMaxY,
-                this.sourceBoundingBoxMinY,
-                this.sourceBoundingBoxMaxY,
+                this.canvasBoundingBoxMinY,
+                this.canvasBoundingBoxMaxY,
+                this.worldBoundingBoxMinY,
+                this.worldBoundingBoxMaxY,
             ),
         );
     }
@@ -180,7 +181,7 @@ export class PdfDrawController implements DrawController {
         const canvasCenterPoint = this.worldToTarget(centerPoint);
         const canvasRadius = radius * this.getScreenScale();
 
-        if (endAngle - startAngle === 360) {
+        if (endAngle - startAngle === 360 * TO_RADIANS) {
             this.doc.circle(
                 canvasCenterPoint.x,
                 canvasCenterPoint.y,

@@ -1,20 +1,17 @@
 import { saveAs } from 'file-saver';
 import { Entity } from '../../entities/Entity';
-import { Point } from '@flatten-js/core';
-import { SVG_MARGIN } from '../../App.consts';
-import { getCanvasSize, getEntities } from '../../state';
+import { getEntities } from '../../state';
 import { PdfDrawController } from '../../drawControllers/pdf.drawController.ts';
 import { A4Format } from '../paper-sizes.ts';
 import { containRectangle } from '../contain-rect.ts';
 
 export async function convertEntitiesToPdfString(
     entities: Entity[],
-    canvasSize: Point,
 ): Promise<Blob> {
-    let boundingBoxMinX = canvasSize.x;
-    let boundingBoxMinY = canvasSize.y;
-    let boundingBoxMaxX = 0;
-    let boundingBoxMaxY = 0;
+    let boundingBoxMinX = Number.MAX_VALUE;
+    let boundingBoxMinY = Number.MAX_VALUE;
+    let boundingBoxMaxX = Number.MIN_VALUE;
+    let boundingBoxMaxY = Number.MIN_VALUE;
 
     entities.forEach(entity => {
         const boundingBox = entity.getBoundingBox();
@@ -27,20 +24,20 @@ export async function convertEntitiesToPdfString(
     });
 
     const targetRect = containRectangle(
-        boundingBoxMinX - SVG_MARGIN,
-        boundingBoxMinY - SVG_MARGIN,
-        boundingBoxMaxX + SVG_MARGIN,
-        boundingBoxMaxY + SVG_MARGIN,
+        boundingBoxMinX,
+        boundingBoxMinY,
+        boundingBoxMaxX,
+        boundingBoxMaxY,
         0,
         0,
         A4Format.x,
         A4Format.y,
     );
     const pdfDrawController = new PdfDrawController(
-        boundingBoxMinX - SVG_MARGIN,
-        boundingBoxMinY - SVG_MARGIN,
-        boundingBoxMaxX + SVG_MARGIN,
-        boundingBoxMaxY + SVG_MARGIN,
+        boundingBoxMinX,
+        boundingBoxMinY,
+        boundingBoxMaxX,
+        boundingBoxMaxY,
         targetRect.minX,
         targetRect.minY,
         targetRect.maxX,
@@ -56,9 +53,8 @@ export async function convertEntitiesToPdfString(
 
 export async function exportEntitiesToPdfFile() {
     const entities = getEntities();
-    const canvasSize = getCanvasSize();
 
-    const pdfBlob = await convertEntitiesToPdfString(entities, canvasSize);
+    const pdfBlob = await convertEntitiesToPdfString(entities);
 
     const blob = new Blob([pdfBlob], { type: 'text/pdf;charset=utf-8' });
     saveAs(blob, 'open-web-cad--drawing.pdf');

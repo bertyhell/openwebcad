@@ -3,7 +3,7 @@ import { DEFAULT_TEXT_OPTIONS, DrawController } from './DrawController';
 import { TextOptions } from '../entities/TextEntity.ts';
 import jsPDF from 'jspdf';
 import { mapNumberRange } from '../helpers/map-number-range.ts';
-import { TO_RADIANS } from '../App.consts.ts';
+import { PDF_LINE_WIDTH_FACTOR, TO_RADIANS } from '../App.consts.ts';
 
 export class PdfDrawController implements DrawController {
     private doc: jsPDF;
@@ -25,7 +25,7 @@ export class PdfDrawController implements DrawController {
         });
     }
 
-    getCanvasSize(): Point {
+    public getCanvasSize(): Point {
         return new Point(
             this.canvasBoundingBoxMaxX - this.canvasBoundingBoxMinX,
             this.canvasBoundingBoxMaxY - this.canvasBoundingBoxMinY,
@@ -125,7 +125,7 @@ export class PdfDrawController implements DrawController {
             this.doc.setDrawColor(lineColor);
         }
 
-        this.doc.setLineWidth(lineWidth);
+        this.doc.setLineWidth(lineWidth * PDF_LINE_WIDTH_FACTOR);
 
         if (lineDash.length >= 1) {
             this.doc.setLineDashPattern(lineDash, 0);
@@ -182,6 +182,7 @@ export class PdfDrawController implements DrawController {
         const canvasRadius = radius * this.getScreenScale();
 
         if (endAngle - startAngle === 360 * TO_RADIANS) {
+            // draw circle
             this.doc.circle(
                 canvasCenterPoint.x,
                 canvasCenterPoint.y,
@@ -189,15 +190,8 @@ export class PdfDrawController implements DrawController {
             );
             return;
         }
-
-        this.doc.context2d.arc(
-            canvasCenterPoint.x,
-            canvasCenterPoint.y,
-            canvasRadius,
-            startAngle * (Math.PI / 180),
-            endAngle * (Math.PI / 180),
-            counterClockwise,
-        );
+        // draw arc
+        // TODO
     }
 
     public drawText(
@@ -255,12 +249,6 @@ export class PdfDrawController implements DrawController {
 
         this.doc.setFillColor(this.doc.getDrawColor());
 
-        this.doc.context2d.beginPath();
-        this.doc.context2d.moveTo(canvasPoints[0].x, canvasPoints[0].y);
-        for (let i = 1; i < canvasPoints.length; i++) {
-            this.doc.context2d.lineTo(canvasPoints[i].x, canvasPoints[i].y);
-        }
-        this.doc.context2d.closePath();
-        this.doc.context2d.fill();
+        for (let i = 1; i < canvasPoints.length; i++) {}
     }
 }

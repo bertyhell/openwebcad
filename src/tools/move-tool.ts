@@ -258,7 +258,7 @@ export const moveToolStateMachine = createMachine(
         );
         activeMoveLine.lineColor = GUIDE_LINE_COLOR;
         activeMoveLine.lineWidth = GUIDE_LINE_WIDTH;
-        activeMoveLine.lineStyle = GUIDE_LINE_STYLE;
+        activeMoveLine.lineDash = GUIDE_LINE_STYLE;
         setGhostHelperEntities([activeMoveLine, ...movedEntities]);
       },
       [MoveAction.MOVE_SELECTION]: ({ context, event }) => {

@@ -4,12 +4,13 @@ import { Box, Circle, Point, Segment } from '@flatten-js/core';
 import { getExportColor } from '../helpers/get-export-color';
 import { scalePoint } from '../helpers/scale-point';
 import { DrawController } from '../drawControllers/DrawController';
+import { isEntityHighlighted, isEntitySelected } from '../state.ts';
 
 export class CircleEntity implements Entity {
   public id: string = crypto.randomUUID();
   public lineColor: string = '#fff';
   public lineWidth: number = 1;
-  public lineStyle: number[] | undefined = undefined;
+  public lineDash: number[] | undefined = undefined;
 
   private circle: Circle;
 
@@ -22,7 +23,20 @@ export class CircleEntity implements Entity {
   }
 
   public draw(drawController: DrawController): void {
-    drawController.drawArc(this.circle.center, this.circle.r, 0, 2 * Math.PI);
+    drawController.setLineStyles(
+      isEntityHighlighted(this),
+      isEntitySelected(this),
+      this.lineColor,
+      this.lineWidth,
+      this.lineDash,
+    );
+    drawController.drawArc(
+      this.circle.center,
+      this.circle.r,
+      0,
+      2 * Math.PI,
+      false,
+    );
   }
 
   public move(x: number, y: number) {

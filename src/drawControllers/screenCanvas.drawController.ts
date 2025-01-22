@@ -1,369 +1,440 @@
-import {
-  ARROW_HEAD_LENGTH,
-  ARROW_HEAD_WIDTH,
-  CANVAS_BACKGROUND_COLOR,
-  CANVAS_INPUT_FIELD_FONT_SIZE,
-  MOUSE_ZOOM_MULTIPLIER,
-  TO_RADIANS,
-} from '../App.consts';
+import { CANVAS_BACKGROUND_COLOR, MOUSE_ZOOM_MULTIPLIER } from '../App.consts';
 import { Point, Vector } from '@flatten-js/core';
-import { DrawController } from './DrawController';
+import { DEFAULT_TEXT_OPTIONS, DrawController } from './DrawController';
 import { triggerReactUpdate } from '../state.ts';
 import { StateVariable } from '../helpers/undo-stack.ts';
+import { mapNumberRange } from '../helpers/map-number-range.ts';
 
+/**
+ * Screen coordinate system:
+ *  0, 0         X
+ *    +---------->
+ *    |
+ *    |
+ *    |
+ * Y  v
+ *
+ *
+ * World coordinate system:
+ * Y  ^
+ *    |
+ *    |
+ *    |
+ *    +---------->
+ *  0, 0         X
+ *
+ * To convert between the 2 coordinate systems, you need the screenOffset and screenScale
+ */
 export class ScreenCanvasDrawController implements DrawController {
-  private screenOffset: Point = new Point(0, 0);
-  private screenScale: number = 1;
-  private screenMouseLocation: Point;
+    private screenOffset: Point = new Point(0, 0);
+    private screenScale: number = 1;
+    private worldMouseLocation: Point;
 
-  constructor(
-    private context: CanvasRenderingContext2D,
-    private canvasSize: { x: number; y: number },
-  ) {
-    this.screenMouseLocation = new Point(canvasSize.x / 2, canvasSize.y / 2);
-    this.setScreenOffset(new Point(0, -canvasSize.y)); // User expects mathematical coordinates, where y axis goes up, but canvas y axis goes down
-  }
-
-  public getScreenScale() {
-    return this.screenScale;
-  }
-
-  public setScreenScale(newScreenScale: number) {
-    this.screenScale = newScreenScale;
-    triggerReactUpdate(StateVariable.screenZoom);
-  }
-
-  public getScreenOffset() {
-    return this.screenOffset;
-  }
-
-  public setScreenOffset(newScreenOffset: Point) {
-    this.screenOffset = newScreenOffset;
-    triggerReactUpdate(StateVariable.screenOffset);
-  }
-
-  public getScreenMouseLocation(): Point {
-    return this.screenMouseLocation;
-  }
-
-  public setScreenMouseLocation(newScreenMouseLocation: Point): void {
-    this.screenMouseLocation = newScreenMouseLocation;
-    triggerReactUpdate(StateVariable.screenMouseLocation);
-  }
-
-  public getWorldMouseLocation(): Point {
-    return this.screenToWorld(this.screenMouseLocation);
-  }
-
-  public panScreen(screenOffsetX: number, screenOffsetY: number) {
-    this.screenOffset = new Point(
-      this.screenOffset.x - screenOffsetX / this.screenScale,
-      this.screenOffset.y - screenOffsetY / this.screenScale,
-    );
-  }
-
-  /**
-   * This function takes the deltaY from the mouse wheel event and zooms the screen in or out
-   * The location of the mouse in world space is preserved
-   * @param deltaY
-   */
-  public zoomScreen(deltaY: number) {
-    const worldMouseLocationBeforeZoom = this.getWorldMouseLocation();
-    const newScreenScale =
-      this.getScreenScale() *
-      (1 - MOUSE_ZOOM_MULTIPLIER * (deltaY / Math.abs(deltaY)));
-    this.setScreenScale(newScreenScale);
-
-    // now get the location of the cursor in world space again
-    // It will have changed because the scale has changed,
-    // but we can offset our world now to fix the zoom location in screen space,
-    // because we know how much it changed laterally between the two spatial scales.
-    const worldMouseLocationAfterZoom = this.getWorldMouseLocation();
-
-    // Adjust the screen offset to maintain the cursor position
-    this.screenOffset = new Point(
-      this.screenOffset.x +
-        (worldMouseLocationBeforeZoom.x - worldMouseLocationAfterZoom.x),
-      this.screenOffset.y +
-        (worldMouseLocationBeforeZoom.y - worldMouseLocationAfterZoom.y),
-    );
-  }
-
-  public setLineStyles(
-    isHighlighted: boolean,
-    isSelected: boolean,
-    color: string,
-    lineWidth: number,
-    dash: number[] = [],
-  ) {
-    this.context.strokeStyle = color;
-    this.context.lineWidth = lineWidth;
-    this.context.setLineDash(dash);
-
-    if (isHighlighted) {
-      this.context.lineWidth = lineWidth + 1;
+    constructor(
+        private context: CanvasRenderingContext2D,
+        private canvasSize: Point,
+    ) {
+        this.worldMouseLocation = this.targetToWorld(
+            new Point(canvasSize.x / 2, canvasSize.y / 2),
+        );
+        console.log('setting screen offset: ', 0, 0);
+        this.setScreenOffset(new Point(0, 0)); // User expects mathematical coordinates, where y axis goes up, but canvas y axis goes down
     }
 
-    if (isSelected) {
-      this.context.setLineDash([5, 5]);
+    public getCanvasSize() {
+        return this.canvasSize;
     }
-  }
 
-  public clearCanvas() {
-    if (this.canvasSize === null) return;
+    public getScreenScale() {
+        return this.screenScale;
+    }
 
-    if (!this.context) return;
+    public setScreenScale(newScreenScale: number) {
+        this.screenScale = newScreenScale;
+        triggerReactUpdate(StateVariable.screenZoom);
+    }
 
-    this.context.fillStyle = CANVAS_BACKGROUND_COLOR;
-    this.context.fillRect(0, 0, this.canvasSize?.x, this.canvasSize?.y);
-  }
+    public getScreenOffset() {
+        return this.screenOffset;
+    }
 
-  /**
-   * Draws a line from startPoint to endPoint and auto converts to screen space first
-   * @param startPoint
-   * @param endPoint
-   */
-  public drawLine(startPoint: Point, endPoint: Point): void {
-    const [screenStartPoint, screenEndPoint] = this.worldsToScreens([
-      startPoint,
-      endPoint,
-    ]);
+    public setScreenOffset(newScreenOffset: Point) {
+        this.screenOffset = newScreenOffset;
+        triggerReactUpdate(StateVariable.screenOffset);
+    }
 
-    this.screenDrawLine(screenStartPoint, screenEndPoint);
-  }
+    public setScreenMouseLocation(newScreenMouseLocation: Point): void {
+        this.worldMouseLocation = this.targetToWorld(newScreenMouseLocation);
+        triggerReactUpdate(StateVariable.screenMouseLocation);
+    }
 
-  public screenDrawLine(screenStartPoint: Point, screenEndPoint: Point): void {
-    this.context.beginPath();
-    this.context.moveTo(screenStartPoint.x, screenStartPoint.y);
-    this.context.lineTo(screenEndPoint.x, screenEndPoint.y);
-    this.context.stroke();
-  }
+    public getWorldMouseLocation(): Point {
+        return this.worldMouseLocation;
+    }
 
-  /**
-   * Draw an arc (segment of a circle) or a circle if startAngle = 0 and endAngle = 2PI
-   * @param centerPoint
-   * @param radius
-   * @param startAngle
-   * @param endAngle
-   */
-  public drawArc(
-    centerPoint: Point,
-    radius: number,
-    startAngle: number,
-    endAngle: number,
-  ) {
-    const screenCenterPoint = this.worldToScreen(centerPoint);
-    const screenRadius = radius * this.screenScale;
-    this.context.beginPath();
-    this.context.arc(
-      screenCenterPoint.x,
-      screenCenterPoint.y,
-      screenRadius,
-      startAngle,
-      endAngle,
-    );
-    this.context.stroke();
-  }
+    public getScreenMouseLocation(): Point {
+        return this.worldToTarget(this.worldMouseLocation);
+    }
 
-  /**
-   * Draws an arrow head which ends at the endPoint
-   * The start point doesn't really matter, only the direction
-   * the size of the arrow is determined by ARROW_HEAD_SIZE
-   * @param startPoint
-   * @param endPoint
-   */
-  public drawArrowHead(startPoint: Point, endPoint: Point): void {
-    const vectorFromEndToStart = new Vector(endPoint, startPoint);
-    const vectorFromEndToStartUnit = vectorFromEndToStart.normalize();
-    const baseOfArrow = endPoint
-      .clone()
-      .translate(
-        vectorFromEndToStartUnit.multiply(ARROW_HEAD_LENGTH * this.screenScale),
-      );
-    const perpendicularVector1 = vectorFromEndToStartUnit.rotate(
-      90 * TO_RADIANS,
-    );
-    const perpendicularVector2 = vectorFromEndToStartUnit.rotate(
-      -90 * TO_RADIANS,
-    );
-    const leftCornerOfArrow = baseOfArrow
-      .clone()
-      .translate(
-        perpendicularVector1.multiply(ARROW_HEAD_WIDTH * this.screenScale),
-      );
-    const rightCornerOfArrow = baseOfArrow
-      .clone()
-      .translate(
-        perpendicularVector2.multiply(ARROW_HEAD_WIDTH * this.screenScale),
-      );
+    public panScreen(screenOffsetX: number, screenOffsetY: number) {
+        this.screenOffset = new Point(
+            this.screenOffset.x - screenOffsetX / this.screenScale,
+            this.screenOffset.y - screenOffsetY / this.screenScale,
+        );
+    }
 
-    const [screenEndPoint, screenLeftCornerOfArrow, screenRightCornerOfArrow] =
-      this.worldsToScreens([endPoint, leftCornerOfArrow, rightCornerOfArrow]);
+    /**
+     * This function takes the deltaY from the mouse wheel event and zooms the screen in or out
+     * The location of the mouse in world space is preserved
+     * @param deltaY
+     */
+    public zoomScreen(deltaY: number) {
+        const worldMouseLocationBeforeZoom = this.getWorldMouseLocation();
+        const newScreenScale =
+            this.getScreenScale() *
+            (1 - MOUSE_ZOOM_MULTIPLIER * (deltaY / Math.abs(deltaY)));
+        this.setScreenScale(newScreenScale);
 
-    this.context.beginPath();
-    this.context.moveTo(screenEndPoint.x, screenEndPoint.y);
-    this.context.lineTo(screenLeftCornerOfArrow.x, screenLeftCornerOfArrow.y);
-    this.context.lineTo(screenRightCornerOfArrow.x, screenRightCornerOfArrow.y);
-    this.context.lineTo(screenEndPoint.x, screenEndPoint.y);
-    this.context.fillStyle = '#FFF';
-    this.context.stroke();
-    this.context.fill();
-  }
+        // now get the location of the cursor in world space again
+        // It will have changed because the scale has changed,
+        // but we can offset our world now to fix the zoom location in screen space,
+        // because we know how much it changed laterally between the two spatial scales.
+        const worldMouseLocationAfterZoom = this.getWorldMouseLocation();
 
-  /**
-   * Draw some text at the base location
-   * The direction vector points from the bottom of the first letter towards the bottom of the last letter indicate the rotation of the text   * @param label
-   * @param label
-   * @param basePoint
-   * @param options
-   */
-  public drawText(
-    label: string,
-    basePoint: Point,
-    options: Partial<{
-      textDirection?: Vector;
-      textAlign: 'left' | 'center' | 'right';
-      textColor: string;
-      fontSize: number;
-      fontFamily: string;
-    }> = {},
-  ): void {
-    const screenBasePoint = this.worldToScreen(basePoint);
-    this.drawTextScreen(label, screenBasePoint, {
-      ...options,
-      fontSize: options.fontSize
-        ? options.fontSize * this.screenScale
-        : undefined,
-    });
-  }
+        // Adjust the screen offset to maintain the cursor position
+        this.screenOffset = new Point(
+            this.screenOffset.x +
+                (worldMouseLocationBeforeZoom.x -
+                    worldMouseLocationAfterZoom.x),
+            this.screenOffset.y +
+                (worldMouseLocationBeforeZoom.y -
+                    worldMouseLocationAfterZoom.y),
+        );
+    }
 
-  /**
-   * Draw some text at the base location
-   * The direction vector points from the bottom of the first letter towards the bottom of the last letter indicate the rotation of the text
-   * @param label
-   * @param basePoint
-   * @param options
-   */
-  public drawTextScreen(
-    label: string,
-    basePoint: Point,
-    options: Partial<{
-      textDirection?: Vector;
-      textAlign: 'left' | 'center' | 'right';
-      textColor: string;
-      fontSize: number;
-      fontFamily: string;
-    }> = {},
-  ): void {
-    const opts = {
-      textDirection: new Vector(1, 0),
-      textAlign: 'center' as const,
-      textColor: '#FFF',
-      fontSize: CANVAS_INPUT_FIELD_FONT_SIZE,
-      fontFamily: 'sans-serif',
-      ...options,
-    };
-    this.context.save();
-    this.context.translate(basePoint.x, basePoint.y);
-    const angle = Math.atan2(opts.textDirection.y, opts.textDirection.x);
-    this.context.rotate(angle);
-    this.context.font = `${opts.fontSize}px ${opts.fontFamily}`;
-    this.context.textAlign = opts.textAlign;
-    this.context.fillStyle = opts.textColor;
-    this.context.fillText(label, 0, 0);
-    this.context.restore();
-  }
+    /**
+     * Convert coordinates from World Space --> Screen Space
+     */
+    public worldToTarget(worldCoordinate: Point): Point {
+        return new Point(
+            mapNumberRange(
+                worldCoordinate.x,
+                this.screenOffset.x,
+                this.screenOffset.x + this.canvasSize.x / this.screenScale,
+                0,
+                this.canvasSize.x,
+            ),
+            mapNumberRange(
+                worldCoordinate.y,
+                this.screenOffset.y + this.canvasSize.y / this.screenScale, // inverted since world origin is bottom left and screen  origin is top left
+                this.screenOffset.y,
+                0,
+                this.canvasSize.y,
+            ),
+        );
+    }
 
-  /**
-   * Draw an image to the canvas using world coordinates
-   * @param imageElement
-   * @param xMin
-   * @param yMin
-   * @param width
-   * @param height
-   * @param angle
-   */
-  public drawImage(
-    imageElement: HTMLImageElement,
-    xMin: number,
-    yMin: number,
-    width: number,
-    height: number,
-    angle: number,
-  ): void {
-    const [screenBasePoint, screenDimensions] = this.worldsToScreens([
-      new Point(xMin, yMin),
-      new Point(width, height),
-    ]);
-    const screenXMin = screenBasePoint.x;
-    const screenYMin = screenBasePoint.y;
-    const screenWidth = screenDimensions.x;
-    const screenHeight = screenDimensions.y;
-    const screenCenterX = screenXMin + screenWidth / 2;
-    const screenCenterY = screenYMin + screenHeight / 2;
+    public worldsToTargets(worldCoordinates: Point[]): Point[] {
+        return worldCoordinates.map(this.worldToTarget.bind(this));
+    }
 
-    // Rotate and translate context
-    this.context.translate(screenCenterX, screenCenterY);
-    this.context.rotate(angle);
+    /**
+     * Convert coordinates from Screen Space --> World Space
+     * (0, 0)       (1920, 0)
+     *
+     * (0, 1080)    (1920, 1080)
+     *
+     * convert to
+     *
+     * (0, 1080)    (1920, 1080)
+     *
+     * (0, 0)       (1920, 0)
+     */
+    public targetToWorld(screenCoordinate: Point): Point {
+        // map the screen coordinate to the world coordinate based on this.getScreenOffset() and the this.getScreenScale()
+        return new Point(
+            mapNumberRange(
+                screenCoordinate.x,
+                0,
+                this.canvasSize.x,
+                this.screenOffset.x,
+                this.screenOffset.x + this.canvasSize.x / this.screenScale,
+            ),
+            mapNumberRange(
+                screenCoordinate.y,
+                0,
+                this.canvasSize.y,
+                this.screenOffset.y + this.canvasSize.y / this.screenScale,
+                this.screenOffset.y,
+            ),
+        );
+    }
 
-    // Draw image
-    this.context.drawImage(
-      imageElement,
-      -screenWidth / 2,
-      -screenHeight / 2,
-      screenWidth,
-      screenHeight,
-    );
+    public targetsToWorlds(screenCoordinates: Point[]): Point[] {
+        return screenCoordinates.map(this.targetToWorld.bind(this));
+    }
 
-    // Reset context
-    this.context.rotate(-angle);
-    this.context.translate(-screenCenterX, -screenCenterY);
-  }
+    public setLineStyles(
+        isHighlighted: boolean,
+        isSelected: boolean,
+        color: string,
+        lineWidth: number,
+        dash: number[] = [],
+    ) {
+        this.context.strokeStyle = color;
+        this.context.lineWidth = lineWidth;
+        this.context.setLineDash(dash);
 
-  /**
-   * Convert coordinates from World Space --> Screen Space
-   */
-  public worldToScreen(worldCoordinate: Point): Point {
-    return new Point(
-      (worldCoordinate.x - this.screenOffset.x) * this.screenScale,
-      (worldCoordinate.y - this.screenOffset.y) * this.screenScale,
-    );
-  }
+        if (isHighlighted) {
+            this.context.lineWidth = lineWidth + 1;
+        }
 
-  public worldsToScreens(worldCoordinates: Point[]): Point[] {
-    return worldCoordinates.map(this.worldToScreen.bind(this));
-  }
+        if (isSelected) {
+            this.context.setLineDash([5, 5]);
+        }
+    }
 
-  /**
-   * Convert coordinates from Screen Space --> World Space
-   */
-  public screenToWorld(screenCoordinate: Point): Point {
-    return new Point(
-      screenCoordinate.x / this.screenScale + this.screenOffset.x,
-      screenCoordinate.y / this.screenScale + this.screenOffset.y,
-    );
-  }
+    public setFillStyles(fillColor: string) {
+        this.context.fillStyle = fillColor;
+    }
 
-  public screensToWorlds(screenCoordinates: Point[]): Point[] {
-    return screenCoordinates.map(this.screenToWorld.bind(this));
-  }
+    public clear() {
+        if (this.canvasSize === null) return;
 
-  /**
-   * Fill rectangle with color, but interpret the provided coordinates as screen coordinates
-   * @param xMin
-   * @param yMin
-   * @param width
-   * @param height
-   * @param color
-   */
-  fillRectScreen(
-    xMin: number,
-    yMin: number,
-    width: number,
-    height: number,
-    color: string,
-  ) {
-    this.context.fillStyle = color;
-    this.context.fillRect(xMin, yMin, width, height);
-  }
+        if (!this.context) return;
+
+        this.context.fillStyle = CANVAS_BACKGROUND_COLOR;
+        this.context.fillRect(0, 0, this.canvasSize?.x, this.canvasSize?.y);
+    }
+
+    /**
+     * Draws a line from startPoint to endPoint and auto converts to screen space first
+     * @param worldStartPoint
+     * @param worldEndPoint
+     */
+    public drawLine(worldStartPoint: Point, worldEndPoint: Point): void {
+        const [screenStartPoint, screenEndPoint] = this.worldsToTargets([
+            worldStartPoint,
+            worldEndPoint,
+        ]);
+
+        this.drawLineScreen(screenStartPoint, screenEndPoint);
+    }
+
+    /**
+     * Needs to be public to draw UI that is zoom independent, like snap point indicators
+     * @param screenStartPoint
+     * @param screenEndPoint
+     */
+    public drawLineScreen(
+        screenStartPoint: Point,
+        screenEndPoint: Point,
+    ): void {
+        this.context.beginPath();
+        this.context.moveTo(screenStartPoint.x, screenStartPoint.y);
+        this.context.lineTo(screenEndPoint.x, screenEndPoint.y);
+        this.context.stroke();
+    }
+
+    /**
+     * Draw an arc (segment of a circle) or a circle if startAngle = 0 and endAngle = 2PI
+     * @param centerPoint
+     * @param radius
+     * @param startAngle
+     * @param endAngle
+     */
+    public drawArc(
+        centerPoint: Point,
+        radius: number,
+        startAngle: number,
+        endAngle: number,
+    ) {
+        const screenCenterPoint = this.worldToTarget(centerPoint);
+        const screenRadius = radius * this.screenScale;
+        this.drawArcScreen(
+            screenCenterPoint,
+            screenRadius,
+            startAngle,
+            endAngle,
+        );
+    }
+
+    public drawArcScreen(
+        screenCenterPoint: Point,
+        screenRadius: number,
+        startAngle: number,
+        endAngle: number,
+    ) {
+        this.context.beginPath();
+        this.context.arc(
+            screenCenterPoint.x,
+            screenCenterPoint.y,
+            screenRadius,
+            startAngle,
+            endAngle,
+        );
+        this.context.stroke();
+    }
+
+    /**
+     * Draw some text at the base location
+     * The direction vector points from the bottom of the first letter towards the bottom of the last letter indicate the rotation of the text   * @param label
+     * @param label
+     * @param basePoint
+     * @param options
+     */
+    public drawText(
+        label: string,
+        basePoint: Point,
+        options: Partial<{
+            textDirection?: Vector;
+            textAlign: 'left' | 'center' | 'right';
+            textColor: string;
+            fontSize: number;
+            fontFamily: string;
+        }> = {},
+    ): void {
+        const screenBasePoint = this.worldToTarget(basePoint);
+        this.drawTextScreen(label, screenBasePoint, {
+            ...options,
+            fontSize: options.fontSize
+                ? options.fontSize * this.screenScale
+                : undefined,
+        });
+    }
+
+    /**
+     * Draw some text at the base location
+     * The direction vector points from the bottom of the first letter towards the bottom of the last letter indicate the rotation of the text
+     * @param label
+     * @param basePoint
+     * @param options
+     */
+    public drawTextScreen(
+        label: string,
+        basePoint: Point,
+        options: Partial<{
+            textDirection?: Vector;
+            textAlign: 'left' | 'center' | 'right';
+            textColor: string;
+            fontSize: number;
+            fontFamily: string;
+        }> = {},
+    ): void {
+        const opts = {
+            ...DEFAULT_TEXT_OPTIONS,
+            ...options,
+        };
+        this.context.save();
+        this.context.translate(basePoint.x, basePoint.y);
+        const angle = Math.atan2(-opts.textDirection.y, opts.textDirection.x);
+        this.context.rotate(angle);
+        this.context.font = `${opts.fontSize}px ${opts.fontFamily}`;
+        this.context.textAlign = opts.textAlign;
+        this.context.fillStyle = opts.textColor;
+        this.context.fillText(label, 0, 0);
+        this.context.restore();
+    }
+
+    /**
+     * Draw an image to the canvas using world coordinates
+     * @param imageElement
+     * @param xMin
+     * @param yMin
+     * @param width
+     * @param height
+     * @param angle
+     */
+    public drawImage(
+        imageElement: HTMLImageElement,
+        xMin: number,
+        yMin: number,
+        width: number,
+        height: number,
+        angle: number,
+    ): void {
+        const [screenBasePoint, screenDimensions] = this.worldsToTargets([
+            new Point(xMin, yMin),
+            new Point(width, height),
+        ]);
+        const screenXMin = screenBasePoint.x;
+        const screenYMin = screenBasePoint.y;
+        const screenWidth = screenDimensions.x;
+        const screenHeight = screenDimensions.y;
+        const screenCenterX = screenXMin + screenWidth / 2;
+        const screenCenterY = screenYMin + screenHeight / 2;
+
+        // Rotate and translate context
+        this.context.translate(screenCenterX, screenCenterY);
+        this.context.rotate(angle);
+
+        // Draw image
+        this.context.drawImage(
+            imageElement,
+            -screenWidth / 2,
+            -screenHeight / 2,
+            screenWidth,
+            screenHeight,
+        );
+
+        // Reset context
+        this.context.rotate(-angle);
+        this.context.translate(-screenCenterX, -screenCenterY);
+    }
+
+    public fillRect(
+        xMin: number,
+        yMin: number,
+        width: number,
+        height: number,
+        color: string,
+    ) {
+        const screenMinPoint = this.worldToTarget(new Point(xMin, yMin));
+
+        this.fillRectScreen(
+            screenMinPoint.x,
+            screenMinPoint.y,
+            width * this.screenScale,
+            height * this.screenScale,
+            color,
+        );
+    }
+
+    /**
+     * Fill rectangle with color, but interpret the provided coordinates as screen coordinates
+     * @param xMin
+     * @param yMin
+     * @param width
+     * @param height
+     * @param color
+     */
+    public fillRectScreen(
+        xMin: number,
+        yMin: number,
+        width: number,
+        height: number,
+        color: string,
+    ) {
+        // TODO see if we need to replace this with a call to fillPolygon
+        this.context.fillStyle = color;
+        this.context.fillRect(xMin, yMin, width, height);
+    }
+
+    /**
+     * Fill polygon with color
+     * @param points
+     */
+    public fillPolygon(...points: Point[]) {
+        const screenPoints = points.map(this.worldToTarget.bind(this));
+        this.context.beginPath();
+        screenPoints.forEach((screenPoint, index) => {
+            if (index === 0) {
+                this.context.moveTo(screenPoint.x, screenPoint.y);
+            } else {
+                this.context.lineTo(screenPoint.x, screenPoint.y);
+            }
+        });
+        this.context.closePath();
+        this.context.fill();
+    }
 }

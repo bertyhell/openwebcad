@@ -1,301 +1,436 @@
 import {
-  getActiveToolActor,
-  getLastStateInstructions,
-  getScreenCanvasDrawController,
-  getSnapPoint,
-  getSnapPointOnAngleGuide,
-  redo,
-  setActiveToolActor,
-  setGhostHelperEntities,
-  setSelectedEntityIds,
-  undo,
+    getActiveToolActor,
+    getEntities,
+    getLastStateInstructions,
+    getPanStartLocation,
+    getScreenCanvasDrawController,
+    getSnapPoint,
+    getSnapPointOnAngleGuide,
+    redo,
+    setActiveToolActor,
+    setGhostHelperEntities,
+    setHighlightedEntityIds,
+    setPanStartLocation,
+    setSelectedEntityIds,
+    setShouldDrawCursor,
+    undo,
 } from '../state.ts';
 import {
-  AbsolutePointInputEvent,
-  ActorEvent,
-  NumberInputEvent,
-  RelativePointInputEvent,
-  TextInputEvent,
+    AbsolutePointInputEvent,
+    ActorEvent,
+    MouseClickEvent,
+    NumberInputEvent,
+    RelativePointInputEvent,
+    TextInputEvent,
 } from '../tools/tool.types.ts';
 import { ScreenCanvasDrawController } from '../drawControllers/screenCanvas.drawController.ts';
 import { Point } from '@flatten-js/core';
 import {
-  CANVAS_INPUT_FIELD_BACKGROUND_COLOR,
-  CANVAS_INPUT_FIELD_HEIGHT,
-  CANVAS_INPUT_FIELD_INSTRUCTION_TEXT_COLOR,
-  CANVAS_INPUT_FIELD_MOUSE_OFFSET,
-  CANVAS_INPUT_FIELD_TEXT_COLOR,
-  CANVAS_INPUT_FIELD_WIDTH,
+    CANVAS_INPUT_FIELD_BACKGROUND_COLOR,
+    CANVAS_INPUT_FIELD_HEIGHT,
+    CANVAS_INPUT_FIELD_INSTRUCTION_TEXT_COLOR,
+    CANVAS_INPUT_FIELD_MOUSE_OFFSET,
+    CANVAS_INPUT_FIELD_TEXT_COLOR,
+    CANVAS_INPUT_FIELD_WIDTH,
+    HIGHLIGHT_ENTITY_DISTANCE,
+    SNAP_POINT_DISTANCE,
 } from '../App.consts.ts';
 import { TOOL_STATE_MACHINES } from '../tools/tool.consts.ts';
 import { Actor } from 'xstate';
 import { Tool } from '../tools.ts';
+import { compact, round } from 'es-toolkit';
+import { findClosestEntity } from './find-closest-entity.ts';
+import { MouseButton } from '../App.types.ts';
+import { getClosestSnapPointWithinRadius } from './get-closest-snap-point.ts';
+import { calculateAngleGuidesAndSnapPoints } from './calculate-angle-guides-and-snap-points.ts';
 
 const NUMBER_REGEXP = /^[0-9]+([.][0-9]+)?$/;
 const ABSOLUTE_POINT_REGEXP =
-  /^([0-9]+([.][0-9]+)?)\s*,\s*([0-9]+([.][0-9]+)?)$/;
+    /^([0-9]+([.][0-9]+)?)\s*,\s*([0-9]+([.][0-9]+)?)$/;
 const RELATIVE_POINT_REGEXP =
-  /^@([0-9]+([.][0-9]+)?)\s*,\s*([0-9]+([.][0-9]+)?)$/;
+    /^@([0-9]+([.][0-9]+)?)\s*,\s*([0-9]+([.][0-9]+)?)$/;
 
 export class InputController {
-  private text: string = '';
+    private text: string = '';
 
-  constructor() {
-    // Listen for keystrokes
-    document.addEventListener('keydown', evt => {
-      this.handleKeyStroke(evt);
-    });
-    // Listen for right mouse button click => perform the same action as ENTER
-    document.addEventListener('mouseup', evt => {
-      this.handleMouseUp(evt);
-    });
-    // Stop the context menu from appearing when right-clicking
-    document.addEventListener('contextmenu', evt => {
-      evt.preventDefault();
-    });
-  }
-
-  public draw(drawController: ScreenCanvasDrawController) {
-    const screenMouseLocation = drawController.getScreenMouseLocation();
-
-    // draw input field
-    drawController.fillRectScreen(
-      screenMouseLocation.x + CANVAS_INPUT_FIELD_MOUSE_OFFSET,
-      screenMouseLocation.y + CANVAS_INPUT_FIELD_MOUSE_OFFSET,
-      CANVAS_INPUT_FIELD_WIDTH,
-      CANVAS_INPUT_FIELD_HEIGHT,
-      CANVAS_INPUT_FIELD_BACKGROUND_COLOR,
-    );
-    drawController.drawTextScreen(
-      this.text,
-      new Point(
-        screenMouseLocation.x + CANVAS_INPUT_FIELD_MOUSE_OFFSET + 2,
-        screenMouseLocation.y +
-          CANVAS_INPUT_FIELD_MOUSE_OFFSET +
-          CANVAS_INPUT_FIELD_HEIGHT -
-          2,
-      ),
-      {
-        textAlign: 'left',
-        textColor: CANVAS_INPUT_FIELD_TEXT_COLOR,
-        fontSize: 18,
-      },
-    );
-
-    const matchingToolNames = this.getToolNamesFromPrefixText();
-    const toolInstruction = getLastStateInstructions();
-    const texts: string[] = [];
-    if (toolInstruction) {
-      // Draw tool instruction
-      texts.push(toolInstruction);
+    constructor() {
+        // Listen for keystrokes
+        document.addEventListener('keydown', evt => {
+            this.handleKeyStroke(evt);
+        });
+        // Listen for right mouse button click => perform the same action as ENTER
+        document.addEventListener('mousedown', this.handleMouseDown);
+        document.addEventListener('mousemove', this.handleMouseMove);
+        document.addEventListener('mouseup', this.handleMouseUp);
+        document.addEventListener('wheel', this.handleMouseWheel);
+        document.addEventListener('mouseout', this.handleMouseOut);
+        document.addEventListener('mouseenter', this.handleMouseEnter);
+        // Stop the context menu from appearing when right-clicking
+        document.addEventListener('contextmenu', evt => {
+            evt.preventDefault();
+        });
     }
-    if (matchingToolNames.length) {
-      // Draw list of matching tools. eg: C => CIRCLE, COPY, ...
-      texts.push(...matchingToolNames);
+
+    public draw(drawController: ScreenCanvasDrawController) {
+        const screenMouseLocation = drawController.worldToTarget(
+            drawController.getWorldMouseLocation(),
+        );
+
+        // draw input field
+        drawController.fillRectScreen(
+            screenMouseLocation.x + CANVAS_INPUT_FIELD_MOUSE_OFFSET,
+            screenMouseLocation.y + CANVAS_INPUT_FIELD_MOUSE_OFFSET,
+            CANVAS_INPUT_FIELD_WIDTH,
+            CANVAS_INPUT_FIELD_HEIGHT,
+            CANVAS_INPUT_FIELD_BACKGROUND_COLOR,
+        );
+        drawController.drawTextScreen(
+            this.text,
+            new Point(
+                screenMouseLocation.x + CANVAS_INPUT_FIELD_MOUSE_OFFSET + 2,
+                screenMouseLocation.y +
+                    CANVAS_INPUT_FIELD_MOUSE_OFFSET +
+                    CANVAS_INPUT_FIELD_HEIGHT -
+                    2,
+            ),
+            {
+                textAlign: 'left',
+                textColor: CANVAS_INPUT_FIELD_TEXT_COLOR,
+                fontSize: 18,
+            },
+        );
+
+        const matchingToolNames = this.getToolNamesFromPrefixText();
+        const toolInstruction = getLastStateInstructions();
+        const texts: string[] = [];
+        if (toolInstruction) {
+            // Draw tool instruction
+            texts.push(toolInstruction);
+            texts.push(
+                round(drawController.getWorldMouseLocation().x, 2) +
+                    ',' +
+                    round(drawController.getWorldMouseLocation().y, 2),
+            );
+        }
+        if (matchingToolNames.length) {
+            // Draw list of matching tools. eg: C => CIRCLE, COPY, ...
+            texts.push(...matchingToolNames);
+        }
+        this.drawListBelowInputField(drawController, texts);
     }
-    this.drawListBelowInputField(drawController, texts);
-  }
 
-  private handleMouseUp(evt: MouseEvent) {
-    if (evt.button === 2) {
-      // Right click => confirm action (ENTER)
-      evt.preventDefault();
-      evt.stopPropagation();
-      this.handleEnterKey();
+    private handleMouseUp(evt: MouseEvent) {
+        if (evt.button === MouseButton.Right) {
+            // Right click => confirm action (ENTER)
+            evt.preventDefault();
+            evt.stopPropagation();
+            this.handleEnterKey();
+        }
+
+        // If ancestor parent exist with class .controls => ignore clicks, since a button was clicked instead of the canvas
+        const controlsParent = (evt?.target as HTMLElement)?.closest(
+            '.controls',
+        );
+        if (controlsParent) {
+            return;
+        }
+
+        if (evt.button === MouseButton.Middle) {
+            setPanStartLocation(null);
+        }
+        if (evt.button === MouseButton.Left) {
+            const screenCanvasDrawController = getScreenCanvasDrawController();
+            const closestSnapPoint = getClosestSnapPointWithinRadius(
+                compact([getSnapPoint(), getSnapPointOnAngleGuide()]),
+                screenCanvasDrawController.getWorldMouseLocation(),
+                SNAP_POINT_DISTANCE /
+                    screenCanvasDrawController.getScreenScale(),
+            );
+
+            const worldMouseLocationTemp =
+                getScreenCanvasDrawController().targetToWorld(
+                    new Point(evt.clientX, evt.clientY),
+                );
+            const worldMouseLocation = closestSnapPoint
+                ? closestSnapPoint.point
+                : worldMouseLocationTemp;
+
+            const activeToolActor = getActiveToolActor();
+            activeToolActor?.send({
+                type: ActorEvent.MOUSE_CLICK,
+                worldMouseLocation,
+                screenMouseLocation:
+                    screenCanvasDrawController.worldToTarget(
+                        worldMouseLocation,
+                    ),
+                holdingCtrl: evt.ctrlKey,
+                holdingShift: evt.shiftKey,
+            } as MouseClickEvent);
+        }
     }
-  }
 
-  public handleKeyStroke(evt: KeyboardEvent) {
-    evt.preventDefault();
-    evt.stopPropagation();
-    if (evt.ctrlKey && evt.key === 'v') {
-      // User wants to paste the clipboard
-    } else if (evt.ctrlKey && !evt.shiftKey && evt.key === 'z') {
-      // User wants to undo the last action
-      this.handleUndo(evt);
-    } else if (evt.ctrlKey && evt.shiftKey && evt.key === 'z') {
-      // User wants to redo the last action
-      this.handleRedo(evt);
-    } else if (evt.ctrlKey && evt.key === 'y') {
-      // User wants to redo the last action
-      this.handleRedo(evt);
-    } else if (evt.key === 'Backspace') {
-      // Remove the last character from the input field
-      evt.preventDefault();
-      this.text = this.text.slice(0, this.text.length - 1);
-    } else if (evt.key === 'Delete') {
-      // User wants to delete the current selection
-      evt.preventDefault();
-      getActiveToolActor()?.send({
-        type: ActorEvent.DELETE,
-      });
-    } else if (evt.key === 'Escape') {
-      // User wants to cancel the current action
-      this.handleEscapeKey();
-    } else if (evt.key === 'Enter') {
-      // User wants to submit the input or submit the action
-      this.handleEnterKey();
-    } else if (evt.key?.length === 1) {
-      // User entered a single character => add to input field text
-      this.text += evt.key.toUpperCase();
+    private handleMouseEnter() {
+        setShouldDrawCursor(true);
     }
-  }
 
-  private handleEscapeKey() {
-    if (this.text === '') {
-      // Cancel tool action
-      getActiveToolActor()?.send({
-        type: ActorEvent.ESC,
-      });
-    } else {
-      // clear the input field
-      this.text = '';
+    private handleMouseMove(evt: MouseEvent) {
+        setShouldDrawCursor(true);
+        const screenCanvasDrawController = getScreenCanvasDrawController();
+        const newScreenMouseLocation = new Point(evt.clientX, evt.clientY);
+        screenCanvasDrawController.setScreenMouseLocation(
+            newScreenMouseLocation,
+        );
+
+        // If the middle mouse button is pressed, pan the screen
+        const panStartLocation = getPanStartLocation();
+        if (panStartLocation) {
+            screenCanvasDrawController.panScreen(
+                newScreenMouseLocation.x - panStartLocation.x,
+                newScreenMouseLocation.y - panStartLocation.y,
+            );
+            setPanStartLocation(newScreenMouseLocation);
+        }
+
+        // Calculate angle guides and snap points
+        calculateAngleGuidesAndSnapPoints();
+
+        // Highlight the entity closest to the mouse when the select tool is active
+        if (getActiveToolActor()?.getSnapshot()?.context.type === Tool.SELECT) {
+            const closestEntityInfo = findClosestEntity(
+                screenCanvasDrawController.targetToWorld(
+                    newScreenMouseLocation,
+                ),
+                getEntities(),
+            );
+            if (closestEntityInfo.distance < HIGHLIGHT_ENTITY_DISTANCE) {
+                setHighlightedEntityIds([closestEntityInfo.entity.id]);
+            } else {
+                setHighlightedEntityIds([]);
+            }
+        }
     }
-  }
 
-  private getToolNamesFromPrefixText(): Tool[] {
-    if (this.text === '') {
-      return [];
+    private handleMouseOut() {
+        setShouldDrawCursor(false);
     }
-    return (Object.keys(TOOL_STATE_MACHINES).filter(cmd =>
-      cmd.startsWith(this.text.toUpperCase()),
-    ) || null) as Tool[];
-  }
 
-  private handleEnterKey() {
-    // submit the text as input to the active tool and clear the input field
-    if (this.text === '') {
-      console.log('ENTER: ', {
-        text: this.text,
-        activeTool: getActiveToolActor(),
-      });
-      // Send the ENTER event to the active tool
-      getActiveToolActor()?.send({
-        type: ActorEvent.ENTER,
-      });
-    } else if (this.getToolNamesFromPrefixText()[0]) {
-      // User entered a command. eg: L or LINE
-      const toolName = this.getToolNamesFromPrefixText()[0];
-
-      getActiveToolActor()?.stop();
-
-      const newToolActor = new Actor(TOOL_STATE_MACHINES[toolName]);
-      setActiveToolActor(newToolActor);
-
-      console.log('SWITCH TO TOOL: ', {
-        toolName,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        activeTool: (getActiveToolActor()?.src as any).config.context.type,
-      });
-
-      this.text = '';
-    } else if (NUMBER_REGEXP.test(this.text)) {
-      console.log(' NUMBER_INPUT: ', {
-        text: this.text,
-        activeTool: getActiveToolActor(),
-      });
-      // User entered a number. eg: 100
-      getActiveToolActor()?.send({
-        type: ActorEvent.NUMBER_INPUT,
-        value: parseFloat(this.text),
-        worldMouseLocation:
-          getSnapPointOnAngleGuide()?.point ||
-          getSnapPoint()?.point ||
-          getScreenCanvasDrawController().getWorldMouseLocation(),
-      } as NumberInputEvent);
-      this.text = '';
-    } else if (ABSOLUTE_POINT_REGEXP.test(this.text)) {
-      console.log('ABSOLUTE_POINT_INPUT: ', {
-        text: this.text,
-        activeTool: getActiveToolActor(),
-      });
-      // User entered coordinates to an absolute point on the canvas. eg: 100, 200
-      const match = ABSOLUTE_POINT_REGEXP.exec(this.text);
-      if (!match) {
-        return;
-      }
-      const x = parseFloat(match[1]);
-      const y = parseFloat(match[3]);
-      getActiveToolActor()?.send({
-        type: ActorEvent.ABSOLUTE_POINT_INPUT,
-        value: new Point(x, -y), // User expects mathematical coordinates, where y axis goes up, but canvas y axis goes down
-      } as AbsolutePointInputEvent);
-      this.text = '';
-    } else if (RELATIVE_POINT_REGEXP.test(this.text)) {
-      console.log('RELATIVE_POINT_INPUT: ', {
-        text: this.text,
-        activeTool: getActiveToolActor(),
-      });
-      // User entered coordinates to a relative point on the canvas. eg: @100, 200
-      const match = RELATIVE_POINT_REGEXP.exec(this.text);
-      if (!match) {
-        return;
-      }
-      const x = parseFloat(match[1]);
-      const y = parseFloat(match[3]);
-      getActiveToolActor()?.send({
-        type: ActorEvent.RELATIVE_POINT_INPUT,
-        value: new Point(x, -y), // User expects mathematical coordinates, where y axis goes up, but canvas y axis goes down
-      } as RelativePointInputEvent);
-      this.text = '';
-    } else {
-      console.log('TEXT_INPUT: ', {
-        text: this.text,
-        activeTool: getActiveToolActor(),
-      });
-      // Send the text to the active tool
-      getActiveToolActor()?.send({
-        type: ActorEvent.TEXT_INPUT,
-        value: this.text,
-      } as TextInputEvent);
-      this.text = '';
+    /**
+     * Change the zoom level of screen space
+     * @param evt
+     */
+    private handleMouseWheel(evt: WheelEvent) {
+        const drawController = getScreenCanvasDrawController();
+        drawController.zoomScreen(evt.deltaY);
     }
-  }
 
-  private handleUndo(evt: KeyboardEvent) {
-    evt.preventDefault();
-    undo();
-    setGhostHelperEntities([]);
-    setSelectedEntityIds([]);
-    getActiveToolActor()?.send({
-      type: ActorEvent.ESC,
-    });
-  }
+    private handleMouseDown(evt: MouseEvent) {
+        if (evt.button !== MouseButton.Middle) return;
 
-  private handleRedo(evt: KeyboardEvent) {
-    evt.preventDefault();
-    redo();
-    setGhostHelperEntities([]);
-    setSelectedEntityIds([]);
-    getActiveToolActor()?.send({
-      type: ActorEvent.ESC,
-    });
-  }
+        setPanStartLocation(new Point(evt.clientX, evt.clientY));
+    }
 
-  private drawListBelowInputField(
-    drawController: ScreenCanvasDrawController,
-    texts: string[],
-  ): void {
-    const screenMouseLocation = drawController.getScreenMouseLocation();
-    const startY =
-      screenMouseLocation.y +
-      CANVAS_INPUT_FIELD_MOUSE_OFFSET +
-      CANVAS_INPUT_FIELD_HEIGHT * 2 +
-      2;
-    const offsetY = CANVAS_INPUT_FIELD_HEIGHT;
-    texts.forEach((text, index) => {
-      drawController.drawTextScreen(
-        text,
-        new Point(
-          screenMouseLocation.x + CANVAS_INPUT_FIELD_MOUSE_OFFSET + 2,
-          startY + index * offsetY,
-        ),
-        {
-          textAlign: 'left',
-          textColor: CANVAS_INPUT_FIELD_INSTRUCTION_TEXT_COLOR,
-          fontSize: 18,
-        },
-      );
-    });
-  }
+    public handleKeyStroke(evt: KeyboardEvent) {
+        if (evt.key === 'F12') {
+            // F12 => open developer tools
+            return;
+        }
+        if (evt.key === 'F5') {
+            // F5 => reload the page
+            return;
+        }
+        evt.preventDefault();
+        evt.stopPropagation();
+        if (evt.ctrlKey && evt.key === 'v') {
+            // User wants to paste the clipboard
+        } else if (evt.ctrlKey && !evt.shiftKey && evt.key === 'z') {
+            // User wants to undo the last action
+            this.handleUndo(evt);
+        } else if (evt.ctrlKey && evt.shiftKey && evt.key === 'z') {
+            // User wants to redo the last action
+            this.handleRedo(evt);
+        } else if (evt.ctrlKey && evt.key === 'y') {
+            // User wants to redo the last action
+            this.handleRedo(evt);
+        } else if (evt.key === 'Backspace') {
+            // Remove the last character from the input field
+            evt.preventDefault();
+            this.text = this.text.slice(0, this.text.length - 1);
+        } else if (evt.key === 'Delete') {
+            // User wants to delete the current selection
+            evt.preventDefault();
+            getActiveToolActor()?.send({
+                type: ActorEvent.DELETE,
+            });
+        } else if (evt.key === 'Escape') {
+            // User wants to cancel the current action
+            this.handleEscapeKey();
+        } else if (evt.key === 'Enter') {
+            // User wants to submit the input or submit the action
+            this.handleEnterKey();
+        } else if (evt.key?.length === 1) {
+            // User entered a single character => add to input field text
+            this.text += evt.key.toUpperCase();
+        }
+    }
+
+    private handleEscapeKey() {
+        if (this.text === '') {
+            // Cancel tool action
+            getActiveToolActor()?.send({
+                type: ActorEvent.ESC,
+            });
+        } else {
+            // clear the input field
+            this.text = '';
+        }
+    }
+
+    private getToolNamesFromPrefixText(): Tool[] {
+        if (this.text === '') {
+            return [];
+        }
+        return (Object.keys(TOOL_STATE_MACHINES).filter(cmd =>
+            cmd.startsWith(this.text.toUpperCase()),
+        ) || null) as Tool[];
+    }
+
+    private handleEnterKey() {
+        // submit the text as input to the active tool and clear the input field
+        if (this.text === '') {
+            console.log('ENTER: ', {
+                text: this.text,
+                activeTool: getActiveToolActor(),
+            });
+            // Send the ENTER event to the active tool
+            getActiveToolActor()?.send({
+                type: ActorEvent.ENTER,
+            });
+        } else if (this.getToolNamesFromPrefixText()[0]) {
+            // User entered a command. eg: L or LINE
+            const toolName = this.getToolNamesFromPrefixText()[0];
+
+            getActiveToolActor()?.stop();
+
+            const newToolActor = new Actor(TOOL_STATE_MACHINES[toolName]);
+            setActiveToolActor(newToolActor);
+
+            console.log('SWITCH TO TOOL: ', {
+                toolName,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                activeTool: (getActiveToolActor()?.src as any).config.context
+                    .type,
+            });
+
+            this.text = '';
+        } else if (NUMBER_REGEXP.test(this.text)) {
+            console.log(' NUMBER_INPUT: ', {
+                text: this.text,
+                activeTool: getActiveToolActor(),
+            });
+            // User entered a number. eg: 100
+            getActiveToolActor()?.send({
+                type: ActorEvent.NUMBER_INPUT,
+                value: parseFloat(this.text),
+                worldMouseLocation:
+                    getSnapPointOnAngleGuide()?.point ||
+                    getSnapPoint()?.point ||
+                    getScreenCanvasDrawController().getWorldMouseLocation(),
+            } as NumberInputEvent);
+            this.text = '';
+        } else if (ABSOLUTE_POINT_REGEXP.test(this.text)) {
+            console.log('ABSOLUTE_POINT_INPUT: ', {
+                text: this.text,
+                activeTool: getActiveToolActor(),
+            });
+            // User entered coordinates to an absolute point on the canvas. eg: 100, 200
+            const match = ABSOLUTE_POINT_REGEXP.exec(this.text);
+            if (!match) {
+                return;
+            }
+            const x = parseFloat(match[1]);
+            const y = parseFloat(match[3]);
+            getActiveToolActor()?.send({
+                type: ActorEvent.ABSOLUTE_POINT_INPUT,
+                value: new Point(x, y),
+            } as AbsolutePointInputEvent);
+            this.text = '';
+        } else if (RELATIVE_POINT_REGEXP.test(this.text)) {
+            console.log('RELATIVE_POINT_INPUT: ', {
+                text: this.text,
+                activeTool: getActiveToolActor(),
+            });
+            // User entered coordinates to a relative point on the canvas. eg: @100, 200
+            const match = RELATIVE_POINT_REGEXP.exec(this.text);
+            if (!match) {
+                return;
+            }
+            const x = parseFloat(match[1]);
+            const y = parseFloat(match[3]);
+            getActiveToolActor()?.send({
+                type: ActorEvent.RELATIVE_POINT_INPUT,
+                value: new Point(x, y),
+            } as RelativePointInputEvent);
+            this.text = '';
+        } else {
+            console.log('TEXT_INPUT: ', {
+                text: this.text,
+                activeTool: getActiveToolActor(),
+            });
+            // Send the text to the active tool
+            getActiveToolActor()?.send({
+                type: ActorEvent.TEXT_INPUT,
+                value: this.text,
+            } as TextInputEvent);
+            this.text = '';
+        }
+    }
+
+    private handleUndo(evt: KeyboardEvent) {
+        evt.preventDefault();
+        undo();
+        setGhostHelperEntities([]);
+        setSelectedEntityIds([]);
+        getActiveToolActor()?.send({
+            type: ActorEvent.ESC,
+        });
+    }
+
+    private handleRedo(evt: KeyboardEvent) {
+        evt.preventDefault();
+        redo();
+        setGhostHelperEntities([]);
+        setSelectedEntityIds([]);
+        getActiveToolActor()?.send({
+            type: ActorEvent.ESC,
+        });
+    }
+
+    private drawListBelowInputField(
+        drawController: ScreenCanvasDrawController,
+        texts: string[],
+    ): void {
+        const screenMouseLocation = drawController.worldToTarget(
+            drawController.getWorldMouseLocation(),
+        );
+        const startY =
+            screenMouseLocation.y +
+            CANVAS_INPUT_FIELD_MOUSE_OFFSET +
+            CANVAS_INPUT_FIELD_HEIGHT * 2 +
+            2;
+        const offsetY = CANVAS_INPUT_FIELD_HEIGHT;
+        texts.forEach((text, index) => {
+            drawController.drawTextScreen(
+                text,
+                new Point(
+                    screenMouseLocation.x + CANVAS_INPUT_FIELD_MOUSE_OFFSET + 2,
+                    startY + index * offsetY,
+                ),
+                {
+                    textAlign: 'left',
+                    textColor: CANVAS_INPUT_FIELD_INSTRUCTION_TEXT_COLOR,
+                    fontSize: 18,
+                },
+            );
+        });
+    }
 }

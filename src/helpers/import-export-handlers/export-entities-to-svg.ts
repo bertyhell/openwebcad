@@ -1,20 +1,18 @@
 import { saveAs } from 'file-saver';
 import { Entity } from '../../entities/Entity';
-import { Point, Vector } from '@flatten-js/core';
+import { Point } from '@flatten-js/core';
 import { SVG_MARGIN } from '../../App.consts';
-import { Shape } from '../../App.types';
 import { getCanvasSize, getEntities } from '../../state';
-import { getExportColor } from '../get-export-color';
+import { SvgDrawController } from '../../drawControllers/svg.drawController.ts';
 
 export function convertEntitiesToSvgString(
   entities: Entity[],
   canvasSize: Point,
-): { svgString: string; width: number; height: number } {
+): { svgLines: string[]; width: number; height: number } {
   let boundingBoxMinX = canvasSize.x;
   let boundingBoxMinY = canvasSize.y;
   let boundingBoxMaxX = 0;
   let boundingBoxMaxY = 0;
-  const svgStrings: string[] = [];
 
   entities.forEach(entity => {
     const boundingBox = entity.getBoundingBox();
@@ -26,42 +24,21 @@ export function convertEntitiesToSvgString(
     }
   });
 
-  console.log('exporting svg', svgStrings);
-  const boundingBoxWidth = boundingBoxMaxX - boundingBoxMinX + SVG_MARGIN * 2;
-  const boundingBoxHeight = boundingBoxMaxY - boundingBoxMinY + SVG_MARGIN * 2;
+  const svgDrawController = new SvgDrawController(
+    boundingBoxMinX - SVG_MARGIN,
+    boundingBoxMinY - SVG_MARGIN,
+    boundingBoxMaxX + SVG_MARGIN,
+    boundingBoxMaxY + SVG_MARGIN,
+  );
+  svgDrawController.setScreenOffset(
+    new Point(boundingBoxMinX, boundingBoxMinY),
+  );
 
   entities.forEach(entity => {
-    const shape = entity.getShape();
-    if (!shape) return;
-
-    const translatedShape = shape.translate(
-      new Vector(
-        new Point(boundingBoxMinX, boundingBoxMinY),
-        new Point(SVG_MARGIN, SVG_MARGIN),
-      ),
-    );
-    const svgString = (translatedShape as Shape).svg({
-      stroke: getExportColor(entity.lineColor),
-      strokeWidth: entity.lineWidth,
-    });
-    if (svgString) {
-      svgStrings.push(svgString);
-    }
+    entity.draw(svgDrawController);
   });
 
-  // Patch for bug: https://github.com/alexbol99/flatten-js/pull/186/files
-  const svgString = `
-      <svg width="${boundingBoxWidth}" height="${boundingBoxHeight}" xmlns="http://www.w3.org/2000/svg">
-        <rect x="0" y="0" width="${boundingBoxWidth}" height="${boundingBoxHeight}" fill="white" />
-        ${svgStrings.join('')}
-      </svg>
-    `;
-
-  return {
-    svgString,
-    width: boundingBoxWidth,
-    height: boundingBoxHeight,
-  };
+  return svgDrawController.export();
 }
 
 export function exportEntitiesToSvgFile() {
@@ -70,6 +47,6 @@ export function exportEntitiesToSvgFile() {
 
   const svg = convertEntitiesToSvgString(entities, canvasSize);
 
-  const blob = new Blob([svg.svgString], { type: 'text/svg;charset=utf-8' });
+  const blob = new Blob(svg.svgLines, { type: 'text/svg;charset=utf-8' });
   saveAs(blob, 'open-web-cad--drawing.svg');
 }

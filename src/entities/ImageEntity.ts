@@ -14,12 +14,13 @@ import { scalePoint } from '../helpers/scale-point';
 import { twoPointBoxToPolygon } from '../helpers/box-to-polygon';
 import { polygonToSegments } from '../helpers/polygon-to-segments';
 import { DrawController } from '../drawControllers/DrawController.ts';
+import { isEntityHighlighted, isEntitySelected } from '../state.ts';
 
 export class ImageEntity implements Entity {
   public id: string = crypto.randomUUID();
   public lineColor: string = '#fff';
   public lineWidth: number = 1;
-  public lineStyle: number[] | undefined = undefined;
+  public lineDash: number[] | undefined = undefined;
 
   private imageElement: HTMLImageElement;
   private polygon: Polygon;
@@ -48,6 +49,13 @@ export class ImageEntity implements Entity {
   }
 
   public draw(drawController: DrawController): void {
+    drawController.setLineStyles(
+      isEntityHighlighted(this),
+      isEntitySelected(this),
+      this.lineColor,
+      this.lineWidth,
+      this.lineDash,
+    );
     polygonToSegments(this.polygon).forEach(edge => {
       drawController.drawLine(edge.start, edge.end);
     });

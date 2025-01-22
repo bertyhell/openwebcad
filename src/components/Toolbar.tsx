@@ -30,6 +30,7 @@ import { Point } from '@flatten-js/core';
 import { importImageFromFile } from '../helpers/import-export-handlers/import-image-from-file';
 import { ActorEvent } from '../tools/tool.types';
 import { imageImportToolStateMachine } from '../tools/image-import-tool';
+import { exportEntitiesToPdfFile } from '../helpers/import-export-handlers/export-entities-to-pdf.ts';
 
 interface ToolbarProps {}
 
@@ -295,6 +296,11 @@ export const Toolbar: FC<ToolbarProps> = () => {
         title="Export to PNG file"
         label="PNG"
         onClick={() => exportEntitiesToPngFile()}
+      />
+      <Button
+        title="Export to PDF file"
+        label="PDF"
+        onClick={() => exportEntitiesToPdfFile()}
       />
       <Button
         className="mt-2"

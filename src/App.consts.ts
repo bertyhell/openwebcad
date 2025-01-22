@@ -10,6 +10,11 @@ export const EPSILON = 1e-6;
 export const SVG_MARGIN = 10;
 
 /**
+ * Margin around the PDF elements when exporting to a .pdf document
+ */
+export const PDF_MARGIN = 10;
+
+/**
  * The width and height of the cross that will be drawn instead of the cursor when hovering the drawing canvas
  */
 export const CURSOR_SIZE = 30;
@@ -173,23 +178,29 @@ export const CANVAS_INPUT_FIELD_FONT_SIZE = 16;
  */
 export const CANVAS_INPUT_FIELD_INSTRUCTION_TEXT_COLOR = '#999';
 
+/**
+ * Multiplier to determine the pdf line width from the in application line width
+ * This seems to be needed since 1px line widths look quite fat in pdf
+ */
+export const PDF_LINE_WIDTH_FACTOR = 0.25;
+
 export const COLOR_LIST = [
-  '#ffffff',
-  '#2f4f4f',
-  '#800000',
-  '#006400',
-  '#d2b48c',
-  '#ff0000',
-  '#00ced1',
-  '#ffa500',
-  '#ffff00',
-  '#00ff00',
-  '#0000ff',
-  '#ff00ff',
-  '#1e90ff',
-  '#dda0dd',
-  '#ff1493',
-  '#98fb98',
+    '#ffffff',
+    '#2f4f4f',
+    '#800000',
+    '#006400',
+    '#d2b48c',
+    '#ff0000',
+    '#00ced1',
+    '#ffa500',
+    '#ffff00',
+    '#00ff00',
+    '#0000ff',
+    '#ff00ff',
+    '#1e90ff',
+    '#dda0dd',
+    '#ff1493',
+    '#98fb98',
 ];
 
 /**

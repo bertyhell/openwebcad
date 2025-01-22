@@ -6,13 +6,13 @@ import { getCanvasSize, getEntities } from '../../state';
  * Takes an svg string and converts it to a png data uri
  * by creating an svg element in the dom and drawing that element on the canvas
  * Then taking the canvas data and outputting it as a png data blob
- * @param svgString
+ * @param svgLines
  * @param width
  * @param height
  * @param margin
  */
 export function convertSvgToPngBlob(
-  svgString: string,
+  svgLines: string[],
   width: number,
   height: number,
   margin: number,
@@ -26,7 +26,7 @@ export function convertSvgToPngBlob(
     }
 
     const img = new Image();
-    const svg = new Blob([svgString], { type: 'image/svg+xml' });
+    const svg = new Blob(svgLines, { type: 'image/svg+xml' });
     const url = URL.createObjectURL(svg);
 
     img.onload = () => {
@@ -59,7 +59,7 @@ export async function exportEntitiesToPngFile() {
 
   const svg = convertEntitiesToSvgString(entities, canvasSize);
   const pngDataBlob: Blob = await convertSvgToPngBlob(
-    svg.svgString,
+    svg.svgLines,
     svg.width,
     svg.height,
     20,

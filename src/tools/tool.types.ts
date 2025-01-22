@@ -45,6 +45,7 @@ export enum ActorEvent {
 export interface MouseClickEvent extends EventObject {
   type: ActorEvent.MOUSE_CLICK;
   worldMouseLocation: Point;
+  screenMouseLocation: Point;
   holdingCtrl: boolean;
   holdingShift: boolean;
 }
@@ -93,6 +94,7 @@ export interface DrawEvent extends EventObject {
 }
 
 export type PointInputEvent =
+  | DrawEvent
   | MouseClickEvent
   | NumberInputEvent
   | AbsolutePointInputEvent

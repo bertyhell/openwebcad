@@ -1,0 +1,163 @@
+{
+    "title": "record eraser 2",
+    "selectorAttribute": "data-id",
+    "steps": [
+        {
+            "type": "setViewport",
+            "width": 1278,
+            "height": 1430,
+            "deviceScaleFactor": 1,
+            "isMobile": false,
+            "hasTouch": false,
+            "isLandscape": false
+        },
+        {
+            "type": "navigate",
+            "url": "http://localhost:5173/",
+            "assertedEvents": [
+                {
+                    "type": "navigation",
+                    "url": "http://localhost:5173/",
+                    "title": "Open WebCAD"
+                }
+            ]
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                ["[data-id='canvas']"],
+                ["xpath///*[@data-id=\"canvas\"]"],
+                ["pierce/[data-id='canvas']"]
+            ],
+            "offsetY": 148,
+            "offsetX": 473
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                ["[data-id='canvas']"],
+                ["xpath///*[@data-id=\"canvas\"]"],
+                ["pierce/[data-id='canvas']"]
+            ],
+            "offsetY": 698,
+            "offsetX": 473
+        },
+        {
+            "type": "keyDown",
+            "target": "main",
+            "key": "c"
+        },
+        {
+            "type": "keyUp",
+            "key": "c",
+            "target": "main"
+        },
+        {
+            "type": "keyDown",
+            "target": "main",
+            "key": "i"
+        },
+        {
+            "type": "keyUp",
+            "key": "i",
+            "target": "main"
+        },
+        {
+            "type": "keyDown",
+            "target": "main",
+            "key": "r"
+        },
+        {
+            "type": "keyUp",
+            "key": "r",
+            "target": "main"
+        },
+        {
+            "type": "keyDown",
+            "target": "main",
+            "key": "c"
+        },
+        {
+            "type": "keyUp",
+            "key": "c",
+            "target": "main"
+        },
+        {
+            "type": "keyDown",
+            "target": "main",
+            "key": "l"
+        },
+        {
+            "type": "keyUp",
+            "key": "l",
+            "target": "main"
+        },
+        {
+            "type": "keyDown",
+            "target": "main",
+            "key": "e"
+        },
+        {
+            "type": "keyUp",
+            "key": "e",
+            "target": "main"
+        },
+        {
+            "type": "keyDown",
+            "target": "main",
+            "key": "Enter"
+        },
+        {
+            "type": "keyUp",
+            "key": "Enter",
+            "target": "main"
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                ["[data-id='canvas']"],
+                ["xpath///*[@data-id=\"canvas\"]"],
+                ["pierce/[data-id='canvas']"]
+            ],
+            "offsetY": 402,
+            "offsetX": 266
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                ["[data-id='canvas']"],
+                ["xpath///*[@data-id=\"canvas\"]"],
+                ["pierce/[data-id='canvas']"]
+            ],
+            "offsetY": 441,
+            "offsetX": 542
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                ["[data-id='delete-segment-button'] path"],
+                ["xpath///*[@data-id=\"delete-segment-button\"]/div/svg/path"],
+                ["pierce/[data-id='delete-segment-button'] path"],
+                ["aria/Delete segments", "aria/[role=\"graphics-symbol\"]"]
+            ],
+            "offsetY": 15,
+            "offsetX": 9
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                ["[data-id='canvas']"],
+                ["xpath///*[@data-id=\"canvas\"]"],
+                ["pierce/[data-id='canvas']"]
+            ],
+            "offsetY": 291,
+            "offsetX": 524
+        }
+    ]
+}

@@ -1,9 +1,12 @@
-import { CANVAS_BACKGROUND_COLOR, MOUSE_ZOOM_MULTIPLIER } from '../App.consts';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+// noinspection JSUnusedLocalSymbols
+
 import { Point, Vector } from '@flatten-js/core';
-import { DEFAULT_TEXT_OPTIONS, DrawController } from './DrawController';
-import { triggerReactUpdate } from '../state.ts';
-import { StateVariable } from '../helpers/undo-stack.ts';
-import { mapNumberRange } from '../helpers/map-number-range.ts';
+import { DrawController } from '../../../src/drawControllers/DrawController';
+import { triggerReactUpdate } from '../../../src/state';
+import { StateVariable } from '../../../src/helpers/undo-stack';
+import { MOUSE_ZOOM_MULTIPLIER } from '../../../src/App.consts';
+import { mapNumberRange } from '../../../src/helpers/map-number-range';
 
 /**
  * Screen coordinate system:
@@ -31,7 +34,7 @@ export class ScreenCanvasDrawController implements DrawController {
     private worldMouseLocation: Point;
 
     constructor(
-        private context: CanvasRenderingContext2D,
+        private context: CanvasRenderingContext2D | null,
         private canvasSize: Point,
     ) {
         this.worldMouseLocation = this.targetToWorld(
@@ -180,46 +183,18 @@ export class ScreenCanvasDrawController implements DrawController {
         color: string,
         lineWidth: number,
         dash: number[] = [],
-    ) {
-        this.context.strokeStyle = color;
-        this.context.lineWidth = lineWidth;
-        this.context.setLineDash(dash);
+    ) {}
 
-        if (isHighlighted) {
-            this.context.lineWidth = lineWidth + 1;
-        }
+    public setFillStyles(fillColor: string) {}
 
-        if (isSelected) {
-            this.context.setLineDash([5, 5]);
-        }
-    }
-
-    public setFillStyles(fillColor: string) {
-        this.context.fillStyle = fillColor;
-    }
-
-    public clear() {
-        if (this.canvasSize === null) return;
-
-        if (!this.context) return;
-
-        this.context.fillStyle = CANVAS_BACKGROUND_COLOR;
-        this.context.fillRect(0, 0, this.canvasSize?.x, this.canvasSize?.y);
-    }
+    public clear() {}
 
     /**
      * Draws a line from startPoint to endPoint and auto converts to screen space first
      * @param worldStartPoint
      * @param worldEndPoint
      */
-    public drawLine(worldStartPoint: Point, worldEndPoint: Point): void {
-        const [screenStartPoint, screenEndPoint] = this.worldsToTargets([
-            worldStartPoint,
-            worldEndPoint,
-        ]);
-
-        this.drawLineScreen(screenStartPoint, screenEndPoint);
-    }
+    public drawLine(worldStartPoint: Point, worldEndPoint: Point): void {}
 
     /**
      * Needs to be public to draw UI that is zoom independent, like snap point indicators
@@ -229,12 +204,7 @@ export class ScreenCanvasDrawController implements DrawController {
     public drawLineScreen(
         screenStartPoint: Point,
         screenEndPoint: Point,
-    ): void {
-        this.context.beginPath();
-        this.context.moveTo(screenStartPoint.x, screenStartPoint.y);
-        this.context.lineTo(screenEndPoint.x, screenEndPoint.y);
-        this.context.stroke();
-    }
+    ): void {}
 
     /**
      * Draw an arc (segment of a circle) or a circle if startAngle = 0 and endAngle = 2PI
@@ -250,17 +220,7 @@ export class ScreenCanvasDrawController implements DrawController {
         startAngle: number,
         endAngle: number,
         counterClockWise: boolean,
-    ) {
-        const screenCenterPoint = this.worldToTarget(centerPoint);
-        const screenRadius = radius * this.screenScale;
-        this.drawArcScreen(
-            screenCenterPoint,
-            screenRadius,
-            startAngle,
-            endAngle,
-            counterClockWise,
-        );
-    }
+    ) {}
 
     public drawArcScreen(
         screenCenterPoint: Point,
@@ -268,18 +228,7 @@ export class ScreenCanvasDrawController implements DrawController {
         startAngle: number,
         endAngle: number,
         counterClockWise: boolean,
-    ) {
-        this.context.beginPath();
-        this.context.arc(
-            screenCenterPoint.x,
-            screenCenterPoint.y,
-            screenRadius,
-            startAngle,
-            endAngle,
-            counterClockWise,
-        );
-        this.context.stroke();
-    }
+    ) {}
 
     /**
      * Draw some text at the base location
@@ -298,15 +247,7 @@ export class ScreenCanvasDrawController implements DrawController {
             fontSize: number;
             fontFamily: string;
         }> = {},
-    ): void {
-        const screenBasePoint = this.worldToTarget(basePoint);
-        this.drawTextScreen(label, screenBasePoint, {
-            ...options,
-            fontSize: options.fontSize
-                ? options.fontSize * this.screenScale
-                : undefined,
-        });
-    }
+    ): void {}
 
     /**
      * Draw some text at the base location
@@ -325,21 +266,7 @@ export class ScreenCanvasDrawController implements DrawController {
             fontSize: number;
             fontFamily: string;
         }> = {},
-    ): void {
-        const opts = {
-            ...DEFAULT_TEXT_OPTIONS,
-            ...options,
-        };
-        this.context.save();
-        this.context.translate(basePoint.x, basePoint.y);
-        const angle = Math.atan2(-opts.textDirection.y, opts.textDirection.x);
-        this.context.rotate(angle);
-        this.context.font = `${opts.fontSize}px ${opts.fontFamily}`;
-        this.context.textAlign = opts.textAlign;
-        this.context.fillStyle = opts.textColor;
-        this.context.fillText(label, 0, 0);
-        this.context.restore();
-    }
+    ): void {}
 
     /**
      * Draw an image to the canvas using world coordinates
@@ -357,35 +284,7 @@ export class ScreenCanvasDrawController implements DrawController {
         width: number,
         height: number,
         angle: number,
-    ): void {
-        const [screenBasePoint, screenDimensions] = this.worldsToTargets([
-            new Point(xMin, yMin),
-            new Point(width, height),
-        ]);
-        const screenXMin = screenBasePoint.x;
-        const screenYMin = screenBasePoint.y;
-        const screenWidth = screenDimensions.x;
-        const screenHeight = screenDimensions.y;
-        const screenCenterX = screenXMin + screenWidth / 2;
-        const screenCenterY = screenYMin + screenHeight / 2;
-
-        // Rotate and translate context
-        this.context.translate(screenCenterX, screenCenterY);
-        this.context.rotate(angle);
-
-        // Draw image
-        this.context.drawImage(
-            imageElement,
-            -screenWidth / 2,
-            -screenHeight / 2,
-            screenWidth,
-            screenHeight,
-        );
-
-        // Reset context
-        this.context.rotate(-angle);
-        this.context.translate(-screenCenterX, -screenCenterY);
-    }
+    ): void {}
 
     public fillRect(
         xMin: number,
@@ -393,17 +292,7 @@ export class ScreenCanvasDrawController implements DrawController {
         width: number,
         height: number,
         color: string,
-    ) {
-        const screenMinPoint = this.worldToTarget(new Point(xMin, yMin));
-
-        this.fillRectScreen(
-            screenMinPoint.x,
-            screenMinPoint.y,
-            width * this.screenScale,
-            height * this.screenScale,
-            color,
-        );
-    }
+    ) {}
 
     /**
      * Fill rectangle with color, but interpret the provided coordinates as screen coordinates
@@ -419,27 +308,11 @@ export class ScreenCanvasDrawController implements DrawController {
         width: number,
         height: number,
         color: string,
-    ) {
-        // TODO see if we need to replace this with a call to fillPolygon
-        this.context.fillStyle = color;
-        this.context.fillRect(xMin, yMin, width, height);
-    }
+    ) {}
 
     /**
      * Fill polygon with color
      * @param points
      */
-    public fillPolygon(...points: Point[]) {
-        const screenPoints = points.map(this.worldToTarget.bind(this));
-        this.context.beginPath();
-        screenPoints.forEach((screenPoint, index) => {
-            if (index === 0) {
-                this.context.moveTo(screenPoint.x, screenPoint.y);
-            } else {
-                this.context.lineTo(screenPoint.x, screenPoint.y);
-            }
-        });
-        this.context.closePath();
-        this.context.fill();
-    }
+    public fillPolygon(...points: Point[]) {}
 }

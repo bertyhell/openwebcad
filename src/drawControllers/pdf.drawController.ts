@@ -192,6 +192,7 @@ export class PdfDrawController implements DrawController {
         }
         // draw arc
         // TODO
+        this.doc.circle(canvasCenterPoint.x, canvasCenterPoint.y, canvasRadius);
     }
 
     public drawText(

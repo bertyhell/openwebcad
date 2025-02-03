@@ -54,6 +54,9 @@ export class InputController {
     private text: string = '';
 
     constructor() {
+        if (typeof process === 'object' && process?.env?.NODE_ENV === 'test') {
+            return; // used during unit testing
+        }
         // Listen for keystrokes
         document.addEventListener('keydown', evt => {
             this.handleKeyStroke(evt);
@@ -119,7 +122,7 @@ export class InputController {
         this.drawListBelowInputField(drawController, texts);
     }
 
-    private handleMouseUp(evt: MouseEvent) {
+    public handleMouseUp(evt: MouseEvent) {
         if (evt.button === MouseButton.Right) {
             // Right click => confirm action (ENTER)
             evt.preventDefault();
@@ -169,11 +172,11 @@ export class InputController {
         }
     }
 
-    private handleMouseEnter() {
+    public handleMouseEnter() {
         setShouldDrawCursor(true);
     }
 
-    private handleMouseMove(evt: MouseEvent) {
+    public handleMouseMove(evt: MouseEvent) {
         setShouldDrawCursor(true);
         const screenCanvasDrawController = getScreenCanvasDrawController();
         const newScreenMouseLocation = new Point(evt.clientX, evt.clientY);
@@ -210,7 +213,7 @@ export class InputController {
         }
     }
 
-    private handleMouseOut() {
+    public handleMouseOut() {
         setShouldDrawCursor(false);
     }
 
@@ -218,12 +221,12 @@ export class InputController {
      * Change the zoom level of screen space
      * @param evt
      */
-    private handleMouseWheel(evt: WheelEvent) {
+    public handleMouseWheel(evt: WheelEvent) {
         const drawController = getScreenCanvasDrawController();
         drawController.zoomScreen(evt.deltaY);
     }
 
-    private handleMouseDown(evt: MouseEvent) {
+    public handleMouseDown(evt: MouseEvent) {
         if (evt.button !== MouseButton.Middle) return;
 
         setPanStartLocation(new Point(evt.clientX, evt.clientY));
@@ -273,7 +276,7 @@ export class InputController {
         }
     }
 
-    private handleEscapeKey() {
+    public handleEscapeKey() {
         if (this.text === '') {
             // Cancel tool action
             getActiveToolActor()?.send({
@@ -294,7 +297,7 @@ export class InputController {
         ) || null) as Tool[];
     }
 
-    private handleEnterKey() {
+    public handleEnterKey() {
         // submit the text as input to the active tool and clear the input field
         if (this.text === '') {
             console.log('ENTER: ', {
@@ -385,7 +388,7 @@ export class InputController {
         }
     }
 
-    private handleUndo(evt: KeyboardEvent) {
+    public handleUndo(evt: KeyboardEvent) {
         evt.preventDefault();
         undo();
         setGhostHelperEntities([]);
@@ -395,7 +398,7 @@ export class InputController {
         });
     }
 
-    private handleRedo(evt: KeyboardEvent) {
+    public handleRedo(evt: KeyboardEvent) {
         evt.preventDefault();
         redo();
         setGhostHelperEntities([]);

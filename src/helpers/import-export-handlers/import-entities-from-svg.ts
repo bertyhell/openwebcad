@@ -19,6 +19,7 @@ function handleSvgChildren(entities: Entity[], root: Node): void {
 			continue; // Don't import text // TODO convert this text to a TextEntity
 		}
 		if (child.type === 'element') {
+			console.log(child.tagName);
 			if (child.tagName === 'rect') {
 				entities.push(new RectangleEntity(
 					new Point(parseFloat(String(child.properties?.x)), parseFloat(String(child.properties?.y))),
@@ -38,21 +39,21 @@ function handleSvgChildren(entities: Entity[], root: Node): void {
 					}
 				}
 			if (child.tagName === 'polygon' && typeof child.properties?.points === 'string') {
-				const points: number[] = child.properties.points.split(' ').map(coord => parseFloat(coord));
-				for (let i = 0; i < points.length; i=i+2) {
-					if (i < points.length + 4) {
+				const coords: number[] = child.properties.points.split(' ').map(coord => parseFloat(coord));
+				for (let i = 0; i <= coords.length; i=i+2) {
+					if (i + 4 < coords.length) {
 						// still enough points, keep going
-						const startPoint = new Point(points[i], points[i+1]);
-						const endPoint = new Point(points[i+2], points[i + 3]);
+						const startPoint = new Point(coords[i], coords[i+1]);
+						const endPoint = new Point(coords[i+2], coords[i + 3]);
 						entities.push(new LineEntity(startPoint, endPoint));
-					} else if (i === points.length + 2) {
+					} else if (i + 2 === coords.length) {
 						// last point, add line back to the start
-						const startPoint = new Point(points[i], points[i+1]);
-						const endPoint = new Point(points[0], points[1]);
+						const startPoint = new Point(coords[i], coords[i+1]);
+						const endPoint = new Point(coords[0], coords[1]);
 						entities.push(new LineEntity(startPoint, endPoint));
 					} else {
 						// stop
-						console.log('expected even number of points but got: ' + points.length);
+						console.log('expected even number of points but got: ' + coords.length);
 					}
 				}
 			}

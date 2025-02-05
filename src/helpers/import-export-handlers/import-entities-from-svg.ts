@@ -19,7 +19,6 @@ function handleSvgChildren(entities: Entity[], root: Node): void {
 			continue; // Don't import text // TODO convert this text to a TextEntity
 		}
 		if (child.type === 'element') {
-			console.log(child.tagName);
 			if (child.tagName === 'rect') {
 				entities.push(new RectangleEntity(
 					new Point(parseFloat(String(child.properties?.x)), parseFloat(String(child.properties?.y))),
@@ -41,7 +40,7 @@ function handleSvgChildren(entities: Entity[], root: Node): void {
 			if (child.tagName === 'polygon' && typeof child.properties?.points === 'string') {
 				const coords: number[] = child.properties.points.split(' ').map(coord => parseFloat(coord));
 				for (let i = 0; i <= coords.length; i=i+2) {
-					if (i + 4 < coords.length) {
+					if (i + 4 <= coords.length) {
 						// still enough points, keep going
 						const startPoint = new Point(coords[i], coords[i+1]);
 						const endPoint = new Point(coords[i+2], coords[i + 3]);

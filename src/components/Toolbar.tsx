@@ -31,6 +31,7 @@ import { importImageFromFile } from '../helpers/import-export-handlers/import-im
 import { ActorEvent } from '../tools/tool.types';
 import { imageImportToolStateMachine } from '../tools/image-import-tool';
 import { exportEntitiesToPdfFile } from '../helpers/import-export-handlers/export-entities-to-pdf.ts';
+import { importEntitiesFromSvgFile } from '../helpers/import-export-handlers/import-entities-from-svg.ts';
 
 interface ToolbarProps {}
 
@@ -303,6 +304,23 @@ export const Toolbar: FC<ToolbarProps> = () => {
                     accept="*.json"
                     onChange={async evt => {
                         await importEntitiesFromJsonFile(evt.target.files?.[0]);
+                        evt.target.files = null;
+                    }}
+                ></input>
+            </Button>
+            <Button
+                className="relative"
+                title="Load from SVG file"
+                dataId="svg-open-button"
+                icon={IconName.Svg}
+                onClick={noop}
+            >
+                <input
+                    className="absolute inset-0 opacity-0"
+                    type="file"
+                    accept="*.svg"
+                    onChange={async evt => {
+                        await importEntitiesFromSvgFile(evt.target.files?.[0]);
                         evt.target.files = null;
                     }}
                 ></input>

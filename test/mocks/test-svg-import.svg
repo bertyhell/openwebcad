@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" xmlns:bx="https://boxy-svg.com" width="500px" height="500px">
+    <defs>
+        <bx:export>
+            <bx:file format="svg" href="#object-0"/>
+            <bx:file format="svg" href="#object-1" path="Untitled 2.svg"/>
+            <bx:file format="svg" href="#object-2" path="Untitled 3.svg"/>
+            <bx:file format="svg" path="Untitled 4.svg"/>
+        </bx:export>
+    </defs>
+    <rect x="37.923" y="35.346" width="85.788" height="68.851" style="fill: rgb(216, 216, 216); stroke: rgb(0, 0, 0);"/>
+    <ellipse style="fill: rgb(216, 216, 216); stroke: rgb(0, 0, 0);" cx="203.056" cy="81.186" rx="33.689" ry="33.689"/>
+    <path d="M 152.982 124.448 L 176.73 156.849 L 129.234 156.849 L 152.982 124.448 Z"
+          bx:shape="triangle 129.234 124.448 47.496 32.401 0.5 0 1@619c0e74" style="fill: rgb(216, 216, 216); stroke: rgb(0, 0, 0);"
+          id="object-0"/>
+    <polygon style="fill: rgb(216, 216, 216); stroke: rgb(0, 0, 0);"
+             points="166.053 12.15 135.493 79.529 189.985 141.016 193.299 198.085 138.071 183.726 179.676 173.785 180.044 143.962 128.498 88.365 129.234 53.019"
+             id="object-1"/>
+    <path style="fill: rgb(216, 216, 216); stroke: rgb(0, 0, 0);"
+          d="M 62.224 188.881 C 74.811 188.881 83.645 176.475 79.529 164.58 C 74.501 150.049 82.032 134.168 96.465 128.866" id="object-2"/>
+</svg>

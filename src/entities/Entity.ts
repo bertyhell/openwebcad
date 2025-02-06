@@ -2,7 +2,7 @@ import { Shape, SnapPoint } from '../App.types';
 import { Box, Point, Segment } from '@flatten-js/core';
 import { ArcJsonData } from './ArcEntity';
 import { CircleJsonData } from './CircleEntity';
-import { LineJsonData } from './LineEntity';
+import {LineEntity, LineJsonData} from './LineEntity';
 import { RectangleJsonData } from './RectangleEntity';
 import { PointJsonData } from './PointEntity';
 import { ImageJsonData } from './ImageEntity';
@@ -27,6 +27,7 @@ export interface Entity {
   move(x: number, y: number): void;
   scale(scaleOrigin: Point, scaleFactor: number): void;
   rotate(rotateOrigin: Point, angle: number): void;
+  mirror(mirrorAxis: LineEntity): void;
   clone(): Entity;
   getBoundingBox(): Box | null;
   intersectsWithBox(box: Box): boolean;

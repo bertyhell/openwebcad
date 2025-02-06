@@ -1,9 +1,10 @@
 import { Entity, EntityName, JsonEntity } from './Entity';
 import { Shape, SnapPoint } from '../App.types';
-import { Box, Point, Segment } from '@flatten-js/core';
+import {Arc, Box, Point, Segment} from '@flatten-js/core';
 import { scalePoint } from '../helpers/scale-point';
 import { DrawController } from '../drawControllers/DrawController';
 import { max, min } from 'es-toolkit/compat';
+import {LineEntity} from "./LineEntity.ts";
 
 export class ArrowHeadEntity implements Entity {
   public id: string = crypto.randomUUID();
@@ -51,6 +52,10 @@ export class ArrowHeadEntity implements Entity {
     this.p1 = this.p1.rotate(angle, rotateOrigin);
     this.p2 = this.p2.rotate(angle, rotateOrigin);
     this.p3 = this.p3.rotate(angle, rotateOrigin);
+  }
+
+  public mirror(mirrorAxis: LineEntity) {
+    const
   }
 
   public clone(): ArrowHeadEntity {

@@ -8,6 +8,7 @@ import { getExportColor } from '../helpers/get-export-color';
 import { scalePoint } from '../helpers/scale-point';
 import { DrawController } from '../drawControllers/DrawController.ts';
 import { isEntityHighlighted, isEntitySelected } from '../state.ts';
+import {LineEntity} from "./LineEntity.ts";
 
 export class ArcEntity implements Entity {
     public id: string = crypto.randomUUID();
@@ -71,6 +72,17 @@ export class ArcEntity implements Entity {
 
     public rotate(rotateOrigin: Point, angle: number) {
         this.arc = this.arc.rotate(angle, rotateOrigin);
+    }
+
+    public mirror(mirrorAxis: LineEntity) {
+        const centerDistanceToMirror = mirrorAxis.distanceTo(new Point(this.arc.center.x, this.arc.center.y));
+        this.arc = new Arc(
+            centerDistanceToMirror?.[1].end || this.arc.center,
+            this.arc.r.valueOf(),
+            -this.arc.startAngle,
+            -this.arc.endAngle,
+            !this.arc.counterClockwise
+        )
     }
 
     public clone(): Entity {

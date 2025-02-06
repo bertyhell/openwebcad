@@ -7,12 +7,20 @@ import {
 import {getEntities, setEntities} from '../../state';
 
 
-import {parse, Node} from 'svg-parser';
+import {parse, Node, RootNode} from 'svg-parser';
 import {Point} from "@flatten-js/core";
 import {svgPathToSegments} from "../convert-svg-path-to-line-segments.ts";
+import {getBoundingBoxOfMultipleEntities} from "../get-bounding-box-of-multiple-entities.ts";
+import {mean} from "es-toolkit";
+import {middle} from "../middle.ts";
 
-function handleSvgChildren(entities: Entity[], root: Node): void {
-	const childrenToProcess: (string | Node)[] = [root];
+function svgChildrenToEntities(root: RootNode): Entity[] {
+	if (!root.children || !root.children?.[0]) {
+		console.error((new Error('Empty SVG file')));
+		return [];
+	}
+	const entities: Entity[] = [];
+	const childrenToProcess: (string | Node)[] = [root.children[0]];
 	while(childrenToProcess[0]) {
 		const child = childrenToProcess[0];
 		if (typeof child === "string") {
@@ -25,11 +33,16 @@ function handleSvgChildren(entities: Entity[], root: Node): void {
 					new Point(parseFloat(String(child.properties?.width)), parseFloat(String(child.properties?.height)))
 				));
 			}
-			if (child.tagName === 'ellipse' && child.properties?.rx === child.properties?.ry) {
-				entities.push(new CircleEntity(
-					new Point(parseFloat(String(child.properties?.cx)), parseFloat(String(child.properties?.cy))),
-					parseFloat(String(child.properties?.rx))
-				));
+			if (child.tagName === 'ellipse') {
+				if (child.properties?.rx === child.properties?.ry)
+				{
+					entities.push(new CircleEntity(
+						new Point(parseFloat(String(child.properties?.cx)), parseFloat(String(child.properties?.cy))),
+						parseFloat(String(child.properties?.rx))
+					));
+				} else {
+					// TODO convert ellipse to line segments
+				}
 			}
 			if (child.tagName === 'path' && typeof child.properties?.d === 'string') {
 					const lines = svgPathToSegments(child.properties.d);
@@ -61,6 +74,7 @@ function handleSvgChildren(entities: Entity[], root: Node): void {
 		}
 		childrenToProcess.shift();
 	}
+	return entities;
 }
 
 /**
@@ -70,7 +84,7 @@ function handleSvgChildren(entities: Entity[], root: Node): void {
  * Set the entities in the state
  */
 export function importEntitiesFromSvgFile(file: File | null | undefined) {
-	return new Promise<void>((resolve, reject) => {
+	return new Promise<void>((resolve) => {
 		if (!file) return;
 
 		const reader = new FileReader();
@@ -79,15 +93,19 @@ export function importEntitiesFromSvgFile(file: File | null | undefined) {
 
 			const data = parse(svg);
 
-			console.log(data);
+			const svgEntities: Entity[] = svgChildrenToEntities(data);
 
-			if (!data.children || !data.children?.[0]) {
-				reject(new Error('Empty SVG file'));
-			}
+			// We still need to flip the image top to bottom since the coordinate system of svg has a y-axis that goes down
+			// And the world coordinate system of this application has a mathematical y-axis that goes up
+			const boundingBox = getBoundingBoxOfMultipleEntities(svgEntities);
+			const centerPoint = new Point(middle(boundingBox.minX, boundingBox.maxX), middle(boundingBox.minY, boundingBox.maxY));
 
-			const svgEntities: Entity[] = [];
-			handleSvgChildren(svgEntities, data.children[0]);
-			setEntities([...getEntities(), ...svgEntities]);
+			const mirrorAxis = new LineEntity(centerPoint, new Point(centerPoint.x + 1, centerPoint.y));
+			const svgEntitiesMirrored = svgEntities.map((svgEntity: Entity) => {
+				return svgEntity.mirror(mirrorAxis);
+			})
+
+			setEntities([...getEntities(), ...svgEntitiesMirrored]);
 			resolve();
 		});
 		reader.readAsText(file, 'utf-8');

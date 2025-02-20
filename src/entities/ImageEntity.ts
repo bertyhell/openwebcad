@@ -15,6 +15,9 @@ import { twoPointBoxToPolygon } from '../helpers/box-to-polygon';
 import { polygonToSegments } from '../helpers/polygon-to-segments';
 import { DrawController } from '../drawControllers/DrawController.ts';
 import { isEntityHighlighted, isEntitySelected } from '../state.ts';
+import { LineEntity } from './LineEntity.ts';
+import {mirrorPointOverAxis} from "../helpers/mirror-point-over-axis.ts";
+import { mirrorAngleOverAxis } from '../helpers/mirror-angle-over-axis.ts';
 
 export class ImageEntity implements Entity {
   public id: string = crypto.randomUUID();
@@ -89,6 +92,17 @@ export class ImageEntity implements Entity {
   public rotate(rotateOrigin: Point, angle: number) {
     this.polygon = this.polygon.rotate(angle, rotateOrigin);
     this.angle += angle; // Need to keep track of the angle for drawing the image
+  }
+
+  public mirror(mirrorAxis: LineEntity) {
+    const mirroredVertices = this.polygon.vertices.map(p => mirrorPointOverAxis(p, mirrorAxis));
+    const mirroredAngle = mirrorAngleOverAxis(this.angle, mirrorAxis);
+    // TODO mirror image pixels
+    // this.imageElement = new HTMLImageElement(
+    //     this.imageElement.
+    // )
+    this.polygon = new Polygon(mirroredVertices);
+    this.angle = mirroredAngle;
   }
 
   public clone(): ImageEntity {

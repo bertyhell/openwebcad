@@ -6,7 +6,7 @@
     "scripts": {
         "dev": "vite",
         "build": "tsc -b && vite build --base=/openwebcad/",
-        "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+        "lint": "biome lint --write",
         "preview": "vite preview",
         "stats": "npx cloc ./src",
         "check-types": "tsc -p tsconfig.app.json --noEmit",

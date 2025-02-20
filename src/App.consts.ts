@@ -207,3 +207,8 @@ export const COLOR_LIST = [
  * Number to multiply degrees with to end up with the equivalent radians
  */
 export const TO_RADIANS = Math.PI / 180;
+
+/**
+ * Number to multiply radians with to end up with the equivalent degrees
+ */
+export const TO_DEGREES = 180 / Math.PI;

@@ -8,6 +8,8 @@ import {
 import { cloneDeep } from 'es-toolkit/compat';
 import { scalePoint } from '../helpers/scale-point.ts';
 import { isEntityHighlighted, isEntitySelected } from '../state.ts';
+import {LineEntity} from "./LineEntity.ts";
+import {mirrorPointOverAxis} from "../helpers/mirror-point-over-axis.ts";
 
 export interface TextOptions {
   textDirection: Vector;
@@ -58,6 +60,11 @@ export class TextEntity implements Entity {
   public rotate(rotateOrigin: Point, angle: number) {
     this.basePoint = this.basePoint.rotate(angle, rotateOrigin);
     this.options.textDirection = this.options.textDirection.rotate(angle);
+  }
+
+  public mirror(mirrorAxis: LineEntity) {
+    this.basePoint = mirrorPointOverAxis(this.basePoint, mirrorAxis);
+    this.options.textDirection = new Vector(new Point(0, 0), new Point(this.options.textDirection.x, this.options.textDirection.y));
   }
 
   public clone(): TextEntity {

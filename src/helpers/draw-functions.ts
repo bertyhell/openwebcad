@@ -258,6 +258,7 @@ export function drawSnapPoint(
                 SNAP_POINT_SIZE / 2,
                 0,
                 2 * Math.PI,
+                true
             );
             break;
 

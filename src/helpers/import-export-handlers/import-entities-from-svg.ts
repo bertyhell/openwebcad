@@ -11,7 +11,6 @@ import {parse, Node, RootNode} from 'svg-parser';
 import {Point} from "@flatten-js/core";
 import {svgPathToSegments} from "../convert-svg-path-to-line-segments.ts";
 import {getBoundingBoxOfMultipleEntities} from "../get-bounding-box-of-multiple-entities.ts";
-import {mean} from "es-toolkit";
 import {middle} from "../middle.ts";
 
 function svgChildrenToEntities(root: RootNode): Entity[] {
@@ -101,11 +100,11 @@ export function importEntitiesFromSvgFile(file: File | null | undefined) {
 			const centerPoint = new Point(middle(boundingBox.minX, boundingBox.maxX), middle(boundingBox.minY, boundingBox.maxY));
 
 			const mirrorAxis = new LineEntity(centerPoint, new Point(centerPoint.x + 1, centerPoint.y));
-			const svgEntitiesMirrored = svgEntities.map((svgEntity: Entity) => {
-				return svgEntity.mirror(mirrorAxis);
+			svgEntities.forEach((svgEntity: Entity) => {
+				svgEntity.mirror(mirrorAxis);
 			})
 
-			setEntities([...getEntities(), ...svgEntitiesMirrored]);
+			setEntities([...getEntities(), ...svgEntities]);
 			resolve();
 		});
 		reader.readAsText(file, 'utf-8');

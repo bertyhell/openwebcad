@@ -15,6 +15,8 @@ import { twoPointBoxToPolygon } from '../helpers/box-to-polygon';
 import { polygonToSegments } from '../helpers/polygon-to-segments';
 import { DrawController } from '../drawControllers/DrawController';
 import { isEntityHighlighted, isEntitySelected } from '../state.ts';
+import {LineEntity} from "./LineEntity.ts";
+import {mirrorPointOverAxis} from "../helpers/mirror-point-over-axis.ts";
 
 export class RectangleEntity implements Entity {
   public id: string = crypto.randomUUID();
@@ -65,6 +67,12 @@ export class RectangleEntity implements Entity {
   public rotate(rotateOrigin: Point, angle: number) {
     this.polygon = this.polygon.rotate(angle, rotateOrigin);
   }
+
+  public mirror(mirrorAxis: LineEntity) {
+    const mirroredVertices = this.polygon.vertices.map(p => mirrorPointOverAxis(p, mirrorAxis));
+    this.polygon = new Polygon(mirroredVertices);
+  }
+
 
   public clone(): RectangleEntity {
     return new RectangleEntity(this.polygon.clone());

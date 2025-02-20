@@ -9,6 +9,7 @@ import { scalePoint } from '../helpers/scale-point';
 import { DrawController } from '../drawControllers/DrawController.ts';
 import { isEntityHighlighted, isEntitySelected } from '../state.ts';
 import {LineEntity} from "./LineEntity.ts";
+import {mirrorPointOverAxis} from "../helpers/mirror-point-over-axis.ts";
 
 export class ArcEntity implements Entity {
     public id: string = crypto.randomUUID();
@@ -75,9 +76,10 @@ export class ArcEntity implements Entity {
     }
 
     public mirror(mirrorAxis: LineEntity) {
-        const centerDistanceToMirror = mirrorAxis.distanceTo(new Point(this.arc.center.x, this.arc.center.y));
+        const mirroredCenter = mirrorPointOverAxis(this.arc.center, mirrorAxis);
+        mirrorAxis.getAngle();
         this.arc = new Arc(
-            centerDistanceToMirror?.[1].end || this.arc.center,
+            mirroredCenter,
             this.arc.r.valueOf(),
             -this.arc.startAngle,
             -this.arc.endAngle,

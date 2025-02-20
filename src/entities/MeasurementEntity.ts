@@ -18,6 +18,8 @@ import { pointDistance } from '../helpers/distance-between-points';
 import { DrawController } from '../drawControllers/DrawController';
 import { max, min } from 'es-toolkit/compat';
 import { isEntityHighlighted, isEntitySelected } from '../state.ts';
+import {mirrorPointOverAxis} from "../helpers/mirror-point-over-axis.ts";
+import {LineEntity} from "./LineEntity.ts";
 
 export class MeasurementEntity implements Entity {
     public id: string = crypto.randomUUID();
@@ -259,6 +261,12 @@ export class MeasurementEntity implements Entity {
         this.startPoint = this.startPoint.rotate(angle, rotateOrigin);
         this.endPoint = this.endPoint.rotate(angle, rotateOrigin);
         this.offsetPoint = this.offsetPoint.rotate(angle, rotateOrigin);
+    }
+
+    public mirror(mirrorAxis: LineEntity) {
+        this.startPoint = mirrorPointOverAxis(this.startPoint, mirrorAxis);
+        this.endPoint = mirrorPointOverAxis(this.endPoint, mirrorAxis);
+        this.offsetPoint = mirrorPointOverAxis(this.offsetPoint, mirrorAxis);
     }
 
     public clone(): MeasurementEntity {

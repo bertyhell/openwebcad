@@ -176,7 +176,7 @@ export class PdfDrawController implements DrawController {
         radius: number,
         startAngle: number,
         endAngle: number,
-        counterClockwise: boolean,
+        _counterClockwise: boolean,
     ) {
         const canvasCenterPoint = this.worldToTarget(centerPoint);
         const canvasRadius = radius * this.getScreenScale();

@@ -63,7 +63,7 @@ export class LineEntity implements Entity {
     public mirror(mirrorAxis: LineEntity) {
         const mirroredStart = mirrorPointOverAxis(this.segment.start, mirrorAxis);
         const mirroredEnd = mirrorPointOverAxis(this.segment.end, mirrorAxis);
-        return new LineEntity(mirroredStart, mirroredEnd);
+        this.segment = new Segment(mirroredStart, mirroredEnd);
     }
 
     public clone(): LineEntity {

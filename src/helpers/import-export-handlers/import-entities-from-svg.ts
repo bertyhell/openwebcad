@@ -27,9 +27,10 @@ function svgChildrenToEntities(root: RootNode): Entity[] {
 		}
 		if (child.type === 'element') {
 			if (child.tagName === 'rect') {
+				const corner = new Point(parseFloat(String(child.properties?.x)), parseFloat(String(child.properties?.y)));
 				entities.push(new RectangleEntity(
-					new Point(parseFloat(String(child.properties?.x)), parseFloat(String(child.properties?.y))),
-					new Point(parseFloat(String(child.properties?.width)), parseFloat(String(child.properties?.height)))
+					corner,
+					new Point(corner.x + parseFloat(String(child.properties?.width)), corner.y + parseFloat(String(child.properties?.height)))
 				));
 			}
 			if (child.tagName === 'ellipse') {

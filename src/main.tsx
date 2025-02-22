@@ -30,6 +30,9 @@ import {ActorEvent, DrawEvent} from './tools/tool.types';
 import {Actor} from 'xstate';
 import {ScreenCanvasDrawController} from './drawControllers/screenCanvas.drawController';
 import {InputController} from './helpers/input-controller.ts';
+import {
+	getEntitiesFromLocalStorage,
+} from "./helpers/import-export-handlers/import-entities-from-local-storage.ts";
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
 	<React.StrictMode>
@@ -112,6 +115,11 @@ function initApplication() {
 		if (!context) return;
 
 		setEntities([], true); // Creates the first undo entry
+
+		// Load the last drawing from local storage
+		getEntitiesFromLocalStorage().then((entities) => {
+			setEntities(entities, true);
+		});
 		const screenCanvasDrawController = new ScreenCanvasDrawController(
 			context,
 		);

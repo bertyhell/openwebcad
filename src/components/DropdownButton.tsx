@@ -1,61 +1,68 @@
-import { CSSProperties, FC, ReactNode, useState } from 'react';
-import { Icon, IconName } from './Icon/Icon.tsx';
-import { Button } from './Button.tsx';
+import {CSSProperties, FC, ReactNode, useState} from 'react';
+import {Icon, IconName} from './Icon/Icon.tsx';
+import {Button} from './Button.tsx';
 
 interface DropdownButtonProps {
-    label?: string;
-    title?: string;
-    icon?: IconName;
-    active?: boolean;
-    onClick?: () => void;
-    className?: string;
-    style?: CSSProperties;
-    buttonStyle?: CSSProperties;
-    dataId?: string;
-    children?: ReactNode;
+	label?: string;
+	title?: string;
+	iconName?: IconName;
+	iconComponent?: ReactNode;
+	active?: boolean;
+	onClick?: () => void;
+	className?: string;
+	style?: CSSProperties;
+	buttonStyle?: CSSProperties;
+	dataId?: string;
+	children?: ReactNode;
+	defaultOpen?: boolean;
 }
 
 export const DropdownButton: FC<DropdownButtonProps> = ({
-    label,
-    title,
-    icon,
-    className,
-    style,
-    buttonStyle,
-    dataId,
-    children,
-}) => {
-    const [isOpen, setIsOpen] = useState(false);
+															label,
+															title,
+															iconName,
+															iconComponent,
+															className,
+															style,
+															buttonStyle,
+															dataId,
+															children,
+															defaultOpen = false,
+														}) => {
+	const [isOpen, setIsOpen] = useState(defaultOpen);
 
-    return (
-        <div
-            className={
-                'flex flex-row gap-2 relative' +
-                (className ? ' ' + className : '')
-            }
-            style={style}
-            data-id={dataId}
-        >
-            <Button
-                icon={icon}
-                label={label}
-                title={title}
-                data-active={isOpen}
-                onClick={() => setIsOpen(!isOpen)}
-                style={buttonStyle}
-            />
-            <Icon
-                name={IconName.SolidDownSmall}
-                className={'-rotate-45 absolute -bottom-1 left-6 text-blue-700'}
-            ></Icon>
-            {isOpen && (
-                <div
-                    className="flex flex-row gap-1"
-                    onClick={() => setIsOpen(false)}
-                >
-                    {children}
-                </div>
-            )}
-        </div>
-    );
+	return (
+		<div
+			className={
+				'flex flex-col gap-2 relative' +
+				(className ? ' ' + className : '') +
+				(isOpen ? ' bg-slate-900' : '')
+			}
+			style={style}
+			data-id={dataId}
+		>
+			<Button
+				iconName={iconName}
+				iconComponent={iconComponent}
+				label={label}
+				title={title}
+				active={isOpen}
+				onClick={() => setIsOpen(!isOpen)}
+				style={buttonStyle}
+				className="w-full"
+			/>
+			<Icon
+				name={IconName.SolidDownSmall}
+				className={'absolute top-2.5 right-1 text-blue-700'}
+			></Icon>
+			{isOpen && (
+				<div
+					className="flex flex-row flex-wrap max-w-48 gap-1 pl-1 pb-6"
+					onClick={() => setIsOpen(false)}
+				>
+					{children}
+				</div>
+			)}
+		</div>
+	);
 };

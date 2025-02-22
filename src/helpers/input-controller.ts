@@ -62,12 +62,12 @@ export class InputController {
             this.handleKeyStroke(evt);
         });
         // Listen for right mouse button click => perform the same action as ENTER
-        document.addEventListener('mousedown', this.handleMouseDown);
-        document.addEventListener('mousemove', this.handleMouseMove);
-        document.addEventListener('mouseup', this.handleMouseUp);
-        document.addEventListener('wheel', this.handleMouseWheel);
-        document.addEventListener('mouseout', this.handleMouseOut);
-        document.addEventListener('mouseenter', this.handleMouseEnter);
+        document.addEventListener('mousedown', (evt: MouseEvent) => this.handleMouseDown(evt));
+        document.addEventListener('mousemove', (evt: MouseEvent) => this.handleMouseMove(evt));
+        document.addEventListener('mouseup', (evt: MouseEvent) => this.handleMouseUp(evt));
+        document.addEventListener('wheel', (evt: WheelEvent) => this.handleMouseWheel(evt));
+        document.addEventListener('mouseout', () => this.handleMouseOut());
+        document.addEventListener('mouseenter', () => this.handleMouseEnter());
         // Stop the context menu from appearing when right-clicking
         document.addEventListener('contextmenu', evt => {
             evt.preventDefault();

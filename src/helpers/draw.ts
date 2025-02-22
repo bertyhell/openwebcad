@@ -43,6 +43,8 @@ export function draw(drawController: ScreenCanvasDrawController) {
     );
   drawSnapPoint(drawController, closestSnapPoint, isMarked);
 
-  drawCursor(drawController, getShouldDrawCursor());
-  getInputController().draw(drawController);
+  if (getShouldDrawCursor()) {
+    drawCursor(drawController);
+    getInputController().draw(drawController);
+  }
 }

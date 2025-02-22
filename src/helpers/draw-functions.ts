@@ -326,10 +326,7 @@ export function drawHelpers(
 
 export function drawCursor(
     drawController: ScreenCanvasDrawController,
-    drawCursor: boolean,
 ) {
-    if (!drawCursor) return;
-
     drawController.setLineStyles(false, false, '#FFF', 1, []);
 
     const screenMouseLocation = drawController.getScreenMouseLocation();

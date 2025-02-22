@@ -1,5 +1,5 @@
 import {
-    getActiveToolActor,
+    getActiveToolActor, getCanvasSize,
     getEntities,
     getLastStateInstructions,
     getPanStartLocation,
@@ -75,14 +75,12 @@ export class InputController {
     }
 
     public draw(drawController: ScreenCanvasDrawController) {
-        const screenMouseLocation = drawController.worldToTarget(
-            drawController.getWorldMouseLocation(),
-        );
+        const screenMouseLocation = drawController.getScreenMouseLocation();
 
         // draw input field
         drawController.fillRectScreen(
             screenMouseLocation.x + CANVAS_INPUT_FIELD_MOUSE_OFFSET,
-            screenMouseLocation.y + CANVAS_INPUT_FIELD_MOUSE_OFFSET,
+            screenMouseLocation.y - CANVAS_INPUT_FIELD_MOUSE_OFFSET,
             CANVAS_INPUT_FIELD_WIDTH,
             CANVAS_INPUT_FIELD_HEIGHT,
             CANVAS_INPUT_FIELD_BACKGROUND_COLOR,
@@ -91,9 +89,9 @@ export class InputController {
             this.text,
             new Point(
                 screenMouseLocation.x + CANVAS_INPUT_FIELD_MOUSE_OFFSET + 2,
-                screenMouseLocation.y +
-                    CANVAS_INPUT_FIELD_MOUSE_OFFSET +
-                    CANVAS_INPUT_FIELD_HEIGHT -
+                screenMouseLocation.y -
+                    CANVAS_INPUT_FIELD_MOUSE_OFFSET  -
+                    CANVAS_INPUT_FIELD_HEIGHT +
                     2,
             ),
             {
@@ -152,7 +150,7 @@ export class InputController {
 
             const worldMouseLocationTemp =
                 getScreenCanvasDrawController().targetToWorld(
-                    new Point(evt.clientX, evt.clientY),
+                    new Point(evt.clientX, getCanvasSize().y - evt.clientY),
                 );
             const worldMouseLocation = closestSnapPoint
                 ? closestSnapPoint.point
@@ -179,7 +177,7 @@ export class InputController {
     public handleMouseMove(evt: MouseEvent) {
         setShouldDrawCursor(true);
         const screenCanvasDrawController = getScreenCanvasDrawController();
-        const newScreenMouseLocation = new Point(evt.clientX, evt.clientY);
+        const newScreenMouseLocation = new Point(evt.clientX, getCanvasSize().y - evt.clientY);
         screenCanvasDrawController.setScreenMouseLocation(
             newScreenMouseLocation,
         );
@@ -229,7 +227,7 @@ export class InputController {
     public handleMouseDown(evt: MouseEvent) {
         if (evt.button !== MouseButton.Middle) return;
 
-        setPanStartLocation(new Point(evt.clientX, evt.clientY));
+        setPanStartLocation(new Point(evt.clientX, getCanvasSize().y - evt.clientY));
     }
 
     public handleKeyStroke(evt: KeyboardEvent) {

@@ -330,7 +330,6 @@ function trackUndoState(variable: StateVariable, value: any) {
     }
 
     // Push the new undo state
-    console.log('Pushing undo state', variable, value);
     undoStack.push({ variable: variable, value: value });
 }
 

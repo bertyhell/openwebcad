@@ -167,8 +167,8 @@ export class ScreenCanvasDrawController implements DrawController {
                 screenCoordinate.y,
                 0,
                 this.canvasSize.y,
-                this.screenOffset.y + this.canvasSize.y / this.screenScale,
                 this.screenOffset.y,
+                this.screenOffset.y + this.canvasSize.y / this.screenScale,
             ),
         );
     }

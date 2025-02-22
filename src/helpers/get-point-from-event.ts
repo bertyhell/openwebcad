@@ -7,7 +7,7 @@ import {
   PointInputEvent,
   RelativePointInputEvent,
 } from '../tools/tool.types.ts';
-import { Point, Vector } from '@flatten-js/core';
+import {Point, Vector} from '@flatten-js/core';
 
 /**
  * Various tools need to convert user input into a point
@@ -19,11 +19,11 @@ export function getPointFromEvent(
   startPoint: Point | null,
   event: PointInputEvent,
 ): Point {
-  if (event.type === 'DRAW') {
+  if (event.type === ActorEvent.DRAW) {
     return (event as DrawEvent).drawController.getWorldMouseLocation();
-  } else if (event.type === 'MOUSE_CLICK') {
+  } else if (event.type === ActorEvent.MOUSE_CLICK) {
     return (event as MouseClickEvent).worldMouseLocation;
-  } else if (event.type === 'NUMBER_INPUT') {
+  } else if (event.type === ActorEvent.NUMBER_INPUT) {
     if (!startPoint) {
       throw new Error(
         'Cannot get relative point by distance if no start point is provided',

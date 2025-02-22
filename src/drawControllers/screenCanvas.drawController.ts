@@ -87,9 +87,11 @@ export class ScreenCanvasDrawController implements DrawController {
      * @param deltaY
      */
     public zoomScreen(deltaY: number) {
-        const screenMouseLocationBeforeZoom = this.getScreenMouseLocation();
+        const worldMouseLocationBeforeZoom = this.getWorldMouseLocation();
+        const oldScreenScale = this.getScreenScale();
+
         const newScreenScale =
-            this.getScreenScale() *
+            oldScreenScale *
             (1 - MOUSE_ZOOM_MULTIPLIER * (deltaY / Math.abs(deltaY)));
         this.setScreenScale(newScreenScale);
 
@@ -97,16 +99,17 @@ export class ScreenCanvasDrawController implements DrawController {
         // It will have changed because the scale has changed,
         // but we can offset our world now to fix the zoom location in screen space,
         // because we know how much it changed laterally between the two spatial scales.
-        const screenMouseLocationAfterZoom = this.getScreenMouseLocation();
+        const worldMouseLocationAfterZoom = this.getWorldMouseLocation();
+
+        const offsetAdjustment = new Point(
+            worldMouseLocationBeforeZoom.x - worldMouseLocationAfterZoom.x,
+            worldMouseLocationBeforeZoom.y - worldMouseLocationAfterZoom.y,
+        );
 
         // Adjust the screen offset to maintain the cursor position
         this.screenOffset = new Point(
-            this.screenOffset.x +
-                (screenMouseLocationBeforeZoom.x -
-                    screenMouseLocationAfterZoom.x),
-            this.screenOffset.y +
-                (screenMouseLocationBeforeZoom.y -
-                    screenMouseLocationAfterZoom.y),
+            this.screenOffset.x + offsetAdjustment.x,
+            this.screenOffset.y + offsetAdjustment.y,
         );
     }
 

@@ -18,7 +18,7 @@ export function convertEntitiesToSvgString(
       boundingBox.maxY + SVG_MARGIN,
   );
   svgDrawController.setScreenOffset(
-    new Point(boundingBox.minX, boundingBox.minY),
+    new Point(SVG_MARGIN, SVG_MARGIN),
   );
 
   entities.forEach(entity => {

@@ -252,6 +252,9 @@ export class InputController {
         } else if (evt.ctrlKey && evt.key === 'y') {
             // User wants to redo the last action
             this.handleRedo(evt);
+        } else if (evt.ctrlKey && evt.key === 'a') {
+            // User wants to select everything
+            setSelectedEntityIds(getEntities().map(entity => entity.id));
         } else if (evt.key === 'Backspace') {
             // Remove the last character from the input field
             evt.preventDefault();

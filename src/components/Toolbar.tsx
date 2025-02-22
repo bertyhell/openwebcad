@@ -327,9 +327,9 @@ export const Toolbar: FC<ToolbarProps> = () => {
 					className="relative w-full"
 					title="Import image into the current drawing"
 					dataId="import-image-button"
-					iconName={IconName.Image}
+					iconName={IconName.ImageSolid}
 					onClick={noop}
-					label="Import image"
+					label="image"
 				>
 					<input
 						className="absolute inset-0 opacity-0"
@@ -355,9 +355,9 @@ export const Toolbar: FC<ToolbarProps> = () => {
 					className="relative w-full"
 					title="Load from JSON file"
 					dataId="json-open-button"
-					iconName={IconName.Folder}
+					iconName={IconName.JavascriptSolid}
 					onClick={noop}
-					label="Import JSON"
+					label="JSON"
 				>
 					<input
 						className="absolute inset-0 opacity-0"
@@ -373,9 +373,9 @@ export const Toolbar: FC<ToolbarProps> = () => {
 					className="relative w-full"
 					title="Load from SVG file"
 					dataId="svg-open-button"
-					iconName={IconName.Svg}
+					iconName={IconName.VectorDocumentSolid}
 					onClick={noop}
-					label="Import SVG"
+					label="SVG"
 				>
 					<input
 						className="absolute inset-0 opacity-0"
@@ -394,33 +394,33 @@ export const Toolbar: FC<ToolbarProps> = () => {
 					className="w-full"
 					title="Save to JSON file"
 					dataId="json-save-button"
-					iconName={IconName.Javascript}
+					iconName={IconName.JavascriptSolid}
 					onClick={() => exportEntitiesToJsonFile()}
-					label="Export JSON"
+					label="JSON"
 				/>
 				<Button
 					className="w-full"
 					title="Export to SVG file"
 					dataId="svg-export-button"
-					iconName={IconName.Svg}
+					iconName={IconName.VectorDocumentSolid}
 					onClick={() => exportEntitiesToSvgFile()}
-					label="Export SVG"
+					label="SVG"
 				/>
 				<Button
 					className="w-full"
 					title="Export to PNG file"
 					dataId="png-export-button"
-					iconName={IconName.Png}
+					iconName={IconName.ImageSolid}
 					onClick={() => exportEntitiesToPngFile()}
-					label="Export PNG"
+					label="PNG"
 				/>
 				<Button
 					className="w-full"
 					title="Export to PDF file"
 					dataId="pdf-export-button"
-					iconName={IconName.Pdf}
+					iconName={IconName.PdfSolid}
 					onClick={() => exportEntitiesToPdfFile()}
-					label="Export PDF"
+					label="PDF"
 				/>
 			</DropdownButton>
 

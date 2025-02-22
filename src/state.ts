@@ -9,11 +9,6 @@ import { InputController } from './helpers/input-controller.ts'; // state variab
 
 // state variables
 /**
- * Width and height of the canvas
- */
-let canvasSize = new Point(0, 0);
-
-/**
  * Canvas element
  */
 let canvas: HTMLCanvasElement | null = null;
@@ -129,7 +124,6 @@ let activeLineColor = '#fff';
 let activeLineWidth = 1;
 
 // getters
-export const getCanvasSize = () => canvasSize;
 export const getCanvas = () => canvas;
 export const getActiveToolActor = () => activeToolActor;
 export const getLastStateInstructions = () => lastStateInstructions;
@@ -174,8 +168,6 @@ export const isEntityHighlighted = (entity: Entity) =>
     highlightedEntityIds.includes(entity.id);
 
 // setters
-export const setCanvasSize = (newCanvasSize: Point) =>
-    (canvasSize = newCanvasSize);
 export const setCanvas = (newCanvas: HTMLCanvasElement) => (canvas = newCanvas);
 export const setActiveToolActor = (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

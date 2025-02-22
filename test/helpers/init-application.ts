@@ -1,8 +1,7 @@
 import { InputController } from '../../src/helpers/input-controller';
 import {
-    getCanvasSize,
+    getScreenCanvasDrawController,
     setActiveToolActor,
-    setCanvasSize,
     setEntities,
     setInputController,
     setScreenCanvasDrawController,
@@ -18,13 +17,13 @@ export function initApplication(): InputController {
     const inputController = new InputController();
     setInputController(inputController);
     setEntities([], true); // Creates the first undo entry
-    setCanvasSize(new Point(CANVAS_WIDTH, CANVAS_HEIGHT));
+    getScreenCanvasDrawController().setCanvasSize(new Point(CANVAS_WIDTH, CANVAS_HEIGHT));
 
     const lineToolActor = new Actor(TOOL_STATE_MACHINES[Tool.LINE]);
     lineToolActor.start();
     setActiveToolActor(lineToolActor);
     setScreenCanvasDrawController(
-        new ScreenCanvasDrawController(null, getCanvasSize()) as any,
+        new ScreenCanvasDrawController(null, getScreenCanvasDrawController().getCanvasSize()) as any,
     );
     return inputController;
 }

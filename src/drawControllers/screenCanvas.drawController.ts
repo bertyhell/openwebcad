@@ -1,7 +1,7 @@
 import {CANVAS_BACKGROUND_COLOR, MOUSE_ZOOM_MULTIPLIER} from '../App.consts';
 import {Point, Vector} from '@flatten-js/core';
 import {DEFAULT_TEXT_OPTIONS, DrawController} from './DrawController';
-import {getCanvasSize, triggerReactUpdate} from '../state.ts';
+import {triggerReactUpdate} from '../state.ts';
 import {StateVariable} from '../helpers/undo-stack.ts';
 import {mapNumberRange} from '../helpers/map-number-range.ts';
 
@@ -29,18 +29,22 @@ export class ScreenCanvasDrawController implements DrawController {
     private screenOffset: Point = new Point(0, 0);
     private screenScale: number = 1;
     private screenMouseLocation: Point;
+    private canvasSize: Point = new Point(100, 100);
 
     constructor(
         private context: CanvasRenderingContext2D,
-        private canvasSize: Point,
     ) {
-        this.screenMouseLocation = new Point(canvasSize.x / 2, canvasSize.y / 2);
+        this.screenMouseLocation = new Point(this.canvasSize.x / 2, this.canvasSize.y / 2);
         console.log('setting screen offset: ', 0, 0);
         this.setScreenOffset(new Point(0, 0)); // User expects mathematical coordinates, where y axis goes up, but canvas y axis goes down
     }
 
     public getCanvasSize() {
         return this.canvasSize;
+    }
+
+    public setCanvasSize(newCanvasSize: Point) {
+        this.canvasSize = newCanvasSize;
     }
 
     public getScreenScale() {
@@ -232,8 +236,8 @@ export class ScreenCanvasDrawController implements DrawController {
         screenEndPoint: Point,
     ): void {
         this.context.beginPath();
-        this.context.moveTo(screenStartPoint.x, getCanvasSize().y - screenStartPoint.y);
-        this.context.lineTo(screenEndPoint.x, getCanvasSize().y - screenEndPoint.y);
+        this.context.moveTo(screenStartPoint.x, this.canvasSize.y - screenStartPoint.y);
+        this.context.lineTo(screenEndPoint.x, this.canvasSize.y - screenEndPoint.y);
         this.context.stroke();
     }
 
@@ -273,7 +277,7 @@ export class ScreenCanvasDrawController implements DrawController {
         this.context.beginPath();
         this.context.arc(
             screenCenterPoint.x,
-            getCanvasSize().y - screenCenterPoint.y,
+            this.canvasSize.y - screenCenterPoint.y,
             screenRadius,
             startAngle,
             endAngle,
@@ -332,7 +336,7 @@ export class ScreenCanvasDrawController implements DrawController {
             ...options,
         };
         this.context.save();
-        this.context.translate(basePoint.x, getCanvasSize().y - basePoint.y);
+        this.context.translate(basePoint.x, this.canvasSize.y - basePoint.y);
         const angle = Math.atan2(-opts.textDirection.y, opts.textDirection.x);
         this.context.rotate(angle);
         this.context.font = `${opts.fontSize}px ${opts.fontFamily}`;
@@ -423,7 +427,7 @@ export class ScreenCanvasDrawController implements DrawController {
     ) {
         // TODO see if we need to replace this with a call to fillPolygon
         this.context.fillStyle = color;
-        this.context.fillRect(xMin, getCanvasSize().y - yMin, width, height);
+        this.context.fillRect(xMin, this.canvasSize.y - yMin, width, height);
     }
 
     /**

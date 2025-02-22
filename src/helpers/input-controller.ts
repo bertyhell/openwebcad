@@ -1,5 +1,5 @@
 import {
-    getActiveToolActor, getCanvasSize,
+    getActiveToolActor,
     getEntities,
     getLastStateInstructions,
     getPanStartLocation,
@@ -150,7 +150,7 @@ export class InputController {
 
             const worldMouseLocationTemp =
                 getScreenCanvasDrawController().targetToWorld(
-                    new Point(evt.clientX, getCanvasSize().y - evt.clientY),
+                    new Point(evt.clientX, getScreenCanvasDrawController().getCanvasSize().y - evt.clientY),
                 );
             const worldMouseLocation = closestSnapPoint
                 ? closestSnapPoint.point
@@ -177,7 +177,7 @@ export class InputController {
     public handleMouseMove(evt: MouseEvent) {
         setShouldDrawCursor(true);
         const screenCanvasDrawController = getScreenCanvasDrawController();
-        const newScreenMouseLocation = new Point(evt.clientX, getCanvasSize().y - evt.clientY);
+        const newScreenMouseLocation = new Point(evt.clientX, getScreenCanvasDrawController().getCanvasSize().y - evt.clientY);
         screenCanvasDrawController.setScreenMouseLocation(
             newScreenMouseLocation,
         );
@@ -227,7 +227,7 @@ export class InputController {
     public handleMouseDown(evt: MouseEvent) {
         if (evt.button !== MouseButton.Middle) return;
 
-        setPanStartLocation(new Point(evt.clientX, getCanvasSize().y - evt.clientY));
+        setPanStartLocation(new Point(evt.clientX, getScreenCanvasDrawController().getCanvasSize().y - evt.clientY));
     }
 
     public handleKeyStroke(evt: KeyboardEvent) {

@@ -39,10 +39,10 @@ import { TOOL_STATE_MACHINES } from '../tools/tool.consts.ts';
 import { Actor } from 'xstate';
 import { Tool } from '../tools.ts';
 import { compact, round } from 'es-toolkit';
-import { findClosestEntity } from './find-closest-entity.ts';
+import { findClosestEntity } from '../helpers/find-closest-entity.ts';
 import { MouseButton } from '../App.types.ts';
-import { getClosestSnapPointWithinRadius } from './get-closest-snap-point.ts';
-import { calculateAngleGuidesAndSnapPoints } from './calculate-angle-guides-and-snap-points.ts';
+import { getClosestSnapPointWithinRadius } from '../helpers/get-closest-snap-point.ts';
+import { calculateAngleGuidesAndSnapPoints } from '../helpers/calculate-angle-guides-and-snap-points.ts';
 
 const NUMBER_REGEXP = /^[0-9]+([.][0-9]+)?$/;
 const ABSOLUTE_POINT_REGEXP =
@@ -85,21 +85,24 @@ export class InputController {
             CANVAS_INPUT_FIELD_HEIGHT,
             CANVAS_INPUT_FIELD_BACKGROUND_COLOR,
         );
-        drawController.drawTextScreen(
-            this.text,
-            new Point(
-                screenMouseLocation.x + CANVAS_INPUT_FIELD_MOUSE_OFFSET + 2,
-                screenMouseLocation.y -
-                    CANVAS_INPUT_FIELD_MOUSE_OFFSET  -
-                    CANVAS_INPUT_FIELD_HEIGHT +
+        // Draw text in input field
+        if (this.text) {
+            drawController.drawTextScreen(
+                this.text,
+                new Point(
+                    screenMouseLocation.x + CANVAS_INPUT_FIELD_MOUSE_OFFSET + 2,
+                    screenMouseLocation.y -
+                    CANVAS_INPUT_FIELD_MOUSE_OFFSET -
+                    CANVAS_INPUT_FIELD_HEIGHT -
                     2,
-            ),
-            {
-                textAlign: 'left',
-                textColor: CANVAS_INPUT_FIELD_TEXT_COLOR,
-                fontSize: 18,
-            },
-        );
+                ),
+                {
+                    textAlign: 'left',
+                    textColor: CANVAS_INPUT_FIELD_TEXT_COLOR,
+                    fontSize: 18,
+                },
+            );
+        }
 
         const matchingToolNames = this.getToolNamesFromPrefixText();
         const toolInstruction = getLastStateInstructions();
@@ -417,9 +420,9 @@ export class InputController {
             drawController.getWorldMouseLocation(),
         );
         const startY =
-            screenMouseLocation.y +
-            CANVAS_INPUT_FIELD_MOUSE_OFFSET +
-            CANVAS_INPUT_FIELD_HEIGHT * 2 +
+            screenMouseLocation.y -
+            CANVAS_INPUT_FIELD_MOUSE_OFFSET -
+            CANVAS_INPUT_FIELD_HEIGHT * 2 -
             2;
         const offsetY = CANVAS_INPUT_FIELD_HEIGHT;
         texts.forEach((text, index) => {
@@ -427,7 +430,7 @@ export class InputController {
                 text,
                 new Point(
                     screenMouseLocation.x + CANVAS_INPUT_FIELD_MOUSE_OFFSET + 2,
-                    startY + index * offsetY,
+                    startY - index * offsetY,
                 ),
                 {
                     textAlign: 'left',

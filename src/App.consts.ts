@@ -36,6 +36,11 @@ export const CANVAS_FOREGROUND_COLOR = '#fff';
 export const ANGLE_GUIDES_COLOR = '#999999';
 
 /**
+ * The style of the line dash of the angle guide lines that are drawn when you are close to an angle step from the last drawn point
+ */
+export const ANGLE_GUIDES_DASH = [5, 5];
+
+/**
  * The color of the snap points that are drawn when you are close to a snap point
  * These are the shapes you see when you get near an line endpoint or a circle center point, ...
  */

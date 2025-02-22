@@ -1,4 +1,4 @@
-import { InputController } from '../../src/helpers/input-controller';
+import { InputController } from '../../src/inputController/input-controller';
 import { setActiveTool } from './set-active-tool';
 import { Tool } from '../../src/tools';
 import { Recording, Step } from './replay-recording.types';

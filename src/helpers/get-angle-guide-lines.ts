@@ -1,6 +1,7 @@
 import { LineEntity } from '../entities/LineEntity';
 import { times } from './times';
 import { Point } from '@flatten-js/core';
+import {ANGLE_GUIDES_COLOR, ANGLE_GUIDES_DASH} from "../App.consts.ts";
 
 export function getAngleGuideLines(
   firstPoint: Point,
@@ -13,7 +14,7 @@ export function getAngleGuideLines(
     const angleRad = angle * (Math.PI / 180);
     const x = firstPoint.x + Math.cos(angleRad);
     const y = firstPoint.y + Math.sin(angleRad);
-    return new LineEntity(
+    const angleLine = new LineEntity(
       new Point(
         firstPoint.x - 10000 * (x - firstPoint.x),
         firstPoint.y - 10000 * (y - firstPoint.y),
@@ -23,5 +24,8 @@ export function getAngleGuideLines(
         firstPoint.y + 10000 * (y - firstPoint.y),
       ),
     );
+    angleLine.lineColor = ANGLE_GUIDES_COLOR;
+    angleLine.lineDash = ANGLE_GUIDES_DASH;
+    return angleLine
   });
 }

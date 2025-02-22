@@ -29,7 +29,7 @@ import {TOOL_STATE_MACHINES} from './tools/tool.consts';
 import {ActorEvent, DrawEvent} from './tools/tool.types';
 import {Actor} from 'xstate';
 import {ScreenCanvasDrawController} from './drawControllers/screenCanvas.drawController';
-import {InputController} from './helpers/input-controller.ts';
+import {InputController} from './inputController/input-controller.ts';
 import {
 	getEntitiesFromLocalStorage,
 } from "./helpers/import-export-handlers/import-entities-from-local-storage.ts";

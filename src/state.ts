@@ -5,7 +5,7 @@ import { createStack, StateVariable, UndoState } from './helpers/undo-stack';
 import { isEqual } from 'es-toolkit';
 import { Actor, MachineSnapshot } from 'xstate';
 import { ScreenCanvasDrawController } from './drawControllers/screenCanvas.drawController';
-import { InputController } from './helpers/input-controller.ts'; // state variables
+import { InputController } from './inputController/input-controller.ts'; // state variables
 
 // state variables
 /**

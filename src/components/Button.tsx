@@ -1,4 +1,4 @@
-import {CSSProperties, FC, ReactNode, MouseEvent} from 'react';
+import {CSSProperties, FC, ReactNode, MouseEvent,KeyboardEvent} from 'react';
 import {Icon, IconName} from './Icon/Icon.tsx';
 import {noop} from "es-toolkit";
 
@@ -9,7 +9,7 @@ interface ButtonProps {
 	iconClassname?: string;
 	iconComponent?: ReactNode;
 	active?: boolean;
-	onClick?: (evt: MouseEvent<any>) => void;
+	onClick?: (evt: MouseEvent<HTMLButtonElement> | KeyboardEvent<HTMLButtonElement>) => void;
 	children?: ReactNode;
 	className?: string;
 	style?: CSSProperties;
@@ -39,6 +39,11 @@ export const Button: FC<ButtonProps> = ({
 				style={style}
 				data-active={active}
 				onClick={onClick || noop}
+				onKeyUp={(evt) => {
+					if (evt.key === 'Enter' || evt.key === ' ') {
+						onClick && onClick(evt);
+					}
+				}}
 				title={title}
 				data-id={dataId}
 			>

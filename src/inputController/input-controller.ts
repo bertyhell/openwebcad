@@ -242,6 +242,14 @@ export class InputController {
             // F5 => reload the page
             return;
         }
+        if (evt.key === 'F11') {
+            // F11 => toggle fullscreen
+            return;
+        }
+        if (evt.key === 'Tab') {
+            // Tab => move keyboard focus
+            return;
+        }
         evt.preventDefault();
         evt.stopPropagation();
         if (evt.ctrlKey && evt.key === 'v') {

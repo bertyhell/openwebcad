@@ -90,7 +90,7 @@ export const Toolbar: FC<ToolbarProps> = () => {
 
 	return (
 		<div className="controls absolute top-0 left-0 flex flex-col gap-1 p-1 bg-slate-950 min-h-screen">
-			<DropdownButton label="Draw" title={'Draw tools'} iconName={IconName.Edit} defaultOpen>
+			<DropdownButton label="Draw" title={'Draw tools'} iconName={IconName.Edit} defaultOpen dataId="dropdown-draw-tools">
 				<Button
 					className="w-full"
 					title="Select (s)"
@@ -404,7 +404,7 @@ export const Toolbar: FC<ToolbarProps> = () => {
 				label="New drawing"
 			/>
 
-			<DropdownButton label="Import" title={'Import files'} iconName={IconName.SendUp}>
+			<DropdownButton label="Import" title={'Import files'} iconName={IconName.SendUp} dataId="dropdown-import-tools">
 				<Button
 					className="relative w-full"
 					title="Import image into the current drawing"
@@ -471,7 +471,7 @@ export const Toolbar: FC<ToolbarProps> = () => {
 				</Button>
 			</DropdownButton>
 
-			<DropdownButton label="Export" title={'Export file'} iconName={IconName.SendDown}>
+			<DropdownButton label="Export" title={'Export file'} iconName={IconName.SendDown} dataId="dropdown-export-tools">
 				<Button
 					className="w-full"
 					title="Save to JSON file"

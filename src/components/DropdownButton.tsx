@@ -1,6 +1,8 @@
-import {CSSProperties, FC, ReactNode, useState} from 'react';
+import {CSSProperties, FC, ReactNode} from 'react';
 import {Icon, IconName} from './Icon/Icon.tsx';
 import {Button} from './Button.tsx';
+import {LOCAL_STORAGE_KEY} from "../helpers/import-export-handlers/export-entities-to-local-storage.ts";
+import useLocalStorageState from "use-local-storage-state";
 
 interface DropdownButtonProps {
 	label?: string;
@@ -12,7 +14,7 @@ interface DropdownButtonProps {
 	className?: string;
 	style?: CSSProperties;
 	buttonStyle?: CSSProperties;
-	dataId?: string;
+	dataId: string;
 	children?: ReactNode;
 	defaultOpen?: boolean;
 }
@@ -29,8 +31,9 @@ export const DropdownButton: FC<DropdownButtonProps> = ({
 															children,
 															defaultOpen = false,
 														}) => {
-	const [isOpen, setIsOpen] = useState(defaultOpen);
+	const [isOpen, setIsOpen] = useLocalStorageState<boolean>(LOCAL_STORAGE_KEY.DROPDOWN + '___' + dataId, {defaultValue: defaultOpen});
 
+	console.log('dropdown ' + dataId + '  ' + isOpen);
 	return (
 		<div
 			className={
@@ -47,7 +50,7 @@ export const DropdownButton: FC<DropdownButtonProps> = ({
 				label={label}
 				title={title}
 				active={isOpen}
-				onClick={() => setIsOpen(!isOpen)}
+				onClick={() => setIsOpen( !isOpen)}
 				style={buttonStyle}
 				className="w-full"
 			/>

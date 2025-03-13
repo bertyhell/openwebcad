@@ -24,6 +24,7 @@
         "svg-parser": "^2.0.4",
         "teenyicons": "^0.4.1",
         "undo-stacker": "^0.2.1",
+        "use-local-storage-state": "^19.5.0",
         "vite-plugin-svgr": "^4.2.0",
         "xstate": "^5.18.1"
     },

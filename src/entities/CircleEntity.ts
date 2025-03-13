@@ -1,10 +1,10 @@
-import { Entity, EntityName, JsonEntity } from './Entity';
-import { Shape, SnapPoint, SnapPointType } from '../App.types';
+import {Entity, EntityName, JsonEntity} from './Entity';
+import {Shape, SnapPoint, SnapPointType} from '../App.types';
 import {Box, Circle, Point, Segment} from '@flatten-js/core';
-import { getExportColor } from '../helpers/get-export-color';
-import { scalePoint } from '../helpers/scale-point';
-import { DrawController } from '../drawControllers/DrawController';
-import { isEntityHighlighted, isEntitySelected } from '../state.ts';
+import {getExportColor} from '../helpers/get-export-color';
+import {scalePoint} from '../helpers/scale-point';
+import {DrawController} from '../drawControllers/DrawController';
+import {isEntityHighlighted, isEntitySelected} from '../state.ts';
 import {LineEntity} from "./LineEntity.ts";
 import {mirrorPointOverAxis} from "../helpers/mirror-point-over-axis.ts";
 
@@ -92,10 +92,7 @@ export class CircleEntity implements Entity {
         return box.contains(this.circle);
     }
 
-    public getBoundingBox(): Box | null {
-        if (!this.circle) {
-            return null;
-        }
+    public getBoundingBox(): Box {
         return this.circle.box;
     }
 

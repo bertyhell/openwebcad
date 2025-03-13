@@ -1,7 +1,7 @@
-import { Entity, EntityName, JsonEntity } from './Entity';
-import { Shape, SnapPoint } from '../App.types';
-import { Box, Line, Point, Segment, Vector } from '@flatten-js/core';
-import { scalePoint } from '../helpers/scale-point';
+import {Entity, EntityName, JsonEntity} from './Entity';
+import {Shape, SnapPoint} from '../App.types';
+import {Box, Line, Point, Segment, Vector} from '@flatten-js/core';
+import {scalePoint} from '../helpers/scale-point';
 import {
     ARROW_HEAD_LENGTH,
     ARROW_HEAD_WIDTH,
@@ -12,12 +12,12 @@ import {
     MEASUREMENT_ORIGIN_MARGIN,
     TO_RADIANS,
 } from '../App.consts';
-import { isPointEqual } from '../helpers/is-point-equal';
-import { minBy, round } from 'es-toolkit';
-import { pointDistance } from '../helpers/distance-between-points';
-import { DrawController } from '../drawControllers/DrawController';
-import { max, min } from 'es-toolkit/compat';
-import { isEntityHighlighted, isEntitySelected } from '../state.ts';
+import {isPointEqual} from '../helpers/is-point-equal';
+import {minBy, round} from 'es-toolkit';
+import {pointDistance} from '../helpers/distance-between-points';
+import {DrawController} from '../drawControllers/DrawController';
+import {max, min} from 'es-toolkit/compat';
+import {isEntityHighlighted, isEntitySelected} from '../state.ts';
 import {mirrorPointOverAxis} from "../helpers/mirror-point-over-axis.ts";
 import {LineEntity} from "./LineEntity.ts";
 
@@ -328,11 +328,8 @@ export class MeasurementEntity implements Entity {
         return true;
     }
 
-    public getBoundingBox(): Box | null {
+    public getBoundingBox(): Box {
         const drawPoints = this.getDrawPoints();
-        if (!drawPoints) {
-            return null;
-        }
 
         const extremePoints = [
             drawPoints.offsetStartPointMargin,

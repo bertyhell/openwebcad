@@ -1,13 +1,10 @@
-import { Entity, EntityName, JsonEntity } from './Entity';
-import { Shape, SnapPoint } from '../App.types';
-import { Box, Point, Segment, Vector } from '@flatten-js/core';
-import {
-  DEFAULT_TEXT_OPTIONS,
-  DrawController,
-} from '../drawControllers/DrawController';
-import { cloneDeep } from 'es-toolkit/compat';
-import { scalePoint } from '../helpers/scale-point.ts';
-import { isEntityHighlighted, isEntitySelected } from '../state.ts';
+import {Entity, EntityName, JsonEntity} from './Entity';
+import {Shape, SnapPoint} from '../App.types';
+import {Box, Point, Segment, Vector} from '@flatten-js/core';
+import {DEFAULT_TEXT_OPTIONS, DrawController,} from '../drawControllers/DrawController';
+import {cloneDeep} from 'es-toolkit/compat';
+import {scalePoint} from '../helpers/scale-point.ts';
+import {isEntityHighlighted, isEntitySelected} from '../state.ts';
 import {LineEntity} from "./LineEntity.ts";
 import {mirrorPointOverAxis} from "../helpers/mirror-point-over-axis.ts";
 
@@ -83,8 +80,9 @@ export class TextEntity implements Entity {
     return box.contains(this.basePoint);
   }
 
-  public getBoundingBox(): Box | null {
-    return null;
+  public getBoundingBox(): Box {
+    // TODO find better way of determining the text bounding box
+    return new Box(this.basePoint.x, this.basePoint.y, this.basePoint.x + this.options.fontSize * this.label.length, this.basePoint.y + this.options.fontSize);
   }
 
   public getShape(): Shape | null {

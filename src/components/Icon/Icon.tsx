@@ -32,6 +32,12 @@ import MeasurementIcon from './custom-icons/measurement.svg?react';
 import EditIcon from 'teenyicons/outline/edit.svg?react';
 import SendUpIcon from 'teenyicons/outline/send-up.svg?react';
 import SendDownIcon from 'teenyicons/outline/send-down.svg?react';
+import AlignLeftIcon from 'teenyicons/outline/align-left.svg?react';
+import AlignRightIcon from 'teenyicons/outline/align-right.svg?react';
+import AlignCenterHorizontalIcon from 'teenyicons/outline/align-center-horizontal.svg?react';
+import AlignTopIcon from 'teenyicons/outline/align-top.svg?react';
+import AlignBottomIcon from 'teenyicons/outline/align-bottom.svg?react';
+import AlignCenterVerticalIcon from 'teenyicons/outline/align-center-vertical.svg?react';
 import {FC} from 'react';
 
 // https://icon-sets.iconify.design/teenyicons
@@ -66,6 +72,12 @@ enum IconName {
 	Edit = 'Edit',
 	SendUp = 'SendUp',
 	SendDown = 'SendDown',
+	AlignLeft = 'AlignLeft',
+	AlignRight = 'AlignRight',
+	AlignCenterHorizontal = 'AlignCenterHorizontal',
+	AlignTop = 'AlignTop',
+	AlignBottom = 'AlignBottom',
+	AlignCenterVertical = 'AlignCenterVertical',
 
 	// Solid icons
 	SolidDown = 'SolidDown',
@@ -108,6 +120,12 @@ const icons: Record<IconName, FC> = {
 	[IconName.Edit]: EditIcon,
 	[IconName.SendUp]: SendUpIcon,
 	[IconName.SendDown]: SendDownIcon,
+	[IconName.AlignLeft]: AlignLeftIcon,
+	[IconName.AlignRight]: AlignRightIcon,
+	[IconName.AlignCenterHorizontal]: AlignCenterHorizontalIcon,
+	[IconName.AlignTop]: AlignTopIcon,
+	[IconName.AlignBottom]: AlignBottomIcon,
+	[IconName.AlignCenterVertical]: AlignCenterVerticalIcon,
 
 	// Solid icons
 	[IconName.SolidDown]: SolidDownIcon,

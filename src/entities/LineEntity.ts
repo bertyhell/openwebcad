@@ -1,13 +1,13 @@
-import { Entity, EntityName, JsonEntity } from './Entity';
-import { Shape, SnapPoint, SnapPointType } from '../App.types';
+import {Entity, EntityName, JsonEntity} from './Entity';
+import {Shape, SnapPoint, SnapPointType} from '../App.types';
 import {Box, Point, Segment} from '@flatten-js/core';
-import { sortBy, uniqWith } from 'es-toolkit';
-import { isPointEqual } from '../helpers/is-point-equal';
-import { pointDistance } from '../helpers/distance-between-points';
-import { getExportColor } from '../helpers/get-export-color';
-import { scalePoint } from '../helpers/scale-point';
-import { DrawController } from '../drawControllers/DrawController';
-import { isEntityHighlighted, isEntitySelected } from '../state.ts';
+import {sortBy, uniqWith} from 'es-toolkit';
+import {isPointEqual} from '../helpers/is-point-equal';
+import {pointDistance} from '../helpers/distance-between-points';
+import {getExportColor} from '../helpers/get-export-color';
+import {scalePoint} from '../helpers/scale-point';
+import {DrawController} from '../drawControllers/DrawController';
+import {isEntityHighlighted, isEntitySelected} from '../state.ts';
 import {mirrorPointOverAxis} from "../helpers/mirror-point-over-axis.ts";
 
 export class LineEntity implements Entity {
@@ -78,7 +78,7 @@ export class LineEntity implements Entity {
         return box.contains(this.segment);
     }
 
-    public getBoundingBox(): Box | null {
+    public getBoundingBox(): Box {
         return this.segment.box;
     }
 

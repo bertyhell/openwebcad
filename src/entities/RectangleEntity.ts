@@ -1,20 +1,13 @@
-import { Entity, EntityName, JsonEntity } from './Entity';
-import { Shape, SnapPoint, SnapPointType } from '../App.types';
+import {Entity, EntityName, JsonEntity} from './Entity';
+import {Shape, SnapPoint, SnapPointType} from '../App.types';
 import * as Flatten from '@flatten-js/core';
-import {
-  Box,
-  Point,
-  Polygon,
-  Relations,
-  Segment,
-  Vector,
-} from '@flatten-js/core';
-import { getExportColor } from '../helpers/get-export-color';
-import { scalePoint } from '../helpers/scale-point';
-import { twoPointBoxToPolygon } from '../helpers/box-to-polygon';
-import { polygonToSegments } from '../helpers/polygon-to-segments';
-import { DrawController } from '../drawControllers/DrawController';
-import { isEntityHighlighted, isEntitySelected } from '../state.ts';
+import {Box, Point, Polygon, Relations, Segment, Vector} from '@flatten-js/core';
+import {getExportColor} from '../helpers/get-export-color';
+import {scalePoint} from '../helpers/scale-point';
+import {twoPointBoxToPolygon} from '../helpers/box-to-polygon';
+import {polygonToSegments} from '../helpers/polygon-to-segments';
+import {DrawController} from '../drawControllers/DrawController';
+import {isEntityHighlighted, isEntitySelected} from '../state.ts';
 import {LineEntity} from "./LineEntity.ts";
 import {mirrorPointOverAxis} from "../helpers/mirror-point-over-axis.ts";
 
@@ -104,7 +97,7 @@ export class RectangleEntity implements Entity {
     return shortestDistanceInfo as [number, Segment];
   }
 
-  public getBoundingBox(): Box | null {
+  public getBoundingBox(): Box {
     return this.polygon.box;
   }
 

@@ -1,13 +1,13 @@
-import { Entity, EntityName, JsonEntity } from './Entity';
-import { Shape, SnapPoint, SnapPointType } from '../App.types';
-import { Arc, Box, Line, Point, Segment } from '@flatten-js/core';
-import { uniqWith } from 'es-toolkit';
-import { isPointEqual } from '../helpers/is-point-equal';
-import { sortPointsOnArc } from '../helpers/sort-points-on-arc';
-import { getExportColor } from '../helpers/get-export-color';
-import { scalePoint } from '../helpers/scale-point';
-import { DrawController } from '../drawControllers/DrawController.ts';
-import { isEntityHighlighted, isEntitySelected } from '../state.ts';
+import {Entity, EntityName, JsonEntity} from './Entity';
+import {Shape, SnapPoint, SnapPointType} from '../App.types';
+import {Arc, Box, Line, Point, Segment} from '@flatten-js/core';
+import {uniqWith} from 'es-toolkit';
+import {isPointEqual} from '../helpers/is-point-equal';
+import {sortPointsOnArc} from '../helpers/sort-points-on-arc';
+import {getExportColor} from '../helpers/get-export-color';
+import {scalePoint} from '../helpers/scale-point';
+import {DrawController} from '../drawControllers/DrawController.ts';
+import {isEntityHighlighted, isEntitySelected} from '../state.ts';
 import {LineEntity} from "./LineEntity.ts";
 import {mirrorPointOverAxis} from "../helpers/mirror-point-over-axis.ts";
 
@@ -110,7 +110,7 @@ export class ArcEntity implements Entity {
         return box.contains(this.arc);
     }
 
-    public getBoundingBox(): Box | null {
+    public getBoundingBox(): Box {
         return this.arc.box;
     }
 

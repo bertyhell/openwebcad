@@ -13,7 +13,8 @@ import {
 	setActiveLineColor,
 	setActiveLineWidth,
 	setActiveToolActor,
-	setAngleStep, setEntities,
+	setAngleStep,
+	setEntities,
 	undo,
 } from '../state';
 import {noop} from 'es-toolkit';
@@ -217,6 +218,87 @@ export const Toolbar: FC<ToolbarProps> = () => {
 				onClick={() => redo()}
 				label="Redo"
 			/>
+			<DropdownButton
+				className="mt-2"
+				title="Align"
+				dataId="align-button"
+				label="Align"
+				iconName={IconName.AlignCenterHorizontal}>
+				<Button
+					className="w-full"
+					title="Align left"
+					dataId="align-left-button"
+					iconName={IconName.AlignLeft}
+					onClick={(evt) => {
+						evt.stopPropagation();
+						handleToolClick(Tool.ALIGN_LEFT)
+					}}
+					active={activeToolLocal === Tool.ALIGN_LEFT}
+					label="Left"
+				/>
+				<Button
+					className="w-full"
+					title="Align center horizontal"
+					dataId="align-center-horizontal-button"
+					iconName={IconName.AlignCenterHorizontal}
+					onClick={(evt) => {
+						evt.stopPropagation();
+						handleToolClick(Tool.ALIGN_CENTER_HORIZONTAL)
+					}}
+					active={activeToolLocal === Tool.ALIGN_CENTER_HORIZONTAL}
+					label="Center"
+				/>
+				<Button
+					className="w-full"
+					title="Align right"
+					dataId="align-right-button"
+					iconName={IconName.AlignRight}
+					onClick={(evt) => {
+						evt.stopPropagation();
+						handleToolClick(Tool.ALIGN_RIGHT)
+					}}
+					active={activeToolLocal === Tool.ALIGN_RIGHT}
+					label="Right"
+				/>
+				<Button
+					className="w-full"
+					title="Align top"
+					dataId="align-top-button"
+					iconName={IconName.AlignTop}
+					onClick={(evt) => {
+						evt.stopPropagation();
+						handleToolClick(Tool.ALIGN_TOP)
+					}}
+					active={activeToolLocal === Tool.ALIGN_TOP}
+					label="Top"
+				/>
+				<Button
+					className="w-full"
+					title="Align center vertical"
+					dataId="align-center-vertical-button"
+					iconName={IconName.AlignCenterVertical}
+					onClick={(evt) => {
+						evt.stopPropagation();
+						handleToolClick(Tool.ALIGN_CENTER_VERTICAL)
+					}}
+					active={activeToolLocal === Tool.ALIGN_CENTER_VERTICAL}
+					label="Middle"
+				/>
+				<Button
+					className="w-full"
+					title="Align bottom"
+					dataId="align-bottom-button"
+					iconName={IconName.AlignBottom}
+					onClick={(evt) => {
+						evt.stopPropagation();
+						handleToolClick(Tool.ALIGN_BOTTOM)
+					}}
+					active={activeToolLocal === Tool.ALIGN_BOTTOM}
+					label="Bottom"
+				/>
+			</DropdownButton>
+
+
 			<DropdownButton
 				className="mt-2"
 				title="Line color"

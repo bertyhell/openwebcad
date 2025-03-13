@@ -1,9 +1,9 @@
-import { Entity, EntityName, JsonEntity } from './Entity';
-import { Shape, SnapPoint } from '../App.types';
+import {Entity, EntityName, JsonEntity} from './Entity';
+import {Shape, SnapPoint} from '../App.types';
 import {Box, Point, Segment} from '@flatten-js/core';
-import { scalePoint } from '../helpers/scale-point';
-import { DrawController } from '../drawControllers/DrawController';
-import { max, min } from 'es-toolkit/compat';
+import {scalePoint} from '../helpers/scale-point';
+import {DrawController} from '../drawControllers/DrawController';
+import {max, min} from 'es-toolkit/compat';
 import {LineEntity} from "./LineEntity.ts";
 import {mirrorPointOverAxis} from "../helpers/mirror-point-over-axis.ts";
 
@@ -83,7 +83,7 @@ export class ArrowHeadEntity implements Entity {
     );
   }
 
-  public getBoundingBox(): Box | null {
+  public getBoundingBox(): Box {
     return new Box(
       min([this.p1.x, this.p2.x, this.p3.x]),
       min([this.p1.y, this.p2.y, this.p3.y]),

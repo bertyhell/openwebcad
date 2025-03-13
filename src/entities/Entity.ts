@@ -1,14 +1,14 @@
-import { Shape, SnapPoint } from '../App.types';
-import { Box, Point, Segment } from '@flatten-js/core';
-import { ArcJsonData } from './ArcEntity';
-import { CircleJsonData } from './CircleEntity';
+import {Shape, SnapPoint} from '../App.types';
+import {Box, Point, Segment} from '@flatten-js/core';
+import {ArcJsonData} from './ArcEntity';
+import {CircleJsonData} from './CircleEntity';
 import {LineEntity, LineJsonData} from './LineEntity';
-import { RectangleJsonData } from './RectangleEntity';
-import { PointJsonData } from './PointEntity';
-import { ImageJsonData } from './ImageEntity';
-import { DrawController } from '../drawControllers/DrawController.ts';
-import { ArrowHeadJsonData } from './ArrowHeadEntity.ts';
-import { TextJsonData } from './TextEntity.ts';
+import {RectangleJsonData} from './RectangleEntity';
+import {PointJsonData} from './PointEntity';
+import {ImageJsonData} from './ImageEntity';
+import {DrawController} from '../drawControllers/DrawController.ts';
+import {ArrowHeadJsonData} from './ArrowHeadEntity.ts';
+import {TextJsonData} from './TextEntity.ts';
 
 export interface Entity {
   // Random uuid generated when the Entity is created
@@ -29,9 +29,10 @@ export interface Entity {
   rotate(rotateOrigin: Point, angle: number): void;
   mirror(mirrorAxis: LineEntity): void;
   clone(): Entity;
-  getBoundingBox(): Box | null;
+  getBoundingBox(): Box;
   intersectsWithBox(box: Box): boolean;
   isContainedInBox(box: Box): boolean;
+  getBoundingBox(): Box;
   getFirstPoint(): Point | null;
   getShape(): Shape | null;
   getSnapPoints(): SnapPoint[];

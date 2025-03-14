@@ -112,7 +112,6 @@ export function GET_ALIGN_ACTION(alignEntity: (entity: Entity, boundingBox: Boun
 			[AlignAction.INIT_ALIGN_TOOL]: assign(() => {
 				setShouldDrawHelpers(false);
 				setGhostHelperEntities([]);
-				setSelectedEntityIds([]);
 				setAngleGuideOriginPoint(null);
 				return {
 				};

@@ -1,4 +1,4 @@
-import {CSSProperties, FC, ReactNode, MouseEvent,KeyboardEvent} from 'react';
+import {CSSProperties, FC, KeyboardEvent, MouseEvent, ReactNode} from 'react';
 import {Icon, IconName} from './Icon/Icon.tsx';
 import {noop} from "es-toolkit";
 
@@ -33,7 +33,7 @@ export const Button: FC<ButtonProps> = ({
 		<>
 			<button
 				className={
-					'bg-gray-950 text-blue-700 font-semibold py-2 px-2 w-100 h-10 pl-4 pr-6 flex flex-row justify-start gap-2 items-center hover:bg-blue-500 hover:text-white hover:border-transparent  data-[active=true]:bg-blue-500 data-[active=true]:text-white data-[active=true]:border-transparent' +
+					'bg-gray-950 text-blue-500 font-semibold py-2 px-2 w-100 h-10 pl-4 pr-6 flex flex-row justify-start gap-2 items-center hover:bg-blue-500 hover:text-white hover:border-transparent  data-[active=true]:bg-blue-500 data-[active=true]:text-white data-[active=true]:border-transparent' +
 					(className ? ' ' + className : '')
 				}
 				style={style}
@@ -47,7 +47,7 @@ export const Button: FC<ButtonProps> = ({
 				title={title}
 				data-id={dataId}
 			>
-				{iconComponent || (iconName && <Icon name={iconName} className={iconClassname}/>)}
+				{iconComponent || (iconName && <Icon name={iconName} className={iconClassname + ' text-blue-700'}  />)}
 				{label && <span>{label}</span>}
 				{children}
 			</button>

@@ -1,24 +1,9 @@
-import { Point } from '@flatten-js/core';
-import {
-  getNotSelectedEntities,
-  setEntities,
-  setGhostHelperEntities,
-  setSelectedEntityIds,
-  setShouldDrawHelpers,
-} from '../state';
-import {
-  DrawEvent,
-  MouseClickEvent,
-  StateEvent,
-  ToolContext,
-} from './tool.types';
-import { Tool } from '../tools';
-import { assign, createMachine } from 'xstate';
-import {
-  drawTempSelectionRectangle,
-  handleFirstSelectionPoint,
-  selectEntitiesInsideRectangle,
-} from './select-tool.helpers';
+import {Point} from '@flatten-js/core';
+import {getNotSelectedEntities, setEntities, setGhostHelperEntities, setSelectedEntityIds, setShouldDrawHelpers,} from '../state';
+import {DrawEvent, MouseClickEvent, StateEvent, ToolContext,} from './tool.types';
+import {Tool} from '../tools';
+import {assign, createMachine} from 'xstate';
+import {drawTempSelectionRectangle, handleFirstSelectionPoint, selectEntitiesInsideRectangle,} from './select-tool.helpers';
 
 export interface SelectContext extends ToolContext {
   startPoint: Point | null;
@@ -133,7 +118,6 @@ export const selectToolStateMachine = createMachine(
       INIT_SELECT_TOOL: () => {
         setShouldDrawHelpers(false);
         setGhostHelperEntities([]);
-        setSelectedEntityIds([]);
       },
       HANDLE_FIRST_SELECT_POINT: assign(
         ({ context, event }: { context: SelectContext; event: StateEvent }) => {

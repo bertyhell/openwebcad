@@ -1,5 +1,6 @@
 import {
     getActiveToolActor,
+    getCanvas,
     getEntities,
     getLastStateInstructions,
     getPanStartLocation,
@@ -23,8 +24,8 @@ import {
     RelativePointInputEvent,
     TextInputEvent,
 } from '../tools/tool.types.ts';
-import { ScreenCanvasDrawController } from '../drawControllers/screenCanvas.drawController.ts';
-import { Point } from '@flatten-js/core';
+import {ScreenCanvasDrawController} from '../drawControllers/screenCanvas.drawController.ts';
+import {Point} from '@flatten-js/core';
 import {
     CANVAS_INPUT_FIELD_BACKGROUND_COLOR,
     CANVAS_INPUT_FIELD_HEIGHT,
@@ -35,14 +36,14 @@ import {
     HIGHLIGHT_ENTITY_DISTANCE,
     SNAP_POINT_DISTANCE,
 } from '../App.consts.ts';
-import { TOOL_STATE_MACHINES } from '../tools/tool.consts.ts';
-import { Actor } from 'xstate';
-import { Tool } from '../tools.ts';
-import { compact, round } from 'es-toolkit';
-import { findClosestEntity } from '../helpers/find-closest-entity.ts';
-import { MouseButton } from '../App.types.ts';
-import { getClosestSnapPointWithinRadius } from '../helpers/get-closest-snap-point.ts';
-import { calculateAngleGuidesAndSnapPoints } from '../helpers/calculate-angle-guides-and-snap-points.ts';
+import {TOOL_STATE_MACHINES} from '../tools/tool.consts.ts';
+import {Actor} from 'xstate';
+import {Tool} from '../tools.ts';
+import {compact, round} from 'es-toolkit';
+import {findClosestEntity} from '../helpers/find-closest-entity.ts';
+import {MouseButton} from '../App.types.ts';
+import {getClosestSnapPointWithinRadius} from '../helpers/get-closest-snap-point.ts';
+import {calculateAngleGuidesAndSnapPoints} from '../helpers/calculate-angle-guides-and-snap-points.ts';
 
 const NUMBER_REGEXP = /^[0-9]+([.][0-9]+)?$/;
 const ABSOLUTE_POINT_REGEXP =
@@ -62,14 +63,15 @@ export class InputController {
             this.handleKeyStroke(evt);
         });
         // Listen for right mouse button click => perform the same action as ENTER
-        document.addEventListener('mousedown', (evt: MouseEvent) => this.handleMouseDown(evt));
-        document.addEventListener('mousemove', (evt: MouseEvent) => this.handleMouseMove(evt));
-        document.addEventListener('mouseup', (evt: MouseEvent) => this.handleMouseUp(evt));
-        document.addEventListener('wheel', (evt: WheelEvent) => this.handleMouseWheel(evt));
-        document.addEventListener('mouseout', () => this.handleMouseOut());
-        document.addEventListener('mouseenter', () => this.handleMouseEnter());
+        const canvas = getCanvas();
+        canvas?.addEventListener('mousedown', (evt: MouseEvent) => this.handleMouseDown(evt));
+        canvas?.addEventListener('mousemove', (evt: MouseEvent) => this.handleMouseMove(evt));
+        canvas?.addEventListener('mouseup', (evt: MouseEvent) => this.handleMouseUp(evt));
+        canvas?.addEventListener('wheel', (evt: WheelEvent) => this.handleMouseWheel(evt));
+        canvas?.addEventListener('mouseout', () => this.handleMouseOut());
+        canvas?.addEventListener('mouseenter', () => this.handleMouseEnter());
         // Stop the context menu from appearing when right-clicking
-        document.addEventListener('contextmenu', evt => {
+        canvas?.addEventListener('contextmenu', evt => {
             evt.preventDefault();
         });
     }

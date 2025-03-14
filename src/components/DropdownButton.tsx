@@ -52,7 +52,7 @@ export const DropdownButton: FC<DropdownButtonProps> = ({
 				active={isOpen}
 				onClick={() => setIsOpen( !isOpen)}
 				style={buttonStyle}
-				className="w-full"
+				className={"w-full data-[active=true]:bg-blue-950 data-[active=true]:text-white"}
 			/>
 			<Icon
 				name={IconName.SolidDownSmall}

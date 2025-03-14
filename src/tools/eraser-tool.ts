@@ -1,29 +1,16 @@
-import { Point, Polygon } from '@flatten-js/core';
-import { findClosestEntity } from '../helpers/find-closest-entity';
-import {
-  addEntities,
-  deleteEntities,
-  getEntities,
-  setEntities,
-  setGhostHelperEntities,
-  setSelectedEntityIds,
-  setShouldDrawHelpers,
-} from '../state';
-import { EntityName } from '../entities/Entity';
-import { LineEntity } from '../entities/LineEntity';
-import { CircleEntity } from '../entities/CircleEntity';
-import { RectangleEntity } from '../entities/RectangleEntity';
-import { ArcEntity } from '../entities/ArcEntity';
-import { MouseClickEvent, StateEvent, ToolContext } from './tool.types';
-import { Tool } from '../tools';
-import { assign, createMachine } from 'xstate';
-import {
-  eraseArcSegment,
-  eraseCircleSegment,
-  eraseLineSegment,
-  getAllIntersectionPoints,
-} from './eraser-tool.helpers';
-import { polygonToSegments } from '../helpers/polygon-to-segments';
+import {Point, Polygon} from '@flatten-js/core';
+import {findClosestEntity} from '../helpers/find-closest-entity';
+import {addEntities, deleteEntities, getEntities, setEntities, setGhostHelperEntities, setShouldDrawHelpers,} from '../state';
+import {EntityName} from '../entities/Entity';
+import {LineEntity} from '../entities/LineEntity';
+import {CircleEntity} from '../entities/CircleEntity';
+import {RectangleEntity} from '../entities/RectangleEntity';
+import {ArcEntity} from '../entities/ArcEntity';
+import {MouseClickEvent, StateEvent, ToolContext} from './tool.types';
+import {Tool} from '../tools';
+import {assign, createMachine} from 'xstate';
+import {eraseArcSegment, eraseCircleSegment, eraseLineSegment, getAllIntersectionPoints,} from './eraser-tool.helpers';
+import {polygonToSegments} from '../helpers/polygon-to-segments';
 
 export interface EraserContext extends ToolContext {
   startPoint: Point | null;
@@ -79,7 +66,6 @@ export const eraserToolStateMachine = createMachine(
       [EraserAction.INIT_ERASER_TOOL]: assign(() => {
         setShouldDrawHelpers(false);
         setGhostHelperEntities([]);
-        setSelectedEntityIds([]);
         return {};
       }),
       [EraserAction.HANDLE_MOUSE_CLICK]: assign(({ context, event }) => {

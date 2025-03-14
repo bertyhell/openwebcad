@@ -89,7 +89,9 @@ export const Toolbar: FC<ToolbarProps> = () => {
 	}, []);
 
 	return (
-		<div className="controls absolute top-0 left-0 flex flex-col gap-1 p-1 bg-slate-950 min-h-screen">
+		<div
+			className="controls  top-0 left-0 flex flex-col gap-1 p-1 bg-slate-950 min-h-screen overscroll-y-auto"
+			>
 			<DropdownButton label="Draw" title={'Draw tools'} iconName={IconName.Edit} defaultOpen dataId="dropdown-draw-tools">
 				<Button
 					className="w-full"
@@ -348,7 +350,7 @@ export const Toolbar: FC<ToolbarProps> = () => {
 					);
 				})}
 			</DropdownButton>
-			<DropdownButton title="Snap angles" iconComponent={<div className="w-5">{angleStepLocal + '°'}</div>} label="Snap angles"
+			<DropdownButton title="Snap angles" iconComponent={<div className="w-5 text-blue-700">{angleStepLocal + '°'}</div>} label="Snap angles"
 							dataId="angle-guide-button">
 				{[5, 15, 30, 45, 90].map((angle: number) => (
 					<Button
@@ -366,7 +368,7 @@ export const Toolbar: FC<ToolbarProps> = () => {
 					/>
 				))}
 			</DropdownButton>
-			<DropdownButton title="Zoom level" iconComponent={<div className="w-5">{(screenZoomLocal).toFixed(1)}</div>} label="Zoom level"
+			<DropdownButton title="Zoom level" iconComponent={<div className="w-5 text-blue-700">{(screenZoomLocal).toFixed(1)}</div>} label="Zoom level"
 							dataId="zoom-level-button">
 				{[20, 50, 75, 100, 150, 200, 400].map((zoom: number) => (
 					<Button

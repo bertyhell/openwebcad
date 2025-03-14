@@ -1,4 +1,4 @@
-import { Point } from '@flatten-js/core';
+import {Point} from '@flatten-js/core';
 import {
   addEntities,
   deleteEntities,
@@ -9,18 +9,13 @@ import {
   setSelectedEntityIds,
   setShouldDrawHelpers,
 } from '../state';
-import { Tool } from '../tools';
-import {
-  DrawEvent,
-  MouseClickEvent,
-  StateEvent,
-  ToolContext,
-} from './tool.types';
-import { assign, createMachine, sendTo } from 'xstate';
-import { selectToolStateMachine } from './select-tool';
-import { Entity } from '../entities/Entity';
-import { compact } from 'es-toolkit';
-import { scaleEntities } from './scale-tool.helpers';
+import {Tool} from '../tools';
+import {DrawEvent, MouseClickEvent, StateEvent, ToolContext,} from './tool.types';
+import {assign, createMachine, sendTo} from 'xstate';
+import {selectToolStateMachine} from './select-tool';
+import {Entity} from '../entities/Entity';
+import {compact} from 'es-toolkit';
+import {scaleEntities} from './scale-tool.helpers';
 
 export interface ScaleContext extends ToolContext {
   baseVectorStartPoint: Point | null;
@@ -213,7 +208,6 @@ export const scaleToolStateMachine = createMachine(
       [ScaleAction.INIT_SCALE_TOOL]: () => {
         setShouldDrawHelpers(false);
         setGhostHelperEntities([]);
-        setSelectedEntityIds([]);
         setAngleGuideOriginPoint(null);
       },
       [ScaleAction.ENABLE_HELPERS]: () => {

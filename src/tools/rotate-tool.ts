@@ -1,4 +1,4 @@
-import { Point } from '@flatten-js/core';
+import {Point} from '@flatten-js/core';
 import {
   addEntities,
   deleteEntities,
@@ -9,18 +9,13 @@ import {
   setSelectedEntityIds,
   setShouldDrawHelpers,
 } from '../state';
-import { Tool } from '../tools';
-import {
-  DrawEvent,
-  MouseClickEvent,
-  StateEvent,
-  ToolContext,
-} from './tool.types';
-import { assign, createMachine, sendTo } from 'xstate';
-import { selectToolStateMachine } from './select-tool';
-import { Entity } from '../entities/Entity';
-import { compact } from 'es-toolkit';
-import { rotateEntities } from './rotate-tool.helpers';
+import {Tool} from '../tools';
+import {DrawEvent, MouseClickEvent, StateEvent, ToolContext,} from './tool.types';
+import {assign, createMachine, sendTo} from 'xstate';
+import {selectToolStateMachine} from './select-tool';
+import {Entity} from '../entities/Entity';
+import {compact} from 'es-toolkit';
+import {rotateEntities} from './rotate-tool.helpers';
 
 export interface RotateContext extends ToolContext {
   rotationOrigin: Point | null;
@@ -208,7 +203,6 @@ export const rotateToolStateMachine = createMachine(
       [RotateAction.INIT_ROTATE_TOOL]: () => {
         setShouldDrawHelpers(false);
         setGhostHelperEntities([]);
-        setSelectedEntityIds([]);
         setAngleGuideOriginPoint(null);
       },
       [RotateAction.ENABLE_HELPERS]: () => {

@@ -1,4 +1,4 @@
-import { InputController } from '../../src/inputController/input-controller';
+import {InputController} from '../../src/inputController/input-controller';
 import {
     getScreenCanvasDrawController,
     setActiveToolActor,
@@ -6,12 +6,12 @@ import {
     setInputController,
     setScreenCanvasDrawController,
 } from '../../src/state';
-import { Point } from '@flatten-js/core';
-import { Actor } from 'xstate';
-import { TOOL_STATE_MACHINES } from '../../src/tools/tool.consts';
-import { Tool } from '../../src/tools';
-import { ScreenCanvasDrawController } from '../mocks/drawControllers/screenCanvas.drawController';
-import { CANVAS_HEIGHT, CANVAS_WIDTH } from './consts';
+import {Point} from '@flatten-js/core';
+import {Actor} from 'xstate';
+import {TOOL_STATE_MACHINES} from '../../src/tools/tool.consts';
+import {Tool} from '../../src/tools';
+import {ScreenCanvasDrawController} from '../mocks/drawControllers/screenCanvas.drawController';
+import {CANVAS_HEIGHT, CANVAS_WIDTH} from "./tests.consts";
 
 export function initApplication(): InputController {
     const inputController = new InputController();

@@ -1,4 +1,9 @@
 /**
+ * Width of the toolbar containing all the tools on the left side of the screen
+ */
+export const TOOLBAR_WIDTH = 224;
+
+/**
  * Very small number that will be used to compare floating point numbers on equality
  * since javascript isn't always very accurate with floating point numbers
  */

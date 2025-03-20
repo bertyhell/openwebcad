@@ -21,7 +21,7 @@ import {
 } from './state';
 import {Tool} from './tools';
 import {Point} from '@flatten-js/core';
-import {HIGHLIGHT_ENTITY_DISTANCE, SNAP_POINT_DISTANCE} from './App.consts';
+import {HIGHLIGHT_ENTITY_DISTANCE, SNAP_POINT_DISTANCE, TOOLBAR_WIDTH} from './App.consts';
 import {draw} from './helpers/draw';
 import {findClosestEntity} from './helpers/find-closest-entity';
 import {trackHoveredSnapPoint} from './helpers/track-hovered-snap-points';
@@ -30,9 +30,7 @@ import {ActorEvent, DrawEvent} from './tools/tool.types';
 import {Actor} from 'xstate';
 import {ScreenCanvasDrawController} from './drawControllers/screenCanvas.drawController';
 import {InputController} from './inputController/input-controller.ts';
-import {
-	getEntitiesFromLocalStorage,
-} from "./helpers/import-export-handlers/import-entities-from-local-storage.ts";
+import {getEntitiesFromLocalStorage,} from "./helpers/import-export-handlers/import-entities-from-local-storage.ts";
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
 	<React.StrictMode>
@@ -99,7 +97,7 @@ function handleWindowResize() {
 	getScreenCanvasDrawController().setCanvasSize(new Point(window.innerWidth, window.innerHeight));
 	const canvas = getCanvas();
 	if (canvas) {
-		canvas.width = window.innerWidth;
+		canvas.width = window.innerWidth - TOOLBAR_WIDTH;
 		canvas.height = window.innerHeight;
 	}
 }

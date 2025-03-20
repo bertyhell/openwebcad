@@ -35,6 +35,7 @@ import {
     CANVAS_INPUT_FIELD_WIDTH,
     HIGHLIGHT_ENTITY_DISTANCE,
     SNAP_POINT_DISTANCE,
+    TOOLBAR_WIDTH,
 } from '../App.consts.ts';
 import {TOOL_STATE_MACHINES} from '../tools/tool.consts.ts';
 import {Actor} from 'xstate';
@@ -155,7 +156,7 @@ export class InputController {
 
             const worldMouseLocationTemp =
                 getScreenCanvasDrawController().targetToWorld(
-                    new Point(evt.clientX, getScreenCanvasDrawController().getCanvasSize().y - evt.clientY),
+                    new Point(evt.clientX - TOOLBAR_WIDTH, getScreenCanvasDrawController().getCanvasSize().y - evt.clientY),
                 );
             const worldMouseLocation = closestSnapPoint
                 ? closestSnapPoint.point
@@ -182,7 +183,7 @@ export class InputController {
     public handleMouseMove(evt: MouseEvent) {
         setShouldDrawCursor(true);
         const screenCanvasDrawController = getScreenCanvasDrawController();
-        const newScreenMouseLocation = new Point(evt.clientX, getScreenCanvasDrawController().getCanvasSize().y - evt.clientY);
+        const newScreenMouseLocation = new Point(evt.clientX - TOOLBAR_WIDTH, getScreenCanvasDrawController().getCanvasSize().y - evt.clientY);
         screenCanvasDrawController.setScreenMouseLocation(
             newScreenMouseLocation,
         );
@@ -232,7 +233,7 @@ export class InputController {
     public handleMouseDown(evt: MouseEvent) {
         if (evt.button !== MouseButton.Middle) return;
 
-        setPanStartLocation(new Point(evt.clientX, getScreenCanvasDrawController().getCanvasSize().y - evt.clientY));
+        setPanStartLocation(new Point(evt.clientX - TOOLBAR_WIDTH, getScreenCanvasDrawController().getCanvasSize().y - evt.clientY));
     }
 
     public handleKeyStroke(evt: KeyboardEvent) {

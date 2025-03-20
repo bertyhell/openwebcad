@@ -2,14 +2,14 @@
 /*
  * Draw a rectangle to the screen and check if the json export contains the correct data using the vitest testing framework
  */
-import { expect, test } from 'vitest';
-import { getEntities } from '../../../src/state';
-import { EntityName, JsonEntity } from '../../../src/entities/Entity';
-import { initApplication } from '../../helpers/init-application';
-import { CANVAS_HEIGHT } from '../../helpers/consts';
-import { CircleJsonData } from '../../../src/entities/CircleEntity';
+import {expect, test} from 'vitest';
+import {getEntities} from '../../../src/state';
+import {EntityName, JsonEntity} from '../../../src/entities/Entity';
+import {initApplication} from '../../helpers/init-application';
+import {CANVAS_HEIGHT} from '../../helpers/tests.consts';
+import {CircleJsonData} from '../../../src/entities/CircleEntity';
 import circleRecording from './circle.recording.json';
-import { replayRecording } from '../../helpers/replay-recording';
+import {replayRecording} from '../../helpers/replay-recording';
 
 test('Draw circle', async () => {
     const inputController = initApplication();

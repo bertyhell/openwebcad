@@ -2,15 +2,15 @@
 /*
  * Draw a rectangle to the screen and check if the json export contains the correct data using the vitest testing framework
  */
-import { expect, test } from 'vitest';
-import { getEntities } from '../../../src/state';
-import { Tool } from '../../../src/tools';
-import { EntityName, JsonEntity } from '../../../src/entities/Entity';
-import { RectangleJsonData } from '../../../src/entities/RectangleEntity';
-import { initApplication } from '../../helpers/init-application';
-import { CANVAS_HEIGHT } from '../../helpers/consts';
-import { click } from '../../helpers/click';
-import { setActiveTool } from '../../helpers/set-active-tool';
+import {expect, test} from 'vitest';
+import {getEntities} from '../../../src/state';
+import {Tool} from '../../../src/tools';
+import {EntityName, JsonEntity} from '../../../src/entities/Entity';
+import {RectangleJsonData} from '../../../src/entities/RectangleEntity';
+import {initApplication} from '../../helpers/init-application';
+import {INITIAL_CANVAS_HEIGHT} from '../../helpers/consts';
+import {click} from '../../helpers/click';
+import {setActiveTool} from '../../helpers/set-active-tool';
 
 test('Draw circle', async () => {
     const inputController = initApplication();

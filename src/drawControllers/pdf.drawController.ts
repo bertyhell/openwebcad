@@ -1,12 +1,13 @@
-import { Point } from '@flatten-js/core';
-import { DEFAULT_TEXT_OPTIONS, DrawController } from './DrawController';
-import { TextOptions } from '../entities/TextEntity.ts';
-import jsPDF from 'jspdf';
-import { mapNumberRange } from '../helpers/map-number-range.ts';
-import { PDF_LINE_WIDTH_FACTOR, TO_RADIANS } from '../App.consts.ts';
+import {Point} from '@flatten-js/core';
+import {DrawController} from './DrawController';
+import {TextOptions} from '../entities/TextEntity.ts';
+import {jsPDF} from 'jspdf';
+import {mapNumberRange} from '../helpers/map-number-range.ts';
+import {SvgDrawController} from "./svg.drawController.ts";
+import 'svg2pdf.js'
 
 export class PdfDrawController implements DrawController {
-    private doc: jsPDF;
+    private svgDrawController: SvgDrawController;
 
     constructor(
         private worldBoundingBoxMinX: number,
@@ -18,11 +19,7 @@ export class PdfDrawController implements DrawController {
         private canvasBoundingBoxMaxX: number,
         private canvasBoundingBoxMaxY: number,
     ) {
-        this.doc = new jsPDF({
-            orientation: 'portrait',
-            unit: 'mm',
-            format: 'a4',
-        });
+        this.svgDrawController = new SvgDrawController(canvasBoundingBoxMinX, canvasBoundingBoxMinY, canvasBoundingBoxMaxX, canvasBoundingBoxMaxY);
     }
 
     public getCanvasSize(): Point {
@@ -109,66 +106,33 @@ export class PdfDrawController implements DrawController {
         lineWidth: number,
         lineDash: number[] = [],
     ) {
-        if (
-            lineColor.toLowerCase() === '#fff' ||
-            lineColor.toLowerCase() === '#ffffff' ||
-            lineColor === 'white'
-        ) {
-            this.doc.setDrawColor('#000');
-        } else if (
-            lineColor.toLowerCase() === '#000' ||
-            lineColor.toLowerCase() === '#000000' ||
-            lineColor === 'black'
-        ) {
-            this.doc.setDrawColor('#FFF');
-        } else {
-            this.doc.setDrawColor(lineColor);
-        }
-
-        this.doc.setLineWidth(lineWidth * PDF_LINE_WIDTH_FACTOR);
-
-        if (lineDash.length >= 1) {
-            this.doc.setLineDashPattern(lineDash, 0);
-        }
+        this.svgDrawController.setLineStyles(_isHighlighted, _isSelected, lineColor, lineWidth, lineDash);
     }
 
     public setFillStyles(fillColor: string) {
-        if (
-            fillColor.toLowerCase() === '#fff' ||
-            fillColor.toLowerCase() === '#ffffff' ||
-            fillColor === 'white'
-        ) {
-            this.doc.setFillColor('#000');
-        } else if (
-            fillColor.toLowerCase() === '#000' ||
-            fillColor.toLowerCase() === '#000000' ||
-            fillColor === 'black'
-        ) {
-            this.doc.setFillColor('#FFF');
-        } else {
-            this.doc.setFillColor(fillColor);
-        }
+        this.svgDrawController.setFillStyles(fillColor);
     }
 
-    public export(): Promise<Blob> {
-        return new Promise(resolve => {
-            const pdfBlob = this.doc.output('blob');
-            resolve(pdfBlob);
+    public async export(): Promise<Blob> {
+        // Use svg format to then convert it to pdf
+        const svgExportInfo = this.svgDrawController.export();
+        const svgWrapper = document.createElement('div');
+        svgWrapper.setHTMLUnsafe(svgExportInfo.svgLines.join('\n'));
+        const svgElement = svgWrapper.firstElementChild as Element;
+
+        // Convert svg to pdf
+        const doc = new jsPDF()
+        await doc.svg(svgElement, {
+            x: 0,
+            y: 0,
+            width: svgExportInfo.width,
+            height: svgExportInfo.height,
         });
+        return doc.output('blob');
     }
 
     public drawLine(startPoint: Point, endPoint: Point): void {
-        const [canvasStartPoint, canvasEndPoint] = this.worldsToTargets([
-            startPoint,
-            endPoint,
-        ]);
-        this.doc.line(
-            canvasStartPoint.x,
-            canvasStartPoint.y,
-            canvasEndPoint.x,
-            canvasEndPoint.y,
-        );
-        this.doc.stroke();
+        this.svgDrawController.drawLine(startPoint, endPoint);
     }
 
     public drawArc(
@@ -176,23 +140,9 @@ export class PdfDrawController implements DrawController {
         radius: number,
         startAngle: number,
         endAngle: number,
-        _counterClockwise: boolean,
+        counterClockwise: boolean,
     ) {
-        const canvasCenterPoint = this.worldToTarget(centerPoint);
-        const canvasRadius = radius * this.getScreenScale();
-
-        if (endAngle - startAngle === 360 * TO_RADIANS) {
-            // draw circle
-            this.doc.circle(
-                canvasCenterPoint.x,
-                canvasCenterPoint.y,
-                canvasRadius,
-            );
-            return;
-        }
-        // draw arc
-        // TODO
-        this.doc.circle(canvasCenterPoint.x, canvasCenterPoint.y, canvasRadius);
+        this.svgDrawController.drawArc(centerPoint, radius, startAngle, endAngle, counterClockwise);
     }
 
     public drawText(
@@ -200,18 +150,7 @@ export class PdfDrawController implements DrawController {
         basePoint: Point,
         options?: Partial<TextOptions>,
     ): void {
-        const canvasBasePoint = this.worldToTarget(basePoint);
-
-        const textOptions = {
-            ...DEFAULT_TEXT_OPTIONS,
-            ...options,
-        };
-
-        this.doc.setFontSize(textOptions.fontSize);
-        this.doc.setTextColor(textOptions.textColor);
-        this.doc.text(label, canvasBasePoint.x, canvasBasePoint.y, {
-            align: textOptions.textAlign,
-        });
+        this.svgDrawController.drawText(label, basePoint, options);
     }
 
     public drawImage(
@@ -222,34 +161,10 @@ export class PdfDrawController implements DrawController {
         height: number,
         angle: number,
     ): void {
-        const canvas = document.createElement('canvas');
-        canvas.width = imageElement.width;
-        canvas.height = imageElement.height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-            console.warn('Failed to create canvas context');
-            return;
-        }
-
-        this.doc.addImage(
-            imageElement,
-            'PNG',
-            xMin,
-            yMin,
-            width,
-            height,
-            undefined,
-            undefined,
-            angle,
-        );
+        this.svgDrawController.drawImage(imageElement, xMin, yMin, width, height, angle)
     }
 
     public fillPolygon(...points: Point[]) {
-        if (points.length < 3) return;
-        const canvasPoints = this.worldsToTargets(points);
-
-        this.doc.setFillColor(this.doc.getDrawColor());
-
-        for (let i = 1; i < canvasPoints.length; i++) {}
+        this.svgDrawController.fillPolygon(...points);
     }
 }

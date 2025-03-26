@@ -17,7 +17,6 @@ import {
 	setEntities,
 	undo,
 } from '../state';
-import {noop} from 'es-toolkit';
 import {importEntitiesFromJsonFile} from '../helpers/import-export-handlers/import-entities-from-json';
 import {exportEntitiesToJsonFile} from '../helpers/import-export-handlers/export-entities-to-json';
 import {exportEntitiesToSvgFile} from '../helpers/import-export-handlers/export-entities-to-svg';
@@ -87,6 +86,10 @@ export const Toolbar: FC<ToolbarProps> = () => {
 		setAngleStepLocal(angle);
 		setAngleStep(angle, false);
 	}, []);
+
+	const noopClickHandler = (evt: any) => {
+		evt.stopPropagation();
+	}
 
 	return (
 		<div
@@ -393,7 +396,10 @@ export const Toolbar: FC<ToolbarProps> = () => {
 				title="Save current drawing"
 				dataId="save-button"
 				iconName={IconName.Save}
-				onClick={() => exportEntitiesToLocalStorage()}
+				onClick={async (evt) => {
+					evt.stopPropagation();
+					await exportEntitiesToLocalStorage()
+				}}
 				label="Save drawing"
 			/>
 
@@ -402,7 +408,10 @@ export const Toolbar: FC<ToolbarProps> = () => {
 				title="Start a new drawing"
 				dataId="new-button"
 				iconName={IconName.FilePlus}
-				onClick={() => setEntities([])}
+				onClick={(evt) => {
+					evt.stopPropagation();
+					setEntities([])
+				}}
 				label="New drawing"
 			/>
 
@@ -412,7 +421,7 @@ export const Toolbar: FC<ToolbarProps> = () => {
 					title="Import image into the current drawing"
 					dataId="import-image-button"
 					iconName={IconName.ImageSolid}
-					onClick={noop}
+					onClick={noopClickHandler}
 					label="image"
 				>
 					<input
@@ -440,7 +449,7 @@ export const Toolbar: FC<ToolbarProps> = () => {
 					title="Load from JSON file"
 					dataId="json-open-button"
 					iconName={IconName.JavascriptSolid}
-					onClick={noop}
+					onClick={noopClickHandler}
 					label="JSON"
 				>
 					<input
@@ -458,7 +467,7 @@ export const Toolbar: FC<ToolbarProps> = () => {
 					title="Load from SVG file"
 					dataId="svg-open-button"
 					iconName={IconName.VectorDocumentSolid}
-					onClick={noop}
+					onClick={noopClickHandler}
 					label="SVG"
 				>
 					<input
@@ -479,7 +488,10 @@ export const Toolbar: FC<ToolbarProps> = () => {
 					title="Save to JSON file"
 					dataId="json-save-button"
 					iconName={IconName.JavascriptSolid}
-					onClick={() => exportEntitiesToJsonFile()}
+					onClick={async (evt) => {
+						evt.stopPropagation();
+						await exportEntitiesToJsonFile()
+					}}
 					label="JSON"
 				/>
 				<Button
@@ -487,7 +499,10 @@ export const Toolbar: FC<ToolbarProps> = () => {
 					title="Export to SVG file"
 					dataId="svg-export-button"
 					iconName={IconName.VectorDocumentSolid}
-					onClick={() => exportEntitiesToSvgFile()}
+					onClick={async (evt) => {
+						evt.stopPropagation();
+						await exportEntitiesToSvgFile()
+					}}
 					label="SVG"
 				/>
 				<Button
@@ -495,7 +510,10 @@ export const Toolbar: FC<ToolbarProps> = () => {
 					title="Export to PNG file"
 					dataId="png-export-button"
 					iconName={IconName.ImageSolid}
-					onClick={() => exportEntitiesToPngFile()}
+					onClick={async (evt) => {
+						evt.stopPropagation();
+						await exportEntitiesToPngFile()
+					}}
 					label="PNG"
 				/>
 				<Button
@@ -503,7 +521,10 @@ export const Toolbar: FC<ToolbarProps> = () => {
 					title="Export to PDF file"
 					dataId="pdf-export-button"
 					iconName={IconName.PdfSolid}
-					onClick={() => exportEntitiesToPdfFile()}
+					onClick={async (evt) => {
+						evt.stopPropagation();
+						await exportEntitiesToPdfFile()
+					}}
 					label="PDF"
 				/>
 			</DropdownButton>
@@ -513,12 +534,13 @@ export const Toolbar: FC<ToolbarProps> = () => {
 				title="Github"
 				dataId="github-link-button"
 				iconName={IconName.Github}
-				onClick={() =>
+				onClick={(evt) =>{
+					evt.stopPropagation();
 					window.open(
 						'https://github.com/bertyhell/openwebcad',
 						'_blank',
 					)
-				}
+				}}
 				label="Github repository"
 			/>
 		</div>

@@ -122,6 +122,7 @@ export class PdfDrawController implements DrawController {
 
         // Convert svg to pdf
         const doc = new jsPDF()
+        console.log('export to pdf', svgExportInfo);
         await doc.svg(svgElement, {
             x: 0,
             y: 0,

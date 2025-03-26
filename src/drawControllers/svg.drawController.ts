@@ -1,10 +1,10 @@
-import { Point } from '@flatten-js/core';
-import { DEFAULT_TEXT_OPTIONS, DrawController } from './DrawController';
-import { SVG_MARGIN } from '../App.consts.ts';
-import { TextOptions } from '../entities/TextEntity.ts';
-import { triggerReactUpdate } from '../state.ts';
-import { StateVariable } from '../helpers/undo-stack.ts';
-import { isLengthEqual } from '../helpers/is-length-equal.ts';
+import {Point} from '@flatten-js/core';
+import {DEFAULT_TEXT_OPTIONS, DrawController} from './DrawController';
+import {SVG_MARGIN} from '../App.consts.ts';
+import {TextOptions} from '../entities/TextEntity.ts';
+import {triggerReactUpdate} from '../state.ts';
+import {StateVariable} from '../helpers/undo-stack.ts';
+import {isLengthEqual} from '../helpers/is-length-equal.ts';
 
 export class SvgDrawController implements DrawController {
     private lineColor = '#000';
@@ -144,7 +144,7 @@ export class SvgDrawController implements DrawController {
             this.boundingBoxMaxY - this.boundingBoxMinY + SVG_MARGIN * 2;
 
         const svgLines = [
-            `<svg width="${boundingBoxWidth}" height="${boundingBoxHeight}" xmlns="http://www.w3.org/2000/svg">\n`,
+            `<svg width="${Math.ceil(boundingBoxWidth)}" height="${Math.ceil(boundingBoxHeight)}" xmlns="http://www.w3.org/2000/svg">\n`,
             `    <rect x="0" y="0" width="${boundingBoxWidth}" height="${boundingBoxHeight}" fill="#FFF" />\n`,
             ...this.svgStrings.map(svgString => '\t' + svgString + '\n'),
             '</svg>',
@@ -189,14 +189,16 @@ export class SvgDrawController implements DrawController {
         );
         endPoint = endPoint.rotate(endAngle, canvasCenterPoint);
 
-        // Determine the length of the arc
-        const sweep = Math.abs(endAngle - startAngle);
+        // Normalize the sweep angle to be between 0 and 2π
+        let sweep = endAngle - startAngle;
+        if (counterClockwise && sweep > 0) {
+            sweep -= 2 * Math.PI;
+        } else if (!counterClockwise && sweep < 0) {
+            sweep += 2 * Math.PI;
+        }
 
-        // Determine the large-arc-flag (1 if the arc spans more than 180 degrees)
-        const largeArcFlag = sweep <= Math.PI ? '0' : '1';
-
-        // Sweep flag (1 for clockwise, 0 for counterclockwise)
-        const sweepFlag = counterClockwise ? '1' : '0';
+        const largeArcFlag = Math.abs(sweep) > Math.PI ? '1' : '0';
+        const sweepFlag = counterClockwise ? '0' : '1'; // SVG: 0 = CCW, 1 = CW
 
         const attributes = `fill="none" stroke="${this.lineColor}" stroke-width="${this.lineWidth}" stroke-dasharray="${this.lineDash.join(',')}"`;
         let svgPath: string;

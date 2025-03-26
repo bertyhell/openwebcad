@@ -1,9 +1,8 @@
-import { saveAs } from 'file-saver';
-import { Entity } from '../../entities/Entity';
-import { Point } from '@flatten-js/core';
-import { SVG_MARGIN } from '../../App.consts';
-import { getEntities } from '../../state';
-import { SvgDrawController } from '../../drawControllers/svg.drawController.ts';
+import {saveAs} from 'file-saver';
+import {Entity} from '../../entities/Entity';
+import {SVG_MARGIN} from '../../App.consts';
+import {getEntities} from '../../state';
+import {SvgDrawController} from '../../drawControllers/svg.drawController.ts';
 import {getBoundingBoxOfMultipleEntities} from "../get-bounding-box-of-multiple-entities.ts";
 
 export function convertEntitiesToSvgString(
@@ -16,9 +15,6 @@ export function convertEntitiesToSvgString(
       boundingBox.minY - SVG_MARGIN,
       boundingBox.maxX + SVG_MARGIN,
       boundingBox.maxY + SVG_MARGIN,
-  );
-  svgDrawController.setScreenOffset(
-    new Point(SVG_MARGIN, SVG_MARGIN),
   );
 
   entities.forEach(entity => {

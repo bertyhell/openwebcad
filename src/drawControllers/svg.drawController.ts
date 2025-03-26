@@ -20,7 +20,11 @@ export class SvgDrawController implements DrawController {
         private boundingBoxMinY: number,
         private boundingBoxMaxX: number,
         private boundingBoxMaxY: number,
-    ) {}
+    ) {
+        this.setScreenOffset(
+            new Point(boundingBoxMinX - SVG_MARGIN, boundingBoxMinY + SVG_MARGIN),
+        );
+    }
 
     getCanvasSize(): Point {
         return new Point(

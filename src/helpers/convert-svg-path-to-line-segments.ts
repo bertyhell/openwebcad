@@ -411,7 +411,7 @@ export function svgPathToSegments(svgPath: string): { x1: number; y1: number; x2
 					break;
 				}
 				default: {
-					console.log('unsupported SVG command type: ' + type + ' ' + args.join(' '))
+					console.error('unsupported SVG command type: ' + type + ' ' + args.join(' '))
 					// Unsupported commands can be skipped.
 					idx = args.length;
 					break;

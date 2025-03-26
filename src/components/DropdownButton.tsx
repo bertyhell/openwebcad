@@ -33,7 +33,6 @@ export const DropdownButton: FC<DropdownButtonProps> = ({
 														}) => {
 	const [isOpen, setIsOpen] = useLocalStorageState<boolean>(LOCAL_STORAGE_KEY.DROPDOWN + '___' + dataId, {defaultValue: defaultOpen});
 
-	console.log('dropdown ' + dataId + '  ' + isOpen);
 	return (
 		<div
 			className={

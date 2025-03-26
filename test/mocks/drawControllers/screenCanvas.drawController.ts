@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // noinspection JSUnusedLocalSymbols
 
-import { Point, Vector } from '@flatten-js/core';
-import { DrawController } from '../../../src/drawControllers/DrawController';
-import { triggerReactUpdate } from '../../../src/state';
-import { StateVariable } from '../../../src/helpers/undo-stack';
-import { MOUSE_ZOOM_MULTIPLIER } from '../../../src/App.consts';
-import { mapNumberRange } from '../../../src/helpers/map-number-range';
+import {Point, Vector} from '@flatten-js/core';
+import {DrawController} from '../../../src/drawControllers/DrawController';
+import {triggerReactUpdate} from '../../../src/state';
+import {StateVariable} from '../../../src/helpers/undo-stack';
+import {MOUSE_ZOOM_MULTIPLIER} from '../../../src/App.consts';
+import {mapNumberRange} from '../../../src/helpers/map-number-range';
 
 /**
  * Screen coordinate system:
@@ -40,7 +40,6 @@ export class ScreenCanvasDrawController implements DrawController {
         this.worldMouseLocation = this.targetToWorld(
             new Point(canvasSize.x / 2, canvasSize.y / 2),
         );
-        console.log('setting screen offset: ', 0, 0);
         this.setScreenOffset(new Point(0, 0)); // User expects mathematical coordinates, where y axis goes up, but canvas y axis goes down
     }
 

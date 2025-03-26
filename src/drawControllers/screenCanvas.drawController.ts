@@ -35,7 +35,6 @@ export class ScreenCanvasDrawController implements DrawController {
         private context: CanvasRenderingContext2D,
     ) {
         this.screenMouseLocation = new Point(this.canvasSize.x / 2, this.canvasSize.y / 2);
-        console.log('setting screen offset: ', 0, 0);
         this.setScreenOffset(new Point(0, 0)); // User expects mathematical coordinates, where y axis goes up, but canvas y axis goes down
     }
 

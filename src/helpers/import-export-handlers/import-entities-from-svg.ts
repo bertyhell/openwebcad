@@ -1,13 +1,11 @@
 import {Entity} from '../../entities/Entity';
 import {CircleEntity} from '../../entities/CircleEntity';
 import {LineEntity} from '../../entities/LineEntity';
-import {
-	RectangleEntity,
-} from '../../entities/RectangleEntity';
+import {RectangleEntity,} from '../../entities/RectangleEntity';
 import {getEntities, setEntities} from '../../state';
 
 
-import {parse, Node, RootNode} from 'svg-parser';
+import {Node, parse, RootNode} from 'svg-parser';
 import {Point} from "@flatten-js/core";
 import {svgPathToSegments} from "../convert-svg-path-to-line-segments.ts";
 import {getBoundingBoxOfMultipleEntities} from "../get-bounding-box-of-multiple-entities.ts";
@@ -65,7 +63,7 @@ function svgChildrenToEntities(root: RootNode): Entity[] {
 						entities.push(new LineEntity(startPoint, endPoint));
 					} else {
 						// stop
-						console.log('expected even number of points but got: ' + coords.length);
+						console.error('expected even number of points but got: ' + coords.length);
 					}
 				}
 			}

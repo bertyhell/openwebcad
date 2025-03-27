@@ -141,14 +141,13 @@ export class SvgDrawController implements DrawController {
     }
 
     public export() {
-        console.log('exporting svg', this.svgStrings);
         const boundingBoxWidth =
-            this.boundingBoxMaxX - this.boundingBoxMinX + SVG_MARGIN * 2;
+            Math.ceil(this.boundingBoxMaxX - this.boundingBoxMinX + SVG_MARGIN * 2);
         const boundingBoxHeight =
-            this.boundingBoxMaxY - this.boundingBoxMinY + SVG_MARGIN * 2;
+            Math.ceil(this.boundingBoxMaxY - this.boundingBoxMinY + SVG_MARGIN * 2);
 
         const svgLines = [
-            `<svg width="${Math.ceil(boundingBoxWidth)}" height="${Math.ceil(boundingBoxHeight)}" xmlns="http://www.w3.org/2000/svg">\n`,
+            `<svg width="${boundingBoxWidth}" height="${boundingBoxHeight}" viewBox="0 0 ${boundingBoxWidth} ${boundingBoxHeight}" xmlns="http://www.w3.org/2000/svg">\n`,
             `    <rect x="0" y="0" width="${boundingBoxWidth}" height="${boundingBoxHeight}" fill="#FFF" />\n`,
             ...this.svgStrings.map(svgString => '\t' + svgString + '\n'),
             '</svg>',

@@ -159,6 +159,18 @@ export const Toolbar: FC<ToolbarProps> = () => {
 				/>
 				<Button
 					className="w-full"
+					title="Copy"
+					dataId="copy-button"
+					iconName={IconName.Documents}
+					onClick={(evt) => {
+						evt.stopPropagation();
+						handleToolClick(Tool.COPY)
+					}}
+					active={activeToolLocal === Tool.COPY}
+					label="Copy"
+				/>
+				<Button
+					className="w-full"
 					title="Scale"
 					dataId="scale-button"
 					iconName={IconName.Scale}

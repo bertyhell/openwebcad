@@ -38,6 +38,7 @@ import AlignCenterHorizontalIcon from 'teenyicons/outline/align-center-horizonta
 import AlignTopIcon from 'teenyicons/outline/align-top.svg?react';
 import AlignBottomIcon from 'teenyicons/outline/align-bottom.svg?react';
 import AlignCenterVerticalIcon from 'teenyicons/outline/align-center-vertical.svg?react';
+import DocumentsIcon from 'teenyicons/outline/documents.svg?react';
 import {FC} from 'react';
 
 // https://icon-sets.iconify.design/teenyicons
@@ -78,6 +79,7 @@ enum IconName {
 	AlignTop = 'AlignTop',
 	AlignBottom = 'AlignBottom',
 	AlignCenterVertical = 'AlignCenterVertical',
+	Documents = 'Documents',
 
 	// Solid icons
 	SolidDown = 'SolidDown',
@@ -126,6 +128,7 @@ const icons: Record<IconName, FC> = {
 	[IconName.AlignTop]: AlignTopIcon,
 	[IconName.AlignBottom]: AlignBottomIcon,
 	[IconName.AlignCenterVertical]: AlignCenterVerticalIcon,
+	[IconName.Documents]: DocumentsIcon,
 
 	// Solid icons
 	[IconName.SolidDown]: SolidDownIcon,

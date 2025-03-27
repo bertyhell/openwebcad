@@ -5,6 +5,7 @@ import {
     getLastStateInstructions,
     getPanStartLocation,
     getScreenCanvasDrawController,
+    getSelectedEntities,
     getSnapPoint,
     getSnapPointOnAngleGuide,
     redo,
@@ -292,7 +293,10 @@ export class InputController {
     }
 
     public handleEscapeKey() {
-        if (this.text === '') {
+        if (getSelectedEntities().length > 0) {
+            // Deselect entities
+            setSelectedEntityIds([]);
+        } else  if (this.text === '') {
             // Cancel tool action
             getActiveToolActor()?.send({
                 type: ActorEvent.ESC,

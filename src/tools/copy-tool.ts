@@ -165,11 +165,11 @@ export const copyToolStateMachine = createMachine(
             actions: [CopyAction.DRAW_TEMP_COPY_ENTITIES],
           },
           MOUSE_CLICK: {
-            actions: [CopyAction.COPY_SELECTION, CopyAction.DESELECT_ENTITIES],
-            target: CopyState.WAITING_FOR_SELECTION,
+            actions: [CopyAction.COPY_SELECTION],
+            target: CopyState.WAITING_FOR_END_COPY_POINT,
           },
           ESC: {
-            actions: CopyAction.RESTORE_ORIGINAL_ENTITIES,
+            actions: CopyAction.DESELECT_ENTITIES,
             target: CopyState.INIT,
           },
         },
@@ -268,8 +268,6 @@ export const copyToolStateMachine = createMachine(
 
         // Switch the copied entities back from the ghost helper entities to the real entities
         addEntities([...context.originalSelectedEntities, ...copiedEntities], true);
-        setGhostHelperEntities([]);
-        setSelectedEntityIds([]);
       },
       [CopyAction.DESELECT_ENTITIES]: assign(() => {
         setGhostHelperEntities([]);

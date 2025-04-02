@@ -1,7 +1,8 @@
-import { CircleEntity } from '../entities/CircleEntity';
-import { Point } from '@flatten-js/core';
+import {CircleEntity} from '../entities/CircleEntity';
+import {Point} from '@flatten-js/core';
 import {
   addEntities,
+  getActiveLayerId,
   getActiveLineColor,
   getActiveLineWidth,
   setAngleGuideOriginPoint,
@@ -9,17 +10,12 @@ import {
   setSelectedEntityIds,
   setShouldDrawHelpers,
 } from '../state';
-import {
-  DrawEvent,
-  PointInputEvent,
-  StateEvent,
-  ToolContext,
-} from './tool.types';
-import { Tool } from '../tools';
-import { assign, createMachine } from 'xstate';
-import { pointDistance } from '../helpers/distance-between-points';
-import { LineState } from './line-tool.ts';
-import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
+import {DrawEvent, PointInputEvent, StateEvent, ToolContext,} from './tool.types';
+import {Tool} from '../tools';
+import {assign, createMachine} from 'xstate';
+import {pointDistance} from '../helpers/distance-between-points';
+import {LineState} from './line-tool.ts';
+import {getPointFromEvent} from '../helpers/get-point-from-event.ts';
 
 export interface CircleContext extends ToolContext {
   centerPoint: Point | null;
@@ -125,7 +121,8 @@ export const circleToolStateMachine = createMachine(
       }),
       [CircleAction.DRAW_TEMP_CIRCLE]: ({ context, event }) => {
         const activeCircle = new CircleEntity(
-          context.centerPoint as Point,
+            getActiveLayerId(),
+            context.centerPoint as Point,
           pointDistance(
             (event as DrawEvent).drawController.getWorldMouseLocation(),
             context.centerPoint as Point,
@@ -146,7 +143,8 @@ export const circleToolStateMachine = createMachine(
           event as PointInputEvent,
         );
         const activeCircle = new CircleEntity(
-          context.centerPoint as Point,
+            getActiveLayerId(),
+            context.centerPoint as Point,
           pointDistance(pointOnCircle, context.centerPoint as Point),
         );
         activeCircle.lineColor = getActiveLineColor();

@@ -7,7 +7,7 @@ import {scalePoint} from '../helpers/scale-point';
 import {twoPointBoxToPolygon} from '../helpers/box-to-polygon';
 import {polygonToSegments} from '../helpers/polygon-to-segments';
 import {DrawController} from '../drawControllers/DrawController.ts';
-import {isEntityHighlighted, isEntitySelected} from '../state.ts';
+import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
 import {LineEntity} from './LineEntity.ts';
 import {mirrorPointOverAxis} from "../helpers/mirror-point-over-axis.ts";
 import {mirrorAngleOverAxis} from '../helpers/mirror-angle-over-axis.ts';
@@ -17,17 +17,20 @@ export class ImageEntity implements Entity {
   public lineColor: string = '#fff';
   public lineWidth: number = 1;
   public lineDash: number[] | undefined = undefined;
+  public layerId: string;
 
   private imageElement: HTMLImageElement;
   private polygon: Polygon;
   private angle: number;
 
   constructor(
+      layerId: string,
     imgData: HTMLImageElement,
     startPointOrPolygon?: Point | Polygon,
     endPointOrAngle?: Point | number,
     angle: number = 0,
   ) {
+    this.layerId = layerId;
     this.imageElement = imgData;
     if (startPointOrPolygon instanceof Polygon) {
       this.polygon = startPointOrPolygon as Polygon;
@@ -101,7 +104,8 @@ export class ImageEntity implements Entity {
   public clone(): ImageEntity {
     const clonedImage = document.createElement('img');
     clonedImage.src = this.imageElement.src;
-    return new ImageEntity(clonedImage, this.polygon.clone());
+    return new ImageEntity(
+        getActiveLayerId(), clonedImage, this.polygon.clone());
   }
 
   // TODO add destroy method to cleanup this.imageElement.src
@@ -214,6 +218,7 @@ export class ImageEntity implements Entity {
       type: EntityName.Image,
       lineColor: this.lineColor,
       lineWidth: this.lineWidth,
+      layerId: this.layerId,
       shapeData: {
         points: this.polygon.vertices.map(vertex => ({
           x: vertex.x,
@@ -232,7 +237,8 @@ export class ImageEntity implements Entity {
     );
     const image = new Image();
     image.src = jsonEntity.shapeData.imageData;
-    const rectangleEntity = new ImageEntity(image, rectangle);
+    const rectangleEntity = new ImageEntity(
+        jsonEntity.layerId || getActiveLayerId(), image, rectangle);
     rectangleEntity.id = jsonEntity.id;
     rectangleEntity.lineColor = jsonEntity.lineColor;
     rectangleEntity.lineWidth = jsonEntity.lineWidth;

@@ -2,6 +2,7 @@ import {Point} from '@flatten-js/core';
 import {
   addEntities,
   deleteEntities,
+  getActiveLayerId,
   getSelectedEntities,
   getSelectedEntityIds,
   setAngleGuideOriginPoint,
@@ -243,7 +244,8 @@ export const moveToolStateMachine = createMachine(
 
         // // Draw a dashed line between the start move point and the current mouse location
         const activeMoveLine = new LineEntity(
-          context.startPoint as Point,
+            getActiveLayerId(),
+            context.startPoint as Point,
           endPointTemp,
         );
         activeMoveLine.lineColor = GUIDE_LINE_COLOR;

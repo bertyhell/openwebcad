@@ -1,11 +1,11 @@
-import { Entity } from './entities/Entity';
-import { Point } from '@flatten-js/core';
-import { HoverPoint, HtmlEvent, SnapPoint, StateMetaData } from './App.types';
-import { createStack, StateVariable, UndoState } from './helpers/undo-stack';
-import { isEqual } from 'es-toolkit';
-import { Actor, MachineSnapshot } from 'xstate';
-import { ScreenCanvasDrawController } from './drawControllers/screenCanvas.drawController';
-import { InputController } from './inputController/input-controller.ts'; // state variables
+import {Entity} from './entities/Entity';
+import {Point} from '@flatten-js/core';
+import {HoverPoint, HtmlEvent, Layer, SnapPoint, StateMetaData} from './App.types';
+import {createStack, StateVariable, UndoState} from './helpers/undo-stack';
+import {isEqual} from 'es-toolkit';
+import {Actor, MachineSnapshot} from 'xstate';
+import {ScreenCanvasDrawController} from './drawControllers/screenCanvas.drawController';
+import {InputController} from './inputController/input-controller.ts'; // state variables
 
 // state variables
 /**
@@ -123,6 +123,21 @@ let activeLineColor = '#fff';
  */
 let activeLineWidth = 1;
 
+/**
+ * Layers that can contain entities
+ */
+let layers: Layer[] = [{
+    id: crypto.randomUUID(),
+    isLocked: false,
+    isVisible: true,
+    name: "Default"
+}];
+
+/**
+ * Id of the currently active layer where newly drawn entities will be added to
+ */
+let activeLayerId: string = layers[0].id;
+
 // getters
 export const getCanvas = () => canvas;
 export const getActiveToolActor = () => activeToolActor;
@@ -166,6 +181,12 @@ export const isEntitySelected = (entity: Entity) =>
     selectedEntityIds.includes(entity.id);
 export const isEntityHighlighted = (entity: Entity) =>
     highlightedEntityIds.includes(entity.id);
+export const getLayers = () => {
+    return layers;
+}
+export const getActiveLayerId = (): string => {
+    return activeLayerId;
+}
 
 // setters
 export const setCanvas = (newCanvas: HTMLCanvasElement) => (canvas = newCanvas);
@@ -277,6 +298,20 @@ export const setActiveLineWidth = (
         triggerReactUpdate(StateVariable.activeLineWidth);
     }
 };
+export const setLayers = (newLayers: Layer[], triggerReact: boolean = true) => {
+    layers = newLayers;
+
+    if (triggerReact) {
+        triggerReactUpdate(StateVariable.layers);
+    }
+}
+export const setActiveLayerId = (newActiveLayerId: string, triggerReact: boolean = true) => {
+    activeLayerId = newActiveLayerId;
+
+    if (triggerReact) {
+        triggerReactUpdate(StateVariable.layers);
+    }
+}
 
 // Computed setters
 export const deleteEntities = (
@@ -352,9 +387,13 @@ export function redo() {
 }
 
 export function triggerReactUpdate(variable: StateVariable) {
-    if (typeof process === 'object' && process?.env?.NODE_ENV === 'test')
+    if (typeof process === 'object' && process?.env?.NODE_ENV === 'test') {
         return;
-    if (!reactStateVariables.includes(variable)) return;
+    }
+
+    if (!reactStateVariables.includes(variable)) {
+        return;
+    }
 
     window.dispatchEvent(new CustomEvent(HtmlEvent.UPDATE_STATE));
 }

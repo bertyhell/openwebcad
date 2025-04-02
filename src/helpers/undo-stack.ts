@@ -25,6 +25,7 @@ export enum StateVariable {
   lastDrawTimestamp = 'lastDrawTimestamp',
   activeLineColor = 'activeLineColor',
   activeLineWidth = 'activeLineWidth',
+  layers = 'layers',
 }
 
 /**

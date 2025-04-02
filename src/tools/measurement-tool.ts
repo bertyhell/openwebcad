@@ -1,7 +1,8 @@
-import { Point, Vector } from '@flatten-js/core';
-import { MeasurementEntity } from '../entities/MeasurementEntity';
+import {Point, Vector} from '@flatten-js/core';
+import {MeasurementEntity} from '../entities/MeasurementEntity';
 import {
   addEntities,
+  getActiveLayerId,
   getActiveLineColor,
   getActiveLineWidth,
   setAngleGuideOriginPoint,
@@ -9,17 +10,12 @@ import {
   setSelectedEntityIds,
   setShouldDrawHelpers,
 } from '../state';
-import { Tool } from '../tools';
-import { assign, createMachine } from 'xstate';
-import {
-  DrawEvent,
-  PointInputEvent,
-  StateEvent,
-  ToolContext,
-} from './tool.types';
-import { MEASUREMENT_DEFAULT_OFFSET, TO_RADIANS } from '../App.consts';
-import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
-import { isPointEqual } from '../helpers/is-point-equal.ts';
+import {Tool} from '../tools';
+import {assign, createMachine} from 'xstate';
+import {DrawEvent, PointInputEvent, StateEvent, ToolContext,} from './tool.types';
+import {MEASUREMENT_DEFAULT_OFFSET, TO_RADIANS} from '../App.consts';
+import {getPointFromEvent} from '../helpers/get-point-from-event.ts';
+import {isPointEqual} from '../helpers/is-point-equal.ts';
 
 export interface MeasurementContext extends ToolContext {
   startPoint: Point | null;
@@ -201,7 +197,8 @@ export const measurementToolStateMachine = createMachine(
         }
 
         const activeMeasurement = new MeasurementEntity(
-          context.startPoint as Point,
+            getActiveLayerId(),
+            context.startPoint as Point,
           endPoint,
           offsetPoint,
         );
@@ -215,7 +212,8 @@ export const measurementToolStateMachine = createMachine(
           event as PointInputEvent,
         );
         const activeMeasurement = new MeasurementEntity(
-          context.startPoint as Point,
+            getActiveLayerId(),
+            context.startPoint as Point,
           context.endPoint as Point,
           offsetPoint,
         );

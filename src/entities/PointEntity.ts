@@ -5,7 +5,7 @@ import {Box, Point, Segment} from '@flatten-js/core';
 import {getExportColor} from '../helpers/get-export-color';
 import {scalePoint} from '../helpers/scale-point';
 import {DrawController} from '../drawControllers/DrawController';
-import {isEntityHighlighted, isEntitySelected} from '../state.ts';
+import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
 import {LineEntity} from "./LineEntity.ts";
 import {mirrorPointOverAxis} from "../helpers/mirror-point-over-axis.ts";
 
@@ -14,10 +14,12 @@ export class PointEntity implements Entity {
   public lineColor: string = '#fff';
   public lineWidth: number = 1;
   public lineDash: number[] | undefined = undefined;
+  public layerId: string;
 
   public point: Point;
 
-  constructor(pointOrX?: Point | number, y?: number) {
+  constructor(layerId: string, pointOrX?: Point | number, y?: number) {
+    this.layerId = layerId;
     if (pointOrX instanceof Point) {
       // Passed point
       this.point = new Point(pointOrX.x, pointOrX.y);
@@ -55,7 +57,7 @@ export class PointEntity implements Entity {
   }
 
   public clone(): PointEntity {
-    return new PointEntity(this.point.clone());
+    return new PointEntity(getActiveLayerId(), this.point.clone());
   }
 
   public intersectsWithBox(): boolean {
@@ -118,6 +120,7 @@ export class PointEntity implements Entity {
       type: EntityName.Point,
       lineColor: this.lineColor,
       lineWidth: this.lineWidth,
+      layerId: this.layerId,
       shapeData: {
         point: {
           x: this.point.x,
@@ -134,7 +137,7 @@ export class PointEntity implements Entity {
       jsonEntity.shapeData.point.x,
       jsonEntity.shapeData.point.y,
     );
-    const lineEntity = new PointEntity(point);
+    const lineEntity = new PointEntity(jsonEntity.layerId || getActiveLayerId(), point);
     lineEntity.id = jsonEntity.id;
     lineEntity.lineColor = jsonEntity.lineColor;
     lineEntity.lineWidth = jsonEntity.lineWidth;

@@ -7,7 +7,7 @@ import {scalePoint} from '../helpers/scale-point';
 import {twoPointBoxToPolygon} from '../helpers/box-to-polygon';
 import {polygonToSegments} from '../helpers/polygon-to-segments';
 import {DrawController} from '../drawControllers/DrawController';
-import {isEntityHighlighted, isEntitySelected} from '../state.ts';
+import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
 import {LineEntity} from "./LineEntity.ts";
 import {mirrorPointOverAxis} from "../helpers/mirror-point-over-axis.ts";
 
@@ -16,10 +16,12 @@ export class RectangleEntity implements Entity {
   public lineColor: string = '#fff';
   public lineWidth: number = 1;
   public lineDash: number[] | undefined = undefined;
+  public layerId: string;
 
   private polygon: Polygon;
 
-  constructor(startPointOrPolygon?: Point | Polygon, endPoint?: Point) {
+  constructor(layerId: string, startPointOrPolygon?: Point | Polygon, endPoint?: Point) {
+    this.layerId = layerId;
     if (startPointOrPolygon instanceof Polygon) {
       this.polygon = startPointOrPolygon as Polygon;
     } else {
@@ -68,7 +70,7 @@ export class RectangleEntity implements Entity {
 
 
   public clone(): RectangleEntity {
-    return new RectangleEntity(this.polygon.clone());
+    return new RectangleEntity(getActiveLayerId(), this.polygon.clone());
   }
 
   public intersectsWithBox(selectionBox: Box): boolean {
@@ -181,6 +183,7 @@ export class RectangleEntity implements Entity {
       type: EntityName.Rectangle,
       lineColor: this.lineColor,
       lineWidth: this.lineWidth,
+      layerId: this.layerId,
       shapeData: {
         points: this.polygon.vertices.map(vertex => ({
           x: vertex.x,
@@ -196,7 +199,7 @@ export class RectangleEntity implements Entity {
     const rectangle = new Polygon(
       jsonEntity.shapeData.points.map(point => new Point(point.x, point.y)),
     );
-    const rectangleEntity = new RectangleEntity(rectangle);
+    const rectangleEntity = new RectangleEntity(jsonEntity.layerId || getActiveLayerId(), rectangle);
     rectangleEntity.id = jsonEntity.id;
     rectangleEntity.lineColor = jsonEntity.lineColor;
     rectangleEntity.lineWidth = jsonEntity.lineWidth;

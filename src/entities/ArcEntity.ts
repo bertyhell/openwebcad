@@ -7,7 +7,7 @@ import {sortPointsOnArc} from '../helpers/sort-points-on-arc';
 import {getExportColor} from '../helpers/get-export-color';
 import {scalePoint} from '../helpers/scale-point';
 import {DrawController} from '../drawControllers/DrawController.ts';
-import {isEntityHighlighted, isEntitySelected} from '../state.ts';
+import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
 import {LineEntity} from "./LineEntity.ts";
 import {mirrorPointOverAxis} from "../helpers/mirror-point-over-axis.ts";
 
@@ -16,6 +16,7 @@ export class ArcEntity implements Entity {
     public lineColor: string = '#fff';
     public lineWidth: number = 1;
     public lineDash: number[] | undefined = undefined;
+    public layerId: string;
 
     private arc: Arc;
 
@@ -24,12 +25,14 @@ export class ArcEntity implements Entity {
     }
 
     constructor(
+        layerId: string,
         centerPoint: Point,
         radius: number,
         startAngle: number,
         endAngle: number,
         counterClockwise: boolean = true,
     ) {
+        this.layerId = layerId;
         this.arc = new Arc(
             centerPoint,
             radius,
@@ -92,6 +95,7 @@ export class ArcEntity implements Entity {
             const { center, r, startAngle, endAngle, counterClockwise } =
                 this.arc;
             return new ArcEntity(
+                getActiveLayerId(),
                 center,
                 r.valueOf(),
                 startAngle,
@@ -194,6 +198,7 @@ export class ArcEntity implements Entity {
             const endAngle = ArcEntity.getAngle(this.arc.center, point2);
 
             const newArc = new ArcEntity(
+                getActiveLayerId(),
                 this.arc.center,
                 Number(this.arc.r),
                 startAngle,
@@ -216,6 +221,7 @@ export class ArcEntity implements Entity {
             type: EntityName.Arc,
             lineColor: this.lineColor,
             lineWidth: this.lineWidth,
+            layerId: this.layerId,
             shapeData: {
                 center: { x: this.arc.center.x, y: this.arc.center.y },
                 radius: this.arc.r.valueOf(),
@@ -243,6 +249,7 @@ export class ArcEntity implements Entity {
         const counterClockwise = jsonEntity.shapeData.counterClockwise;
 
         const arcEntity = new ArcEntity(
+            jsonEntity.layerId || getActiveLayerId(),
             center,
             radius,
             startAngle,

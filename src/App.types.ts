@@ -1,4 +1,4 @@
-import { Arc, Circle, Point, Polygon, Segment } from '@flatten-js/core';
+import {Arc, Circle, Point, Polygon, Segment} from '@flatten-js/core';
 
 export type Shape = Polygon | Segment | Point | Circle | Arc;
 
@@ -39,4 +39,11 @@ export enum HtmlEvent {
 
 export interface StateMetaData {
   instructions: string;
+}
+
+export interface Layer {
+  id: string;
+  name: string;
+  isVisible: boolean;
+  isLocked: boolean;
 }

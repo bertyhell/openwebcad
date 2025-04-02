@@ -17,7 +17,7 @@ import {minBy, round} from 'es-toolkit';
 import {pointDistance} from '../helpers/distance-between-points';
 import {DrawController} from '../drawControllers/DrawController';
 import {max, min} from 'es-toolkit/compat';
-import {isEntityHighlighted, isEntitySelected} from '../state.ts';
+import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
 import {mirrorPointOverAxis} from "../helpers/mirror-point-over-axis.ts";
 import {LineEntity} from "./LineEntity.ts";
 
@@ -26,12 +26,14 @@ export class MeasurementEntity implements Entity {
     public lineColor: string = '#fff';
     public lineWidth: number = 1;
     public lineDash: number[] | undefined = undefined;
+    public layerId: string;
 
     private startPoint: Point;
     private endPoint: Point;
     private offsetPoint: Point;
 
-    constructor(startPoint: Point, endPoint: Point, offsetPoint: Point) {
+    constructor(layerId: string, startPoint: Point, endPoint: Point, offsetPoint: Point) {
+        this.layerId = layerId;
         this.startPoint = startPoint;
         this.endPoint = endPoint;
         this.offsetPoint = offsetPoint;
@@ -271,6 +273,7 @@ export class MeasurementEntity implements Entity {
 
     public clone(): MeasurementEntity {
         return new MeasurementEntity(
+            getActiveLayerId(),
             this.startPoint.clone(),
             this.endPoint.clone(),
             this.offsetPoint.clone(),
@@ -432,6 +435,7 @@ export class MeasurementEntity implements Entity {
             type: EntityName.Measurement,
             lineColor: this.lineColor,
             lineWidth: this.lineWidth,
+            layerId: this.layerId,
             shapeData: {
                 startPoint: { x: this.startPoint.x, y: this.startPoint.y },
                 endPoint: { x: this.endPoint.x, y: this.endPoint.y },
@@ -456,6 +460,7 @@ export class MeasurementEntity implements Entity {
             jsonEntity.shapeData.offsetPoint.y,
         );
         const measurementEntity = new MeasurementEntity(
+            jsonEntity.layerId || getActiveLayerId(),
             startPoint,
             endPoint,
             offsetPoint,

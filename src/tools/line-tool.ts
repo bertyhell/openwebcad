@@ -1,7 +1,8 @@
-import { Point } from '@flatten-js/core';
-import { LineEntity } from '../entities/LineEntity';
+import {Point} from '@flatten-js/core';
+import {LineEntity} from '../entities/LineEntity';
 import {
   addEntities,
+  getActiveLayerId,
   getActiveLineColor,
   getActiveLineWidth,
   setActiveToolActor,
@@ -10,16 +11,11 @@ import {
   setSelectedEntityIds,
   setShouldDrawHelpers,
 } from '../state';
-import { Tool } from '../tools';
-import { Actor, assign, createMachine } from 'xstate';
-import {
-  DrawEvent,
-  PointInputEvent,
-  StateEvent,
-  ToolContext,
-} from './tool.types';
-import { selectToolStateMachine } from './select-tool.ts';
-import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
+import {Tool} from '../tools';
+import {Actor, assign, createMachine} from 'xstate';
+import {DrawEvent, PointInputEvent, StateEvent, ToolContext,} from './tool.types';
+import {selectToolStateMachine} from './select-tool.ts';
+import {getPointFromEvent} from '../helpers/get-point-from-event.ts';
 
 export interface LineContext extends ToolContext {
   startPoint: Point | null;
@@ -132,7 +128,8 @@ export const lineToolStateMachine = createMachine(
       }),
       [LineAction.DRAW_TEMP_LINE]: ({ context, event }) => {
         const activeLine = new LineEntity(
-          context.startPoint as Point,
+            getActiveLayerId(),
+            context.startPoint as Point,
           (event as DrawEvent).drawController.getWorldMouseLocation(),
         );
         activeLine.lineColor = getActiveLineColor();
@@ -151,7 +148,8 @@ export const lineToolStateMachine = createMachine(
           event as PointInputEvent,
         );
         const activeLine = new LineEntity(
-          context.startPoint as Point,
+            getActiveLayerId(),
+            context.startPoint as Point,
           endPoint,
         );
         activeLine.lineColor = getActiveLineColor();
@@ -159,7 +157,7 @@ export const lineToolStateMachine = createMachine(
         addEntities([activeLine], true);
 
         // Keep drawing from the last point
-        setGhostHelperEntities([new LineEntity(endPoint, endPoint)]);
+        setGhostHelperEntities([new LineEntity(getActiveLayerId(), endPoint, endPoint)]);
         setAngleGuideOriginPoint(endPoint);
         return {
           startPoint: endPoint,

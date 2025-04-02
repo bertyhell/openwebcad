@@ -1,4 +1,5 @@
 import {
+  getActiveLayerId,
   getEntities,
   getSelectedEntityIds,
   isEntitySelected,
@@ -13,12 +14,12 @@ import {
   SELECTION_RECTANGLE_STYLE,
   SELECTION_RECTANGLE_WIDTH,
 } from '../App.consts';
-import { SelectContext } from './select-tool';
-import { MouseClickEvent } from './tool.types';
-import { RectangleEntity } from '../entities/RectangleEntity';
-import { compact } from 'es-toolkit';
-import { Box, Point, Polygon } from '@flatten-js/core';
-import { findClosestEntity } from '../helpers/find-closest-entity';
+import {SelectContext} from './select-tool';
+import {MouseClickEvent} from './tool.types';
+import {RectangleEntity} from '../entities/RectangleEntity';
+import {compact} from 'es-toolkit';
+import {Box, Point, Polygon} from '@flatten-js/core';
+import {findClosestEntity} from '../helpers/find-closest-entity';
 
 export function handleFirstSelectionPoint(
   context: SelectContext,
@@ -74,7 +75,7 @@ export function selectEntitiesInsideRectangle(
   // holdingShift: boolean, // TODO implement add to selection using shift
 ): void {
   // Finish the selection
-  const activeSelectionRectangle = new RectangleEntity(startPoint, endPoint);
+  const activeSelectionRectangle = new RectangleEntity(getActiveLayerId(), startPoint, endPoint);
   const intersectionSelection = getIsIntersectionSelection(
     activeSelectionRectangle,
     startPoint,
@@ -126,7 +127,7 @@ export function selectEntitiesInsideRectangle(
 }
 
 export function drawTempSelectionRectangle(startPoint: Point, endPoint: Point) {
-  const activeSelectionRectangle = new RectangleEntity(startPoint, endPoint);
+  const activeSelectionRectangle = new RectangleEntity(getActiveLayerId(), startPoint, endPoint);
   const isIntersectionSelection: boolean = getIsIntersectionSelection(
     activeSelectionRectangle,
     startPoint,

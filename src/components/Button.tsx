@@ -14,6 +14,8 @@ interface ButtonProps {
 	className?: string;
 	style?: CSSProperties;
 	dataId?: string;
+	size?: 'small' | 'regular';
+	type?: 'regular' | 'transparent'
 }
 
 export const Button: FC<ButtonProps> = ({
@@ -28,16 +30,23 @@ export const Button: FC<ButtonProps> = ({
 											className,
 											style,
 											dataId,
+	type = 'regular',
+	size = 'regular'
 										}) => {
 	return (
 		<>
 			<button
 				className={
-					'bg-gray-950 text-blue-500 font-semibold py-2 px-2 w-100 h-10 pl-4 pr-6 flex flex-row justify-start gap-2 items-center hover:bg-blue-500 hover:text-white hover:border-transparent  data-[active=true]:bg-blue-500 data-[active=true]:text-white data-[active=true]:border-transparent' +
-					(className ? ' ' + className : '')
+					'font-semibold py-4 h-10 flex flex-row justify-start gap-2 w-full items-center hover:bg-blue-500 hover:text-white hover:border-transparent data-[size=regular]:pl-4 data-[size=regular]:pr-6 data-[size=small]:pl-2 data-[size=small]:pr-2' +
+					(className ? ' ' + className : '') + ' ' +
+					(type === 'regular' ? 'bg-gray-950 text-blue-500' : '') + ' ' +
+					(type === 'transparent' ? 'bg-transparent text-blue-500' : '') + ' ' +
+					(active ? 'bg-blue-500 text-white border-transparent hover:bg-blue-400' : '')
 				}
 				style={style}
 				data-active={active}
+				data-size={size}
+				data-type={type}
 				onClick={onClick || noop}
 				onKeyUp={(evt) => {
 					if (evt.key === 'Enter' || evt.key === ' ') {
@@ -47,8 +56,8 @@ export const Button: FC<ButtonProps> = ({
 				title={title}
 				data-id={dataId}
 			>
-				{iconComponent || (iconName && <Icon name={iconName} className={iconClassname + ' text-blue-700'}  />)}
-				{label && <span>{label}</span>}
+				{iconComponent || (iconName && <Icon name={iconName} className={iconClassname + ' ' + 'text-blue-700' + ' ' + (active ? 'text-white' : '')}  />)}
+				{label && <span className="text-nowrap">{label}</span>}
 				{children}
 			</button>
 		</>

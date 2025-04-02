@@ -1,6 +1,14 @@
 import {Point, Polygon} from '@flatten-js/core';
 import {findClosestEntity} from '../helpers/find-closest-entity';
-import {addEntities, deleteEntities, getEntities, setEntities, setGhostHelperEntities, setShouldDrawHelpers,} from '../state';
+import {
+  addEntities,
+  deleteEntities,
+  getActiveLayerId,
+  getEntities,
+  setEntities,
+  setGhostHelperEntities,
+  setShouldDrawHelpers,
+} from '../state';
 import {EntityName} from '../entities/Entity';
 import {LineEntity} from '../entities/LineEntity';
 import {CircleEntity} from '../entities/CircleEntity';
@@ -114,7 +122,7 @@ function handleMouseClick(worldMouseLocation: Point) {
     case EntityName.Rectangle: {
       const rectangle = closestEntity.entity as RectangleEntity;
       const segments = polygonToSegments(rectangle.getShape() as Polygon);
-      const segmentEntities = segments.map(segment => new LineEntity(segment));
+      const segmentEntities = segments.map(segment => new LineEntity(getActiveLayerId(), segment));
 
       // Find the closest segment to the clicked point
       const closestSegmentInfo = findClosestEntity(

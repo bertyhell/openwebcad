@@ -20,6 +20,7 @@ import ClockwiseIcon from 'teenyicons/outline/clockwise.svg?react';
 import GithubIcon from 'teenyicons/outline/github.svg?react';
 import CropIcon from 'teenyicons/outline/crop.svg?react';
 import FolderIcon from 'teenyicons/outline/folder.svg?react';
+import FolderTickIcon from 'teenyicons/outline/folder-tick.svg?react';
 import ExpandIcon from 'teenyicons/outline/expand.svg?react';
 import SaveIcon from 'teenyicons/outline/save.svg?react';
 import ImageIcon from 'teenyicons/outline/image.svg?react';
@@ -39,6 +40,10 @@ import AlignTopIcon from 'teenyicons/outline/align-top.svg?react';
 import AlignBottomIcon from 'teenyicons/outline/align-bottom.svg?react';
 import AlignCenterVerticalIcon from 'teenyicons/outline/align-center-vertical.svg?react';
 import DocumentsIcon from 'teenyicons/outline/documents.svg?react';
+import FolderXIcon from 'teenyicons/outline/folder-x.svg?react';
+import FolderPlusIcon from 'teenyicons/outline/folder-plus.svg?react';
+import DownloadIcon from 'teenyicons/outline/download.svg?react';
+import AlignTextJustifyIcon from 'teenyicons/outline/align-text-justify.svg?react';
 import {FC} from 'react';
 
 // https://icon-sets.iconify.design/teenyicons
@@ -56,6 +61,7 @@ enum IconName {
 	Github = 'Github',
 	Crop = 'Crop',
 	Folder = 'Folder',
+	FolderTick = 'FolderTick',
 	Save = 'Save',
 	Svg = 'Svg',
 	Pdf = 'Pdf',
@@ -80,6 +86,10 @@ enum IconName {
 	AlignBottom = 'AlignBottom',
 	AlignCenterVertical = 'AlignCenterVertical',
 	Documents = 'Documents',
+	Download = 'Download',
+	FolderX = 'FolderX',
+	FolderPlus = 'FolderPlus',
+	AlignTextJustify = 'AlignTextJustify',
 
 	// Solid icons
 	SolidDown = 'SolidDown',
@@ -105,6 +115,7 @@ const icons: Record<IconName, FC> = {
 	[IconName.Github]: GithubIcon,
 	[IconName.Crop]: CropIcon,
 	[IconName.Folder]: FolderIcon,
+	[IconName.FolderTick]: FolderTickIcon,
 	[IconName.Save]: SaveIcon,
 	[IconName.Svg]: SvgIcon,
 	[IconName.Pdf]: PdfIcon,
@@ -129,6 +140,10 @@ const icons: Record<IconName, FC> = {
 	[IconName.AlignBottom]: AlignBottomIcon,
 	[IconName.AlignCenterVertical]: AlignCenterVerticalIcon,
 	[IconName.Documents]: DocumentsIcon,
+	[IconName.Download]: DownloadIcon,
+	[IconName.FolderX]: FolderXIcon,
+	[IconName.FolderPlus]: FolderPlusIcon,
+	[IconName.AlignTextJustify]: AlignTextJustifyIcon,
 
 	// Solid icons
 	[IconName.SolidDown]: SolidDownIcon,

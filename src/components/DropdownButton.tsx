@@ -59,7 +59,7 @@ export const DropdownButton: FC<DropdownButtonProps> = ({
 			></Icon>
 			{isOpen && (
 				<div
-					className="flex flex-row flex-wrap max-w-48 gap-1 pl-1 pb-6"
+					className="flex flex-row flex-wrap max-w-72 gap-1 pl-1 pb-6"
 					onClick={() => setIsOpen(false)}
 				>
 					{children}

@@ -1,7 +1,8 @@
-import { Point } from '@flatten-js/core';
-import { RectangleEntity } from '../entities/RectangleEntity';
+import {Point} from '@flatten-js/core';
+import {RectangleEntity} from '../entities/RectangleEntity';
 import {
   addEntities,
+  getActiveLayerId,
   getActiveLineColor,
   getActiveLineWidth,
   setAngleGuideOriginPoint,
@@ -9,15 +10,10 @@ import {
   setSelectedEntityIds,
   setShouldDrawHelpers,
 } from '../state';
-import {
-  DrawEvent,
-  PointInputEvent,
-  StateEvent,
-  ToolContext,
-} from './tool.types';
-import { Tool } from '../tools';
-import { assign, createMachine } from 'xstate';
-import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
+import {DrawEvent, PointInputEvent, StateEvent, ToolContext,} from './tool.types';
+import {Tool} from '../tools';
+import {assign, createMachine} from 'xstate';
+import {getPointFromEvent} from '../helpers/get-point-from-event.ts';
 
 export interface RectangleContext extends ToolContext {
   startPoint: Point | null;
@@ -125,7 +121,8 @@ export const rectangleToolStateMachine = createMachine(
           );
         }
         const activeRectangle = new RectangleEntity(
-          context.startPoint as Point,
+            getActiveLayerId(),
+            context.startPoint as Point,
           (event as DrawEvent).drawController.getWorldMouseLocation(),
         );
         activeRectangle.lineColor = getActiveLineColor();
@@ -144,7 +141,8 @@ export const rectangleToolStateMachine = createMachine(
         );
 
         const activeRectangle = new RectangleEntity(
-          context.startPoint as Point,
+            getActiveLayerId(),
+            context.startPoint as Point,
           endPoint,
         );
         activeRectangle.lineColor = getActiveLineColor();

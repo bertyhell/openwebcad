@@ -1,6 +1,7 @@
-import { Point } from '@flatten-js/core';
+import {Point} from '@flatten-js/core';
 import {
   addEntities,
+  getActiveLayerId,
   setActiveToolActor,
   setAngleGuideEntities,
   setAngleGuideOriginPoint,
@@ -8,24 +9,16 @@ import {
   setSelectedEntityIds,
   setShouldDrawHelpers,
 } from '../state';
-import { Tool } from '../tools';
-import { Actor, assign, createMachine } from 'xstate';
-import {
-  ActorEvent,
-  DrawEvent,
-  FileSelectedEvent,
-  MouseClickEvent,
-  PointInputEvent,
-  StateEvent,
-  ToolContext,
-} from './tool.types';
-import { ImageEntity } from '../entities/ImageEntity';
-import { getContainRectangleInsideRectangle } from './image-import-tool.helpers';
-import { RectangleEntity } from '../entities/RectangleEntity';
-import { selectToolStateMachine } from './select-tool';
-import { boxToPolygon, twoPointBoxToPolygon } from '../helpers/box-to-polygon';
-import { isPointEqual } from '../helpers/is-point-equal.ts';
-import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
+import {Tool} from '../tools';
+import {Actor, assign, createMachine} from 'xstate';
+import {ActorEvent, DrawEvent, FileSelectedEvent, MouseClickEvent, PointInputEvent, StateEvent, ToolContext,} from './tool.types';
+import {ImageEntity} from '../entities/ImageEntity';
+import {getContainRectangleInsideRectangle} from './image-import-tool.helpers';
+import {RectangleEntity} from '../entities/RectangleEntity';
+import {selectToolStateMachine} from './select-tool';
+import {boxToPolygon, twoPointBoxToPolygon} from '../helpers/box-to-polygon';
+import {isPointEqual} from '../helpers/is-point-equal.ts';
+import {getPointFromEvent} from '../helpers/get-point-from-event.ts';
 
 export interface ImageImportContext extends ToolContext {
   startPoint: Point | null;
@@ -201,13 +194,15 @@ export const imageImportToolStateMachine = createMachine(
           return;
         }
         const activeImage = new ImageEntity(
-          context.imageElement,
+            getActiveLayerId(),
+            context.imageElement,
           containRectangle.low,
           containRectangle.high,
           0,
         );
         const draggedRectangle = new RectangleEntity(
-          twoPointBoxToPolygon(context.startPoint, endPoint),
+            getActiveLayerId(),
+            twoPointBoxToPolygon(context.startPoint, endPoint),
         );
         setGhostHelperEntities([activeImage]);
         setAngleGuideEntities([draggedRectangle]);
@@ -236,7 +231,8 @@ export const imageImportToolStateMachine = createMachine(
         }
 
         const activeImage = new ImageEntity(
-          context.imageElement,
+            getActiveLayerId(),
+            context.imageElement,
           boxToPolygon(containRectangle),
         );
         addEntities([activeImage], true);

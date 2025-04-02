@@ -7,7 +7,7 @@ import {pointDistance} from '../helpers/distance-between-points';
 import {getExportColor} from '../helpers/get-export-color';
 import {scalePoint} from '../helpers/scale-point';
 import {DrawController} from '../drawControllers/DrawController';
-import {isEntityHighlighted, isEntitySelected} from '../state.ts';
+import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
 import {mirrorPointOverAxis} from "../helpers/mirror-point-over-axis.ts";
 
 export class LineEntity implements Entity {
@@ -15,10 +15,12 @@ export class LineEntity implements Entity {
     public lineColor: string = '#fff';
     public lineWidth: number = 1;
     public lineDash: number[] | undefined = undefined;
+    public layerId: string;
 
     private segment: Segment;
 
-    constructor(p1?: Point | Segment, p2?: Point) {
+    constructor(layerId: string, p1?: Point | Segment, p2?: Point) {
+       this.layerId = layerId;
         if (p1 instanceof Segment) {
             this.segment = p1;
         } else {
@@ -67,7 +69,7 @@ export class LineEntity implements Entity {
     }
 
     public clone(): LineEntity {
-        return new LineEntity(this.segment.clone());
+        return new LineEntity(getActiveLayerId(), this.segment.clone());
     }
 
     public intersectsWithBox(box: Box): boolean {
@@ -167,6 +169,7 @@ export class LineEntity implements Entity {
         for (let i = 0; i < sortLinesByDistanceToStartPoint.length - 1; i++) {
             lineSegments.push(
                 new LineEntity(
+                    getActiveLayerId(),
                     sortLinesByDistanceToStartPoint[i],
                     sortLinesByDistanceToStartPoint[i + 1],
                 ),
@@ -181,6 +184,7 @@ export class LineEntity implements Entity {
             type: EntityName.Line,
             lineColor: this.lineColor,
             lineWidth: this.lineWidth,
+            layerId: this.layerId,
             shapeData: {
                 startPoint: {
                     x: this.segment.start.x,
@@ -202,7 +206,7 @@ export class LineEntity implements Entity {
             jsonEntity.shapeData.endPoint.x,
             jsonEntity.shapeData.endPoint.y,
         );
-        const lineEntity = new LineEntity(startPoint, endPoint);
+        const lineEntity = new LineEntity(jsonEntity.layerId || getActiveLayerId(), startPoint, endPoint);
         lineEntity.id = jsonEntity.id;
         lineEntity.lineColor = jsonEntity.lineColor;
         lineEntity.lineWidth = jsonEntity.lineWidth;

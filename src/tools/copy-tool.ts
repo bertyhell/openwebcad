@@ -1,6 +1,7 @@
 import {Point} from '@flatten-js/core';
 import {
   addEntities,
+  getActiveLayerId,
   getSelectedEntities,
   getSelectedEntityIds,
   setAngleGuideOriginPoint,
@@ -240,7 +241,8 @@ export const copyToolStateMachine = createMachine(
 
         // // Draw a dashed line between the start copy point and the current mouse location
         const activeCopyLine = new LineEntity(
-          context.startPoint as Point,
+            getActiveLayerId(),
+            context.startPoint as Point,
           endPointTemp,
         );
         activeCopyLine.lineColor = GUIDE_LINE_COLOR;

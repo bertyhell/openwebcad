@@ -17,6 +17,7 @@ export interface Entity {
   lineColor: string;
   lineWidth: number;
   lineDash: number[] | undefined;
+  layerId: string;
   draw(drawController: DrawController): void;
 
   /**
@@ -72,5 +73,6 @@ export interface JsonEntity<TShapeJsonData = ShapeJsonData> {
   type: EntityName;
   lineColor: string;
   lineWidth: number;
+  layerId: string;
   shapeData: TShapeJsonData;
 }

@@ -1,4 +1,4 @@
-import {Point, Polygon} from '@flatten-js/core';
+import type {Point, Polygon} from '@flatten-js/core';
 import {findClosestEntity} from '../helpers/find-closest-entity';
 import {
   addEntities,
@@ -11,10 +11,10 @@ import {
 } from '../state';
 import {EntityName} from '../entities/Entity';
 import {LineEntity} from '../entities/LineEntity';
-import {CircleEntity} from '../entities/CircleEntity';
-import {RectangleEntity} from '../entities/RectangleEntity';
-import {ArcEntity} from '../entities/ArcEntity';
-import {MouseClickEvent, StateEvent, ToolContext} from './tool.types';
+import type {CircleEntity} from '../entities/CircleEntity';
+import type {RectangleEntity} from '../entities/RectangleEntity';
+import type {ArcEntity} from '../entities/ArcEntity';
+import type {MouseClickEvent, StateEvent, ToolContext} from './tool.types';
 import {Tool} from '../tools';
 import {assign, createMachine} from 'xstate';
 import {eraseArcSegment, eraseCircleSegment, eraseLineSegment, getAllIntersectionPoints,} from './eraser-tool.helpers';

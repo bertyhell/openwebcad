@@ -1,6 +1,6 @@
-import { Entity } from '../entities/Entity';
-import { Point } from '@flatten-js/core';
-import { pointDistance } from '../helpers/distance-between-points';
+import type {Point} from '@flatten-js/core';
+import type {Entity} from '../entities/Entity';
+import {pointDistance} from '../helpers/distance-between-points';
 
 /**
  * Scale entities by base vector to destination scale vector
@@ -10,15 +10,15 @@ import { pointDistance } from '../helpers/distance-between-points';
  * @param scaleVectorEndPoint
  */
 export function scaleEntities(
-  entities: Entity[],
-  baseVectorStartPoint: Point,
-  baseVectorEndPoint: Point,
-  scaleVectorEndPoint: Point,
+	entities: Entity[],
+	baseVectorStartPoint: Point,
+	baseVectorEndPoint: Point,
+	scaleVectorEndPoint: Point
 ) {
-  const scaleFactor =
-    pointDistance(baseVectorStartPoint, scaleVectorEndPoint) /
-    pointDistance(baseVectorStartPoint, baseVectorEndPoint);
-  entities.forEach(entity => {
-    return entity.scale(baseVectorStartPoint, scaleFactor);
-  });
+	const scaleFactor =
+		pointDistance(baseVectorStartPoint, scaleVectorEndPoint) /
+		pointDistance(baseVectorStartPoint, baseVectorEndPoint);
+	for (const entity of entities) {
+		entity.scale(baseVectorStartPoint, scaleFactor);
+	}
 }

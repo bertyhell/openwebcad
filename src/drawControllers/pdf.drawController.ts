@@ -1,6 +1,6 @@
-import {Point} from '@flatten-js/core';
-import {DrawController} from './DrawController';
-import {TextOptions} from '../entities/TextEntity.ts';
+import type {Point} from '@flatten-js/core';
+import type {DrawController} from './DrawController';
+import type {TextOptions} from '../entities/TextEntity.ts';
 import {jsPDF} from 'jspdf';
 import {SvgDrawController} from "./svg.drawController.ts";
 import 'svg2pdf.js'

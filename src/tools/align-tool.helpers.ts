@@ -1,20 +1,19 @@
-import {StateEvent, ToolContext} from "./tool.types.ts";
-import {Tool} from "../tools.ts";
-import {selectToolStateMachine} from "./select-tool.ts";
-import {assign, sendTo} from "xstate";
+import {assign, sendTo} from 'xstate';
+import type {Entity} from '../entities/Entity.ts';
+import {type BoundingBox, getBoundingBoxOfMultipleEntities,} from '../helpers/get-bounding-box-of-multiple-entities.ts';
 import {
 	getSelectedEntities,
 	getSelectedEntityIds,
 	setAngleGuideOriginPoint,
 	setGhostHelperEntities,
 	setSelectedEntityIds,
-	setShouldDrawHelpers
-} from "../state.ts";
-import {BoundingBox, getBoundingBoxOfMultipleEntities} from "../helpers/get-bounding-box-of-multiple-entities.ts";
-import {Entity} from "../entities/Entity.ts";
+	setShouldDrawHelpers,
+} from '../state.ts';
+import type {Tool} from '../tools.ts';
+import {selectToolStateMachine} from './select-tool.ts';
+import type {DrawEvent, KeyboardEnterEvent, MouseClickEvent, StateEvent, ToolContext} from './tool.types.ts';
 
-export interface AlignContext extends ToolContext {
-}
+export interface AlignContext extends ToolContext {}
 
 export enum AlignState {
 	INIT = 'INIT',
@@ -28,8 +27,8 @@ export enum AlignAction {
 	DESELECT_ENTITIES = 'DESELECT_ENTITIES',
 }
 
-export function GET_ALIGN_TOOL_STATE(type: Tool): any {
-	return ({
+export function GET_ALIGN_TOOL_STATE(type: Tool) {
+	return {
 		types: {} as {
 			context: AlignContext;
 			events: StateEvent;
@@ -64,22 +63,28 @@ export function GET_ALIGN_TOOL_STATE(type: Tool): any {
 				on: {
 					MOUSE_CLICK: {
 						// Forward the event to the select tool
-						actions: sendTo('selectToolInsideTheAlignTool', ({event}: {event: any}) => {
-							return event;
-						}),
+						actions: sendTo(
+							'selectToolInsideTheAlignTool',
+							({ event }: { event: MouseClickEvent }) => {
+								return event;
+							}
+						),
 					},
 					ESC: {
 						actions: [AlignAction.DESELECT_ENTITIES, AlignAction.INIT_ALIGN_TOOL],
 					},
 					ENTER: {
 						// Forward the event to the select tool
-						actions: sendTo('selectToolInsideTheAlignTool', ({event}: {event: any}) => {
-							return event;
-						}),
+						actions: sendTo(
+							'selectToolInsideTheAlignTool',
+							({ event }: { event: KeyboardEnterEvent }) => {
+								return event;
+							}
+						),
 					},
 					DRAW: {
 						// Forward the event to the select tool
-						actions: sendTo('selectToolInsideTheAlignTool', ({event}: {event: any}) => {
+						actions: sendTo('selectToolInsideTheAlignTool', ({ event }: { event: DrawEvent }) => {
 							return event;
 						}),
 					},
@@ -103,7 +108,7 @@ export function GET_ALIGN_TOOL_STATE(type: Tool): any {
 				],
 			},
 		},
-	});
+	};
 }
 
 export function GET_ALIGN_ACTION(alignEntity: (entity: Entity, boundingBox: BoundingBox) => void) {
@@ -113,27 +118,25 @@ export function GET_ALIGN_ACTION(alignEntity: (entity: Entity, boundingBox: Boun
 				setShouldDrawHelpers(false);
 				setGhostHelperEntities([]);
 				setAngleGuideOriginPoint(null);
-				return {
-				};
+				return {};
 			}),
 			[AlignAction.ALIGN_SELECTION]: () => {
 				const selectedEntities = getSelectedEntities();
 				if (!selectedEntities?.length) {
-					throw new Error(
-						'[ALIGN_LEFT] Calling align without entities selected',
-					);
+					throw new Error('[ALIGN_LEFT] Calling align without entities selected');
 				}
 
 				// Align the entities
 				const boundingBox = getBoundingBoxOfMultipleEntities(selectedEntities);
 
-				selectedEntities.forEach((entity) => alignEntity(entity, boundingBox));
+				for (const entity of selectedEntities) {
+					alignEntity(entity, boundingBox);
+				}
 			},
 			[AlignAction.DESELECT_ENTITIES]: assign(() => {
 				setGhostHelperEntities([]);
 				setSelectedEntityIds([]);
-				return {
-				};
+				return {};
 			}),
 			...selectToolStateMachine.implementations.actions,
 		},

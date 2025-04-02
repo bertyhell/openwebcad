@@ -1,4 +1,4 @@
-import {Entity} from "../entities/Entity.ts";
+import type {Entity} from "../entities/Entity.ts";
 
 export interface BoundingBox {
 	minX: number;
@@ -13,7 +13,7 @@ export function getBoundingBoxOfMultipleEntities(entities: Entity[]): BoundingBo
 	let maxX = Number.MIN_VALUE;
 	let maxY = Number.MIN_VALUE;
 
-	entities.forEach(entity => {
+	for (const entity of entities) {
 		const boundingBox = entity.getBoundingBox();
 		if (boundingBox) {
 			minX = Math.min(minX, boundingBox.xmin);
@@ -21,12 +21,12 @@ export function getBoundingBoxOfMultipleEntities(entities: Entity[]): BoundingBo
 			maxX = Math.max(maxX, boundingBox.xmax);
 			maxY = Math.max(maxY, boundingBox.ymax);
 		}
-	});
+	}
 
 	return {
 		minX,
 		minY,
 		maxX,
-		maxY
-	}
+		maxY,
+	};
 }

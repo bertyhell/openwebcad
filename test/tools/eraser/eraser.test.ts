@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {expect, test} from 'vitest';
 import {getEntities} from '../../../src/state';
-import {EntityName, JsonEntity} from '../../../src/entities/Entity';
+import {EntityName, type JsonEntity} from '../../../src/entities/Entity';
 import {initApplication} from '../../helpers/init-application';
 import {CANVAS_HEIGHT} from '../../helpers/consts';
-import {ArcJsonData} from '../../../src/entities/ArcEntity';
-import {LineJsonData} from '../../../src/entities/LineEntity';
+import type {ArcJsonData} from '../../../src/entities/ArcEntity';
+import type {LineJsonData} from '../../../src/entities/LineEntity';
 import {pointDistance} from '../../../src/helpers/distance-between-points';
 import {Point} from '@flatten-js/core';
 import eraserRecording from './eraser.recording.json';

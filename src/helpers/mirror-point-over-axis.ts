@@ -1,5 +1,5 @@
-import { Point, Segment } from '@flatten-js/core';
-import {LineEntity} from "../entities/LineEntity.ts";
+import { Point, type Segment } from '@flatten-js/core';
+import type {LineEntity} from "../entities/LineEntity.ts";
 
 export function mirrorPointOverAxis(point: Point, mirrorAxis: LineEntity) {
 	const mirrorAxisSegment = mirrorAxis.getShape() as Segment;

@@ -1,4 +1,4 @@
-import { HoverPoint, SnapPoint } from '../App.types';
+import type { HoverPoint, SnapPoint } from '../App.types';
 import { pointDistance } from './distance-between-points';
 import { HOVERED_SNAP_POINT_TIME, MAX_MARKED_SNAP_POINTS } from '../App.consts';
 

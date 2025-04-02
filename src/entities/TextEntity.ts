@@ -1,12 +1,12 @@
-import {Entity, EntityName, JsonEntity} from './Entity';
-import {Shape, SnapPoint} from '../App.types';
-import {Box, Point, Segment, Vector} from '@flatten-js/core';
-import {DEFAULT_TEXT_OPTIONS, DrawController,} from '../drawControllers/DrawController';
+import {Box, Point, type Segment, Vector} from '@flatten-js/core';
 import {cloneDeep} from 'es-toolkit/compat';
+import type {Shape, SnapPoint} from '../App.types';
+import {DEFAULT_TEXT_OPTIONS, type DrawController,} from '../drawControllers/DrawController';
+import {mirrorPointOverAxis} from "../helpers/mirror-point-over-axis.ts";
 import {scalePoint} from '../helpers/scale-point.ts';
 import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
-import {LineEntity} from "./LineEntity.ts";
-import {mirrorPointOverAxis} from "../helpers/mirror-point-over-axis.ts";
+import {type Entity, EntityName, type JsonEntity} from './Entity';
+import type {LineEntity} from "./LineEntity.ts";
 
 export interface TextOptions {
 	textDirection: Vector;
@@ -18,8 +18,8 @@ export interface TextOptions {
 
 export class TextEntity implements Entity {
 	public id: string = crypto.randomUUID();
-	public lineColor: string = '#fff';
-	public lineWidth: number = 1;
+	public lineColor = '#fff';
+	public lineWidth = 1;
 	public lineDash: number[] = [];
 	public layerId: string;
 	private readonly options: TextOptions;
@@ -28,13 +28,13 @@ export class TextEntity implements Entity {
 		layerId: string,
 		private label: string,
 		private basePoint: Point,
-		options?: Partial<TextOptions>,
+		options?: Partial<TextOptions>
 	) {
-		this.layerId = layerId,
-			this.options = {
-				...DEFAULT_TEXT_OPTIONS,
-				...options,
-			};
+		this.layerId = layerId;
+		this.options = {
+			...DEFAULT_TEXT_OPTIONS,
+			...options,
+		};
 	}
 
 	public draw(drawController: DrawController): void {
@@ -43,7 +43,7 @@ export class TextEntity implements Entity {
 			isEntitySelected(this),
 			this.lineColor,
 			this.lineWidth,
-			this.lineDash,
+			this.lineDash
 		);
 		drawController.drawText(this.label, this.basePoint, this.options);
 	}
@@ -64,7 +64,10 @@ export class TextEntity implements Entity {
 
 	public mirror(mirrorAxis: LineEntity) {
 		this.basePoint = mirrorPointOverAxis(this.basePoint, mirrorAxis);
-		this.options.textDirection = new Vector(new Point(0, 0), new Point(this.options.textDirection.x, this.options.textDirection.y));
+		this.options.textDirection = new Vector(
+			new Point(0, 0),
+			new Point(this.options.textDirection.x, this.options.textDirection.y)
+		);
 	}
 
 	public clone(): TextEntity {
@@ -72,7 +75,7 @@ export class TextEntity implements Entity {
 			getActiveLayerId(),
 			this.label,
 			this.basePoint.clone(),
-			cloneDeep(this.options),
+			cloneDeep(this.options)
 		);
 	}
 
@@ -86,7 +89,12 @@ export class TextEntity implements Entity {
 
 	public getBoundingBox(): Box {
 		// TODO find better way of determining the text bounding box
-		return new Box(this.basePoint.x, this.basePoint.y, this.basePoint.x + this.options.fontSize * this.label.length, this.basePoint.y + this.options.fontSize);
+		return new Box(
+			this.basePoint.x,
+			this.basePoint.y,
+			this.basePoint.x + this.options.fontSize * this.label.length,
+			this.basePoint.y + this.options.fontSize
+		);
 	}
 
 	public getShape(): Shape | null {
@@ -132,7 +140,7 @@ export class TextEntity implements Entity {
 			layerId: this.layerId,
 			shapeData: {
 				label: this.label,
-				basePoint: {x: this.basePoint.x, y: this.basePoint.y},
+				basePoint: { x: this.basePoint.x, y: this.basePoint.y },
 				options: {
 					textDirection: {
 						x: this.options.textDirection.x,
@@ -147,26 +155,21 @@ export class TextEntity implements Entity {
 		};
 	}
 
-	public static async fromJson(
-		jsonEntity: JsonEntity<TextJsonData>,
-	): Promise<TextEntity> {
+	public static async fromJson(jsonEntity: JsonEntity<TextJsonData>): Promise<TextEntity> {
 		const textEntity = new TextEntity(
 			jsonEntity.layerId || getActiveLayerId(),
 			jsonEntity.shapeData.label,
-			new Point(
-				jsonEntity.shapeData.basePoint.x,
-				jsonEntity.shapeData.basePoint.y,
-			),
+			new Point(jsonEntity.shapeData.basePoint.x, jsonEntity.shapeData.basePoint.y),
 			{
 				textDirection: new Vector(
 					jsonEntity.shapeData.options.textDirection.x,
-					jsonEntity.shapeData.options.textDirection.y,
+					jsonEntity.shapeData.options.textDirection.y
 				),
 				textAlign: jsonEntity.shapeData.options.textAlign,
 				textColor: jsonEntity.shapeData.options.textColor,
 				fontSize: jsonEntity.shapeData.options.fontSize,
 				fontFamily: jsonEntity.shapeData.options.fontFamily,
-			},
+			}
 		);
 		textEntity.id = jsonEntity.id;
 		textEntity.lineColor = jsonEntity.lineColor;

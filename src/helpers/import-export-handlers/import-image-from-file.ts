@@ -10,7 +10,7 @@ export function importImageFromFile(
     if (!file) return;
 
     const img = new Image();
-    img.onload = function () {
+    img.onload = () => {
       resolve(img);
     };
     img.src = URL.createObjectURL(file);

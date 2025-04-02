@@ -1,5 +1,5 @@
-import { Entity } from '../entities/Entity';
-import { Point } from '@flatten-js/core';
+import type { Entity } from '../entities/Entity';
+import type { Point } from '@flatten-js/core';
 
 // TODO in the future we could optimize this by only calculating intersection points near the mouse
 export function getIntersectionPoints(entities: Entity[]): Point[] {

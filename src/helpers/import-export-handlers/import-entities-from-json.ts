@@ -1,14 +1,11 @@
-import {JsonDrawingFile} from './export-entities-to-json';
+import type {JsonDrawingFile} from './export-entities-to-json';
 import {compact} from 'es-toolkit';
-import {Entity, EntityName, JsonEntity} from '../../entities/Entity';
-import {ArcEntity, ArcJsonData} from '../../entities/ArcEntity';
-import {CircleEntity, CircleJsonData} from '../../entities/CircleEntity';
-import {LineEntity, LineJsonData} from '../../entities/LineEntity';
-import {PointEntity, PointJsonData} from '../../entities/PointEntity';
-import {
-	RectangleEntity,
-	RectangleJsonData,
-} from '../../entities/RectangleEntity';
+import {type Entity, EntityName, type JsonEntity} from '../../entities/Entity';
+import {ArcEntity, type ArcJsonData} from '../../entities/ArcEntity';
+import {CircleEntity, type CircleJsonData} from '../../entities/CircleEntity';
+import {LineEntity, type LineJsonData} from '../../entities/LineEntity';
+import {PointEntity, type PointJsonData} from '../../entities/PointEntity';
+import {RectangleEntity, type RectangleJsonData,} from '../../entities/RectangleEntity';
 import {setEntities} from '../../state';
 
 /**
@@ -32,39 +29,33 @@ export function importEntitiesFromJsonFile(file: File | null | undefined) {
 	});
 }
 
-export function getEntitiesFromJsonString(json: string): Promise<Entity[]> {
-	return new Promise<Entity[]>(async (resolve, reject) => {
-		const data = JSON.parse(json) as JsonDrawingFile;
+export async function getEntitiesFromJsonString(json: string): Promise<Entity[]> {
+	const data = JSON.parse(json) as JsonDrawingFile;
 
-		if (!data.entities) {
-			reject(new Error('Invalid JSON file'));
-		}
+	if (!data.entities) {
+		throw new Error('Invalid JSON file');
+	}
 
-		// TODO use map limit to avoid overloading the event loop
-		const entityPromises: Promise<Entity | null>[] = compact(
-			data.entities.map(entity => {
-				switch (entity.type) {
-					case EntityName.Arc:
-						return ArcEntity.fromJson(entity as JsonEntity<ArcJsonData>);
-					case EntityName.Circle:
-						return CircleEntity.fromJson(
-							entity as JsonEntity<CircleJsonData>,
-						);
-					case EntityName.Line:
-						return LineEntity.fromJson(entity as JsonEntity<LineJsonData>);
-					case EntityName.Point:
-						return PointEntity.fromJson(entity as JsonEntity<PointJsonData>);
-					case EntityName.Rectangle:
-						return RectangleEntity.fromJson(
-							entity as JsonEntity<RectangleJsonData>,
-						);
+	// TODO use map limit to avoid overloading the event loop
+	const entityPromises: Promise<Entity | null>[] = compact(
+		data.entities.map((entity) => {
+			switch (entity.type) {
+				case EntityName.Arc:
+					return ArcEntity.fromJson(entity as JsonEntity<ArcJsonData>);
+				case EntityName.Circle:
+					return CircleEntity.fromJson(entity as JsonEntity<CircleJsonData>);
+				case EntityName.Line:
+					return LineEntity.fromJson(entity as JsonEntity<LineJsonData>);
+				case EntityName.Point:
+					return PointEntity.fromJson(entity as JsonEntity<PointJsonData>);
+				case EntityName.Rectangle:
+					return RectangleEntity.fromJson(entity as JsonEntity<RectangleJsonData>);
 
-					default:
-						reject(new Error('Invalid entity type: ' + entity.type));
-				}
-			}),
-		);
+				default:
+					throw new Error(`Invalid entity type: ${entity.type}`);
+			}
+		})
+	);
 
-		resolve(compact(await Promise.all(entityPromises)));
-	});
+	return compact(await Promise.all(entityPromises));
 }

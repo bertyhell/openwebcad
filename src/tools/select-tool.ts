@@ -1,6 +1,6 @@
-import {Point} from '@flatten-js/core';
+import type {Point} from '@flatten-js/core';
 import {getNotSelectedEntities, setEntities, setGhostHelperEntities, setSelectedEntityIds, setShouldDrawHelpers,} from '../state';
-import {DrawEvent, MouseClickEvent, StateEvent, ToolContext,} from './tool.types';
+import type {DrawEvent, MouseClickEvent, StateEvent, ToolContext,} from './tool.types';
 import {Tool} from '../tools';
 import {assign, createMachine} from 'xstate';
 import {drawTempSelectionRectangle, handleFirstSelectionPoint, selectEntitiesInsideRectangle,} from './select-tool.helpers';

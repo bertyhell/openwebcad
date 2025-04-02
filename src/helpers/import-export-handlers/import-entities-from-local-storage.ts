@@ -1,6 +1,6 @@
 import {getEntitiesFromJsonString} from "./import-entities-from-json.ts";
 import {setEntities} from "../../state.ts";
-import {Entity} from "../../entities/Entity.ts";
+import type {Entity} from "../../entities/Entity.ts";
 
 export enum LOCAL_STORAGE_KEY {
 	DRAWING = 'OPEN_WEB_CAD__DRAWING',

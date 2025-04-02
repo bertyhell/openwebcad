@@ -1,6 +1,6 @@
-import { Line, Point } from '@flatten-js/core';
+import { Line, type Point } from '@flatten-js/core';
 import { sortBy } from 'es-toolkit';
-import { PointWithAngle } from './helpers.types';
+import type { PointWithAngle } from './helpers.types';
 import { ArcEntity } from '../entities/ArcEntity';
 
 /**

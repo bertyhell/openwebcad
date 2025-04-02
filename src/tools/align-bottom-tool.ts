@@ -1,8 +1,8 @@
 import {Tool} from '../tools';
 import {createMachine} from 'xstate';
-import {BoundingBox} from "../helpers/get-bounding-box-of-multiple-entities.ts";
+import type {BoundingBox} from "../helpers/get-bounding-box-of-multiple-entities.ts";
 import {GET_ALIGN_ACTION, GET_ALIGN_TOOL_STATE} from "./align-tool.helpers.ts";
-import {Entity} from "../entities/Entity.ts";
+import type {Entity} from "../entities/Entity.ts";
 
 /**
  * AlignBottom tool state machine

@@ -1,4 +1,4 @@
-import { Box, Point, Polygon } from '@flatten-js/core';
+import { type Box, Point, Polygon } from '@flatten-js/core';
 
 export function boxToPolygon(box: Box): Polygon {
   return new Polygon([

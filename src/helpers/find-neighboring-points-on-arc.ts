@@ -1,7 +1,7 @@
-import { Arc, Point } from '@flatten-js/core';
+import type { Arc, Point } from '@flatten-js/core';
 import { uniqWith } from 'es-toolkit';
 import { isPointEqual } from './is-point-equal';
-import { ArcEntity } from '../entities/ArcEntity';
+import type { ArcEntity } from '../entities/ArcEntity';
 import { sortPointsOnArc } from './sort-points-on-arc';
 
 /**

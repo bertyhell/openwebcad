@@ -1,4 +1,4 @@
-import {Point} from '@flatten-js/core';
+import type {Point} from '@flatten-js/core';
 import {
   addEntities,
   deleteEntities,
@@ -11,10 +11,10 @@ import {
   setShouldDrawHelpers,
 } from '../state';
 import {Tool} from '../tools';
-import {DrawEvent, MouseClickEvent, StateEvent, ToolContext,} from './tool.types';
+import type {DrawEvent, MouseClickEvent, StateEvent, ToolContext,} from './tool.types';
 import {assign, createMachine, sendTo} from 'xstate';
 import {selectToolStateMachine} from './select-tool';
-import {Entity} from '../entities/Entity';
+import type {Entity} from '../entities/Entity';
 import {compact} from 'es-toolkit';
 import {moveEntities} from './move-tool.helpers';
 import {LineEntity} from '../entities/LineEntity';

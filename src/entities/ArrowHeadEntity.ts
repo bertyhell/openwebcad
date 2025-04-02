@@ -1,17 +1,17 @@
-import {Entity, EntityName, JsonEntity} from './Entity';
-import {Shape, SnapPoint} from '../App.types';
+import {type Entity, EntityName, type JsonEntity} from './Entity';
+import type {Shape, SnapPoint} from '../App.types';
 import {Box, Point, Segment} from '@flatten-js/core';
 import {scalePoint} from '../helpers/scale-point';
-import {DrawController} from '../drawControllers/DrawController';
+import type {DrawController} from '../drawControllers/DrawController';
 import {max, min} from 'es-toolkit/compat';
-import {LineEntity} from "./LineEntity.ts";
+import type {LineEntity} from "./LineEntity.ts";
 import {mirrorPointOverAxis} from "../helpers/mirror-point-over-axis.ts";
 
 export class ArrowHeadEntity implements Entity {
 	public id: string = crypto.randomUUID();
-	public fillColor: string = '#fff';
-	public lineColor: string = '#fff';
-	public lineWidth: number = 1;
+	public fillColor = '#fff';
+	public lineColor = '#fff';
+	public lineWidth = 1;
 	public lineDash: number[] = [];
 	public layerId: string;
 

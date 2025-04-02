@@ -1,14 +1,14 @@
-import {Shape, SnapPoint} from '../App.types';
-import {Box, Point, Segment} from '@flatten-js/core';
-import {ArcJsonData} from './ArcEntity';
-import {CircleJsonData} from './CircleEntity';
-import {LineEntity, LineJsonData} from './LineEntity';
-import {RectangleJsonData} from './RectangleEntity';
-import {PointJsonData} from './PointEntity';
-import {ImageJsonData} from './ImageEntity';
-import {DrawController} from '../drawControllers/DrawController.ts';
-import {ArrowHeadJsonData} from './ArrowHeadEntity.ts';
-import {TextJsonData} from './TextEntity.ts';
+import type {Shape, SnapPoint} from '../App.types';
+import type {Box, Point, Segment} from '@flatten-js/core';
+import type {ArcJsonData} from './ArcEntity';
+import type {CircleJsonData} from './CircleEntity';
+import type {LineEntity, LineJsonData} from './LineEntity';
+import type {RectangleJsonData} from './RectangleEntity';
+import type {PointJsonData} from './PointEntity';
+import type {ImageJsonData} from './ImageEntity';
+import type {DrawController} from '../drawControllers/DrawController.ts';
+import type {ArrowHeadJsonData} from './ArrowHeadEntity.ts';
+import type {TextJsonData} from './TextEntity.ts';
 
 export interface Entity {
   // Random uuid generated when the Entity is created

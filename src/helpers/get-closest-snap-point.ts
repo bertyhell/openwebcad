@@ -1,6 +1,6 @@
-import { Point } from '@flatten-js/core';
-import { SnapPoint, SnapPointType } from '../App.types';
-import { pointDistance } from './distance-between-points';
+import type {Point} from '@flatten-js/core';
+import {type SnapPoint, SnapPointType} from '../App.types';
+import {pointDistance} from './distance-between-points';
 
 // /**
 //  * Some points need to take priority over others when snapping to them. This multiplier is used to give a higher score to the points that should take priority
@@ -22,25 +22,25 @@ import { pointDistance } from './distance-between-points';
  * @param worldMouseLocation
  */
 export function getClosestSnapPoint(
-  worldSnapPoints: SnapPoint[],
-  worldMouseLocation: Point,
+	worldSnapPoints: SnapPoint[],
+	worldMouseLocation: Point
 ): { distance: number; snapPoint: SnapPoint | null } {
-  let closestSnapPoint: SnapPoint | null = null;
-  let closestDistance: number = Infinity;
+	let closestSnapPoint: SnapPoint | null = null;
+	let closestDistance: number = Number.POSITIVE_INFINITY;
 
-  worldSnapPoints.forEach(snapPoint => {
-    const distance = pointDistance(snapPoint.point, worldMouseLocation);
+	for (const snapPoint1 of worldSnapPoints) {
+		const distance = pointDistance(snapPoint1.point, worldMouseLocation);
 
-    if (distance < closestDistance) {
-      closestDistance = distance;
-      closestSnapPoint = snapPoint;
-    }
-  });
+		if (distance < closestDistance) {
+			closestDistance = distance;
+			closestSnapPoint = snapPoint1;
+		}
+	}
 
-  return {
-    distance: closestDistance,
-    snapPoint: closestSnapPoint,
-  };
+	return {
+		distance: closestDistance,
+		snapPoint: closestSnapPoint,
+	};
 }
 
 /**
@@ -50,33 +50,27 @@ export function getClosestSnapPoint(
  * @param maxDistance
  */
 export function getClosestSnapPointWithinRadius(
-  worldSnapPoints: SnapPoint[],
-  worldMouseLocation: Point,
-  maxDistance: number,
+	worldSnapPoints: SnapPoint[],
+	worldMouseLocation: Point,
+	maxDistance: number
 ): SnapPoint | null {
-  const { distance: closestDistance, snapPoint: closestSnapPoint } =
-    getClosestSnapPoint(
-      worldSnapPoints.filter(
-        snapPoint => snapPoint.type !== SnapPointType.AngleGuide,
-      ),
-      worldMouseLocation,
-    );
+	const { distance: closestDistance, snapPoint: closestSnapPoint } = getClosestSnapPoint(
+		worldSnapPoints.filter((snapPoint) => snapPoint.type !== SnapPointType.AngleGuide),
+		worldMouseLocation
+	);
 
-  if (closestDistance < maxDistance) {
-    return closestSnapPoint;
-  }
+	if (closestDistance < maxDistance) {
+		return closestSnapPoint;
+	}
 
-  const { distance: angleGuideDistance, snapPoint: angleGuideSnapPoint } =
-    getClosestSnapPoint(
-      worldSnapPoints.filter(
-        snapPoint => snapPoint.type === SnapPointType.AngleGuide,
-      ),
-      worldMouseLocation,
-    );
+	const { distance: angleGuideDistance, snapPoint: angleGuideSnapPoint } = getClosestSnapPoint(
+		worldSnapPoints.filter((snapPoint) => snapPoint.type === SnapPointType.AngleGuide),
+		worldMouseLocation
+	);
 
-  if (angleGuideDistance < maxDistance) {
-    return angleGuideSnapPoint;
-  }
+	if (angleGuideDistance < maxDistance) {
+		return angleGuideSnapPoint;
+	}
 
-  return null;
+	return null;
 }

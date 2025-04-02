@@ -3,12 +3,12 @@
  * @param color
  */
 export function getExportColor(color: string): string {
-  if (
-    color.toLowerCase() === '#fff' ||
-    color.toLowerCase() === 'white' ||
-    color.toLowerCase() === '#FFFFFF'
-  ) {
-    return '#000';
-  }
-  return color;
+	if (
+		color.toLowerCase() === 'white' ||
+		color.toLowerCase() === '#fff' ||
+		color.toLowerCase() === '#ffffff'
+	) {
+		return '#000';
+	}
+	return color;
 }

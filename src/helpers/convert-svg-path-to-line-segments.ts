@@ -33,19 +33,18 @@ function approximateCubicBezier(
 		const d2 = distancePointToLine(c, a, d);
 		if (Math.max(d1, d2) < tol) {
 			return [a, d];
-		} else {
-			// Subdivide using de Casteljau’s algorithm.
-			const ab = midpoint(a, b);
-			const bc = midpoint(b, c);
-			const cd = midpoint(c, d);
-			const abc = midpoint(ab, bc);
-			const bcd = midpoint(bc, cd);
-			const abcd = midpoint(abc, bcd);
-			const left = recursive(a, ab, abc, abcd, tol);
-			const right = recursive(abcd, bcd, cd, d, tol);
-			// Avoid duplicating the middle point.
-			return left.slice(0, -1).concat(right);
 		}
+		// Subdivide using de Casteljau’s algorithm.
+		const ab = midpoint(a, b);
+		const bc = midpoint(b, c);
+		const cd = midpoint(c, d);
+		const abc = midpoint(ab, bc);
+		const bcd = midpoint(bc, cd);
+		const abcd = midpoint(abc, bcd);
+		const left = recursive(a, ab, abc, abcd, tol);
+		const right = recursive(abcd, bcd, cd, d, tol);
+		// Avoid duplicating the middle point.
+		return left.slice(0, -1).concat(right);
 	}
 	return recursive(p0, p1, p2, p3, tolerance);
 }
@@ -53,24 +52,18 @@ function approximateCubicBezier(
 /**
  * Recursively subdivides a quadratic Bezier curve.
  */
-function approximateQuadraticBezier(
-	p0: Point,
-	p1: Point,
-	p2: Point,
-	tolerance: number
-): Point[] {
+function approximateQuadraticBezier(p0: Point, p1: Point, p2: Point, tolerance: number): Point[] {
 	function recursive(a: Point, b: Point, c: Point, tol: number): Point[] {
 		const d = distancePointToLine(b, a, c);
 		if (d < tol) {
 			return [a, c];
-		} else {
-			const ab = midpoint(a, b);
-			const bc = midpoint(b, c);
-			const abc = midpoint(ab, bc);
-			const left = recursive(a, ab, abc, tol);
-			const right = recursive(abc, bc, c, tol);
-			return left.slice(0, -1).concat(right);
 		}
+		const ab = midpoint(a, b);
+		const bc = midpoint(b, c);
+		const abc = midpoint(ab, bc);
+		const left = recursive(a, ab, abc, tol);
+		const right = recursive(abc, bc, c, tol);
+		return left.slice(0, -1).concat(right);
 	}
 	return recursive(p0, p1, p2, tolerance);
 }
@@ -105,7 +98,7 @@ function approximateArc(
 	let rySq = ry * ry;
 	const x1pSq = x1p * x1p;
 	const y1pSq = y1p * y1p;
-	let lambda = x1pSq / rxSq + y1pSq / rySq;
+	const lambda = x1pSq / rxSq + y1pSq / rySq;
 	if (lambda > 1) {
 		const factor = Math.sqrt(lambda);
 		rx *= factor;
@@ -115,12 +108,12 @@ function approximateArc(
 	}
 
 	// Step 2: Compute the center.
-	const sign = (largeArcFlag === sweepFlag) ? -1 : 1;
+	const sign = largeArcFlag === sweepFlag ? -1 : 1;
 	const numerator = rxSq * rySq - rxSq * y1pSq - rySq * x1pSq;
 	const denom = rxSq * y1pSq + rySq * x1pSq;
 	const coeff = sign * Math.sqrt(Math.max(0, numerator / denom));
-	const cxp = coeff * (rx * y1p) / ry;
-	const cyp = coeff * (-ry * x1p) / rx;
+	const cxp = (coeff * (rx * y1p)) / ry;
+	const cyp = (coeff * (-ry * x1p)) / rx;
 
 	// Step 3: Transform back to original coordinates.
 	const cx = Math.cos(phiRad) * cxp - Math.sin(phiRad) * cyp + (p0.x + p2.x) / 2;
@@ -137,7 +130,7 @@ function approximateArc(
 
 	const v1 = { x: (x1p - cxp) / rx, y: (y1p - cyp) / ry };
 	const v2 = { x: (-x1p - cxp) / rx, y: (-y1p - cyp) / ry };
-	let startAngle = angle({ x: 1, y: 0 }, v1);
+	const startAngle = angle({ x: 1, y: 0 }, v1);
 	let deltaAngle = angle(v1, v2);
 	if (!sweepFlag && deltaAngle > 0) {
 		deltaAngle -= 2 * Math.PI;
@@ -148,12 +141,17 @@ function approximateArc(
 
 	// Choose the number of segments so that the chord error is below tolerance.
 	const rApprox = Math.max(rx, ry);
-	const segCount = Math.max(1, Math.ceil(Math.abs(totalAngle) / (2 * Math.acos(1 - tolerance / rApprox))));
+	const segCount = Math.max(
+		1,
+		Math.ceil(Math.abs(totalAngle) / (2 * Math.acos(1 - tolerance / rApprox)))
+	);
 	const points: Point[] = [];
 	for (let i = 0; i <= segCount; i++) {
 		const theta = startAngle + (totalAngle * i) / segCount;
-		const x = cx + rx * Math.cos(phiRad) * Math.cos(theta) - ry * Math.sin(phiRad) * Math.sin(theta);
-		const y = cy + rx * Math.sin(phiRad) * Math.cos(theta) + ry * Math.cos(phiRad) * Math.sin(theta);
+		const x =
+			cx + rx * Math.cos(phiRad) * Math.cos(theta) - ry * Math.sin(phiRad) * Math.sin(theta);
+		const y =
+			cy + rx * Math.sin(phiRad) * Math.cos(theta) + ry * Math.cos(phiRad) * Math.sin(theta);
 		points.push({ x, y });
 	}
 	return points;
@@ -182,7 +180,7 @@ function parseSvgPath(path: string): SvgCommand[] {
 			const numberRe = /-?\d*\.?\d+(?:e[-+]?\d+)?/gi;
 			let numberMatch: RegExpExecArray | null;
 			while ((numberMatch = numberRe.exec(argsStr)) !== null) {
-				args.push(parseFloat(numberMatch[0]));
+				args.push(Number.parseFloat(numberMatch[0]));
 			}
 		}
 		commands.push({ type, args });
@@ -200,7 +198,9 @@ function parseSvgPath(path: string): SvgCommand[] {
  * @param svgPath - An SVG path string (for example, "M 152.982 124.448 L 176.73 156.849 …")
  * @returns An array of line segments.
  */
-export function svgPathToSegments(svgPath: string): { x1: number; y1: number; x2: number; y2: number }[] {
+export function svgPathToSegments(
+	svgPath: string
+): { x1: number; y1: number; x2: number; y2: number }[] {
 	const segments: { x1: number; y1: number; x2: number; y2: number }[] = [];
 	let current: Point = { x: 0, y: 0 };
 	let startPoint: Point = { x: 0, y: 0 };
@@ -299,14 +299,20 @@ export function svgPathToSegments(svgPath: string): { x1: number; y1: number; x2
 					const y2 = args[idx++];
 					const x = args[idx++];
 					const y = args[idx++];
-					const curvePoints = approximateCubicBezier(current, { x: x1, y: y1 }, { x: x2, y: y2 }, { x, y }, tolerance);
+					const curvePoints = approximateCubicBezier(
+						current,
+						{ x: x1, y: y1 },
+						{ x: x2, y: y2 },
+						{ x, y },
+						tolerance
+					);
 					// Convert the polyline into segments.
 					for (let i = 0; i < curvePoints.length - 1; i++) {
 						segments.push({
 							x1: curvePoints[i].x,
 							y1: curvePoints[i].y,
 							x2: curvePoints[i + 1].x,
-							y2: curvePoints[i + 1].y
+							y2: curvePoints[i + 1].y,
 						});
 					}
 					current = { x, y };
@@ -320,13 +326,19 @@ export function svgPathToSegments(svgPath: string): { x1: number; y1: number; x2
 					const y2 = current.y + args[idx++];
 					const x = current.x + args[idx++];
 					const y = current.y + args[idx++];
-					const curvePoints = approximateCubicBezier(current, { x: x1, y: y1 }, { x: x2, y: y2 }, { x, y }, tolerance);
+					const curvePoints = approximateCubicBezier(
+						current,
+						{ x: x1, y: y1 },
+						{ x: x2, y: y2 },
+						{ x, y },
+						tolerance
+					);
 					for (let i = 0; i < curvePoints.length - 1; i++) {
 						segments.push({
 							x1: curvePoints[i].x,
 							y1: curvePoints[i].y,
 							x2: curvePoints[i + 1].x,
-							y2: curvePoints[i + 1].y
+							y2: curvePoints[i + 1].y,
 						});
 					}
 					current = { x, y };
@@ -338,13 +350,18 @@ export function svgPathToSegments(svgPath: string): { x1: number; y1: number; x2
 					const y1 = args[idx++];
 					const x = args[idx++];
 					const y = args[idx++];
-					const curvePoints = approximateQuadraticBezier(current, { x: x1, y: y1 }, { x, y }, tolerance);
+					const curvePoints = approximateQuadraticBezier(
+						current,
+						{ x: x1, y: y1 },
+						{ x, y },
+						tolerance
+					);
 					for (let i = 0; i < curvePoints.length - 1; i++) {
 						segments.push({
 							x1: curvePoints[i].x,
 							y1: curvePoints[i].y,
 							x2: curvePoints[i + 1].x,
-							y2: curvePoints[i + 1].y
+							y2: curvePoints[i + 1].y,
 						});
 					}
 					current = { x, y };
@@ -356,13 +373,18 @@ export function svgPathToSegments(svgPath: string): { x1: number; y1: number; x2
 					const y1 = current.y + args[idx++];
 					const x = current.x + args[idx++];
 					const y = current.y + args[idx++];
-					const curvePoints = approximateQuadraticBezier(current, { x: x1, y: y1 }, { x, y }, tolerance);
+					const curvePoints = approximateQuadraticBezier(
+						current,
+						{ x: x1, y: y1 },
+						{ x, y },
+						tolerance
+					);
 					for (let i = 0; i < curvePoints.length - 1; i++) {
 						segments.push({
 							x1: curvePoints[i].x,
 							y1: curvePoints[i].y,
 							x2: curvePoints[i + 1].x,
-							y2: curvePoints[i + 1].y
+							y2: curvePoints[i + 1].y,
 						});
 					}
 					current = { x, y };
@@ -377,13 +399,22 @@ export function svgPathToSegments(svgPath: string): { x1: number; y1: number; x2
 					const sweepFlag = !!args[idx++];
 					const x = args[idx++];
 					const y = args[idx++];
-					const arcPoints = approximateArc(current, rx, ry, xAxisRotation, largeArcFlag, sweepFlag, { x, y }, tolerance);
+					const arcPoints = approximateArc(
+						current,
+						rx,
+						ry,
+						xAxisRotation,
+						largeArcFlag,
+						sweepFlag,
+						{ x, y },
+						tolerance
+					);
 					for (let i = 0; i < arcPoints.length - 1; i++) {
 						segments.push({
 							x1: arcPoints[i].x,
 							y1: arcPoints[i].y,
 							x2: arcPoints[i + 1].x,
-							y2: arcPoints[i + 1].y
+							y2: arcPoints[i + 1].y,
 						});
 					}
 					current = { x, y };
@@ -398,20 +429,29 @@ export function svgPathToSegments(svgPath: string): { x1: number; y1: number; x2
 					const sweepFlag = !!args[idx++];
 					const x = current.x + args[idx++];
 					const y = current.y + args[idx++];
-					const arcPoints = approximateArc(current, rx, ry, xAxisRotation, largeArcFlag, sweepFlag, { x, y }, tolerance);
+					const arcPoints = approximateArc(
+						current,
+						rx,
+						ry,
+						xAxisRotation,
+						largeArcFlag,
+						sweepFlag,
+						{ x, y },
+						tolerance
+					);
 					for (let i = 0; i < arcPoints.length - 1; i++) {
 						segments.push({
 							x1: arcPoints[i].x,
 							y1: arcPoints[i].y,
 							x2: arcPoints[i + 1].x,
-							y2: arcPoints[i + 1].y
+							y2: arcPoints[i + 1].y,
 						});
 					}
 					current = { x, y };
 					break;
 				}
 				default: {
-					console.error('unsupported SVG command type: ' + type + ' ' + args.join(' '))
+					console.error('unsupported SVG command type: ' + type + ' ' + args.join(' '));
 					// Unsupported commands can be skipped.
 					idx = args.length;
 					break;

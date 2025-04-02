@@ -1,6 +1,6 @@
-import {CSSProperties, FC, KeyboardEvent, MouseEvent, ReactNode} from 'react';
-import {Icon, IconName} from './Icon/Icon.tsx';
-import {noop} from "es-toolkit";
+import {noop} from 'es-toolkit';
+import type {CSSProperties, FC, MouseEvent, ReactNode} from 'react';
+import {Icon, type IconName} from './Icon/Icon.tsx';
 
 interface ButtonProps {
 	label?: string;
@@ -9,40 +9,41 @@ interface ButtonProps {
 	iconClassname?: string;
 	iconComponent?: ReactNode;
 	active?: boolean;
-	onClick?: (evt: MouseEvent<HTMLButtonElement> | KeyboardEvent<HTMLButtonElement>) => void;
+	onClick?: (evt: MouseEvent) => void;
 	children?: ReactNode;
 	className?: string;
 	style?: CSSProperties;
 	dataId?: string;
 	size?: 'small' | 'regular';
-	type?: 'regular' | 'transparent'
+	type?: 'regular' | 'transparent';
 }
 
 export const Button: FC<ButtonProps> = ({
-											label,
-											title,
-											iconName,
-											iconClassname,
-											iconComponent,
-											onClick,
-											active = false,
-											children,
-											className,
-											style,
-											dataId,
+	label,
+	title,
+	iconName,
+	iconClassname,
+	iconComponent,
+	onClick,
+	active = false,
+	children,
+	className,
+	style,
+	dataId,
 	type = 'regular',
-	size = 'regular'
-										}) => {
+	size = 'regular',
+}) => {
+	const classParts = [
+		'font-semibold py-4 h-10 flex flex-row justify-start gap-2 w-full items-center hover:bg-blue-500 hover:text-white hover:border-transparent data-[size=regular]:pl-4 data-[size=regular]:pr-6 data-[size=small]:pl-2 data-[size=small]:pr-2',
+		className || '',
+		type === 'regular' ? 'bg-gray-950 text-blue-500' : '',
+		type === 'transparent' ? 'bg-transparent text-blue-500' : '',
+		active ? 'bg-blue-500 text-white border-transparent hover:bg-blue-400' : '',
+	];
 	return (
 		<>
 			<button
-				className={
-					'font-semibold py-4 h-10 flex flex-row justify-start gap-2 w-full items-center hover:bg-blue-500 hover:text-white hover:border-transparent data-[size=regular]:pl-4 data-[size=regular]:pr-6 data-[size=small]:pl-2 data-[size=small]:pr-2' +
-					(className ? ' ' + className : '') + ' ' +
-					(type === 'regular' ? 'bg-gray-950 text-blue-500' : '') + ' ' +
-					(type === 'transparent' ? 'bg-transparent text-blue-500' : '') + ' ' +
-					(active ? 'bg-blue-500 text-white border-transparent hover:bg-blue-400' : '')
-				}
+				className={classParts.join(' ')}
 				style={style}
 				data-active={active}
 				data-size={size}
@@ -50,13 +51,20 @@ export const Button: FC<ButtonProps> = ({
 				onClick={onClick || noop}
 				onKeyUp={(evt) => {
 					if (evt.key === 'Enter' || evt.key === ' ') {
-						onClick && onClick(evt);
+						onClick?.(evt as unknown as MouseEvent);
 					}
 				}}
 				title={title}
 				data-id={dataId}
+				type="button"
 			>
-				{iconComponent || (iconName && <Icon name={iconName} className={iconClassname + ' ' + 'text-blue-700' + ' ' + (active ? 'text-white' : '')}  />)}
+				{iconComponent ||
+					(iconName && (
+						<Icon
+							name={iconName}
+							className={`${iconClassname} text-blue-700 ${active ? 'text-white' : ''}`}
+						/>
+					))}
 				{label && <span className="text-nowrap">{label}</span>}
 				{children}
 			</button>

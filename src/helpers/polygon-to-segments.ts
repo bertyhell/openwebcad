@@ -1,9 +1,9 @@
-import { Edge, Polygon, Segment } from '@flatten-js/core';
+import type {Polygon, Segment} from '@flatten-js/core';
 
 export function polygonToSegments(polygon: Polygon): Segment[] {
-  const segments: Segment[] = [];
-  polygon.edges.forEach((edge: Edge) => {
-    segments.push(edge.shape);
-  });
-  return segments;
+	const segments: Segment[] = [];
+	for (const edge of polygon.edges) {
+		segments.push(edge.shape);
+	}
+	return segments;
 }

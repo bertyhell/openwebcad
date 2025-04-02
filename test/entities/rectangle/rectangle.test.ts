@@ -5,8 +5,8 @@
 import {expect, test} from 'vitest';
 import {getEntities} from '../../../src/state';
 import {Tool} from '../../../src/tools';
-import {EntityName, JsonEntity} from '../../../src/entities/Entity';
-import {RectangleJsonData} from '../../../src/entities/RectangleEntity';
+import {EntityName, type JsonEntity} from '../../../src/entities/Entity';
+import type {RectangleJsonData} from '../../../src/entities/RectangleEntity';
 import {initApplication} from '../../helpers/init-application';
 import {INITIAL_CANVAS_HEIGHT} from '../../helpers/consts';
 import {click} from '../../helpers/click';

@@ -1,4 +1,4 @@
-import {Point} from '@flatten-js/core';
+import type {Point} from '@flatten-js/core';
 import {RectangleEntity} from '../entities/RectangleEntity';
 import {
   addEntities,
@@ -10,7 +10,7 @@ import {
   setSelectedEntityIds,
   setShouldDrawHelpers,
 } from '../state';
-import {DrawEvent, PointInputEvent, StateEvent, ToolContext,} from './tool.types';
+import type {DrawEvent, PointInputEvent, StateEvent, ToolContext,} from './tool.types';
 import {Tool} from '../tools';
 import {assign, createMachine} from 'xstate';
 import {getPointFromEvent} from '../helpers/get-point-from-event.ts';

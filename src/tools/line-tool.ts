@@ -1,4 +1,4 @@
-import {Point} from '@flatten-js/core';
+import type {Point} from '@flatten-js/core';
 import {LineEntity} from '../entities/LineEntity';
 import {
   addEntities,
@@ -13,7 +13,7 @@ import {
 } from '../state';
 import {Tool} from '../tools';
 import {Actor, assign, createMachine} from 'xstate';
-import {DrawEvent, PointInputEvent, StateEvent, ToolContext,} from './tool.types';
+import type {DrawEvent, PointInputEvent, StateEvent, ToolContext,} from './tool.types';
 import {selectToolStateMachine} from './select-tool.ts';
 import {getPointFromEvent} from '../helpers/get-point-from-event.ts';
 

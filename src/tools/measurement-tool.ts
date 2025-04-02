@@ -1,4 +1,4 @@
-import {Point, Vector} from '@flatten-js/core';
+import {type Point, Vector} from '@flatten-js/core';
 import {MeasurementEntity} from '../entities/MeasurementEntity';
 import {
   addEntities,
@@ -12,7 +12,7 @@ import {
 } from '../state';
 import {Tool} from '../tools';
 import {assign, createMachine} from 'xstate';
-import {DrawEvent, PointInputEvent, StateEvent, ToolContext,} from './tool.types';
+import type {DrawEvent, PointInputEvent, StateEvent, ToolContext,} from './tool.types';
 import {MEASUREMENT_DEFAULT_OFFSET, TO_RADIANS} from '../App.consts';
 import {getPointFromEvent} from '../helpers/get-point-from-event.ts';
 import {isPointEqual} from '../helpers/is-point-equal.ts';

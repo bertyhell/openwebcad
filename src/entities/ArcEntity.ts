@@ -1,20 +1,20 @@
-import {Entity, EntityName, JsonEntity} from './Entity';
-import {Shape, SnapPoint, SnapPointType} from '../App.types';
-import {Arc, Box, Line, Point, Segment} from '@flatten-js/core';
+import {type Entity, EntityName, type JsonEntity} from './Entity';
+import {type Shape, type SnapPoint, SnapPointType} from '../App.types';
+import {Arc, type Box, Line, Point, type Segment} from '@flatten-js/core';
 import {uniqWith} from 'es-toolkit';
 import {isPointEqual} from '../helpers/is-point-equal';
 import {sortPointsOnArc} from '../helpers/sort-points-on-arc';
 import {getExportColor} from '../helpers/get-export-color';
 import {scalePoint} from '../helpers/scale-point';
-import {DrawController} from '../drawControllers/DrawController.ts';
+import type {DrawController} from '../drawControllers/DrawController.ts';
 import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
-import {LineEntity} from "./LineEntity.ts";
+import type {LineEntity} from "./LineEntity.ts";
 import {mirrorPointOverAxis} from "../helpers/mirror-point-over-axis.ts";
 
 export class ArcEntity implements Entity {
     public id: string = crypto.randomUUID();
-    public lineColor: string = '#fff';
-    public lineWidth: number = 1;
+    public lineColor = '#fff';
+    public lineWidth = 1;
     public lineDash: number[] | undefined = undefined;
     public layerId: string;
 
@@ -30,7 +30,7 @@ export class ArcEntity implements Entity {
         radius: number,
         startAngle: number,
         endAngle: number,
-        counterClockwise: boolean = true,
+        counterClockwise = true,
     ) {
         this.layerId = layerId;
         this.arc = new Arc(

@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // noinspection JSUnusedLocalSymbols
 
-import {Point, Vector} from '@flatten-js/core';
-import {DrawController} from '../../../src/drawControllers/DrawController';
+import {Point, type Vector} from '@flatten-js/core';
+import type {DrawController} from '../../../src/drawControllers/DrawController';
 import {triggerReactUpdate} from '../../../src/state';
 import {StateVariable} from '../../../src/helpers/undo-stack';
 import {MOUSE_ZOOM_MULTIPLIER} from '../../../src/App.consts';
@@ -30,7 +30,7 @@ import {mapNumberRange} from '../../../src/helpers/map-number-range';
  */
 export class ScreenCanvasDrawController implements DrawController {
     private screenOffset: Point = new Point(0, 0);
-    private screenScale: number = 1;
+    private screenScale = 1;
     private worldMouseLocation: Point;
 
     constructor(

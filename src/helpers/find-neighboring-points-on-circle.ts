@@ -1,7 +1,7 @@
-import { Circle, Point } from '@flatten-js/core';
+import type { Circle, Point } from '@flatten-js/core';
 import { uniqWith } from 'es-toolkit';
 import { isPointEqual } from './is-point-equal';
-import { CircleEntity } from '../entities/CircleEntity';
+import type { CircleEntity } from '../entities/CircleEntity';
 import { sortPointsOnCircle } from './sort-points-on-circle';
 
 /**

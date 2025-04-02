@@ -1,4 +1,4 @@
-import { Point } from '@flatten-js/core';
+import type { Point } from '@flatten-js/core';
 
 export interface PointWithAngle {
   point: Point;

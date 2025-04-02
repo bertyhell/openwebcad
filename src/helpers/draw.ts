@@ -20,7 +20,7 @@ import {
   getSnapPoint,
   getSnapPointOnAngleGuide,
 } from '../state';
-import { ScreenCanvasDrawController } from '../drawControllers/screenCanvas.drawController';
+import type { ScreenCanvasDrawController } from '../drawControllers/screenCanvas.drawController';
 
 export function draw(drawController: ScreenCanvasDrawController) {
   drawController.clear();

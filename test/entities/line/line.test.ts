@@ -5,11 +5,11 @@
 import {expect, test} from 'vitest';
 import {getEntities} from '../../../src/state';
 import {Tool} from '../../../src/tools';
-import {EntityName, JsonEntity} from '../../../src/entities/Entity';
+import {EntityName, type JsonEntity} from '../../../src/entities/Entity';
 import {initApplication} from '../../helpers/init-application';
 import {CANVAS_HEIGHT} from '../../helpers/tests.consts';
 import {click} from '../../helpers/click';
-import {LineJsonData} from '../../../src/entities/LineEntity';
+import type {LineJsonData} from '../../../src/entities/LineEntity';
 import {setActiveTool} from '../../helpers/set-active-tool';
 
 test('Draw line', async () => {

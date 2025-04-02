@@ -1,17 +1,17 @@
-import {Entity, EntityName, JsonEntity} from './Entity';
-import {Shape, SnapPoint, SnapPointType} from '../App.types';
-import {Box, Circle, Point, Segment} from '@flatten-js/core';
+import {type Entity, EntityName, type JsonEntity} from './Entity';
+import {type Shape, type SnapPoint, SnapPointType} from '../App.types';
+import {type Box, Circle, Point, type Segment} from '@flatten-js/core';
 import {getExportColor} from '../helpers/get-export-color';
 import {scalePoint} from '../helpers/scale-point';
-import {DrawController} from '../drawControllers/DrawController';
+import type {DrawController} from '../drawControllers/DrawController';
 import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
-import {LineEntity} from "./LineEntity.ts";
+import type {LineEntity} from "./LineEntity.ts";
 import {mirrorPointOverAxis} from "../helpers/mirror-point-over-axis.ts";
 
 export class CircleEntity implements Entity {
 	public id: string = crypto.randomUUID();
-	public lineColor: string = '#fff';
-	public lineWidth: number = 1;
+	public lineColor = '#fff';
+	public lineWidth = 1;
 	public lineDash: number[] | undefined = undefined;
 	public layerId: string;
 

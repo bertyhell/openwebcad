@@ -1,4 +1,4 @@
-import { Point, Vector } from '@flatten-js/core';
+import { type Point, Vector } from '@flatten-js/core';
 import { CANVAS_INPUT_FIELD_FONT_SIZE } from '../App.consts.ts';
 
 export interface DrawController {

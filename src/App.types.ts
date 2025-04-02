@@ -1,4 +1,4 @@
-import {Arc, Circle, Point, Polygon, Segment} from '@flatten-js/core';
+import type {Arc, Circle, Point, Polygon, Segment} from '@flatten-js/core';
 
 export type Shape = Polygon | Segment | Point | Circle | Arc;
 

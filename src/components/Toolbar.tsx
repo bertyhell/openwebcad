@@ -1,8 +1,16 @@
-import {type FC, useCallback, useEffect, useState} from "react";
-import {IconName} from "./Icon/Icon.tsx";
-import {Tool} from "../tools";
-import {DropdownButton} from "./DropdownButton.tsx";
-import {Button} from "./Button.tsx";
+import {type FC, type MouseEvent, useCallback, useEffect, useState} from 'react';
+import {Actor} from 'xstate';
+import {COLOR_LIST} from '../App.consts';
+import {HtmlEvent, type Layer} from '../App.types';
+import {exportEntitiesToJsonFile} from '../helpers/import-export-handlers/export-entities-to-json';
+import {exportEntitiesToLocalStorage} from '../helpers/import-export-handlers/export-entities-to-local-storage.ts';
+import {exportEntitiesToPdfFile} from '../helpers/import-export-handlers/export-entities-to-pdf.ts';
+import {exportEntitiesToPngFile} from '../helpers/import-export-handlers/export-entities-to-png';
+import {exportEntitiesToSvgFile} from '../helpers/import-export-handlers/export-entities-to-svg';
+import {importEntitiesFromJsonFile} from '../helpers/import-export-handlers/import-entities-from-json';
+import {importEntitiesFromSvgFile} from '../helpers/import-export-handlers/import-entities-from-svg.ts';
+import {importImageFromFile} from '../helpers/import-export-handlers/import-image-from-file';
+import {times} from '../helpers/times';
 import {
 	getActiveLayerId,
 	getActiveLineColor,
@@ -18,35 +26,24 @@ import {
 	setAngleStep,
 	setEntities,
 	undo,
-} from "../state";
-import {importEntitiesFromJsonFile} from "../helpers/import-export-handlers/import-entities-from-json";
-import {exportEntitiesToJsonFile} from "../helpers/import-export-handlers/export-entities-to-json";
-import {exportEntitiesToSvgFile} from "../helpers/import-export-handlers/export-entities-to-svg";
-import {exportEntitiesToPngFile} from "../helpers/import-export-handlers/export-entities-to-png";
-import {COLOR_LIST} from "../App.consts";
-import {times} from "../helpers/times";
-import {TOOL_STATE_MACHINES} from "../tools/tool.consts";
-import {Actor} from "xstate";
-import {HtmlEvent, type Layer} from "../App.types";
-import {importImageFromFile} from "../helpers/import-export-handlers/import-image-from-file";
-import {ActorEvent} from "../tools/tool.types";
-import {imageImportToolStateMachine} from "../tools/image-import-tool";
-import {exportEntitiesToPdfFile} from "../helpers/import-export-handlers/export-entities-to-pdf.ts";
-import {importEntitiesFromSvgFile} from "../helpers/import-export-handlers/import-entities-from-svg.ts";
-import {exportEntitiesToLocalStorage} from "../helpers/import-export-handlers/export-entities-to-local-storage.ts";
-import {LayerManager} from "./LayerManager.tsx";
+} from '../state';
+import {Tool} from '../tools';
+import {imageImportToolStateMachine} from '../tools/image-import-tool';
+import {TOOL_STATE_MACHINES} from '../tools/tool.consts';
+import {ActorEvent} from '../tools/tool.types';
+import {Button} from './Button.tsx';
+import {DropdownButton} from './DropdownButton.tsx';
+import {IconName} from './Icon/Icon.tsx';
+import {LayerManager} from './LayerManager.tsx';
 
 export const Toolbar: FC = () => {
 	const [activeToolLocal, setActiveToolLocal] = useState<Tool>(Tool.LINE);
 	const [angleStepLocal, setAngleStepLocal] = useState<number>(45);
-	const [activeLineColorLocal, setActiveLineColorLocal] =
-		useState<string>("#FFF");
+	const [activeLineColorLocal, setActiveLineColorLocal] = useState<string>('#FFF');
 	const [activeLineWidthLocal, setActiveLineWidthLocal] = useState<number>(1);
 	const [screenZoomLocal, setScreenZoomLocal] = useState<number>(1);
 	const [layersLocal, setLayersLocal] = useState<Layer[]>(getLayers());
-	const [activeLayerIdLocal, setActiveLayerIdLocal] = useState(
-		getLayers()[0].id,
-	);
+	const [activeLayerIdLocal, setActiveLayerIdLocal] = useState(getLayers()[0].id);
 
 	const fetchStateUpdatesFromOutside = useCallback(() => {
 		setActiveToolLocal(getActiveToolActor()?.getSnapshot()?.context.type);
@@ -65,18 +62,12 @@ export const Toolbar: FC = () => {
 	}, []);
 
 	useEffect(() => {
-		window.addEventListener("wheel", handleWheel, { passive: false });
-		window.addEventListener(
-			HtmlEvent.UPDATE_STATE,
-			fetchStateUpdatesFromOutside,
-		);
+		window.addEventListener('wheel', handleWheel, { passive: false });
+		window.addEventListener(HtmlEvent.UPDATE_STATE, fetchStateUpdatesFromOutside);
 
 		return () => {
-			window.removeEventListener("wheel", handleWheel);
-			window.removeEventListener(
-				HtmlEvent.UPDATE_STATE,
-				fetchStateUpdatesFromOutside,
-			);
+			window.removeEventListener('wheel', handleWheel);
+			window.removeEventListener(HtmlEvent.UPDATE_STATE, fetchStateUpdatesFromOutside);
 		};
 	}, [fetchStateUpdatesFromOutside, handleWheel]);
 
@@ -101,7 +92,7 @@ export const Toolbar: FC = () => {
 		<div className="controls  top-0 left-0 flex flex-col gap-1 p-1 bg-slate-950 min-h-screen overscroll-y-auto">
 			<DropdownButton
 				label="Draw"
-				title={"Draw tools"}
+				title={'Draw tools'}
 				iconName={IconName.Edit}
 				defaultOpen
 				dataId="dropdown-draw-tools"
@@ -159,7 +150,7 @@ export const Toolbar: FC = () => {
 					title="Move"
 					dataId="move-button"
 					iconName={IconName.Expand}
-					iconClassname={"transform rotate-45"}
+					iconClassname={'transform rotate-45'}
 					onClick={(evt) => {
 						evt.stopPropagation();
 						handleToolClick(Tool.MOVE);
@@ -230,16 +221,8 @@ export const Toolbar: FC = () => {
 				/>
 			</DropdownButton>
 
-			<DropdownButton
-				dataId="layers"
-				label="Layers"
-				iconName={IconName.AlignTextJustify}
-			>
-				<LayerManager
-					className="w-full"
-					layers={layersLocal}
-					activeLayerId={activeLayerIdLocal}
-				/>
+			<DropdownButton dataId="layers" label="Layers" iconName={IconName.AlignTextJustify}>
+				<LayerManager className="w-full" layers={layersLocal} activeLayerId={activeLayerIdLocal} />
 			</DropdownButton>
 
 			<Button
@@ -344,15 +327,12 @@ export const Toolbar: FC = () => {
 				dataId="line-color-button"
 				label="Line color"
 				iconComponent={
-					<div
-						className="w-5 h-5"
-						style={{ backgroundColor: activeLineColorLocal }}
-					/>
+					<div className="w-5 h-5" style={{ backgroundColor: activeLineColorLocal }} />
 				}
 			>
 				{COLOR_LIST.map((color) => (
 					<Button
-						key={"line-color--" + color}
+						key={`line-color--${color}`}
 						title="Change line color"
 						dataId={`line-color-${color}-button`}
 						className="w-10"
@@ -372,26 +352,26 @@ export const Toolbar: FC = () => {
 				iconComponent={
 					<div
 						className="w-5 h-0 -rotate-45 border-t-white"
-						style={{ borderTopWidth: activeLineWidthLocal + "px" }}
-					></div>
+						style={{ borderTopWidth: `${activeLineWidthLocal}px` }}
+					/>
 				}
 			>
 				{times<number>(9).map((width: number) => {
 					const lineWidth = width + 1;
 					return (
 						<Button
-							key={"line-width--" + lineWidth}
+							key={`line-width--${lineWidth}`}
 							title="Change line width"
 							dataId={`line-width-${lineWidth}-button`}
-							label={String(lineWidth) + "px"}
+							label={`${String(lineWidth)}px`}
 							active={lineWidth === activeLineWidthLocal}
 							iconComponent={
 								<div
 									className="w-5 h-0 -rotate-45 border-t-white"
-									style={{ borderTopWidth: lineWidth + "px" }}
-								></div>
+									style={{ borderTopWidth: `${lineWidth}px` }}
+								/>
 							}
-							style={{ width: "calc(50% - 2px)" }}
+							style={{ width: 'calc(50% - 2px)' }}
 							onClick={(evt) => {
 								evt.stopPropagation();
 								setActiveLineWidth(lineWidth);
@@ -402,25 +382,23 @@ export const Toolbar: FC = () => {
 			</DropdownButton>
 			<DropdownButton
 				title="Snap angles"
-				iconComponent={
-					<div className="w-5 text-blue-700">{angleStepLocal + "°"}</div>
-				}
+				iconComponent={<div className="w-5 text-blue-700">{`${angleStepLocal}°`}</div>}
 				label="Snap angles"
 				dataId="angle-guide-button"
 			>
 				{[5, 15, 30, 45, 90].map((angle: number) => (
 					<Button
-						key={"angle-guide--" + angle}
+						key={`angle-guide--${angle}`}
 						title={`Add guide every ${angle} degrees`}
 						dataId={`angle-guide-${angle}-button`}
-						label={angle + "°"}
+						label={`${angle}°`}
 						iconComponent={
 							<div
-								className={`w-5 h-0 border-t-2 border-t-white`}
-								style={{ rotate: -angle + "deg" }}
-							></div>
+								className={'w-5 h-0 border-t-2 border-t-white'}
+								style={{ rotate: `${-angle}deg` }}
+							/>
 						}
-						style={{ width: "calc(50% - 2px)" }}
+						style={{ width: 'calc(50% - 2px)' }}
 						onClick={(evt) => {
 							evt.stopPropagation();
 							handleAngleChanged(angle);
@@ -431,19 +409,17 @@ export const Toolbar: FC = () => {
 			</DropdownButton>
 			<DropdownButton
 				title="Zoom level"
-				iconComponent={
-					<div className="w-5 text-blue-700">{screenZoomLocal.toFixed(1)}</div>
-				}
+				iconComponent={<div className="w-5 text-blue-700">{screenZoomLocal.toFixed(1)}</div>}
 				label="Zoom level"
 				dataId="zoom-level-button"
 			>
 				{[20, 50, 75, 100, 150, 200, 400].map((zoom: number) => (
 					<Button
-						key={"zoom-level--" + zoom}
+						key={`zoom-level--${zoom}`}
 						title={`Zoom level ${zoom}%`}
 						dataId={`zoom-level-${zoom}-button`}
-						label={zoom.toFixed(0) + "%"}
-						style={{ width: "calc(30% - 2px)", padding: "8px" }}
+						label={`${zoom.toFixed(0)}%`}
+						style={{ width: 'calc(30% - 2px)', padding: '8px' }}
 						onClick={(evt) => {
 							evt.stopPropagation();
 							getScreenCanvasDrawController().setScreenScale(zoom / 100);
@@ -481,7 +457,7 @@ export const Toolbar: FC = () => {
 
 			<DropdownButton
 				label="Import"
-				title={"Import files"}
+				title={'Import files'}
 				iconName={IconName.SendUp}
 				dataId="dropdown-import-tools"
 			>
@@ -498,9 +474,7 @@ export const Toolbar: FC = () => {
 						type="file"
 						accept="*.jpg,*.jpeg,*.png"
 						onChange={async (evt) => {
-							const image: HTMLImageElement = await importImageFromFile(
-								evt.target.files?.[0],
-							);
+							const image: HTMLImageElement = await importImageFromFile(evt.target.files?.[0]);
 							const imageImportActor = new Actor(imageImportToolStateMachine);
 							imageImportActor.start();
 							imageImportActor.send({
@@ -510,7 +484,7 @@ export const Toolbar: FC = () => {
 							setActiveToolActor(imageImportActor);
 							evt.target.files = null;
 						}}
-					></input>
+					/>
 				</Button>
 				<Button
 					className="relative w-full"
@@ -528,7 +502,7 @@ export const Toolbar: FC = () => {
 							await importEntitiesFromJsonFile(evt.target.files?.[0]);
 							evt.target.files = null;
 						}}
-					></input>
+					/>
 				</Button>
 				<Button
 					className="relative w-full"
@@ -546,13 +520,13 @@ export const Toolbar: FC = () => {
 							await importEntitiesFromSvgFile(evt.target.files?.[0]);
 							evt.target.files = null;
 						}}
-					></input>
+					/>
 				</Button>
 			</DropdownButton>
 
 			<DropdownButton
 				label="Export"
-				title={"Export file"}
+				title={'Export file'}
 				iconName={IconName.SendDown}
 				dataId="dropdown-export-tools"
 			>
@@ -572,9 +546,9 @@ export const Toolbar: FC = () => {
 					title="Export to SVG file"
 					dataId="svg-export-button"
 					iconName={IconName.VectorDocumentSolid}
-					onClick={async (evt) => {
+					onClick={(evt) => {
 						evt.stopPropagation();
-						await exportEntitiesToSvgFile();
+						exportEntitiesToSvgFile();
 					}}
 					label="SVG"
 				/>
@@ -609,7 +583,7 @@ export const Toolbar: FC = () => {
 				iconName={IconName.Github}
 				onClick={(evt) => {
 					evt.stopPropagation();
-					window.open("https://github.com/bertyhell/openwebcad", "_blank");
+					window.open('https://github.com/bertyhell/openwebcad', '_blank');
 				}}
 				label="Github repository"
 			/>

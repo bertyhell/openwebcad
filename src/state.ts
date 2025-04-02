@@ -1,11 +1,11 @@
-import {Entity} from './entities/Entity';
-import {Point} from '@flatten-js/core';
-import {HoverPoint, HtmlEvent, Layer, SnapPoint, StateMetaData} from './App.types';
-import {createStack, StateVariable, UndoState} from './helpers/undo-stack';
+import type {Point} from '@flatten-js/core';
 import {isEqual} from 'es-toolkit';
-import {Actor, MachineSnapshot} from 'xstate';
-import {ScreenCanvasDrawController} from './drawControllers/screenCanvas.drawController';
-import {InputController} from './inputController/input-controller.ts'; // state variables
+import type {Actor, MachineSnapshot} from 'xstate';
+import {type HoverPoint, HtmlEvent, type Layer, type SnapPoint, type StateMetaData,} from './App.types';
+import type {ScreenCanvasDrawController} from './drawControllers/screenCanvas.drawController';
+import type {Entity} from './entities/Entity';
+import {createStack, StateVariable, type UndoState} from './helpers/undo-stack';
+import type {InputController} from './inputController/input-controller.ts'; // state variables
 
 // state variables
 /**
@@ -16,7 +16,7 @@ let canvas: HTMLCanvasElement | null = null;
 /**
  * Active tool xstate actor
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 let activeToolActor: Actor<any> | null = null;
 
 /**
@@ -58,7 +58,7 @@ let ghostHelperEntities: Entity[] = [];
 /**
  * Should helper entities be calculated and drawn? eg: angle guides and snap points
  */
-let shouldDrawHelpers: boolean = false;
+let shouldDrawHelpers = false;
 
 /**
  * Entities that are drawn for debugging the application purposes
@@ -126,12 +126,14 @@ let activeLineWidth = 1;
 /**
  * Layers that can contain entities
  */
-let layers: Layer[] = [{
-    id: crypto.randomUUID(),
-    isLocked: false,
-    isVisible: true,
-    name: "Default"
-}];
+let layers: Layer[] = [
+	{
+		id: crypto.randomUUID(),
+		isLocked: false,
+		isVisible: true,
+		name: 'Default',
+	},
+];
 
 /**
  * Id of the currently active layer where newly drawn entities will be added to
@@ -159,241 +161,237 @@ export const getLastDrawTimestamp = () => lastDrawTimestamp;
 export const getActiveLineColor = () => activeLineColor;
 export const getActiveLineWidth = () => activeLineWidth;
 export const getScreenCanvasDrawController = (): ScreenCanvasDrawController => {
-    if (!screenCanvasDrawController) {
-        throw new Error('getScreenCanvasDrawController() returned null');
-    }
-    return screenCanvasDrawController;
+	if (!screenCanvasDrawController) {
+		throw new Error('getScreenCanvasDrawController() returned null');
+	}
+	return screenCanvasDrawController;
 };
 export const getInputController = (): InputController => {
-    if (!inputController) {
-        throw new Error('getInputController() returned null');
-    }
-    return inputController;
+	if (!inputController) {
+		throw new Error('getInputController() returned null');
+	}
+	return inputController;
 };
 
 export const getSelectedEntities = (): Entity[] => {
-    return entities.filter(e => selectedEntityIds.includes(e.id));
+	return entities.filter((e) => selectedEntityIds.includes(e.id));
 };
 export const getNotSelectedEntities = (): Entity[] => {
-    return entities.filter(e => !selectedEntityIds.includes(e.id));
+	return entities.filter((e) => !selectedEntityIds.includes(e.id));
 };
-export const isEntitySelected = (entity: Entity) =>
-    selectedEntityIds.includes(entity.id);
-export const isEntityHighlighted = (entity: Entity) =>
-    highlightedEntityIds.includes(entity.id);
+export const isEntitySelected = (entity: Entity) => selectedEntityIds.includes(entity.id);
+export const isEntityHighlighted = (entity: Entity) => highlightedEntityIds.includes(entity.id);
 export const getLayers = () => {
-    return layers;
-}
+	return layers;
+};
 export const getActiveLayerId = (): string => {
-    return activeLayerId;
-}
+	return activeLayerId;
+};
 
 // setters
-export const setCanvas = (newCanvas: HTMLCanvasElement) => (canvas = newCanvas);
+export const setCanvas = (newCanvas: HTMLCanvasElement) => {
+	canvas = newCanvas;
+};
 export const setActiveToolActor = (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    newToolActor: Actor<any>,
-    triggerReact: boolean = true,
+	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+	newToolActor: Actor<any>,
+	triggerReact = true
 ) => {
-    getActiveToolActor()?.stop();
+	getActiveToolActor()?.stop();
 
-    activeToolActor = newToolActor;
-    activeToolActor.subscribe(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (state: MachineSnapshot<any, any, any, any, any, any, any, any>) => {
-            const stateInstructions = Object.values(
-                state?.getMeta() as Record<string, StateMetaData>,
-            )[0]?.instructions;
+	activeToolActor = newToolActor;
+	activeToolActor.subscribe(
+		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+		(state: MachineSnapshot<any, any, any, any, any, any, any, any>) => {
+			const stateInstructions = Object.values(state?.getMeta() as Record<string, StateMetaData>)[0]
+				?.instructions;
 
-            if (getLastStateInstructions() === stateInstructions) {
-                return;
-            }
+			if (getLastStateInstructions() === stateInstructions) {
+				return;
+			}
 
-            setLastStateInstructions(stateInstructions || null);
-        },
-    );
-    activeToolActor.start();
+			setLastStateInstructions(stateInstructions || null);
+		}
+	);
+	activeToolActor.start();
 
-    console.log('User clicked on tool: ', {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        activeTool: (activeToolActor.src as any).config.context.type,
-    });
+	console.log('User clicked on tool: ', {
+		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+		activeTool: (activeToolActor.src as any).config.context.type,
+	});
 
-    if (triggerReact) {
-        triggerReactUpdate(StateVariable.activeTool);
-    }
+	if (triggerReact) {
+		triggerReactUpdate(StateVariable.activeTool);
+	}
 };
-export const setLastStateInstructions = (newInstructions: string | null) =>
-    (lastStateInstructions = newInstructions);
-export const setEntities = (
-    newEntities: Entity[],
-    trackInUndoStack: boolean = false,
-) => {
-    if (trackInUndoStack) {
-        trackUndoState(StateVariable.entities, newEntities);
-    }
-    entities = newEntities;
+export const setLastStateInstructions = (newInstructions: string | null) => {
+	lastStateInstructions = newInstructions;
 };
-export const setHighlightedEntityIds = (newEntityIds: string[]) =>
-    (highlightedEntityIds = newEntityIds);
-export const setSelectedEntityIds = (newEntityIds: string[]) =>
-    (selectedEntityIds = newEntityIds);
-export const setShouldDrawCursor = (newValue: boolean) =>
-    (shouldDrawCursor = newValue);
-export const setAngleGuideEntities = (newAngleGuideEntities: Entity[]) =>
-    (angleGuideEntities = newAngleGuideEntities);
-export const setGhostHelperEntities = (newGhostHelperEntities: Entity[]) =>
-    (ghostHelperEntities = newGhostHelperEntities);
+export const setEntities = (newEntities: Entity[], trackInUndoStack = false) => {
+	if (trackInUndoStack) {
+		trackUndoState(StateVariable.entities, newEntities);
+	}
+	entities = newEntities;
+};
+export const setHighlightedEntityIds = (newEntityIds: string[]) => {
+	highlightedEntityIds = newEntityIds;
+};
+export const setSelectedEntityIds = (newEntityIds: string[]) => {
+	selectedEntityIds = newEntityIds;
+};
+export const setShouldDrawCursor = (newValue: boolean) => {
+	shouldDrawCursor = newValue;
+};
+export const setAngleGuideEntities = (newAngleGuideEntities: Entity[]) => {
+	angleGuideEntities = newAngleGuideEntities;
+};
+export const setGhostHelperEntities = (newGhostHelperEntities: Entity[]) => {
+	ghostHelperEntities = newGhostHelperEntities;
+};
 export const setShouldDrawHelpers = (shouldDraw: boolean) => {
-    setSnapPoint(null);
-    setSnapPointOnAngleGuide(null);
-    setAngleGuideEntities([]);
-    return (shouldDrawHelpers = shouldDraw);
+	setSnapPoint(null);
+	setSnapPointOnAngleGuide(null);
+	setAngleGuideEntities([]);
+	shouldDrawHelpers = shouldDraw;
 };
-export const setDebugEntities = (newDebugEntities: Entity[]) =>
-    (debugEntities = newDebugEntities);
-export const setAngleStep = (newStep: number, triggerReact: boolean = true) => {
-    angleStep = newStep;
+export const setDebugEntities = (newDebugEntities: Entity[]) => {
+	debugEntities = newDebugEntities;
+};
+export const setAngleStep = (newStep: number, triggerReact = true) => {
+	angleStep = newStep;
 
-    if (triggerReact) {
-        triggerReactUpdate(StateVariable.activeTool);
-    }
+	if (triggerReact) {
+		triggerReactUpdate(StateVariable.activeTool);
+	}
 };
 export const setScreenCanvasDrawController = (
-    newScreenCanvasDrawController: ScreenCanvasDrawController,
-) => (screenCanvasDrawController = newScreenCanvasDrawController);
-export const setInputController = (newInputController: InputController) =>
-    (inputController = newInputController);
-export const setPanStartLocation = (newLocation: Point | null) =>
-    (panStartLocation = newLocation);
-export const setSnapPoint = (newSnapPoint: SnapPoint | null) =>
-    (snapPoint = newSnapPoint);
-export const setSnapPointOnAngleGuide = (
-    newSnapPointOnAngleGuide: SnapPoint | null,
-) => (snapPointOnAngleGuide = newSnapPointOnAngleGuide);
-export const setAngleGuideOriginPoint = (
-    newAngleGuideOriginPoint: Point | null,
-) => (angleGuideOriginPoint = newAngleGuideOriginPoint);
-export const setHoveredSnapPoints = (newHoveredSnapPoints: HoverPoint[]) =>
-    (hoveredSnapPoints = newHoveredSnapPoints);
-export const setLastDrawTimestamp = (newTimestamp: DOMHighResTimeStamp) =>
-    (lastDrawTimestamp = newTimestamp);
-export const setActiveLineColor = (
-    newColor: string,
-    triggerReact: boolean = true,
+	newScreenCanvasDrawController: ScreenCanvasDrawController
 ) => {
-    activeLineColor = newColor;
-
-    if (triggerReact) {
-        triggerReactUpdate(StateVariable.activeLineColor);
-    }
+	screenCanvasDrawController = newScreenCanvasDrawController;
 };
-export const setActiveLineWidth = (
-    newWidth: number,
-    triggerReact: boolean = true,
-) => {
-    activeLineWidth = newWidth;
-
-    if (triggerReact) {
-        triggerReactUpdate(StateVariable.activeLineWidth);
-    }
+export const setInputController = (newInputController: InputController) => {
+	inputController = newInputController;
 };
-export const setLayers = (newLayers: Layer[], triggerReact: boolean = true) => {
-    layers = newLayers;
+export const setPanStartLocation = (newLocation: Point | null) => {
+	panStartLocation = newLocation;
+};
+export const setSnapPoint = (newSnapPoint: SnapPoint | null) => {
+	snapPoint = newSnapPoint;
+};
+export const setSnapPointOnAngleGuide = (newSnapPointOnAngleGuide: SnapPoint | null) => {
+	snapPointOnAngleGuide = newSnapPointOnAngleGuide;
+};
+export const setAngleGuideOriginPoint = (newAngleGuideOriginPoint: Point | null) => {
+	angleGuideOriginPoint = newAngleGuideOriginPoint;
+};
+export const setHoveredSnapPoints = (newHoveredSnapPoints: HoverPoint[]) => {
+	hoveredSnapPoints = newHoveredSnapPoints;
+};
+export const setLastDrawTimestamp = (newTimestamp: DOMHighResTimeStamp) => {
+	lastDrawTimestamp = newTimestamp;
+};
+export const setActiveLineColor = (newColor: string, triggerReact = true) => {
+	activeLineColor = newColor;
 
-    if (triggerReact) {
-        triggerReactUpdate(StateVariable.layers);
-    }
-}
-export const setActiveLayerId = (newActiveLayerId: string, triggerReact: boolean = true) => {
-    activeLayerId = newActiveLayerId;
+	if (triggerReact) {
+		triggerReactUpdate(StateVariable.activeLineColor);
+	}
+};
+export const setActiveLineWidth = (newWidth: number, triggerReact = true) => {
+	activeLineWidth = newWidth;
 
-    if (triggerReact) {
-        triggerReactUpdate(StateVariable.layers);
-    }
-}
+	if (triggerReact) {
+		triggerReactUpdate(StateVariable.activeLineWidth);
+	}
+};
+export const setLayers = (newLayers: Layer[], triggerReact = true) => {
+	layers = newLayers;
+
+	if (triggerReact) {
+		triggerReactUpdate(StateVariable.layers);
+	}
+};
+export const setActiveLayerId = (newActiveLayerId: string, triggerReact = true) => {
+	activeLayerId = newActiveLayerId;
+
+	if (triggerReact) {
+		triggerReactUpdate(StateVariable.layers);
+	}
+};
 
 // Computed setters
-export const deleteEntities = (
-    entitiesToDelete: Entity[],
-    trackInUndoStack: boolean,
-): Entity[] => {
-    const entityIdsToBeDeleted = entitiesToDelete.map(entity => entity.id);
-    const newEntities = getEntities().filter(
-        entity => !entityIdsToBeDeleted.includes(entity.id),
-    );
-    setEntities(newEntities, trackInUndoStack);
-    return newEntities;
+export const deleteEntities = (entitiesToDelete: Entity[], trackInUndoStack: boolean): Entity[] => {
+	const entityIdsToBeDeleted = entitiesToDelete.map((entity) => entity.id);
+	const newEntities = getEntities().filter((entity) => !entityIdsToBeDeleted.includes(entity.id));
+	setEntities(newEntities, trackInUndoStack);
+	return newEntities;
 };
-export const addEntities = (
-    entitiesToAdd: Entity[],
-    trackInUndoStack: boolean,
-): Entity[] => {
-    const newEntities = [...getEntities(), ...entitiesToAdd];
-    setEntities(newEntities, trackInUndoStack);
-    return newEntities;
+export const addEntities = (entitiesToAdd: Entity[], trackInUndoStack: boolean): Entity[] => {
+	const newEntities = [...getEntities(), ...entitiesToAdd];
+	setEntities(newEntities, trackInUndoStack);
+	return newEntities;
 };
 
 // Undo redo states
 const reactStateVariables: StateVariable[] = [
-    StateVariable.activeTool,
-    StateVariable.angleStep,
-    StateVariable.activeLineColor,
-    StateVariable.activeLineWidth,
-    StateVariable.screenZoom,
+	StateVariable.activeTool,
+	StateVariable.angleStep,
+	StateVariable.activeLineColor,
+	StateVariable.activeLineWidth,
+	StateVariable.screenZoom,
 ];
 
 const undoableStateVariables: StateVariable[] = [StateVariable.entities];
 
 const undoStack = createStack();
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 function trackUndoState(variable: StateVariable, value: any) {
-    if (!undoableStateVariables.includes(variable)) return;
+	if (!undoableStateVariables.includes(variable)) return;
 
-    const lastUndoState = undoStack.peek();
-    if (isEqual(value, lastUndoState?.value)) {
-        return; // Sometimes entities are updated because of highlighting, but not actually differ with the last list of entities
-    }
+	const lastUndoState = undoStack.peek();
+	if (isEqual(value, lastUndoState?.value)) {
+		return; // Sometimes entities are updated because of highlighting, but not actually differ with the last list of entities
+	}
 
-    // Push the new undo state
-    undoStack.push({ variable: variable, value: value });
+	// Push the new undo state
+	undoStack.push({ variable: variable, value: value });
 }
 
 function updateStates(undoState: UndoState) {
-    const variable = undoState.variable;
-    const value = undoState.value;
+	const variable = undoState.variable;
+	const value = undoState.value;
 
-    // Do not use the setters for setting these states, otherwise you trigger the undo stack again
-    switch (variable) {
-        case StateVariable.entities:
-            entities = value;
-            break;
-    }
+	// Do not use the setters for setting these states, otherwise you trigger the undo stack again
+	switch (variable) {
+		case StateVariable.entities:
+			entities = value;
+			break;
+	}
 }
 
 export function undo() {
-    const undoState = undoStack.undo();
-    if (!undoState) return;
+	const undoState = undoStack.undo();
+	if (!undoState) return;
 
-    updateStates(undoState);
+	updateStates(undoState);
 }
 
 export function redo() {
-    const redoState = undoStack.redo();
-    if (!redoState) return;
+	const redoState = undoStack.redo();
+	if (!redoState) return;
 
-    updateStates(redoState);
+	updateStates(redoState);
 }
 
 export function triggerReactUpdate(variable: StateVariable) {
-    if (typeof process === 'object' && process?.env?.NODE_ENV === 'test') {
-        return;
-    }
+	if (typeof process === 'object' && process?.env?.NODE_ENV === 'test') {
+		return;
+	}
 
-    if (!reactStateVariables.includes(variable)) {
-        return;
-    }
+	if (!reactStateVariables.includes(variable)) {
+		return;
+	}
 
-    window.dispatchEvent(new CustomEvent(HtmlEvent.UPDATE_STATE));
+	window.dispatchEvent(new CustomEvent(HtmlEvent.UPDATE_STATE));
 }

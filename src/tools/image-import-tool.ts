@@ -1,4 +1,4 @@
-import {Point} from '@flatten-js/core';
+import type {Point} from '@flatten-js/core';
 import {
   addEntities,
   getActiveLayerId,
@@ -11,7 +11,7 @@ import {
 } from '../state';
 import {Tool} from '../tools';
 import {Actor, assign, createMachine} from 'xstate';
-import {ActorEvent, DrawEvent, FileSelectedEvent, MouseClickEvent, PointInputEvent, StateEvent, ToolContext,} from './tool.types';
+import {ActorEvent, type DrawEvent, type FileSelectedEvent, type MouseClickEvent, type PointInputEvent, type StateEvent, type ToolContext,} from './tool.types';
 import {ImageEntity} from '../entities/ImageEntity';
 import {getContainRectangleInsideRectangle} from './image-import-tool.helpers';
 import {RectangleEntity} from '../entities/RectangleEntity';

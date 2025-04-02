@@ -1,51 +1,43 @@
-import {Entity} from '../entities/Entity';
-import {Circle, Point, Segment} from '@flatten-js/core';
+import type {Circle, Point, Segment} from '@flatten-js/core';
 import {compact} from 'es-toolkit';
-import {LineEntity} from '../entities/LineEntity';
-import {findNeighboringPointsOnLine} from '../helpers/find-neighboring-points-on-line';
-import {addEntities, deleteEntities, getActiveLayerId} from '../state';
-import {CircleEntity} from '../entities/CircleEntity';
-import {findNeighboringPointsOnCircle} from '../helpers/find-neighboring-points-on-circle';
-import {isPointEqual} from '../helpers/is-point-equal';
 import {ArcEntity} from '../entities/ArcEntity';
+import type {CircleEntity} from '../entities/CircleEntity';
+import type {Entity} from '../entities/Entity';
+import type {LineEntity} from '../entities/LineEntity';
 import {findNeighboringPointsOnArc} from '../helpers/find-neighboring-points-on-arc';
+import {findNeighboringPointsOnCircle} from '../helpers/find-neighboring-points-on-circle';
+import {findNeighboringPointsOnLine} from '../helpers/find-neighboring-points-on-line';
+import {isPointEqual} from '../helpers/is-point-equal';
+import {addEntities, deleteEntities, getActiveLayerId} from '../state';
 
-export function getAllIntersectionPoints(
-	entity: Entity,
-	entities: Entity[],
-): Point[] {
+export function getAllIntersectionPoints(entity: Entity, entities: Entity[]): Point[] {
 	// TODO see if we need to make this list unique
 	return compact(
-		entities.flatMap(otherEntity => {
+		entities.flatMap((otherEntity) => {
 			if (entity.id === otherEntity.id) {
 				return null;
 			}
 			return entity.getIntersections(otherEntity);
-		}),
+		})
 	);
 }
 
 export function eraseLineSegment(
 	line: LineEntity,
 	clickedPointOnShape: Point,
-	intersections: Point[],
+	intersections: Point[]
 ): void {
 	const segment = line.getShape() as Segment;
 	const [firstCutPoint, secondCutPoint] = findNeighboringPointsOnLine(
 		clickedPointOnShape,
 		segment.start,
 		segment.end,
-		intersections,
+		intersections
 	);
 
-	const cutLines: Entity[] = line.cutAtPoints([
-		firstCutPoint,
-		secondCutPoint,
-	]);
+	const cutLines: Entity[] = line.cutAtPoints([firstCutPoint, secondCutPoint]);
 	// Remove the segment that has the clickedPointOnShape point on it
-	const remainingLines = cutLines.filter(
-		line => !line.containsPointOnShape(clickedPointOnShape),
-	);
+	const remainingLines = cutLines.filter((line) => !line.containsPointOnShape(clickedPointOnShape));
 	deleteEntities([line], false);
 
 	// Helper functions should never trigger an undo state, since they can be called multiple times during one user operation
@@ -55,7 +47,7 @@ export function eraseLineSegment(
 export function eraseCircleSegment(
 	circle: CircleEntity,
 	clickedPointOnShape: Point,
-	intersections: Point[],
+	intersections: Point[]
 ): void {
 	if (intersections.length === 0) {
 		deleteEntities([circle], false);
@@ -65,21 +57,17 @@ export function eraseCircleSegment(
 	const [firstCutPoint, secondCutPoint] = findNeighboringPointsOnCircle(
 		clickedPointOnShape,
 		circle,
-		intersections,
+		intersections
 	);
 
 	const circleShape = circle.getShape() as Circle;
 	const center = circleShape.center;
 
-	const angles = [firstCutPoint, secondCutPoint, clickedPointOnShape].map(p =>
-		Math.atan2(center.y - p.y, p.x - center.x),
+	const angles = [firstCutPoint, secondCutPoint, clickedPointOnShape].map((p) =>
+		Math.atan2(center.y - p.y, p.x - center.x)
 	);
 
-	const [startAngle, endAngle] = isAngleBetween(
-		angles[2],
-		angles[0],
-		angles[1],
-	)
+	const [startAngle, endAngle] = isAngleBetween(angles[2], angles[0], angles[1])
 		? [angles[1], angles[0]]
 		: [angles[0], angles[1]];
 
@@ -89,7 +77,7 @@ export function eraseCircleSegment(
 		circleShape.r,
 		endAngle,
 		startAngle,
-		true,
+		true
 	);
 	Object.assign(newArc, {
 		lineColor: circle.lineColor,
@@ -110,28 +98,25 @@ function isAngleBetween(angle: number, start: number, end: number): boolean {
 export function eraseArcSegment(
 	arc: ArcEntity,
 	clickedPointOnShape: Point,
-	intersections: Point[],
+	intersections: Point[]
 ): void {
-	const [first, second] = findNeighboringPointsOnArc(
-		clickedPointOnShape,
-		arc,
-		intersections,
-	);
+	const [first, second] = findNeighboringPointsOnArc(clickedPointOnShape, arc, intersections);
 
 	if (isPointEqual(first, second)) {
 		deleteEntities([arc], true);
 		return;
 	}
 
-	arc.cutAtPoints([first, second])
-	.filter(cutArc => !cutArc.containsPointOnShape(clickedPointOnShape))
-	.forEach(newArc => {
+	const newArcs = arc
+		.cutAtPoints([first, second])
+		.filter((cutArc) => !cutArc.containsPointOnShape(clickedPointOnShape));
+	for (const newArc of newArcs) {
 		Object.assign(newArc, {
 			lineColor: arc.lineColor,
 			lineWidth: arc.lineWidth,
 		});
 		addEntities([newArc], false);
-	});
+	}
 
 	// Helper functions should never trigger an undo state, since they can be called multiple times during one user operation
 	deleteEntities([arc], false);

@@ -1,5 +1,5 @@
 import {CircleEntity} from '../entities/CircleEntity';
-import {Point} from '@flatten-js/core';
+import type {Point} from '@flatten-js/core';
 import {
   addEntities,
   getActiveLayerId,
@@ -10,7 +10,7 @@ import {
   setSelectedEntityIds,
   setShouldDrawHelpers,
 } from '../state';
-import {DrawEvent, PointInputEvent, StateEvent, ToolContext,} from './tool.types';
+import type {DrawEvent, PointInputEvent, StateEvent, ToolContext,} from './tool.types';
 import {Tool} from '../tools';
 import {assign, createMachine} from 'xstate';
 import {pointDistance} from '../helpers/distance-between-points';

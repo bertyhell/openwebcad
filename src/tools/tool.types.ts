@@ -1,7 +1,7 @@
-import { Point } from '@flatten-js/core';
-import { Tool } from '../tools';
-import { EventObject } from 'xstate';
-import { ScreenCanvasDrawController } from '../drawControllers/screenCanvas.drawController';
+import type { Point } from '@flatten-js/core';
+import type { Tool } from '../tools';
+import type { EventObject } from 'xstate';
+import type { ScreenCanvasDrawController } from '../drawControllers/screenCanvas.drawController';
 
 export enum ActionType {
   Click = 'Click',

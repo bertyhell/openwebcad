@@ -4,10 +4,10 @@
  */
 import {expect, test} from 'vitest';
 import {getEntities} from '../../../src/state';
-import {EntityName, JsonEntity} from '../../../src/entities/Entity';
+import {EntityName, type JsonEntity} from '../../../src/entities/Entity';
 import {initApplication} from '../../helpers/init-application';
 import {CANVAS_HEIGHT} from '../../helpers/tests.consts';
-import {CircleJsonData} from '../../../src/entities/CircleEntity';
+import type {CircleJsonData} from '../../../src/entities/CircleEntity';
 import circleRecording from './circle.recording.json';
 import {replayRecording} from '../../helpers/replay-recording';
 

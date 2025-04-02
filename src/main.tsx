@@ -2,6 +2,15 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 import './index.scss';
+import {Point} from '@flatten-js/core';
+import {Actor} from 'xstate';
+import {HIGHLIGHT_ENTITY_DISTANCE, SNAP_POINT_DISTANCE, TOOLBAR_WIDTH} from './App.consts';
+import {ScreenCanvasDrawController} from './drawControllers/screenCanvas.drawController';
+import {draw} from './helpers/draw';
+import {findClosestEntity} from './helpers/find-closest-entity';
+import {getEntitiesFromLocalStorage,} from "./helpers/import-export-handlers/import-entities-from-local-storage.ts";
+import {trackHoveredSnapPoint} from './helpers/track-hovered-snap-points';
+import {InputController} from './inputController/input-controller.ts';
 import {
 	getActiveToolActor,
 	getCanvas,
@@ -20,34 +29,25 @@ import {
 	setScreenCanvasDrawController,
 } from './state';
 import {Tool} from './tools';
-import {Point} from '@flatten-js/core';
-import {HIGHLIGHT_ENTITY_DISTANCE, SNAP_POINT_DISTANCE, TOOLBAR_WIDTH} from './App.consts';
-import {draw} from './helpers/draw';
-import {findClosestEntity} from './helpers/find-closest-entity';
-import {trackHoveredSnapPoint} from './helpers/track-hovered-snap-points';
 import {TOOL_STATE_MACHINES} from './tools/tool.consts';
-import {ActorEvent, DrawEvent} from './tools/tool.types';
-import {Actor} from 'xstate';
-import {ScreenCanvasDrawController} from './drawControllers/screenCanvas.drawController';
-import {InputController} from './inputController/input-controller.ts';
-import {getEntitiesFromLocalStorage,} from "./helpers/import-export-handlers/import-entities-from-local-storage.ts";
+import {ActorEvent, type DrawEvent} from './tools/tool.types';
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+ReactDOM.createRoot(document.getElementById('root') as HTMLDivElement).render(
 	<React.StrictMode>
-		<App/>
-	</React.StrictMode>,
+		<App />
+	</React.StrictMode>
 );
 
 function startDrawLoop(
 	screenCanvasDrawController: ScreenCanvasDrawController,
-	timestamp: DOMHighResTimeStamp,
+	timestamp: DOMHighResTimeStamp
 ) {
 	const lastDrawTimestamp = getLastDrawTimestamp();
 
 	const elapsedTime = timestamp - lastDrawTimestamp;
 	setLastDrawTimestamp(timestamp);
 
-	if (getActiveToolActor()?.getSnapshot().can({type: ActorEvent.DRAW})) {
+	if (getActiveToolActor()?.getSnapshot().can({ type: ActorEvent.DRAW })) {
 		getActiveToolActor()?.send({
 			type: ActorEvent.DRAW,
 			drawController: screenCanvasDrawController,
@@ -62,9 +62,9 @@ function startDrawLoop(
 		if (!screenCanvasDrawController) {
 			throw new Error('getScreenCanvasDrawController() returned null');
 		}
-		const {distance, entity: closestEntity} = findClosestEntity(
+		const { distance, entity: closestEntity } = findClosestEntity(
 			screenCanvasDrawController.getWorldMouseLocation(),
-			getEntities(),
+			getEntities()
 		);
 
 		if (distance < HIGHLIGHT_ENTITY_DISTANCE) {
@@ -80,7 +80,7 @@ function startDrawLoop(
 		getHoveredSnapPoints(),
 		setHoveredSnapPoints,
 		SNAP_POINT_DISTANCE / screenCanvasDrawController.getScreenScale(),
-		elapsedTime,
+		elapsedTime
 	);
 
 	/**
@@ -103,9 +103,7 @@ function handleWindowResize() {
 }
 
 function initApplication() {
-	const canvas = document.getElementsByTagName(
-		'canvas',
-	)[0] as HTMLCanvasElement | null;
+	const canvas = document.getElementsByTagName('canvas')[0] as HTMLCanvasElement | null;
 	if (canvas) {
 		setCanvas(canvas);
 
@@ -118,9 +116,7 @@ function initApplication() {
 		getEntitiesFromLocalStorage().then((entities) => {
 			setEntities(entities, true);
 		});
-		const screenCanvasDrawController = new ScreenCanvasDrawController(
-			context,
-		);
+		const screenCanvasDrawController = new ScreenCanvasDrawController(context);
 		setScreenCanvasDrawController(screenCanvasDrawController);
 
 		window.addEventListener('resize', handleWindowResize);

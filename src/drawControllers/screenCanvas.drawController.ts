@@ -1,6 +1,6 @@
 import {CANVAS_BACKGROUND_COLOR, MOUSE_ZOOM_MULTIPLIER} from '../App.consts';
-import {Point, Vector} from '@flatten-js/core';
-import {DEFAULT_TEXT_OPTIONS, DrawController} from './DrawController';
+import {Point, type Vector} from '@flatten-js/core';
+import {DEFAULT_TEXT_OPTIONS, type DrawController} from './DrawController';
 import {triggerReactUpdate} from '../state.ts';
 import {StateVariable} from '../helpers/undo-stack.ts';
 import {mapNumberRange} from '../helpers/map-number-range.ts';
@@ -27,7 +27,7 @@ import {mapNumberRange} from '../helpers/map-number-range.ts';
  */
 export class ScreenCanvasDrawController implements DrawController {
     private screenOffset: Point = new Point(0, 0);
-    private screenScale: number = 1;
+    private screenScale = 1;
     private screenMouseLocation: Point;
     private canvasSize: Point = new Point(100, 100);
 

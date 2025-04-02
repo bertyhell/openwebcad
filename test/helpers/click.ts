@@ -1,4 +1,4 @@
-import { InputController } from '../../src/inputController/input-controller';
+import type { InputController } from '../../src/inputController/input-controller';
 import { MouseButton } from '../../src/App.types';
 
 export function click(

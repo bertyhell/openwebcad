@@ -1,4 +1,4 @@
-import { Point } from '@flatten-js/core';
+import type { Point } from '@flatten-js/core';
 import { sortBy, uniqWith } from 'es-toolkit';
 import { isPointEqual } from './is-point-equal';
 import { pointDistance } from './distance-between-points';

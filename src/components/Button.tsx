@@ -16,6 +16,8 @@ interface ButtonProps {
 	dataId?: string;
 	size?: 'small' | 'regular';
 	type?: 'regular' | 'transparent';
+	left?: ReactNode;
+	right?: ReactNode;
 }
 
 export const Button: FC<ButtonProps> = ({
@@ -32,13 +34,17 @@ export const Button: FC<ButtonProps> = ({
 	dataId,
 	type = 'regular',
 	size = 'regular',
+	left = null,
+	right = null,
 }) => {
 	const classParts = [
-		'font-semibold py-4 h-10 flex flex-row justify-start gap-2 w-full items-center hover:bg-blue-500 hover:text-white hover:border-transparent data-[size=regular]:pl-4 data-[size=regular]:pr-6 data-[size=small]:pl-2 data-[size=small]:pr-2',
-		className || '',
+		'font-semibold py-4 h-10 flex flex-row justify-start w-full items-center hover:bg-blue-500 hover:text-white hover:border-transparent',
 		type === 'regular' ? 'bg-gray-950 text-blue-500' : '',
 		type === 'transparent' ? 'bg-transparent text-blue-500' : '',
 		active ? 'bg-blue-500 text-white border-transparent hover:bg-blue-400' : '',
+		size === 'regular' ? 'pl-2 pr-2 gap-2' : '',
+		size === 'small' ? 'pl-2 pr-2 gap-0' : '',
+		className || '',
 	];
 	return (
 		<>
@@ -62,11 +68,13 @@ export const Button: FC<ButtonProps> = ({
 					(iconName && (
 						<Icon
 							name={iconName}
-							className={`${iconClassname} text-blue-700 ${active ? 'text-white' : ''}`}
+							className={`${iconClassname} text-blue-700 ${active ? 'text-white' : ''} ${size === 'small' ? 'w-4' : 'w-5'}`}
 						/>
 					))}
-				{label && <span className="text-nowrap">{label}</span>}
+				<div className="flex flex-row flex-nowrap">{left}</div>
+				{label && <span className="text-nowrap flex-grow text-left">{label}</span>}
 				{children}
+				<div className="flex flex-row flex-nowrap">{right}</div>
 			</button>
 		</>
 	);

@@ -1,11 +1,12 @@
-import {type Entity, EntityName, type JsonEntity} from './Entity';
-import type {Shape, SnapPoint} from '../App.types';
 import {Box, Point, Segment} from '@flatten-js/core';
-import {scalePoint} from '../helpers/scale-point';
-import type {DrawController} from '../drawControllers/DrawController';
 import {max, min} from 'es-toolkit/compat';
-import type {LineEntity} from "./LineEntity.ts";
+import type {Shape, SnapPoint} from '../App.types';
+import type {DrawController} from '../drawControllers/DrawController';
 import {mirrorPointOverAxis} from "../helpers/mirror-point-over-axis.ts";
+import {scalePoint} from '../helpers/scale-point';
+import {getActiveLayerId} from "../state.ts";
+import {type Entity, EntityName, type JsonEntity} from './Entity';
+import type {LineEntity} from "./LineEntity.ts";
 
 export class ArrowHeadEntity implements Entity {
 	public id: string = crypto.randomUUID();
@@ -20,19 +21,13 @@ export class ArrowHeadEntity implements Entity {
 		layerId: string,
 		private p1: Point, // Tip of the arrow
 		private p2: Point,
-		private p3: Point,
+		private p3: Point
 	) {
 		this.layerId = layerId;
 	}
 
 	public draw(drawController: DrawController): void {
-		drawController.setLineStyles(
-			false,
-			false,
-			this.lineColor,
-			this.lineWidth,
-			this.lineDash,
-		);
+		drawController.setLineStyles(false, false, this.lineColor, this.lineWidth, this.lineDash);
 		drawController.drawLine(this.p1, this.p2);
 		drawController.drawLine(this.p2, this.p3);
 		drawController.drawLine(this.p3, this.p1);
@@ -66,12 +61,7 @@ export class ArrowHeadEntity implements Entity {
 	}
 
 	public clone(): ArrowHeadEntity {
-		return new ArrowHeadEntity(
-			this.layerId,
-			this.p1.clone(),
-			this.p2.clone(),
-			this.p3.clone(),
-		);
+		return new ArrowHeadEntity(this.layerId, this.p1.clone(), this.p2.clone(), this.p3.clone());
 	}
 
 	public intersectsWithBox(box: Box): boolean {
@@ -83,9 +73,7 @@ export class ArrowHeadEntity implements Entity {
 	}
 
 	public isContainedInBox(box: Box): boolean {
-		return (
-			box.contains(this.p1) || box.contains(this.p2) || box.contains(this.p3)
-		);
+		return box.contains(this.p1) || box.contains(this.p2) || box.contains(this.p3);
 	}
 
 	public getBoundingBox(): Box {
@@ -93,7 +81,7 @@ export class ArrowHeadEntity implements Entity {
 			min([this.p1.x, this.p2.x, this.p3.x]),
 			min([this.p1.y, this.p2.y, this.p3.y]),
 			max([this.p1.x, this.p2.x, this.p3.x]),
-			max([this.p1.y, this.p2.y, this.p3.y]),
+			max([this.p1.y, this.p2.y, this.p3.y])
 		);
 	}
 
@@ -142,15 +130,15 @@ export class ArrowHeadEntity implements Entity {
 			lineWidth: this.lineWidth,
 			layerId: this.layerId,
 			shapeData: {
-				p1: {x: this.p1.x, y: this.p1.y},
-				p2: {x: this.p2.x, y: this.p2.y},
-				p3: {x: this.p3.x, y: this.p3.y},
+				p1: { x: this.p1.x, y: this.p1.y },
+				p2: { x: this.p2.x, y: this.p2.y },
+				p3: { x: this.p3.x, y: this.p3.y },
 			},
 		};
 	}
 
 	public static async fromJson(
-		jsonEntity: JsonEntity<ArrowHeadJsonData>,
+		jsonEntity: JsonEntity<ArrowHeadJsonData>
 	): Promise<ArrowHeadEntity> {
 		const p1 = new Point(jsonEntity.shapeData.p1.x, jsonEntity.shapeData.p1.y);
 		const p2 = new Point(jsonEntity.shapeData.p2.x, jsonEntity.shapeData.p2.y);

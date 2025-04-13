@@ -20,11 +20,13 @@ import {
 	getLayers,
 	getScreenCanvasDrawController,
 	redo,
+	setActiveLayerId,
 	setActiveLineColor,
 	setActiveLineWidth,
 	setActiveToolActor,
 	setAngleStep,
 	setEntities,
+	setLayers,
 	undo,
 } from '../state';
 import {Tool} from '../tools';
@@ -86,6 +88,16 @@ export const Toolbar: FC = () => {
 
 	const noopClickHandler = (evt: MouseEvent) => {
 		evt.stopPropagation();
+	};
+
+	const handleSetLayers = (newLayers: Layer[]) => {
+		setLayersLocal(newLayers);
+		setLayers(newLayers);
+	};
+
+	const handleSetActiveLayerId = (newActiveLayerId: string) => {
+		setActiveLayerIdLocal(newActiveLayerId);
+		setActiveLayerId(newActiveLayerId);
 	};
 
 	return (
@@ -222,7 +234,13 @@ export const Toolbar: FC = () => {
 			</DropdownButton>
 
 			<DropdownButton dataId="layers" label="Layers" iconName={IconName.AlignTextJustify}>
-				<LayerManager className="w-full" layers={layersLocal} activeLayerId={activeLayerIdLocal} />
+				<LayerManager
+					className="w-full"
+					layers={layersLocal}
+					activeLayerId={activeLayerIdLocal}
+					setLayers={handleSetLayers}
+					setActiveLayerId={handleSetActiveLayerId}
+				/>
 			</DropdownButton>
 
 			<Button

@@ -1,4 +1,4 @@
-import {assign, sendTo} from 'xstate';
+import {assign, type MachineContext, sendTo} from 'xstate';
 import type {Entity} from '../entities/Entity.ts';
 import {type BoundingBox, getBoundingBoxOfMultipleEntities,} from '../helpers/get-bounding-box-of-multiple-entities.ts';
 import {
@@ -11,7 +11,7 @@ import {
 } from '../state.ts';
 import type {Tool} from '../tools.ts';
 import {selectToolStateMachine} from './select-tool.ts';
-import type {DrawEvent, KeyboardEnterEvent, MouseClickEvent, StateEvent, ToolContext} from './tool.types.ts';
+import type {DrawEvent, KeyboardEnterEvent, MouseClickEvent, StateEvent, ToolContext,} from './tool.types.ts';
 
 export interface AlignContext extends ToolContext {}
 
@@ -27,7 +27,7 @@ export enum AlignAction {
 	DESELECT_ENTITIES = 'DESELECT_ENTITIES',
 }
 
-export function GET_ALIGN_TOOL_STATE(type: Tool) {
+export function GET_ALIGN_TOOL_STATE(type: Tool): MachineContext {
 	return {
 		types: {} as {
 			context: AlignContext;

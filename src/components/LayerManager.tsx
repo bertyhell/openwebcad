@@ -1,16 +1,24 @@
 import type {FC, MouseEvent} from 'react';
 import type {Layer} from '../App.types.ts';
-import {getEntities, getLayers, getSelectedEntities, setActiveLayerId, setEntities, setLayers, setSelectedEntityIds,} from '../state.ts';
+import {getEntities, getLayers, getSelectedEntities, setEntities, setSelectedEntityIds,} from '../state.ts';
 import {Button} from './Button';
 import {IconName} from './Icon/Icon.tsx';
 
 interface LayerManagerProps {
 	layers: Layer[];
+	setLayers: (layers: Layer[]) => void;
 	activeLayerId: string;
+	setActiveLayerId: (layerId: string) => void;
 	className?: string;
 }
 
-export const LayerManager: FC<LayerManagerProps> = ({ layers, activeLayerId, className }) => {
+export const LayerManager: FC<LayerManagerProps> = ({
+	layers,
+	setLayers,
+	activeLayerId,
+	setActiveLayerId,
+	className,
+}) => {
 	const handleLayerClick = (evt: MouseEvent, layerId: string) => {
 		evt.stopPropagation();
 		setActiveLayerId(layerId);
@@ -36,6 +44,26 @@ export const LayerManager: FC<LayerManagerProps> = ({ layers, activeLayerId, cla
 		setEntities(entitiesNotOnLayer);
 	};
 
+	const handleShowHideLayer = (evt: MouseEvent, layerId: string): void => {
+		evt.stopPropagation();
+		const layer: Layer | undefined = layers.find((layer) => layer.id === layerId);
+		if (!layer) {
+			return;
+		}
+		layer.isVisible = !layer.isVisible;
+		setLayers([...layers]);
+	};
+
+	const handleLockUnlockLayer = (evt: MouseEvent, layerId: string): void => {
+		evt.stopPropagation();
+		const layer: Layer | undefined = layers.find((layer) => layer.id === layerId);
+		if (!layer) {
+			return;
+		}
+		layer.isLocked = !layer.isLocked;
+		setLayers([...layers]);
+	};
+
 	const handleCreateNewLayer = (evt: MouseEvent): void => {
 		evt.stopPropagation();
 		const newLayer: Layer = {
@@ -53,42 +81,65 @@ export const LayerManager: FC<LayerManagerProps> = ({ layers, activeLayerId, cla
 				{layers.map((layer) => (
 					<div className="layer flex flex-row relative" key={`layer-${layer.id}`}>
 						<Button
-							iconName={activeLayerId === layer.id ? IconName.FolderTick : IconName.Folder}
 							label={layer.name}
 							title="Set this layer as active"
 							active={activeLayerId === layer.id}
 							onClick={(evt) => handleLayerClick(evt, layer.id)}
 							className="data-[active=true]:text-white flex-grow"
+							left={
+								<>
+									<Button
+										iconName={layer.isVisible ? IconName.Eye : IconName.EyeClosed}
+										title="Show/hide layer content"
+										onClick={(evt) => handleShowHideLayer(evt, layer.id)}
+										size="small"
+										className="w-10 hover:bg-blue-300 -ml-1"
+										type="transparent"
+										active={activeLayerId === layer.id}
+									/>
+									<Button
+										iconName={layer.isLocked ? IconName.Lock : IconName.Unlock}
+										title="Lock/Unlock layer content"
+										onClick={(evt) => handleLockUnlockLayer(evt, layer.id)}
+										size="small"
+										className="w-10 hover:bg-blue-300"
+										type="transparent"
+										active={activeLayerId === layer.id}
+									/>
+								</>
+							}
+							right={
+								<>
+									<Button
+										iconName={IconName.Direction}
+										title="Select entities on this layer"
+										onClick={(evt) => handleSelectEntitiesOnLayer(evt, layer.id)}
+										size="small"
+										className="w-10 hover:bg-blue-300"
+										type="transparent"
+										active={activeLayerId === layer.id}
+									/>
+									<Button
+										iconName={IconName.Download}
+										title="Assign current selection to layer"
+										onClick={(evt) => handleAssignSelectionToLayer(evt, layer.id)}
+										size="small"
+										className="w-10 hover:bg-blue-300"
+										type="transparent"
+										active={activeLayerId === layer.id}
+									/>
+									<Button
+										iconName={IconName.FolderX}
+										title="delete layer and content"
+										onClick={(evt) => handleDeleteLayer(evt, layer.id)}
+										size="small"
+										className="w-10 hover:bg-blue-300"
+										type="transparent"
+										active={activeLayerId === layer.id}
+									/>
+								</>
+							}
 						/>
-						<div className="layer-options absolute right-0 top-0 bottom-0 w-auto flex flex-row">
-							<Button
-								iconName={IconName.Circle}
-								title="Select entities on this layer"
-								onClick={(evt) => handleSelectEntitiesOnLayer(evt, layer.id)}
-								size="small"
-								className="w-10"
-								type="transparent"
-								active={activeLayerId === layer.id}
-							/>
-							<Button
-								iconName={IconName.Download}
-								title="Assign current selection to layer"
-								onClick={(evt) => handleAssignSelectionToLayer(evt, layer.id)}
-								size="small"
-								className="w-10"
-								type="transparent"
-								active={activeLayerId === layer.id}
-							/>
-							<Button
-								iconName={IconName.FolderX}
-								title="delete layer and content"
-								onClick={(evt) => handleDeleteLayer(evt, layer.id)}
-								size="small"
-								className="w-10"
-								type="transparent"
-								active={activeLayerId === layer.id}
-							/>
-						</div>
 					</div>
 				))}
 			</div>

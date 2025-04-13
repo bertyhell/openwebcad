@@ -17,6 +17,8 @@ import DocumentsIcon from 'teenyicons/outline/documents.svg?react';
 import DownloadIcon from 'teenyicons/outline/download.svg?react';
 import EditIcon from 'teenyicons/outline/edit.svg?react';
 import ExpandIcon from 'teenyicons/outline/expand.svg?react';
+import EyeClosedIcon from 'teenyicons/outline/eye-closed.svg?react';
+import EyeIcon from 'teenyicons/outline/eye.svg?react';
 import FilePlusIcon from 'teenyicons/outline/file-plus.svg?react';
 import FolderPlusIcon from 'teenyicons/outline/folder-plus.svg?react';
 import FolderTickIcon from 'teenyicons/outline/folder-tick.svg?react';
@@ -27,6 +29,7 @@ import ImageIcon from 'teenyicons/outline/image.svg?react';
 import JavascriptIcon from 'teenyicons/outline/javascript.svg?react';
 import LayersDifferenceIcon from 'teenyicons/outline/layers-difference.svg?react';
 import LineIcon from 'teenyicons/outline/line.svg?react';
+import LockIcon from 'teenyicons/outline/lock.svg?react';
 import PdfIcon from 'teenyicons/outline/pdf.svg?react';
 import PngIcon from 'teenyicons/outline/png.svg?react';
 import SaveIcon from 'teenyicons/outline/save.svg?react';
@@ -34,6 +37,7 @@ import SendDownIcon from 'teenyicons/outline/send-down.svg?react';
 import SendUpIcon from 'teenyicons/outline/send-up.svg?react';
 import SquareIcon from 'teenyicons/outline/square.svg?react';
 import SvgIcon from 'teenyicons/outline/svg.svg?react';
+import UnlockIcon from 'teenyicons/outline/unlock.svg?react';
 import VectorDocumentIcon from 'teenyicons/outline/vector-document.svg?react';
 import SolidDownSmallIcon from 'teenyicons/solid/down-small.svg?react';
 import SolidDownIcon from 'teenyicons/solid/down.svg?react';
@@ -90,6 +94,10 @@ enum IconName {
 	FolderX = 'FolderX',
 	FolderPlus = 'FolderPlus',
 	AlignTextJustify = 'AlignTextJustify',
+	Eye = 'Eye',
+	EyeClosed = 'EyeClosed',
+	Lock = 'Lock',
+	Unlock = 'Unlock',
 
 	// Solid icons
 	SolidDown = 'SolidDown',
@@ -144,6 +152,10 @@ const icons: Record<IconName, FC> = {
 	[IconName.FolderX]: FolderXIcon,
 	[IconName.FolderPlus]: FolderPlusIcon,
 	[IconName.AlignTextJustify]: AlignTextJustifyIcon,
+	[IconName.Eye]: EyeIcon,
+	[IconName.EyeClosed]: EyeClosedIcon,
+	[IconName.Lock]: LockIcon,
+	[IconName.Unlock]: UnlockIcon,
 
 	// Solid icons
 	[IconName.SolidDown]: SolidDownIcon,

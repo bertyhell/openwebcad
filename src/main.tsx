@@ -1,10 +1,9 @@
+import {Point} from '@flatten-js/core';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App.tsx';
-import './index.scss';
-import {Point} from '@flatten-js/core';
 import {Actor} from 'xstate';
 import {HIGHLIGHT_ENTITY_DISTANCE, SNAP_POINT_DISTANCE, TOOLBAR_WIDTH} from './App.consts';
+import App from './App.tsx';
 import {ScreenCanvasDrawController} from './drawControllers/screenCanvas.drawController';
 import {draw} from './helpers/draw';
 import {findClosestEntity} from './helpers/find-closest-entity';

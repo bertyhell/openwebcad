@@ -1,22 +1,23 @@
 import type {Box, Point, Polygon} from '@flatten-js/core';
 import {compact} from 'es-toolkit';
 import {
-  EPSILON,
-  HIGHLIGHT_ENTITY_DISTANCE,
-  SELECTION_RECTANGLE_COLOR_CONTAINS,
-  SELECTION_RECTANGLE_COLOR_INTERSECTION,
-  SELECTION_RECTANGLE_STYLE,
-  SELECTION_RECTANGLE_WIDTH,
+	EPSILON,
+	HIGHLIGHT_ENTITY_DISTANCE,
+	SELECTION_RECTANGLE_COLOR_CONTAINS,
+	SELECTION_RECTANGLE_COLOR_INTERSECTION,
+	SELECTION_RECTANGLE_STYLE,
+	SELECTION_RECTANGLE_WIDTH,
 } from '../App.consts';
 import {RectangleEntity} from '../entities/RectangleEntity';
 import {findClosestEntity} from '../helpers/find-closest-entity';
 import {
-  getActiveLayerId,
-  getEntities,
-  getSelectedEntityIds,
-  isEntitySelected,
-  setGhostHelperEntities,
-  setSelectedEntityIds,
+	getActiveLayerId,
+	getEntities,
+	getLayers,
+	getSelectedEntityIds,
+	isEntitySelected,
+	setGhostHelperEntities,
+	setSelectedEntityIds,
 } from '../state';
 import type {SelectContext} from './select-tool';
 import type {MouseClickEvent} from './tool.types';
@@ -71,6 +72,11 @@ export function selectEntitiesInsideRectangle(
 	const intersectionSelection = getIsIntersectionSelection(activeSelectionRectangle, startPoint);
 	const newSelectedEntityIds: string[] = compact(
 		getEntities().map((entity): string | null => {
+			const layer = getLayers().find((layer) => layer.id === entity.layerId);
+			if (!layer) {
+				console.error('Failed to find layer for entity', entity);
+				return null;
+			}
 			if (intersectionSelection) {
 				// Select all entities that are inside the selection rectangle or intersect with the selection rectangle
 				if (
@@ -81,9 +87,13 @@ export function selectEntitiesInsideRectangle(
 						if (isEntitySelected(entity)) {
 							return null;
 						}
+						if (!layer.isLocked) {
+							return entity.id;
+						}
+					}
+					if (!layer.isLocked) {
 						return entity.id;
 					}
-					return entity.id;
 				}
 			} else {
 				// Select only entities that are completely inside the selection rectangle
@@ -92,9 +102,13 @@ export function selectEntitiesInsideRectangle(
 						if (isEntitySelected(entity)) {
 							return null;
 						}
+						if (!layer.isLocked) {
+							return entity.id;
+						}
+					}
+					if (!layer.isLocked) {
 						return entity.id;
 					}
-					return entity.id;
 				}
 			}
 			return null;

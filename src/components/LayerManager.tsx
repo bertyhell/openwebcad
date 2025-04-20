@@ -34,14 +34,16 @@ export const LayerManager: FC<LayerManagerProps> = ({
 		evt.stopPropagation();
 		const selectedEntities = getSelectedEntities();
 		for (const entity of selectedEntities) {
-			entity.layerId === layerId;
+			entity.layerId = layerId;
 		}
+		console.info(`Assigned ${selectedEntities.length} entities to layer`);
 	};
 
 	const handleDeleteLayer = (evt: MouseEvent, layerId: string): void => {
 		evt.stopPropagation();
 		const entitiesNotOnLayer = getEntities().filter((entity) => entity.layerId !== layerId);
 		setEntities(entitiesNotOnLayer);
+		setLayers(getLayers().filter((layer) => layer.id !== layerId));
 	};
 
 	const handleShowHideLayer = (evt: MouseEvent, layerId: string): void => {

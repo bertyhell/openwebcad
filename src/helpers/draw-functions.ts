@@ -4,10 +4,18 @@ import {type SnapPoint, SnapPointType} from '../App.types';
 import type {DrawController} from '../drawControllers/DrawController';
 import type {ScreenCanvasDrawController} from '../drawControllers/screenCanvas.drawController';
 import type {Entity} from '../entities/Entity';
-import {isEntityHighlighted, isEntitySelected} from '../state';
+import {getLayers, isEntityHighlighted, isEntitySelected} from '../state';
 
 export function drawEntities(drawController: DrawController, entities: Entity[]) {
 	for (const entity of entities) {
+		const layer = getLayers().find((layer) => layer.id === entity.layerId);
+		if (!layer) {
+			console.error('Failed to find layer for entity: ', entity);
+			continue;
+		}
+		if (!layer?.isVisible) {
+			continue; // Layer not visible, skip drawing
+		}
 		drawController.setLineStyles(
 			isEntityHighlighted(entity),
 			isEntitySelected(entity),

@@ -1,7 +1,7 @@
 /**
  * Width of the toolbar containing all the tools on the left side of the screen
  */
-export const TOOLBAR_WIDTH = 224;
+export const TOOLBAR_WIDTH = 320;
 
 /**
  * Very small number that will be used to compare floating point numbers on equality
@@ -195,22 +195,22 @@ export const CANVAS_INPUT_FIELD_INSTRUCTION_TEXT_COLOR = '#999';
 export const PDF_LINE_WIDTH_FACTOR = 0.25;
 
 export const COLOR_LIST = [
-    '#ffffff',
-    '#2f4f4f',
-    '#800000',
-    '#006400',
-    '#d2b48c',
-    '#ff0000',
-    '#00ced1',
-    '#ffa500',
-    '#ffff00',
-    '#00ff00',
-    '#0000ff',
-    '#ff00ff',
-    '#1e90ff',
-    '#dda0dd',
-    '#ff1493',
-    '#98fb98',
+	'#ffffff',
+	'#2f4f4f',
+	'#800000',
+	'#006400',
+	'#d2b48c',
+	'#ff0000',
+	'#00ced1',
+	'#ffa500',
+	'#ffff00',
+	'#00ff00',
+	'#0000ff',
+	'#ff00ff',
+	'#1e90ff',
+	'#dda0dd',
+	'#ff1493',
+	'#98fb98',
 ];
 
 /**

@@ -2,13 +2,7 @@ import {Point} from '@flatten-js/core';
 import {Actor} from 'xstate';
 import type {ScreenCanvasDrawController} from '../../src/drawControllers/screenCanvas.drawController';
 import {InputController} from '../../src/inputController/input-controller';
-import {
-    getScreenCanvasDrawController,
-    setActiveToolActor,
-    setEntities,
-    setInputController,
-    setScreenCanvasDrawController,
-} from '../../src/state';
+import {setActiveToolActor, setEntities, setInputController, setScreenCanvasDrawController,} from '../../src/state';
 import {Tool} from '../../src/tools';
 import {TOOL_STATE_MACHINES} from '../../src/tools/tool.consts';
 import {ScreenCanvasDrawController as ScreenCanvasDrawControllerMock} from '../mocks/drawControllers/screenCanvas.drawController';
@@ -18,16 +12,14 @@ export function initApplication(): InputController {
 	const inputController = new InputController();
 	setInputController(inputController);
 	setEntities([], true); // Creates the first undo entry
-	getScreenCanvasDrawController().setCanvasSize(new Point(CANVAS_WIDTH, CANVAS_HEIGHT));
+
+	const canvasSize = new Point(CANVAS_WIDTH, CANVAS_HEIGHT);
 
 	const lineToolActor = new Actor(TOOL_STATE_MACHINES[Tool.LINE]);
 	lineToolActor.start();
 	setActiveToolActor(lineToolActor);
 	setScreenCanvasDrawController(
-		new ScreenCanvasDrawControllerMock(
-			null,
-			getScreenCanvasDrawController().getCanvasSize()
-		) as unknown as ScreenCanvasDrawController
+		new ScreenCanvasDrawControllerMock(null, canvasSize) as unknown as ScreenCanvasDrawController
 	);
 	return inputController;
 }

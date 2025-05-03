@@ -11,12 +11,20 @@ jobs:
 
     steps:
       - name: 📥 Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 🟢 Set up Node.js 22
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      - name: ♻️ Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
 
       - name: 📦 Install dependencies
         run: npm ci
@@ -27,12 +35,12 @@ jobs:
       - name: 🛠️ Build project
         run: npm run build
 
-      - name: 🛑 Disable Jekyll
+      - name: 🛑 Disable Jekyll (for GitHub Pages)
         run: echo > dist/.nojekyll
 
       - name: 🚀 Deploy to GitHub Pages
-        if: success()
-        uses: peaceiris/actions-gh-pages@v3
+        if: success() && github.ref == 'refs/heads/master'
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist

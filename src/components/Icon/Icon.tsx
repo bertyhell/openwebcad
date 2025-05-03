@@ -25,6 +25,7 @@ import FolderTickIcon from 'teenyicons/outline/folder-tick.svg?react';
 import FolderXIcon from 'teenyicons/outline/folder-x.svg?react';
 import FolderIcon from 'teenyicons/outline/folder.svg?react';
 import GithubIcon from 'teenyicons/outline/github.svg?react';
+import GridLayoutIcon from 'teenyicons/outline/grid-layout.svg?react';
 import ImageIcon from 'teenyicons/outline/image.svg?react';
 import JavascriptIcon from 'teenyicons/outline/javascript.svg?react';
 import LayersDifferenceIcon from 'teenyicons/outline/layers-difference.svg?react';
@@ -98,6 +99,7 @@ enum IconName {
 	EyeClosed = 'EyeClosed',
 	Lock = 'Lock',
 	Unlock = 'Unlock',
+	GridLayout = 'GridLayout',
 
 	// Solid icons
 	SolidDown = 'SolidDown',
@@ -156,6 +158,7 @@ const icons: Record<IconName, FC> = {
 	[IconName.EyeClosed]: EyeClosedIcon,
 	[IconName.Lock]: LockIcon,
 	[IconName.Unlock]: UnlockIcon,
+	[IconName.GridLayout]: GridLayoutIcon,
 
 	// Solid icons
 	[IconName.SolidDown]: SolidDownIcon,

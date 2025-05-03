@@ -1,13 +1,14 @@
 import type {StateMachine} from 'xstate'; /* eslint-disable @typescript-eslint/no-explicit-any */
 import {Tool} from '../tools';
-import {alignBottomToolStateMachine} from "./align-bottom-tool.ts";
-import {alignCenterHorizontalToolStateMachine} from "./align-center-horizontal-tool.ts";
-import {alignLeftToolStateMachine} from "./align-left-tool.ts";
-import {alignCenterVerticalToolStateMachine} from "./align-middle-vertical-tool.ts";
-import {alignRightToolStateMachine} from "./align-right-tool.ts";
-import {alignTopToolStateMachine} from "./align-top-tool.ts";
+import {alignBottomToolStateMachine} from './align-bottom-tool.ts';
+import {alignCenterHorizontalToolStateMachine} from './align-center-horizontal-tool.ts';
+import {alignLeftToolStateMachine} from './align-left-tool.ts';
+import {alignCenterVerticalToolStateMachine} from './align-middle-vertical-tool.ts';
+import {alignRightToolStateMachine} from './align-right-tool.ts';
+import {alignTopToolStateMachine} from './align-top-tool.ts';
+import {arrayToolStateMachine} from './array-tool.ts';
 import {circleToolStateMachine} from './circle-tool';
-import {copyToolStateMachine} from "./copy-tool.ts";
+import {copyToolStateMachine} from './copy-tool.ts';
 import {eraserToolStateMachine} from './eraser-tool';
 import {imageImportToolStateMachine} from './image-import-tool';
 import {lineToolStateMachine} from './line-tool';
@@ -68,4 +69,5 @@ export const TOOL_STATE_MACHINES: Record<
 	[Tool.ALIGN_TOP]: alignTopToolStateMachine,
 	[Tool.ALIGN_CENTER_VERTICAL]: alignCenterVerticalToolStateMachine,
 	[Tool.ALIGN_BOTTOM]: alignBottomToolStateMachine,
+	[Tool.ARRAY]: arrayToolStateMachine,
 };

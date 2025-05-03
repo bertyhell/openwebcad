@@ -309,6 +309,12 @@ export class InputController {
 
 	public handleEnterKey() {
 		// submit the text as input to the active tool and clear the input field
+		const activeTool = getActiveToolActor();
+		const activeToolSnapshot = activeTool?.getSnapshot();
+		const activeToolState = activeToolSnapshot?.value;
+		const activeToolCanHandleTextInput =
+			!!activeToolSnapshot?.machine?.states?.[activeToolState]?.config?.on?.TEXT_INPUT;
+
 		if (this.text === '') {
 			console.log('ENTER: ', {
 				text: this.text,
@@ -318,6 +324,17 @@ export class InputController {
 			getActiveToolActor()?.send({
 				type: ActorEvent.ENTER,
 			});
+		} else if (activeToolCanHandleTextInput) {
+			console.log('TEXT_INPUT: ', {
+				text: this.text,
+				activeTool: getActiveToolActor(),
+			});
+			// Send the text to the active tool
+			getActiveToolActor()?.send({
+				type: ActorEvent.TEXT_INPUT,
+				value: this.text,
+			} as TextInputEvent);
+			this.text = '';
 		} else if (this.getToolNamesFromPrefixText()[0]) {
 			// User entered a command. eg: L or LINE
 			const toolName = this.getToolNamesFromPrefixText()[0];

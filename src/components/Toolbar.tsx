@@ -206,6 +206,18 @@ export const Toolbar: FC = () => {
 					active={activeToolLocal === Tool.ROTATE}
 					label="Rotate"
 				/>
+				<Button
+					className="w-full"
+					title="Array"
+					dataId="array-button"
+					iconName={IconName.GridLayout}
+					onClick={(evt) => {
+						evt.stopPropagation();
+						handleToolClick(Tool.ARRAY);
+					}}
+					active={activeToolLocal === Tool.ARRAY}
+					label="Array copy"
+				/>
 
 				<Button
 					className="mt-2 w-full"

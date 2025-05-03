@@ -13,7 +13,7 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: 🟢 Set up Node.js 22
+      - name: 🟢 Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -35,10 +35,10 @@ jobs:
       - name: 🛠️ Build project
         run: npm run build
 
-      - name: 🛑 Disable Jekyll (for GitHub Pages)
+      - name: 🛑 Disable Jekyll
         run: echo > dist/.nojekyll
 
-      - name: 🚀 Deploy to GitHub Pages
+      - name: 🚀 Deploy
         if: success() && github.ref == 'refs/heads/master'
         uses: peaceiris/actions-gh-pages@v4
         with:

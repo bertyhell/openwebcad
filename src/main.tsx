@@ -7,7 +7,9 @@ import App from './App.tsx';
 import {ScreenCanvasDrawController} from './drawControllers/screenCanvas.drawController';
 import {draw} from './helpers/draw';
 import {findClosestEntity} from './helpers/find-closest-entity';
-import {getEntitiesFromLocalStorage,} from "./helpers/import-export-handlers/import-entities-from-local-storage.ts";
+import {getNewLayer} from './helpers/get-new-layer.ts';
+import type {JsonDrawingFileDeserialized} from './helpers/import-export-handlers/export-entities-to-json.ts';
+import {getEntitiesAndLayersFromLocalStorage} from './helpers/import-export-handlers/import-entities-from-local-storage.ts';
 import {trackHoveredSnapPoint} from './helpers/track-hovered-snap-points';
 import {InputController} from './inputController/input-controller.ts';
 import {
@@ -25,6 +27,7 @@ import {
 	setHoveredSnapPoints,
 	setInputController,
 	setLastDrawTimestamp,
+	setLayers,
 	setScreenCanvasDrawController,
 } from './state';
 import {Tool} from './tools';
@@ -112,8 +115,13 @@ function initApplication() {
 		setEntities([], true); // Creates the first undo entry
 
 		// Load the last drawing from local storage
-		getEntitiesFromLocalStorage().then((entities) => {
-			setEntities(entities, true);
+		getEntitiesAndLayersFromLocalStorage().then((file: JsonDrawingFileDeserialized) => {
+			setEntities(file.entities, true);
+			let layers = file.layers;
+			if (layers.length === 0) {
+				layers = [getNewLayer()];
+			}
+			setLayers(layers);
 		});
 		const screenCanvasDrawController = new ScreenCanvasDrawController(context);
 		setScreenCanvasDrawController(screenCanvasDrawController);

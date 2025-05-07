@@ -1,7 +1,7 @@
 import type {CSSProperties, FC, ReactNode} from 'react';
 import useLocalStorageState from 'use-local-storage-state';
-import {LOCAL_STORAGE_KEY} from '../helpers/import-export-handlers/export-entities-to-local-storage.ts';
-import {keyboardHandler} from "../helpers/keyboard-handler.ts";
+import {LOCAL_STORAGE_KEY} from '../App.types.ts';
+import {keyboardHandler} from '../helpers/keyboard-handler.ts';
 import {Button} from './Button.tsx';
 import {Icon, IconName} from './Icon/Icon.tsx';
 

@@ -1,20 +1,24 @@
-import {getEntitiesFromJsonString} from "./import-entities-from-json.ts";
-import {setEntities} from "../../state.ts";
-import type {Entity} from "../../entities/Entity.ts";
+import {LOCAL_STORAGE_KEY} from '../../App.types.ts';
+import {setEntities, setLayers} from '../../state.ts';
+import {getNewLayer} from '../get-new-layer.ts';
+import {getEntitiesAndLayersFromJsonString} from './import-entities-from-json.ts';
+import type {JsonDrawingFileDeserialized} from "./export-entities-to-json.ts";
 
-export enum LOCAL_STORAGE_KEY {
-	DRAWING = 'OPEN_WEB_CAD__DRAWING',
-};
-
-export async function importEntitiesFromLocalStorage(): Promise<void> {
-	const entities = await getEntitiesFromLocalStorage();
-	setEntities(entities);
+export async function importEntitiesAndLayersFromLocalStorage(): Promise<void> {
+	const file = await getEntitiesAndLayersFromLocalStorage();
+	setEntities(file.entities);
+	setLayers(file.layers);
 }
 
-export async function getEntitiesFromLocalStorage(): Promise<Entity[]> {
+export async function getEntitiesAndLayersFromLocalStorage(): Promise<JsonDrawingFileDeserialized> {
 	const json = localStorage.getItem(LOCAL_STORAGE_KEY.DRAWING);
 	if (!json) {
-		return [];
+		return {
+			entities: [],
+			layers: [getNewLayer()],
+		};
 	}
-	return (await getEntitiesFromJsonString(json)) || [];
+
+	const file = (await getEntitiesAndLayersFromJsonString(json)) || [];
+	return file;
 }

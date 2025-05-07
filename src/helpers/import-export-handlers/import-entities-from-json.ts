@@ -1,12 +1,12 @@
-import type {JsonDrawingFile} from './export-entities-to-json';
 import {compact} from 'es-toolkit';
-import {type Entity, EntityName, type JsonEntity} from '../../entities/Entity';
 import {ArcEntity, type ArcJsonData} from '../../entities/ArcEntity';
 import {CircleEntity, type CircleJsonData} from '../../entities/CircleEntity';
+import {type Entity, EntityName, type JsonEntity} from '../../entities/Entity';
 import {LineEntity, type LineJsonData} from '../../entities/LineEntity';
 import {PointEntity, type PointJsonData} from '../../entities/PointEntity';
-import {RectangleEntity, type RectangleJsonData,} from '../../entities/RectangleEntity';
-import {setEntities} from '../../state';
+import {RectangleEntity, type RectangleJsonData} from '../../entities/RectangleEntity';
+import {setEntities, setLayers} from '../../state';
+import type {JsonDrawingFileDeserialized, JsonDrawingFileSerialized} from './export-entities-to-json';
 
 /**
  * Open a file selection dialog to select *.json files
@@ -21,16 +21,19 @@ export function importEntitiesFromJsonFile(file: File | null | undefined) {
 		const reader = new FileReader();
 		reader.addEventListener('load', async () => {
 			const json = reader.result as string;
-			const entities = await getEntitiesFromJsonString(json);
-			setEntities(entities);
+			const file = await getEntitiesAndLayersFromJsonString(json);
+			setEntities(file.entities);
+			setLayers(file.layers);
 			resolve();
 		});
 		reader.readAsText(file, 'utf-8');
 	});
 }
 
-export async function getEntitiesFromJsonString(json: string): Promise<Entity[]> {
-	const data = JSON.parse(json) as JsonDrawingFile;
+export async function getEntitiesAndLayersFromJsonString(
+	json: string
+): Promise<JsonDrawingFileDeserialized> {
+	const data = JSON.parse(json) as JsonDrawingFileSerialized;
 
 	if (!data.entities) {
 		throw new Error('Invalid JSON file');
@@ -57,5 +60,9 @@ export async function getEntitiesFromJsonString(json: string): Promise<Entity[]>
 		})
 	);
 
-	return compact(await Promise.all(entityPromises));
+	const entities = compact(await Promise.all(entityPromises));
+	return {
+		entities,
+		layers: data.layers,
+	};
 }

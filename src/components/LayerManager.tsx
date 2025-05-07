@@ -1,5 +1,6 @@
 import type {FC, MouseEvent} from 'react';
 import type {Layer} from '../App.types.ts';
+import {getNewLayer} from '../helpers/get-new-layer.ts';
 import {getEntities, getLayers, getSelectedEntities, setEntities, setSelectedEntityIds,} from '../state.ts';
 import {Button} from './Button';
 import {IconName} from './Icon/Icon.tsx';
@@ -68,12 +69,7 @@ export const LayerManager: FC<LayerManagerProps> = ({
 
 	const handleCreateNewLayer = (evt: MouseEvent): void => {
 		evt.stopPropagation();
-		const newLayer: Layer = {
-			id: crypto.randomUUID(),
-			isLocked: false,
-			isVisible: true,
-			name: `New layer ${getLayers().length}${1}`,
-		};
+		const newLayer: Layer = getNewLayer();
 		setLayers([...getLayers(), newLayer]);
 	};
 

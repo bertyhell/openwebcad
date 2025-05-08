@@ -11,6 +11,7 @@ This is a React-based canvas drawing application that allows users to draw vario
 - Fullscreen canvas with a black background
 - Drawing tools: Line, Rectangle, Circle, measurements
 - Zoom and pan
+- Eraser tool to delete segments
 - Undo and redo
 - Choose angle guides
 - Draw with snap points for
@@ -27,7 +28,12 @@ This is a React-based canvas drawing application that allows users to draw vario
 - Move
 - Rotate
 - Scale
+- Align shapes to each other
+- Array copy linear
+- Array copy radial
 - Import images into the drawing
+- Import SVG files
+- Export to PDF
 - Export drawing as an SVG file
 - Export drawing as an PNG file
 - Save and load drawings from/to json files
@@ -38,11 +44,7 @@ This is a React-based canvas drawing application that allows users to draw vario
 ### Possible future feature ideas (TODO) in order of likelihood
 - Eraser tool to delete segments
   - Max distance to delete
-- Align shapes to each other
 - Layers for drawing shapes in different layers that can be toggled on or off
-- Array copy shapes
-- Array radial copy shapes
-- Copy
 - Mirror
 - Offset
 - Add text
@@ -60,10 +62,8 @@ This is a React-based canvas drawing application that allows users to draw vario
 - Edit existing lines and circles by dragging endpoints/middle points
 - Hatching and fill areas
 - gradient fills
-- Import SVG files
 - Import DXF files
 - Import DWG files
-- Export to PDF
 - Export to DWG
 - Export to DXF
 

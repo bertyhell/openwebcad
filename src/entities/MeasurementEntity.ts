@@ -2,14 +2,14 @@ import {Box, Line, Point, Segment, Vector} from '@flatten-js/core';
 import {minBy, round} from 'es-toolkit';
 import {max, min} from 'es-toolkit/compat';
 import {
-    ARROW_HEAD_LENGTH,
-    ARROW_HEAD_WIDTH,
-    MEASUREMENT_DECIMAL_PLACES,
-    MEASUREMENT_EXTENSION_LENGTH,
-    MEASUREMENT_FONT_SIZE,
-    MEASUREMENT_LABEL_OFFSET,
-    MEASUREMENT_ORIGIN_MARGIN,
-    TO_RADIANS,
+	ARROW_HEAD_LENGTH,
+	ARROW_HEAD_WIDTH,
+	MEASUREMENT_DECIMAL_PLACES,
+	MEASUREMENT_EXTENSION_LENGTH,
+	MEASUREMENT_FONT_SIZE,
+	MEASUREMENT_LABEL_OFFSET,
+	MEASUREMENT_ORIGIN_MARGIN,
+	TO_RADIANS,
 } from '../App.consts';
 import type {Shape, SnapPoint} from '../App.types';
 import type {DrawController} from '../drawControllers/DrawController';
@@ -381,6 +381,9 @@ export class MeasurementEntity implements Entity {
 	public static async fromJson(
 		jsonEntity: JsonEntity<MeasurementJsonData>
 	): Promise<MeasurementEntity> {
+		if (!jsonEntity.shapeData) {
+			throw new Error('Invalid JSON entity of type Measurement: missing shapeData');
+		}
 		const startPoint = new Point(
 			jsonEntity.shapeData.startPoint.x,
 			jsonEntity.shapeData.startPoint.y

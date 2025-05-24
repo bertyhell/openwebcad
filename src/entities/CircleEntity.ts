@@ -205,6 +205,9 @@ export class CircleEntity implements Entity {
 	public static async fromJson(
 		jsonEntity: JsonEntity<CircleJsonData>,
 	): Promise<CircleEntity> {
+		if (!jsonEntity.shapeData) {
+			throw new Error('Invalid JSON entity of type Circle: missing shapeData');
+		}
 		const center = new Point(
 			jsonEntity.shapeData.center.x,
 			jsonEntity.shapeData.center.y,

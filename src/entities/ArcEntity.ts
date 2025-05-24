@@ -239,6 +239,10 @@ export class ArcEntity implements Entity {
             throw new Error('Invalid Entity type in JSON');
         }
 
+        if (!jsonEntity.shapeData) {
+            throw new Error('Invalid JSON entity of type Arc: missing shapeData');
+        }
+
         const center = new Point(
             jsonEntity.shapeData.center.x,
             jsonEntity.shapeData.center.y,

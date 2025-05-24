@@ -46,6 +46,7 @@ export const Toolbar: FC = () => {
 	const [screenZoomLocal, setScreenZoomLocal] = useState<number>(1);
 	const [layersLocal, setLayersLocal] = useState<Layer[]>(getLayers());
 	const [activeLayerIdLocal, setActiveLayerIdLocal] = useState(getLayers()[0].id);
+	const [isCollapsed, setIsCollapsed] = useState(false);
 
 	const fetchStateUpdatesFromOutside = useCallback(() => {
 		setActiveToolLocal(getActiveToolActor()?.getSnapshot()?.context.type);
@@ -101,13 +102,28 @@ export const Toolbar: FC = () => {
 	};
 
 	return (
-		<div className="controls  top-0 left-0 flex flex-col gap-1 p-1 bg-slate-950 min-h-screen overscroll-y-auto">
+		<div
+			className={`controls top-0 left-0 flex flex-col gap-1 p-1 bg-slate-950 min-h-screen overscroll-y-auto ${
+				isCollapsed ? 'w-16' : ''
+			}`}
+		>
+			<Button
+				title="Toggle Sidebar"
+				dataId="toggle-sidebar-button"
+				iconName={IconName.Menu}
+				onClick={() => {
+					setIsCollapsed(!isCollapsed);
+				}}
+				className="self-end" // Align button to the right of the flex container
+				isCollapsed={isCollapsed}
+			/>
 			<DropdownButton
 				label="Draw"
 				title={'Draw tools'}
 				iconName={IconName.Edit}
-				defaultOpen
+				defaultOpen={!isCollapsed}
 				dataId="dropdown-draw-tools"
+				isCollapsed={isCollapsed}
 			>
 				<Button
 					className="w-full"
@@ -120,6 +136,7 @@ export const Toolbar: FC = () => {
 					}}
 					active={activeToolLocal === Tool.SELECT}
 					label="Select"
+					isCollapsed={isCollapsed}
 				/>
 				<Button
 					className="w-full"
@@ -132,6 +149,7 @@ export const Toolbar: FC = () => {
 					}}
 					active={activeToolLocal === Tool.LINE}
 					label="Line"
+					isCollapsed={isCollapsed}
 				/>
 				<Button
 					className="w-full"
@@ -144,6 +162,7 @@ export const Toolbar: FC = () => {
 					}}
 					active={activeToolLocal === Tool.RECTANGLE}
 					label="Rectangle"
+					isCollapsed={isCollapsed}
 				/>
 				<Button
 					className="w-full"
@@ -156,6 +175,7 @@ export const Toolbar: FC = () => {
 					}}
 					active={activeToolLocal === Tool.CIRCLE}
 					label="Circle"
+					isCollapsed={isCollapsed}
 				/>
 				<Button
 					className="mt-2 w-full"
@@ -169,6 +189,7 @@ export const Toolbar: FC = () => {
 					}}
 					active={activeToolLocal === Tool.MOVE}
 					label="Move"
+					isCollapsed={isCollapsed}
 				/>
 				<Button
 					className="w-full"
@@ -181,6 +202,7 @@ export const Toolbar: FC = () => {
 					}}
 					active={activeToolLocal === Tool.COPY}
 					label="Copy"
+					isCollapsed={isCollapsed}
 				/>
 				<Button
 					className="w-full"
@@ -193,6 +215,7 @@ export const Toolbar: FC = () => {
 					}}
 					active={activeToolLocal === Tool.SCALE}
 					label="Scale"
+					isCollapsed={isCollapsed}
 				/>
 				<Button
 					className="w-full"
@@ -205,6 +228,7 @@ export const Toolbar: FC = () => {
 					}}
 					active={activeToolLocal === Tool.ROTATE}
 					label="Rotate"
+					isCollapsed={isCollapsed}
 				/>
 				<Button
 					className="w-full"
@@ -217,6 +241,7 @@ export const Toolbar: FC = () => {
 					}}
 					active={activeToolLocal === Tool.ARRAY}
 					label="Array copy"
+					isCollapsed={isCollapsed}
 				/>
 
 				<Button
@@ -230,6 +255,7 @@ export const Toolbar: FC = () => {
 					}}
 					active={activeToolLocal === Tool.MEASUREMENT}
 					label="Measurement"
+					isCollapsed={isCollapsed}
 				/>
 				<Button
 					className="mt-2 w-full"
@@ -242,16 +268,24 @@ export const Toolbar: FC = () => {
 					}}
 					active={activeToolLocal === Tool.ERASER}
 					label="Eraser"
+					isCollapsed={isCollapsed}
 				/>
 			</DropdownButton>
 
-			<DropdownButton dataId="layers" label="Layers" iconName={IconName.AlignTextJustify}>
+			<DropdownButton
+				dataId="layers"
+				label="Layers"
+				iconName={IconName.AlignTextJustify}
+				isCollapsed={isCollapsed}
+				defaultOpen={!isCollapsed && false} // Retain original logic (false if not specified)
+			>
 				<LayerManager
 					className="w-full"
 					layers={layersLocal}
 					activeLayerId={activeLayerIdLocal}
 					setLayers={handleSetLayers}
 					setActiveLayerId={handleSetActiveLayerId}
+					// isCollapsed={isCollapsed} // LayerManager doesn't seem to need it based on current task
 				/>
 			</DropdownButton>
 
@@ -262,6 +296,7 @@ export const Toolbar: FC = () => {
 				iconName={IconName.ArrowLeftCircle}
 				onClick={() => undo()}
 				label="Undo"
+				isCollapsed={isCollapsed}
 			/>
 			<Button
 				title="Redo (ctrl + shift + z)"
@@ -269,6 +304,7 @@ export const Toolbar: FC = () => {
 				iconName={IconName.ArrowRightCircle}
 				onClick={() => redo()}
 				label="Redo"
+				isCollapsed={isCollapsed}
 			/>
 			<DropdownButton
 				className="mt-2"
@@ -276,6 +312,8 @@ export const Toolbar: FC = () => {
 				dataId="align-button"
 				label="Align"
 				iconName={IconName.AlignCenterHorizontal}
+				isCollapsed={isCollapsed}
+				defaultOpen={!isCollapsed && false}
 			>
 				<Button
 					className="w-full"
@@ -288,6 +326,7 @@ export const Toolbar: FC = () => {
 					}}
 					active={activeToolLocal === Tool.ALIGN_LEFT}
 					label="Left"
+					isCollapsed={isCollapsed}
 				/>
 				<Button
 					className="w-full"
@@ -300,6 +339,7 @@ export const Toolbar: FC = () => {
 					}}
 					active={activeToolLocal === Tool.ALIGN_CENTER_HORIZONTAL}
 					label="Center"
+					isCollapsed={isCollapsed}
 				/>
 				<Button
 					className="w-full"
@@ -312,6 +352,7 @@ export const Toolbar: FC = () => {
 					}}
 					active={activeToolLocal === Tool.ALIGN_RIGHT}
 					label="Right"
+					isCollapsed={isCollapsed}
 				/>
 				<Button
 					className="w-full"
@@ -324,6 +365,7 @@ export const Toolbar: FC = () => {
 					}}
 					active={activeToolLocal === Tool.ALIGN_TOP}
 					label="Top"
+					isCollapsed={isCollapsed}
 				/>
 				<Button
 					className="w-full"
@@ -336,6 +378,7 @@ export const Toolbar: FC = () => {
 					}}
 					active={activeToolLocal === Tool.ALIGN_CENTER_VERTICAL}
 					label="Middle"
+					isCollapsed={isCollapsed}
 				/>
 				<Button
 					className="w-full"
@@ -348,6 +391,7 @@ export const Toolbar: FC = () => {
 					}}
 					active={activeToolLocal === Tool.ALIGN_BOTTOM}
 					label="Bottom"
+					isCollapsed={isCollapsed}
 				/>
 			</DropdownButton>
 
@@ -359,6 +403,8 @@ export const Toolbar: FC = () => {
 				iconComponent={
 					<div className="w-5 h-5" style={{ backgroundColor: activeLineColorLocal }} />
 				}
+				isCollapsed={isCollapsed}
+				defaultOpen={!isCollapsed && false}
 			>
 				{COLOR_LIST.map((color) => (
 					<Button
@@ -372,6 +418,7 @@ export const Toolbar: FC = () => {
 							evt.stopPropagation();
 							setActiveLineColor(color);
 						}}
+						isCollapsed={isCollapsed}
 					/>
 				))}
 			</DropdownButton>
@@ -385,6 +432,8 @@ export const Toolbar: FC = () => {
 						style={{ borderTopWidth: `${activeLineWidthLocal}px` }}
 					/>
 				}
+				isCollapsed={isCollapsed}
+				defaultOpen={!isCollapsed && false}
 			>
 				{times<number>(9).map((width: number) => {
 					const lineWidth = width + 1;
@@ -406,6 +455,7 @@ export const Toolbar: FC = () => {
 								evt.stopPropagation();
 								setActiveLineWidth(lineWidth);
 							}}
+							isCollapsed={isCollapsed}
 						/>
 					);
 				})}
@@ -415,6 +465,8 @@ export const Toolbar: FC = () => {
 				iconComponent={<div className="w-5 text-blue-700">{`${angleStepLocal}°`}</div>}
 				label="Snap angles"
 				dataId="angle-guide-button"
+				isCollapsed={isCollapsed}
+				defaultOpen={!isCollapsed && false}
 			>
 				{[5, 15, 30, 45, 90].map((angle: number) => (
 					<Button
@@ -434,6 +486,7 @@ export const Toolbar: FC = () => {
 							handleAngleChanged(angle);
 						}}
 						active={angle === angleStepLocal}
+						isCollapsed={isCollapsed}
 					/>
 				))}
 			</DropdownButton>
@@ -442,6 +495,8 @@ export const Toolbar: FC = () => {
 				iconComponent={<div className="w-5 text-blue-700">{screenZoomLocal.toFixed(1)}</div>}
 				label="Zoom level"
 				dataId="zoom-level-button"
+				isCollapsed={isCollapsed}
+				defaultOpen={!isCollapsed && false}
 			>
 				{[20, 50, 75, 100, 150, 200, 400].map((zoom: number) => (
 					<Button
@@ -456,6 +511,7 @@ export const Toolbar: FC = () => {
 							setScreenZoomLocal(zoom / 100);
 						}}
 						active={zoom === screenZoomLocal}
+						isCollapsed={isCollapsed}
 					/>
 					// TODO add option to fit screen
 				))}
@@ -471,6 +527,7 @@ export const Toolbar: FC = () => {
 					await exportEntitiesToLocalStorage();
 				}}
 				label="Save drawing"
+				isCollapsed={isCollapsed}
 			/>
 
 			<Button
@@ -483,6 +540,7 @@ export const Toolbar: FC = () => {
 					setEntities([]);
 				}}
 				label="New drawing"
+				isCollapsed={isCollapsed}
 			/>
 
 			<DropdownButton
@@ -490,6 +548,8 @@ export const Toolbar: FC = () => {
 				title={'Import files'}
 				iconName={IconName.SendUp}
 				dataId="dropdown-import-tools"
+				isCollapsed={isCollapsed}
+				defaultOpen={!isCollapsed && false}
 			>
 				<Button
 					className="relative w-full"
@@ -498,6 +558,7 @@ export const Toolbar: FC = () => {
 					iconName={IconName.ImageSolid}
 					onClick={noopClickHandler}
 					label="image"
+					isCollapsed={isCollapsed}
 				>
 					<input
 						className="absolute inset-0 opacity-0"
@@ -523,6 +584,7 @@ export const Toolbar: FC = () => {
 					iconName={IconName.JavascriptSolid}
 					onClick={noopClickHandler}
 					label="JSON"
+					isCollapsed={isCollapsed}
 				>
 					<input
 						className="absolute inset-0 opacity-0"
@@ -541,6 +603,7 @@ export const Toolbar: FC = () => {
 					iconName={IconName.VectorDocumentSolid}
 					onClick={noopClickHandler}
 					label="SVG"
+					isCollapsed={isCollapsed}
 				>
 					<input
 						className="absolute inset-0 opacity-0"
@@ -559,6 +622,8 @@ export const Toolbar: FC = () => {
 				title={'Export file'}
 				iconName={IconName.SendDown}
 				dataId="dropdown-export-tools"
+				isCollapsed={isCollapsed}
+				defaultOpen={!isCollapsed && false}
 			>
 				<Button
 					className="w-full"
@@ -570,6 +635,7 @@ export const Toolbar: FC = () => {
 						await exportEntitiesToJsonFile();
 					}}
 					label="JSON"
+					isCollapsed={isCollapsed}
 				/>
 				<Button
 					className="w-full"
@@ -581,6 +647,7 @@ export const Toolbar: FC = () => {
 						exportEntitiesToSvgFile();
 					}}
 					label="SVG"
+					isCollapsed={isCollapsed}
 				/>
 				<Button
 					className="w-full"
@@ -592,6 +659,7 @@ export const Toolbar: FC = () => {
 						await exportEntitiesToPngFile();
 					}}
 					label="PNG"
+					isCollapsed={isCollapsed}
 				/>
 				<Button
 					className="w-full"
@@ -603,6 +671,7 @@ export const Toolbar: FC = () => {
 						await exportEntitiesToPdfFile();
 					}}
 					label="PDF"
+					isCollapsed={isCollapsed}
 				/>
 			</DropdownButton>
 
@@ -616,6 +685,7 @@ export const Toolbar: FC = () => {
 					window.open('https://github.com/bertyhell/openwebcad', '_blank');
 				}}
 				label="Github repository"
+				isCollapsed={isCollapsed}
 			/>
 		</div>
 	);

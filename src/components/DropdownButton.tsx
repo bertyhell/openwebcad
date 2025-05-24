@@ -18,6 +18,7 @@ interface DropdownButtonProps {
 	dataId: string;
 	children?: ReactNode;
 	defaultOpen?: boolean;
+	isCollapsed?: boolean;
 }
 
 export const DropdownButton: FC<DropdownButtonProps> = ({
@@ -31,6 +32,7 @@ export const DropdownButton: FC<DropdownButtonProps> = ({
 	dataId,
 	children,
 	defaultOpen = false,
+	isCollapsed = false,
 }) => {
 	const [isOpen, setIsOpen] = useLocalStorageState<boolean>(
 		`${LOCAL_STORAGE_KEY.DROPDOWN}___${dataId}`,
@@ -47,21 +49,32 @@ export const DropdownButton: FC<DropdownButtonProps> = ({
 			<Button
 				iconName={iconName}
 				iconComponent={iconComponent}
-				label={label}
+				label={!isCollapsed ? label : undefined}
 				title={title}
-				active={isOpen}
-				onClick={() => setIsOpen(!isOpen)}
+				active={!isCollapsed && isOpen}
+				onClick={() => {
+					if (!isCollapsed) {
+						setIsOpen(!isOpen);
+					} else {
+						setIsOpen(false); // Ensure it's closed when collapsed
+					}
+				}}
 				style={buttonStyle}
 				className={'w-full data-[active=true]:bg-blue-950 data-[active=true]:text-white'}
+				isCollapsed={isCollapsed} // Pass down for Button's own label handling
 			/>
-			<Icon name={IconName.SolidDownSmall} className={'absolute top-2.5 right-1 text-blue-700'} />
-			{isOpen && (
+			{!isCollapsed && <Icon name={IconName.SolidDownSmall} className={'absolute top-2.5 right-1 text-blue-700'} />}
+			{!isCollapsed && isOpen && (
 				<div
 					className="flex flex-row flex-wrap max-w-72 gap-1 pl-1 pb-6"
-					onClick={() => setIsOpen(false)}
-					onKeyUp={keyboardHandler(() => setIsOpen(false))}
+					onClick={() => {
+						if (!isCollapsed) setIsOpen(false);
+					}}
+					onKeyUp={keyboardHandler(() => {
+						if (!isCollapsed) setIsOpen(false);
+					})}
 				>
-					{children}
+					{!isCollapsed && children}
 				</div>
 			)}
 		</div>

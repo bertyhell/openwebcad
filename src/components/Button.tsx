@@ -18,6 +18,7 @@ interface ButtonProps {
 	type?: 'regular' | 'transparent';
 	left?: ReactNode;
 	right?: ReactNode;
+	isCollapsed?: boolean;
 }
 
 export const Button: FC<ButtonProps> = ({
@@ -36,6 +37,7 @@ export const Button: FC<ButtonProps> = ({
 	size = 'regular',
 	left = null,
 	right = null,
+	isCollapsed = false,
 }) => {
 	const classParts = [
 		'font-semibold py-4 h-10 flex flex-row justify-start w-full items-center hover:bg-blue-500 hover:text-white hover:border-transparent',
@@ -72,7 +74,7 @@ export const Button: FC<ButtonProps> = ({
 						/>
 					))}
 				<div className="flex flex-row flex-nowrap">{left}</div>
-				{label && <span className="text-nowrap flex-grow text-left">{label}</span>}
+				{!isCollapsed && label && <span className="text-nowrap flex-grow text-left">{label}</span>}
 				{children}
 				<div className="flex flex-row flex-nowrap">{right}</div>
 			</button>

@@ -468,9 +468,9 @@ export class ScreenCanvasDrawController implements DrawController {
         this.context.beginPath();
         screenPoints.forEach((screenPoint, index) => {
             if (index === 0) {
-                this.context.moveTo(screenPoint.x, screenPoint.y);
+                this.context.moveTo(screenPoint.x, this.canvasSize.y - screenPoint.y);
             } else {
-                this.context.lineTo(screenPoint.x, screenPoint.y);
+                this.context.lineTo(screenPoint.x, this.canvasSize.y - screenPoint.y);
             }
         });
         this.context.closePath();

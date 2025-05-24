@@ -197,20 +197,25 @@ export const setActiveToolActor = (
 	newToolActor: Actor<any>,
 	triggerReact = true
 ) => {
-	getActiveToolActor()?.stop();
+	const oldToolActor = getActiveToolActor();
+	oldToolActor?.stop();
 
 	activeToolActor = newToolActor;
-	activeToolActor.subscribe(
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		(state: MachineSnapshot<any, any, any, any, any, any, any, any>) => {
-			const stateInstructions = Object.values(state?.getMeta() as Record<string, StateMetaData>)[0]
-				?.instructions;
+	activeToolActor.subscribe({
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			next: (state: MachineSnapshot<any, any, any, any, any, any, any, any>) => {
+				const stateInstructions = Object.values(state?.getMeta() as Record<string, StateMetaData>)[0]
+					?.instructions;
 
-			if (getLastStateInstructions() === stateInstructions) {
-				return;
+				if (getLastStateInstructions() === stateInstructions) {
+					return;
+				}
+
+				setLastStateInstructions(stateInstructions || null);
+			},
+			error: (err) => {
+				console.error('Error in tool actor', {err, newToolActor});
 			}
-
-			setLastStateInstructions(stateInstructions || null);
 		}
 	);
 	activeToolActor.start();
@@ -355,7 +360,7 @@ function trackUndoState(variable: StateVariable, value: any) {
 	}
 
 	// Push the new undo state
-	undoStack.push({ variable: variable, value: value });
+	undoStack.push({variable: variable, value: value});
 }
 
 function updateStates(undoState: UndoState) {

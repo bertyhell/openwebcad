@@ -221,6 +221,9 @@ export class ImageEntity implements Entity {
 	}
 
 	public static async fromJson(jsonEntity: JsonEntity<ImageJsonData>): Promise<ImageEntity> {
+		if (!jsonEntity.shapeData) {
+			throw new Error('Invalid JSON entity of type Image: missing shapeData');
+		}
 		const rectangle = new Polygon(
 			jsonEntity.shapeData.points.map((point) => new Point(point.x, point.y))
 		);

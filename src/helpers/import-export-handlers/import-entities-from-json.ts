@@ -5,7 +5,7 @@ import {type Entity, EntityName, type JsonEntity} from '../../entities/Entity';
 import {LineEntity, type LineJsonData} from '../../entities/LineEntity';
 import {PointEntity, type PointJsonData} from '../../entities/PointEntity';
 import {RectangleEntity, type RectangleJsonData} from '../../entities/RectangleEntity';
-import {setEntities, setLayers} from '../../state.ts';
+import {setActiveLayerId, setEntities, setLayers} from '../../state.ts';
 import type {JsonDrawingFileDeserialized, JsonDrawingFileSerialized} from "./export-entities-to-json.ts";
 
 /**
@@ -24,6 +24,7 @@ export function importEntitiesFromJsonFile(file: File | null | undefined) {
 			const file = await getEntitiesAndLayersFromJsonString(json);
 			setEntities(file.entities);
 			setLayers(file.layers);
+			setActiveLayerId(file.layers[0].id);
 			resolve();
 		});
 		reader.readAsText(file, 'utf-8');

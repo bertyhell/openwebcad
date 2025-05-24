@@ -20,6 +20,7 @@ import {
 	getLastDrawTimestamp,
 	getScreenCanvasDrawController,
 	getSnapPoint,
+	setActiveLayerId,
 	setActiveToolActor,
 	setCanvas,
 	setEntities,
@@ -122,6 +123,7 @@ function initApplication() {
 				layers = [getNewLayer()];
 			}
 			setLayers(layers);
+			setActiveLayerId(layers[0].id);
 		});
 		const screenCanvasDrawController = new ScreenCanvasDrawController(context);
 		setScreenCanvasDrawController(screenCanvasDrawController);

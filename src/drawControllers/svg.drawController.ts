@@ -159,7 +159,7 @@ export class SvgDrawController implements DrawController {
 	public drawLine(startPoint: Point, endPoint: Point): void {
 		const [canvasStartPoint, canvasEndPoint] = this.worldsToTargets([startPoint, endPoint]);
 		this.svgStrings.push(
-			`<line x1="${canvasStartPoint.x}" y1="${canvasStartPoint.y}" x2="${canvasEndPoint.x}" y2="${canvasEndPoint.y}" stroke="${this.lineColor}" stroke-width="${this.lineWidth}" stroke-dasharray="${this.lineDash.join(',')}" />`
+			`<line x1="${canvasStartPoint.x}" y1="${canvasStartPoint.y}" x2="${canvasEndPoint.x}" y2="${canvasEndPoint.y}" stroke="${this.lineColor}" stroke-width="${this.lineWidth}" stroke-dasharray="${this.lineDash.join(',')}" stroke-linecap="round" />`
 		);
 	}
 
@@ -190,12 +190,12 @@ export class SvgDrawController implements DrawController {
 		const largeArcFlag = Math.abs(sweep) > Math.PI ? '1' : '0';
 		const sweepFlag = counterClockwise ? '0' : '1'; // SVG: 0 = CCW, 1 = CW
 
-		const attributes = `fill="none" stroke="${this.lineColor}" stroke-width="${this.lineWidth}" stroke-dasharray="${this.lineDash.join(',')}"`;
+		const attributes = `fill="none" stroke="${this.lineColor}" stroke-width="${this.lineWidth}" stroke-dasharray="${this.lineDash.join(',')}" stroke-linecap="round"`;
 		let svgPath: string;
 		if (isLengthEqual(sweep, 2 * Math.PI)) {
 			svgPath = `<circle cx="${canvasCenterPoint.x}" cy="${canvasCenterPoint.y}" r="${canvasRadius}" ${attributes} />`;
 		} else {
-			svgPath = `<path d="M${startPoint.x},${startPoint.y} A${canvasRadius},${canvasRadius} 0 ${largeArcFlag},${sweepFlag} ${endPoint.x},${endPoint.y}" ${attributes}  />`;
+			svgPath = `<path d="M${startPoint.x},${startPoint.y} A${canvasRadius},${canvasRadius} 0 ${largeArcFlag},${sweepFlag} ${endPoint.x},${endPoint.y}" ${attributes} />`;
 		}
 
 		// Push the SVG path data string to the svgStrings array

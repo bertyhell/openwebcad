@@ -140,9 +140,6 @@ export class ArrowHeadEntity implements Entity {
 	public static async fromJson(
 		jsonEntity: JsonEntity<ArrowHeadJsonData>
 	): Promise<ArrowHeadEntity> {
-		if (!jsonEntity.shapeData) {
-			throw new Error('Invalid JSON entity of type Arrow: missing shapeData');
-		}
 		const p1 = new Point(jsonEntity.shapeData.p1.x, jsonEntity.shapeData.p1.y);
 		const p2 = new Point(jsonEntity.shapeData.p2.x, jsonEntity.shapeData.p2.y);
 		const p3 = new Point(jsonEntity.shapeData.p3.x, jsonEntity.shapeData.p3.y);

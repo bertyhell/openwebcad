@@ -5,9 +5,8 @@ import {type Entity, EntityName, type JsonEntity} from '../../entities/Entity';
 import {LineEntity, type LineJsonData} from '../../entities/LineEntity';
 import {PointEntity, type PointJsonData} from '../../entities/PointEntity';
 import {RectangleEntity, type RectangleJsonData} from '../../entities/RectangleEntity';
-import {setActiveLayerId, setEntities, setLayers} from '../../state';
+import {setEntities, setLayers} from '../../state';
 import type {JsonDrawingFileDeserialized, JsonDrawingFileSerialized} from './export-entities-to-json';
-import {getNewLayer} from "../get-new-layer.ts";
 
 /**
  * Open a file selection dialog to select *.json files
@@ -25,7 +24,6 @@ export function importEntitiesFromJsonFile(file: File | null | undefined) {
 			const file = await getEntitiesAndLayersFromJsonString(json);
 			setEntities(file.entities);
 			setLayers(file.layers);
-			setActiveLayerId(file.layers[0].id);
 			resolve();
 		});
 		reader.readAsText(file, 'utf-8');
@@ -63,12 +61,8 @@ export async function getEntitiesAndLayersFromJsonString(
 	);
 
 	const entities = compact(await Promise.all(entityPromises));
-	let layers = data.layers;
-	if (data.layers.length === 0) {
-		layers = [getNewLayer()];
-	}
 	return {
 		entities,
-		layers,
+		layers: data.layers,
 	};
 }

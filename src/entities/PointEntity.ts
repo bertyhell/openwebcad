@@ -133,9 +133,6 @@ export class PointEntity implements Entity {
   public static async fromJson(
     jsonEntity: JsonEntity<PointJsonData>,
   ): Promise<PointEntity> {
-    if (!jsonEntity.shapeData) {
-      throw new Error('Invalid JSON entity of type Point: missing shapeData');
-    }
     const point = new Point(
       jsonEntity.shapeData.point.x,
       jsonEntity.shapeData.point.y,

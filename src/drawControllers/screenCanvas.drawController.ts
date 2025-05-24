@@ -239,17 +239,17 @@ export class ScreenCanvasDrawController implements DrawController {
         this.context.lineTo(screenEndPoint.x, this.canvasSize.y - screenEndPoint.y);
         this.context.stroke();
 
-const lineWidth = this.context.lineWidth;
-this.context.fillStyle = this.context.strokeStyle;
-// Draw circle at start point
-this.context.beginPath();
-this.context.arc(screenStartPoint.x, this.canvasSize.y - screenStartPoint.y, lineWidth / 2, 0, 2 * Math.PI);
-this.context.fill();
+        const lineWidth = this.context.lineWidth;
+        const style = this.context.strokeStyle as string;
+        this._drawRoundedEndpoint(screenStartPoint, lineWidth, style);
+        this._drawRoundedEndpoint(screenEndPoint, lineWidth, style);
+    }
 
-// Draw circle at end point
-this.context.beginPath();
-this.context.arc(screenEndPoint.x, this.canvasSize.y - screenEndPoint.y, lineWidth / 2, 0, 2 * Math.PI);
-this.context.fill();
+    private _drawRoundedEndpoint(screenPoint: Point, lineWidth: number, style: string): void {
+        this.context.fillStyle = style;
+        this.context.beginPath();
+        this.context.arc(screenPoint.x, this.canvasSize.y - screenPoint.y, lineWidth / 2, 0, 2 * Math.PI);
+        this.context.fill();
     }
 
     /**
@@ -296,26 +296,22 @@ this.context.fill();
         );
         this.context.stroke();
 
-const lineWidth = this.context.lineWidth;
-this.context.fillStyle = this.context.strokeStyle;
-const startPoint = new Point(
-    screenCenterPoint.x + screenRadius * Math.cos(startAngle),
-    screenCenterPoint.y - screenRadius * Math.sin(startAngle) // Y is inverted in canvas
-);
-const endPoint = new Point(
-    screenCenterPoint.x + screenRadius * Math.cos(endAngle),
-    screenCenterPoint.y - screenRadius * Math.sin(endAngle) // Y is inverted in canvas
-);
+        const lineWidth = this.context.lineWidth;
+        const style = this.context.strokeStyle as string;
 
-// Draw circle at start point
-this.context.beginPath();
-this.context.arc(startPoint.x, this.canvasSize.y - startPoint.y, lineWidth / 2, 0, 2 * Math.PI);
-this.context.fill();
+        // Calculate arc endpoints
+        const startScreenX = screenCenterPoint.x + screenRadius * Math.cos(startAngle);
+        // Y is inverted in canvas, but also for the arc angles, so we subtract from canvasSize.y and then add sin
+        const startScreenY = (this.canvasSize.y - screenCenterPoint.y) + screenRadius * Math.sin(startAngle); 
+        const endScreenX = screenCenterPoint.x + screenRadius * Math.cos(endAngle);
+        const endScreenY = (this.canvasSize.y - screenCenterPoint.y) + screenRadius * Math.sin(endAngle);
 
-// Draw circle at end point
-this.context.beginPath();
-this.context.arc(endPoint.x, this.canvasSize.y - endPoint.y, lineWidth / 2, 0, 2 * Math.PI);
-this.context.fill();
+        // Convert back to Point objects, note that _drawRoundedEndpoint expects y to be from top of canvas
+        const arcStartPoint = new Point(startScreenX, this.canvasSize.y - startScreenY);
+        const arcEndPoint = new Point(endScreenX, this.canvasSize.y - endScreenY);
+        
+        this._drawRoundedEndpoint(arcStartPoint, lineWidth, style);
+        this._drawRoundedEndpoint(arcEndPoint, lineWidth, style);
     }
 
     /**

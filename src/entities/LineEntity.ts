@@ -186,9 +186,6 @@ export class LineEntity implements Entity {
 	}
 
 	public static async fromJson(jsonEntity: JsonEntity<LineJsonData>): Promise<LineEntity> {
-		if (!jsonEntity.shapeData) {
-			throw new Error('Invalid JSON entity of type Line: missing shapeData');
-		}
 		const startPoint = new Point(
 			jsonEntity.shapeData.startPoint.x,
 			jsonEntity.shapeData.startPoint.y

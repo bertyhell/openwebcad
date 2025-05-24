@@ -156,9 +156,6 @@ export class TextEntity implements Entity {
 	}
 
 	public static async fromJson(jsonEntity: JsonEntity<TextJsonData>): Promise<TextEntity> {
-		if (!jsonEntity.shapeData) {
-			throw new Error('Invalid JSON entity of type Text: missing shapeData');
-		}
 		const textEntity = new TextEntity(
 			jsonEntity.layerId || getActiveLayerId(),
 			jsonEntity.shapeData.label,

@@ -238,6 +238,18 @@ export class ScreenCanvasDrawController implements DrawController {
         this.context.moveTo(screenStartPoint.x, this.canvasSize.y - screenStartPoint.y);
         this.context.lineTo(screenEndPoint.x, this.canvasSize.y - screenEndPoint.y);
         this.context.stroke();
+
+const lineWidth = this.context.lineWidth;
+this.context.fillStyle = this.context.strokeStyle;
+// Draw circle at start point
+this.context.beginPath();
+this.context.arc(screenStartPoint.x, this.canvasSize.y - screenStartPoint.y, lineWidth / 2, 0, 2 * Math.PI);
+this.context.fill();
+
+// Draw circle at end point
+this.context.beginPath();
+this.context.arc(screenEndPoint.x, this.canvasSize.y - screenEndPoint.y, lineWidth / 2, 0, 2 * Math.PI);
+this.context.fill();
     }
 
     /**
@@ -283,6 +295,27 @@ export class ScreenCanvasDrawController implements DrawController {
             counterClockWise,
         );
         this.context.stroke();
+
+const lineWidth = this.context.lineWidth;
+this.context.fillStyle = this.context.strokeStyle;
+const startPoint = new Point(
+    screenCenterPoint.x + screenRadius * Math.cos(startAngle),
+    screenCenterPoint.y - screenRadius * Math.sin(startAngle) // Y is inverted in canvas
+);
+const endPoint = new Point(
+    screenCenterPoint.x + screenRadius * Math.cos(endAngle),
+    screenCenterPoint.y - screenRadius * Math.sin(endAngle) // Y is inverted in canvas
+);
+
+// Draw circle at start point
+this.context.beginPath();
+this.context.arc(startPoint.x, this.canvasSize.y - startPoint.y, lineWidth / 2, 0, 2 * Math.PI);
+this.context.fill();
+
+// Draw circle at end point
+this.context.beginPath();
+this.context.arc(endPoint.x, this.canvasSize.y - endPoint.y, lineWidth / 2, 0, 2 * Math.PI);
+this.context.fill();
     }
 
     /**

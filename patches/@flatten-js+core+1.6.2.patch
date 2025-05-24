@@ -1,0 +1,52 @@
+diff --git a/node_modules/@flatten-js/core/dist/main.cjs b/node_modules/@flatten-js/core/dist/main.cjs
+index 9ed46e1..d6b1b59 100644
+--- a/node_modules/@flatten-js/core/dist/main.cjs
++++ b/node_modules/@flatten-js/core/dist/main.cjs
+@@ -6601,7 +6601,7 @@ class Box extends Shape {
+ 
+         if (shape instanceof Flatten.Arc) {
+             return shape.vertices.every(vertex => this.contains(vertex)) &&
+-                shape.toSegments().every(segment => intersectSegment2Arc(segment, shape).length === 0)
++                this.toSegments().every(segment => intersectSegment2Arc(segment, shape).length === 0)
+         }
+ 
+         if (shape instanceof Flatten.Line || shape instanceof Flatten.Ray) {
+diff --git a/node_modules/@flatten-js/core/dist/main.mjs b/node_modules/@flatten-js/core/dist/main.mjs
+index 0d1bec8..12eb0a2 100644
+--- a/node_modules/@flatten-js/core/dist/main.mjs
++++ b/node_modules/@flatten-js/core/dist/main.mjs
+@@ -6597,7 +6597,7 @@ class Box extends Shape {
+ 
+         if (shape instanceof Flatten.Arc) {
+             return shape.vertices.every(vertex => this.contains(vertex)) &&
+-                shape.toSegments().every(segment => intersectSegment2Arc(segment, shape).length === 0)
++                this.toSegments().every(segment => intersectSegment2Arc(segment, shape).length === 0)
+         }
+ 
+         if (shape instanceof Flatten.Line || shape instanceof Flatten.Ray) {
+diff --git a/node_modules/@flatten-js/core/dist/main.umd.js b/node_modules/@flatten-js/core/dist/main.umd.js
+index a886341..8a0b6bb 100644
+--- a/node_modules/@flatten-js/core/dist/main.umd.js
++++ b/node_modules/@flatten-js/core/dist/main.umd.js
+@@ -6603,7 +6603,7 @@
+ 
+             if (shape instanceof Flatten.Arc) {
+                 return shape.vertices.every(vertex => this.contains(vertex)) &&
+-                    shape.toSegments().every(segment => intersectSegment2Arc(segment, shape).length === 0)
++                    this.toSegments().every(segment => intersectSegment2Arc(segment, shape).length === 0)
+             }
+ 
+             if (shape instanceof Flatten.Line || shape instanceof Flatten.Ray) {
+diff --git a/node_modules/@flatten-js/core/src/classes/box.js b/node_modules/@flatten-js/core/src/classes/box.js
+index af21b93..be48775 100644
+--- a/node_modules/@flatten-js/core/src/classes/box.js
++++ b/node_modules/@flatten-js/core/src/classes/box.js
+@@ -269,7 +269,7 @@ export class Box extends Shape {
+ 
+         if (shape instanceof Flatten.Arc) {
+             return shape.vertices.every(vertex => this.contains(vertex)) &&
+-                shape.toSegments().every(segment => intersectSegment2Arc(segment, shape).length === 0)
++                this.toSegments().every(segment => intersectSegment2Arc(segment, shape).length === 0)
+         }
+ 
+         if (shape instanceof Flatten.Line || shape instanceof Flatten.Ray) {

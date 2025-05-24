@@ -200,9 +200,18 @@ export class MeasurementEntity implements Entity {
 		const distance = String(
 			round(pointDistance(this.startPoint, this.endPoint), MEASUREMENT_DECIMAL_PLACES)
 		);
+		const originalTextDirection = normalUnit.rotate90CW();
+		const epsilon = 1e-6;
+		let finalTextDirection = originalTextDirection;
+		if (
+			originalTextDirection.x < -epsilon ||
+			(Math.abs(originalTextDirection.x) < epsilon && originalTextDirection.y > epsilon)
+		) {
+			finalTextDirection = new Vector(-originalTextDirection.x, -originalTextDirection.y);
+		}
 		drawController.drawText(distance, midpointMeasurementLineOffset, {
 			textAlign: 'center',
-			textDirection: normalUnit.rotate90CW(),
+			textDirection: finalTextDirection,
 			fontSize: MEASUREMENT_FONT_SIZE,
 			textColor: this.lineColor,
 		});

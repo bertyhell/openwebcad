@@ -237,13 +237,26 @@ export class SvgDrawController implements DrawController {
 		ctx.drawImage(imageElement, 0, 0);
 		const dataUri = canvas.toDataURL(); // Convert the image to Base64
 
-		const transform = angle
-			? `transform="rotate(${angle}, ${xMin + width / 2}, ${yMin + height / 2})"`
-			: '';
+		const svgWidth = width * this.getScreenScale();
+		const svgHeight = height * this.getScreenScale();
+
+		const worldCenterX = xMin + width / 2;
+		const worldCenterY = yMin + height / 2;
+
+		const targetCenter = this.worldToTarget(new Point(worldCenterX, worldCenterY));
+
+		const svgX = targetCenter.x - svgWidth / 2;
+		const svgY = targetCenter.y - svgHeight / 2;
+
+		let transformAttribute = '';
+		if (angle !== 0) {
+			const svgAngleDegrees = angle * (180 / Math.PI);
+			transformAttribute = `transform="rotate(${svgAngleDegrees}, ${targetCenter.x}, ${targetCenter.y})"`;
+		}
 
 		// noinspection HtmlUnknownAttribute
 		this.svgStrings.push(
-			`<image href="${dataUri}" x="${xMin}" y="${yMin}" width="${width}" height="${height}" ${transform} />`
+			`<image href="${dataUri}" x="${svgX}" y="${svgY}" width="${svgWidth}" height="${svgHeight}" ${transformAttribute} />`
 		);
 	}
 

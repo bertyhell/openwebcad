@@ -38,7 +38,12 @@ import {DropdownButton} from './DropdownButton.tsx';
 import {IconName} from './Icon/Icon.tsx';
 import {LayerManager} from './LayerManager.tsx';
 
-export const Toolbar: FC = () => {
+interface ToolbarProps {
+	isCollapsed: boolean;
+	setIsCollapsed: (value: boolean | ((prev: boolean) => boolean)) => void;
+}
+
+export const Toolbar: FC<ToolbarProps> = ({ isCollapsed, setIsCollapsed }) => {
 	const [activeToolLocal, setActiveToolLocal] = useState<Tool>(Tool.LINE);
 	const [angleStepLocal, setAngleStepLocal] = useState<number>(45);
 	const [activeLineColorLocal, setActiveLineColorLocal] = useState<string>('#FFF');
@@ -46,7 +51,7 @@ export const Toolbar: FC = () => {
 	const [screenZoomLocal, setScreenZoomLocal] = useState<number>(1);
 	const [layersLocal, setLayersLocal] = useState<Layer[]>(getLayers());
 	const [activeLayerIdLocal, setActiveLayerIdLocal] = useState(getLayers()[0].id);
-	const [isCollapsed, setIsCollapsed] = useState(false);
+	// Local isCollapsed state removed
 
 	const fetchStateUpdatesFromOutside = useCallback(() => {
 		setActiveToolLocal(getActiveToolActor()?.getSnapshot()?.context.type);
@@ -104,7 +109,7 @@ export const Toolbar: FC = () => {
 	return (
 		<div
 			className={`controls top-0 left-0 flex flex-col gap-1 p-1 bg-slate-950 min-h-screen overscroll-y-auto ${
-				isCollapsed ? 'w-16' : ''
+				isCollapsed ? 'w-10' : ''
 			}`}
 		>
 			<Button

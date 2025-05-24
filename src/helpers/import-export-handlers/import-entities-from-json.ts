@@ -5,9 +5,9 @@ import {type Entity, EntityName, type JsonEntity} from '../../entities/Entity';
 import {LineEntity, type LineJsonData} from '../../entities/LineEntity';
 import {PointEntity, type PointJsonData} from '../../entities/PointEntity';
 import {RectangleEntity, type RectangleJsonData} from '../../entities/RectangleEntity';
-import {setActiveLayerId, setEntities, setLayers} from '../../state.ts';
-import {getNewLayer} from '../get-new-layer.ts';
-import type {JsonDrawingFileDeserialized, JsonDrawingFileSerialized,} from './export-entities-to-json.ts';
+import {setActiveLayerId, setEntities, setLayers} from '../../state';
+import type {JsonDrawingFileDeserialized, JsonDrawingFileSerialized} from './export-entities-to-json';
+import {getNewLayer} from "../get-new-layer.ts";
 
 /**
  * Open a file selection dialog to select *.json files

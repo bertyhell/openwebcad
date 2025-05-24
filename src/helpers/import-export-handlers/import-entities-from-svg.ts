@@ -1,3 +1,4 @@
+import {toast} from 'react-toastify';
 import {CircleEntity} from '../../entities/CircleEntity';
 import type {Entity} from '../../entities/Entity';
 import {LineEntity} from '../../entities/LineEntity';
@@ -12,6 +13,7 @@ import {middle} from '../middle.ts';
 
 function svgChildrenToEntities(root: RootNode): Entity[] {
 	if (!root.children || !root.children?.[0]) {
+		toast.error('Failed to load SVG file since it appears to be empty');
 		console.error(new Error('Empty SVG file'));
 		return [];
 	}
@@ -84,6 +86,9 @@ function svgChildrenToEntities(root: RootNode): Entity[] {
 						entities.push(new LineEntity(getActiveLayerId(), startPoint, endPoint));
 					} else {
 						// stop
+						toast.error(
+							`Error processing SVG polygon: expected an even number of points, but got ${coords.length}`
+						);
 						console.error(`expected even number of points but got: ${coords.length}`);
 					}
 				}
@@ -108,31 +113,36 @@ export function importEntitiesFromSvgFile(file: File | null | undefined) {
 
 		const reader = new FileReader();
 		reader.addEventListener('load', async () => {
-			const svg = reader.result as string;
+			try {
+				const svg = reader.result as string;
 
-			const data = parse(svg);
+				const data = parse(svg);
 
-			const svgEntities: Entity[] = svgChildrenToEntities(data);
+				const svgEntities: Entity[] = svgChildrenToEntities(data);
 
-			// We still need to flip the image top to bottom since the coordinate system of svg has a y-axis that goes down
-			// And the world coordinate system of this application has a mathematical y-axis that goes up
-			const boundingBox = getBoundingBoxOfMultipleEntities(svgEntities);
-			const centerPoint = new Point(
-				middle(boundingBox.minX, boundingBox.maxX),
-				middle(boundingBox.minY, boundingBox.maxY)
-			);
+				// We still need to flip the image top to bottom since the coordinate system of svg has a y-axis that goes down
+				// And the world coordinate system of this application has a mathematical y-axis that goes up
+				const boundingBox = getBoundingBoxOfMultipleEntities(svgEntities);
+				const centerPoint = new Point(
+					middle(boundingBox.minX, boundingBox.maxX),
+					middle(boundingBox.minY, boundingBox.maxY)
+				);
 
-			const mirrorAxis = new LineEntity(
-				getActiveLayerId(),
-				centerPoint,
-				new Point(centerPoint.x + 1, centerPoint.y)
-			);
-			for (const svgEntity of svgEntities) {
-				svgEntity.mirror(mirrorAxis);
+				const mirrorAxis = new LineEntity(
+					getActiveLayerId(),
+					centerPoint,
+					new Point(centerPoint.x + 1, centerPoint.y)
+				);
+				for (const svgEntity of svgEntities) {
+					svgEntity.mirror(mirrorAxis);
+				}
+
+				setEntities([...getEntities(), ...svgEntities]);
+				resolve();
+			} catch (error) {
+				toast.error('Failed to load SVG file');
+				console.error(error);
 			}
-
-			setEntities([...getEntities(), ...svgEntities]);
-			resolve();
 		});
 		reader.readAsText(file, 'utf-8');
 	});

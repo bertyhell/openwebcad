@@ -1,6 +1,7 @@
 import {Point} from '@flatten-js/core';
 import {DEFAULT_TEXT_OPTIONS, type DrawController} from './DrawController';
 import {SVG_MARGIN} from '../App.consts.ts';
+import {toast} from 'react-toastify';
 import type {TextOptions} from '../entities/TextEntity.ts';
 import {triggerReactUpdate} from '../state.ts';
 import {StateVariable} from '../helpers/undo-stack.ts';
@@ -228,6 +229,7 @@ export class SvgDrawController implements DrawController {
 		canvas.height = imageElement.height;
 		const ctx = canvas.getContext('2d');
 		if (!ctx) {
+			toast.warn('Failed to create canvas context');
 			console.warn('Failed to create canvas context');
 			return;
 		}

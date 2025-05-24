@@ -18,6 +18,7 @@ import {rectangleToolStateMachine} from './rectangle-tool';
 import {rotateToolStateMachine} from './rotate-tool';
 import {scaleToolStateMachine} from './scale-tool';
 import {selectToolStateMachine} from './select-tool';
+import {peditToolStateMachine} from "./pedit-tool.ts";
 
 export const TOOL_STATE_MACHINES: Record<
 	Partial<Tool>,
@@ -70,4 +71,5 @@ export const TOOL_STATE_MACHINES: Record<
 	[Tool.ALIGN_CENTER_VERTICAL]: alignCenterVerticalToolStateMachine,
 	[Tool.ALIGN_BOTTOM]: alignBottomToolStateMachine,
 	[Tool.ARRAY]: arrayToolStateMachine,
+	[Tool.PEDIT]: peditToolStateMachine,
 };

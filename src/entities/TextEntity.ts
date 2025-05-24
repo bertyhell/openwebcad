@@ -37,10 +37,10 @@ export class TextEntity implements Entity {
 		};
 	}
 
-	public draw(drawController: DrawController): void {
+	public draw(drawController: DrawController, highlighted?: boolean, selected?: boolean): void {
 		drawController.setLineStyles(
-			isEntityHighlighted(this),
-			isEntitySelected(this),
+			highlighted ?? isEntityHighlighted(this),
+			selected ?? isEntitySelected(this),
 			this.lineColor,
 			this.lineWidth,
 			this.lineDash
@@ -156,6 +156,9 @@ export class TextEntity implements Entity {
 	}
 
 	public static async fromJson(jsonEntity: JsonEntity<TextJsonData>): Promise<TextEntity> {
+		if (!jsonEntity.shapeData) {
+			throw new Error('Invalid JSON entity of type Text: missing shapeData');
+		}
 		const textEntity = new TextEntity(
 			jsonEntity.layerId || getActiveLayerId(),
 			jsonEntity.shapeData.label,

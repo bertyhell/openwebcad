@@ -35,7 +35,7 @@ import {TOOL_STATE_MACHINES} from '../tools/tool.consts';
 import {ActorEvent} from '../tools/tool.types';
 import {Button} from './Button.tsx';
 import {DropdownButton} from './DropdownButton.tsx';
-import {IconName} from './Icon/Icon.tsx';
+import {Icon, IconName} from './Icon/Icon.tsx';
 import {LayerManager} from './LayerManager.tsx';
 
 export const Toolbar: FC = () => {
@@ -217,6 +217,18 @@ export const Toolbar: FC = () => {
 					}}
 					active={activeToolLocal === Tool.ARRAY}
 					label="Array copy"
+				/>
+				<Button
+					className="w-full"
+					title="Create polyline lines and arcs"
+					dataId="pedit-button"
+					iconComponent={<Icon name={IconName.HomeAlt} className="rotate-270" />}
+					onClick={(evt) => {
+						evt.stopPropagation();
+						handleToolClick(Tool.PEDIT);
+					}}
+					active={activeToolLocal === Tool.PEDIT}
+					label="Polyline edit"
 				/>
 
 				<Button

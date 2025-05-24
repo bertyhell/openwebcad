@@ -29,10 +29,10 @@ export class RectangleEntity implements Entity {
 		}
 	}
 
-	public draw(drawController: DrawController): void {
+	public draw(drawController: DrawController, highlighted?: boolean, selected?: boolean): void {
 		drawController.setLineStyles(
-			isEntityHighlighted(this),
-			isEntitySelected(this),
+			highlighted ?? isEntityHighlighted(this),
+			selected ?? isEntitySelected(this),
 			this.lineColor,
 			this.lineWidth,
 			this.lineDash
@@ -185,6 +185,9 @@ export class RectangleEntity implements Entity {
 	public static async fromJson(
 		jsonEntity: JsonEntity<RectangleJsonData>
 	): Promise<RectangleEntity> {
+		if (!jsonEntity.shapeData) {
+			throw new Error('Invalid JSON entity of type Rectangle: missing shapeData');
+		}
 		const rectangle = new Polygon(
 			jsonEntity.shapeData.points.map((point) => new Point(point.x, point.y))
 		);

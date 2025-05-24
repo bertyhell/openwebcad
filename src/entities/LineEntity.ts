@@ -28,10 +28,10 @@ export class LineEntity implements Entity {
 		}
 	}
 
-	public draw(drawController: DrawController): void {
+	public draw(drawController: DrawController, highlighted?: boolean, selected?: boolean): void {
 		drawController.setLineStyles(
-			isEntityHighlighted(this),
-			isEntitySelected(this),
+			highlighted ?? isEntityHighlighted(this),
+			selected ?? isEntitySelected(this),
 			this.lineColor,
 			this.lineWidth,
 			this.lineDash
@@ -186,6 +186,9 @@ export class LineEntity implements Entity {
 	}
 
 	public static async fromJson(jsonEntity: JsonEntity<LineJsonData>): Promise<LineEntity> {
+		if (!jsonEntity.shapeData) {
+			throw new Error('Invalid JSON entity of type Line: missing shapeData');
+		}
 		const startPoint = new Point(
 			jsonEntity.shapeData.startPoint.x,
 			jsonEntity.shapeData.startPoint.y

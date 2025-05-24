@@ -10,6 +10,7 @@ import {
 	MEASUREMENT_LABEL_OFFSET,
 	MEASUREMENT_ORIGIN_MARGIN,
 	TO_RADIANS,
+	EPSILON,
 } from '../App.consts';
 import type {Shape, SnapPoint} from '../App.types';
 import type {DrawController} from '../drawControllers/DrawController';
@@ -96,10 +97,12 @@ export class MeasurementEntity implements Entity {
 			(offsetStartPoint.x + offsetEndPoint.x) / 2,
 			(offsetStartPoint.y + offsetEndPoint.y) / 2
 		);
+		const textHeight = MEASUREMENT_FONT_SIZE;
+		const totalOffset = MEASUREMENT_LABEL_OFFSET + textHeight / 2;
 		const midpointMeasurementLineOffset = midpointMeasurementLine
 			.clone()
 			.translate(
-				vectorPerpendicularFromLineTowardsOffsetPointUnit.multiply(MEASUREMENT_LABEL_OFFSET)
+				vectorPerpendicularFromLineTowardsOffsetPointUnit.multiply(totalOffset)
 			);
 
 		return {
@@ -200,9 +203,17 @@ export class MeasurementEntity implements Entity {
 		const distance = String(
 			round(pointDistance(this.startPoint, this.endPoint), MEASUREMENT_DECIMAL_PLACES)
 		);
+		const originalTextDirection = normalUnit.rotate90CW();
+		let finalTextDirection = originalTextDirection;
+		if (
+			originalTextDirection.x < -EPSILON ||
+			(Math.abs(originalTextDirection.x) < EPSILON && originalTextDirection.y > EPSILON)
+		) {
+			finalTextDirection = new Vector(-originalTextDirection.x, -originalTextDirection.y);
+		}
 		drawController.drawText(distance, midpointMeasurementLineOffset, {
 			textAlign: 'center',
-			textDirection: normalUnit.rotate90CW(),
+			textDirection: finalTextDirection,
 			fontSize: MEASUREMENT_FONT_SIZE,
 			textColor: this.lineColor,
 		});

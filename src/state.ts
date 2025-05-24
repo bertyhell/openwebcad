@@ -1,6 +1,7 @@
 import type {Point} from '@flatten-js/core';
 import {isEqual} from 'es-toolkit';
 import type {Actor, MachineSnapshot} from 'xstate';
+import {toast} from 'react-toastify';
 import {type HoverPoint, HtmlEvent, type Layer, type SnapPoint, type StateMetaData,} from './App.types';
 import type {ScreenCanvasDrawController} from './drawControllers/screenCanvas.drawController';
 import type {Entity} from './entities/Entity';
@@ -214,6 +215,7 @@ export const setActiveToolActor = (
 				setLastStateInstructions(stateInstructions || null);
 			},
 			error: (err) => {
+				toast.error(`Error in tool actor: ${err?.message}`);
 				console.error('Error in tool actor', {err, newToolActor});
 			}
 		}

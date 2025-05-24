@@ -9,6 +9,7 @@ import {
 	SELECTION_RECTANGLE_WIDTH,
 } from '../App.consts';
 import {RectangleEntity} from '../entities/RectangleEntity';
+import {toast} from 'react-toastify';
 import {findClosestEntity} from '../helpers/find-closest-entity';
 import {
 	getActiveLayerId,
@@ -74,6 +75,7 @@ export function selectEntitiesInsideRectangle(
 		getEntities().map((entity): string | null => {
 			const layer = getLayers().find((layer) => layer.id === entity.layerId);
 			if (!layer) {
+				toast.error(`Failed to find layer for entity: ${entity?.id}`);
 				console.error('Failed to find layer for entity', entity);
 				return null;
 			}

@@ -1,3 +1,5 @@
+import {toast} from 'react-toastify';
+
 // A small type alias for clarity.
 type Point = { x: number; y: number };
 
@@ -455,6 +457,7 @@ export function svgPathToSegments(
 					break;
 				}
 				default: {
+					toast.error(`Unsupported SVG command type: ${type} ${args.join(' ')}`);
 					console.error(`unsupported SVG command type: ${type} ${args.join(' ')}`);
 					// Unsupported commands can be skipped.
 					idx = args.length;

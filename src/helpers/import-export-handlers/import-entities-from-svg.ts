@@ -2,6 +2,7 @@ import {CircleEntity} from '../../entities/CircleEntity';
 import type {Entity} from '../../entities/Entity';
 import {LineEntity} from '../../entities/LineEntity';
 import {RectangleEntity} from '../../entities/RectangleEntity';
+import {toast} from 'react-toastify';
 import {getActiveLayerId, getEntities, setEntities} from '../../state';
 
 import {Point} from '@flatten-js/core';
@@ -12,6 +13,7 @@ import {middle} from '../middle.ts';
 
 function svgChildrenToEntities(root: RootNode): Entity[] {
 	if (!root.children || !root.children?.[0]) {
+		toast.error('Failed to load SVG file since it appears to be empty');
 		console.error(new Error('Empty SVG file'));
 		return [];
 	}
@@ -84,6 +86,7 @@ function svgChildrenToEntities(root: RootNode): Entity[] {
 						entities.push(new LineEntity(getActiveLayerId(), startPoint, endPoint));
 					} else {
 						// stop
+						toast.error(`Error processing SVG polygon: expected an even number of points, but got ${coords.length}`);
 						console.error(`expected even number of points but got: ${coords.length}`);
 					}
 				}

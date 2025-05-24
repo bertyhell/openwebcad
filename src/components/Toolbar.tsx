@@ -109,7 +109,7 @@ export const Toolbar: FC<ToolbarProps> = ({ isCollapsed, setIsCollapsed }) => {
 	return (
 		<div
 			className={`controls top-0 left-0 flex flex-col gap-1 p-1 bg-slate-950 min-h-screen overscroll-y-auto ${
-				isCollapsed ? 'w-10' : ''
+				isCollapsed ? 'w-12' : ''
 			}`}
 		>
 			<Button

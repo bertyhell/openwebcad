@@ -70,7 +70,7 @@ export const Button: FC<ButtonProps> = ({
 					(iconName && (
 						<Icon
 							name={iconName}
-							className={`${iconClassname} text-blue-700 ${active ? 'text-white' : ''} ${size === 'small' ? 'w-4' : 'w-5'}`}
+							className={`${iconClassname} text-blue-700 ${active ? 'text-white' : ''} ${size === 'small' ? 'min-w-4' : 'min-w-5'}`}
 						/>
 					))}
 				<div className="flex flex-row flex-nowrap">{left}</div>

@@ -1,7 +1,7 @@
 import './App.css';
+import {useState} from 'react';
 import {ToastContainer} from 'react-toastify';
 import {Toolbar} from './components/Toolbar.tsx';
-import {useState} from 'react';
 
 function App() {
 	const [isCollapsed, setIsCollapsed] = useState(false);
@@ -9,7 +9,7 @@ function App() {
 	return (
 		<>
 			<div
-				className={`overflow-y-scroll h-lvh pb-12 fixed top-0 left-0 z-10 ${isCollapsed ? 'w-10' : 'w-80'}`}
+				className={`overflow-y-scroll h-lvh pb-12 fixed top-0 left-0 z-10 ${isCollapsed ? 'w-12' : 'w-80'}`}
 				style={{ scrollbarWidth: 'none' }}
 			>
 				<Toolbar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
@@ -18,7 +18,7 @@ function App() {
 			{/* Its left margin is adjusted based on the toolbar's collapsed state. */}
 			<div
 				id="canvas-container"
-				className={`pt-2 pr-2 pb-2 ${isCollapsed ? 'ml-10' : 'ml-80'}`}
+				className={`pt-2 pb-2 ${isCollapsed ? 'ml-12' : 'ml-80'}`}
 				style={{ height: '100vh', boxSizing: 'border-box' }} // Ensure it takes up space
 			>
 				{/* Placeholder for canvas or other main content */}

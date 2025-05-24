@@ -339,14 +339,14 @@ export class MeasurementEntity implements Entity {
 			offsetEndPointMargin,
 		} = drawPoints;
 
-		const lineStartToEnd = new Line(offsetStartPoint, offsetEndPoint);
-		const horizontalLineDistanceInfo = lineStartToEnd.distanceTo(shape);
+		const mainSegment = new Segment(offsetStartPoint, offsetEndPoint);
+		const horizontalLineDistanceInfo = mainSegment.distanceTo(shape);
 
-		const leftVerticalLine = new Line(offsetStartPointMargin, offsetStartPointExtend);
-		const leftVerticalLineDistanceInfo = leftVerticalLine.distanceTo(shape);
+		const leftExtensionSegment = new Segment(offsetStartPointMargin, offsetStartPointExtend);
+		const leftVerticalLineDistanceInfo = leftExtensionSegment.distanceTo(shape);
 
-		const rightVerticalLine = new Line(offsetEndPointMargin, offsetEndPointExtend);
-		const rightVerticalLineDistanceInfo = rightVerticalLine.distanceTo(shape);
+		const rightExtensionSegment = new Segment(offsetEndPointMargin, offsetEndPointExtend);
+		const rightVerticalLineDistanceInfo = rightExtensionSegment.distanceTo(shape);
 
 		return minBy(
 			[horizontalLineDistanceInfo, leftVerticalLineDistanceInfo, rightVerticalLineDistanceInfo],
@@ -369,9 +369,38 @@ export class MeasurementEntity implements Entity {
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	public containsPointOnShape(_point: Point): boolean {
-		throw new Error('containsPointOnShape for MeasurementEntity not yet implemented');
-		// return this.segment.contains(point);
+	public containsPointOnShape(point: Point): boolean {
+		const drawPoints = this.getDrawPoints();
+
+		if (!drawPoints) {
+			return false; // No visual representation, so no point can be on it.
+		}
+
+		const {
+			offsetStartPoint,
+			offsetEndPoint,
+			offsetStartPointMargin,
+			offsetStartPointExtend,
+			offsetEndPointMargin,
+			offsetEndPointExtend,
+		} = drawPoints;
+
+		const measurementLine = new Segment(offsetStartPoint, offsetEndPoint);
+		if (measurementLine.contains(point)) {
+			return true;
+		}
+
+		const extensionLine1 = new Segment(offsetStartPointMargin, offsetStartPointExtend);
+		if (extensionLine1.contains(point)) {
+			return true;
+		}
+
+		const extensionLine2 = new Segment(offsetEndPointMargin, offsetEndPointExtend);
+		if (extensionLine2.contains(point)) {
+			return true;
+		}
+
+		return false;
 	}
 
 	public async toJson(): Promise<JsonEntity<MeasurementJsonData> | null> {

@@ -1,7 +1,7 @@
 import {Point} from '@flatten-js/core';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import {Actor} from 'xstate';
+import {Actor, type MachineSnapshot} from 'xstate';
 import {HIGHLIGHT_ENTITY_DISTANCE, SNAP_POINT_DISTANCE, TOOLBAR_WIDTH} from './App.consts';
 import App from './App.tsx';
 import {ScreenCanvasDrawController} from './drawControllers/screenCanvas.drawController';
@@ -20,6 +20,7 @@ import {
 	getLastDrawTimestamp,
 	getScreenCanvasDrawController,
 	getSnapPoint,
+	setActiveLayerId,
 	setActiveToolActor,
 	setCanvas,
 	setEntities,
@@ -49,7 +50,13 @@ function startDrawLoop(
 	const elapsedTime = timestamp - lastDrawTimestamp;
 	setLastDrawTimestamp(timestamp);
 
-	if (getActiveToolActor()?.getSnapshot().can({ type: ActorEvent.DRAW })) {
+	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+	const activeToolSnapshot: MachineSnapshot<any, any, any, any, any, any, any, any> | undefined =
+		getActiveToolActor()?.getSnapshot();
+	if (
+		activeToolSnapshot?.status === 'active' &&
+		activeToolSnapshot?.can({ type: ActorEvent.DRAW })
+	) {
 		getActiveToolActor()?.send({
 			type: ActorEvent.DRAW,
 			drawController: screenCanvasDrawController,
@@ -122,6 +129,7 @@ function initApplication() {
 				layers = [getNewLayer()];
 			}
 			setLayers(layers);
+			setActiveLayerId(layers[0].id);
 		});
 		const screenCanvasDrawController = new ScreenCanvasDrawController(context);
 		setScreenCanvasDrawController(screenCanvasDrawController);

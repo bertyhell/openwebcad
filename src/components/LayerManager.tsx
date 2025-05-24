@@ -1,7 +1,7 @@
 import type {FC, MouseEvent} from 'react';
 import type {Layer} from '../App.types.ts';
 import {getNewLayer} from '../helpers/get-new-layer.ts';
-import {getEntities, getLayers, getSelectedEntities, setEntities, setSelectedEntityIds,} from '../state.ts';
+import {getActiveLayerId, getEntities, getLayers, getSelectedEntities, setEntities, setSelectedEntityIds,} from '../state.ts';
 import {Button} from './Button';
 import {IconName} from './Icon/Icon.tsx';
 
@@ -45,6 +45,9 @@ export const LayerManager: FC<LayerManagerProps> = ({
 		const entitiesNotOnLayer = getEntities().filter((entity) => entity.layerId !== layerId);
 		setEntities(entitiesNotOnLayer);
 		setLayers(getLayers().filter((layer) => layer.id !== layerId));
+		if (getActiveLayerId() === layerId) {
+			setActiveLayerId(getLayers()[0].id);
+		}
 	};
 
 	const handleShowHideLayer = (evt: MouseEvent, layerId: string): void => {
@@ -71,6 +74,7 @@ export const LayerManager: FC<LayerManagerProps> = ({
 		evt.stopPropagation();
 		const newLayer: Layer = getNewLayer();
 		setLayers([...getLayers(), newLayer]);
+		setActiveLayerId(newLayer.id);
 	};
 
 	return (

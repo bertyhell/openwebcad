@@ -128,7 +128,9 @@ export class MeasurementEntity implements Entity {
 	private drawArrowHead = (
 		drawController: DrawController,
 		startPoint: Point,
-		endPoint: Point
+		endPoint: Point,
+		isHighlighted: boolean,
+		isSelected: boolean
 	): void => {
 		const screenScale = drawController.getScreenScale();
 		const vectorFromEndToStart = new Vector(endPoint, startPoint);
@@ -145,7 +147,7 @@ export class MeasurementEntity implements Entity {
 			.clone()
 			.translate(perpendicularVector2.multiply(ARROW_HEAD_WIDTH * screenScale));
 
-		drawController.setLineStyles(false, false, this.lineColor, this.lineWidth, []);
+		drawController.setLineStyles(isHighlighted, isSelected, this.lineColor, this.lineWidth, this.lineDash);
 		drawController.drawLine(endPoint, leftCornerOfArrow);
 		drawController.drawLine(endPoint, rightCornerOfArrow);
 		drawController.drawLine(leftCornerOfArrow, rightCornerOfArrow);
@@ -171,9 +173,11 @@ export class MeasurementEntity implements Entity {
 		if (isPointEqual(this.startPoint, this.endPoint)) {
 			return; // We can't draw a measurement with 0 length
 		}
+		const isHighlighted = isEntityHighlighted(this);
+		const isSelected = isEntitySelected(this);
 		drawController.setLineStyles(
-			isEntityHighlighted(this),
-			isEntitySelected(this),
+			isHighlighted,
+			isSelected,
 			this.lineColor,
 			this.lineWidth,
 			this.lineDash
@@ -194,8 +198,9 @@ export class MeasurementEntity implements Entity {
 			normalUnit,
 		} = drawPoints;
 
-		this.drawArrowHead(drawController, offsetStartPoint, offsetEndPoint);
-		this.drawArrowHead(drawController, offsetEndPoint, offsetStartPoint);
+		this.drawArrowHead(drawController, offsetStartPoint, offsetEndPoint, isHighlighted, isSelected);
+		this.drawArrowHead(drawController, offsetEndPoint, offsetStartPoint, isHighlighted, isSelected);
+		drawController.setLineStyles(isHighlighted, isSelected, this.lineColor, this.lineWidth, this.lineDash);
 		drawController.drawLine(offsetStartPoint, offsetEndPoint);
 		drawController.drawLine(offsetStartPointMargin, offsetStartPointExtend);
 		drawController.drawLine(offsetEndPointMargin, offsetEndPointExtend);

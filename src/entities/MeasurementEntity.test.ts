@@ -327,3 +327,113 @@ describe('MeasurementEntity.containsPointOnShape', () => {
         expect(measurement.containsPointOnShape(pointOnExtLine2Mid)).toBe(true);
     });
 });
+
+// Mock isEntitySelected and isEntityHighlighted for the selection styling tests
+// Need to use a different path for the mock to avoid conflicts with the global mock
+vi.mock('../state.ts', async (importOriginal) => {
+    const actual = await importOriginal() as typeof import('../state.ts');
+    return {
+        ...actual, // Preserve other exports
+        isEntitySelected: vi.fn(), // Mock this specifically
+        isEntityHighlighted: vi.fn(), // Mock this specifically
+    };
+});
+
+
+describe('MeasurementEntity draw() styling for selection', () => {
+    const mockDrawController = {
+        drawText: vi.fn(),
+        setLineStyles: vi.fn(),
+        setFillStyles: vi.fn(),
+        drawLine: vi.fn(),
+        fillPolygon: vi.fn(),
+        getScreenScale: vi.fn().mockReturnValue(1),
+    };
+
+    // Import here to use the mocked version of isEntitySelected
+    const { isEntitySelected, isEntityHighlighted } = await vi.importActual<typeof import('../state.ts')>('../state.ts');
+
+
+    beforeEach(() => {
+        vi.clearAllMocks(); // Clears all mocks including those from vi.mock
+        // Reset specific mock implementations for each test if needed
+        (isEntitySelected as vi.Mock).mockReturnValue(false); // Default to not selected
+        (isEntityHighlighted as vi.Mock).mockReturnValue(false); // Default to not highlighted
+        mockDrawController.drawText.mockClear();
+        mockDrawController.setLineStyles.mockClear();
+        mockDrawController.setFillStyles.mockClear();
+        mockDrawController.drawLine.mockClear();
+        mockDrawController.fillPolygon.mockClear();
+        mockDrawController.getScreenScale.mockClear().mockReturnValue(1);
+    });
+
+    it('should apply selection styling to all components when selected', () => {
+        (isEntitySelected as vi.Mock).mockReturnValue(true);
+        (isEntityHighlighted as vi.Mock).mockReturnValue(false);
+
+        const measurement = new MeasurementEntity('mockLayerId', new Point(0, 0), new Point(10, 0), new Point(5, 5));
+        measurement.lineColor = '#FF0000'; // Use a distinct color for the test
+        measurement.lineWidth = 2;
+        measurement.lineDash = [10, 5]; // Custom dash for non-selected state
+        
+        measurement.draw(mockDrawController as any);
+
+        // Initial setLineStyles for the entity overall (before arrowheads or main line)
+        // This one sets up for the arrow heads first in the current implementation
+        expect(mockDrawController.setLineStyles).toHaveBeenCalledTimes(4); // 1 before arrows, 2 for arrows, 1 for main line + extensions
+
+        // 1. First call to setLineStyles (for the first arrowhead)
+        // drawArrowHead calls setLineStyles
+        expect(mockDrawController.setLineStyles).toHaveBeenNthCalledWith(1, false, true, measurement.lineColor, measurement.lineWidth, measurement.lineDash);
+        
+        // 2. Second call to setLineStyles (for the second arrowhead)
+        expect(mockDrawController.setLineStyles).toHaveBeenNthCalledWith(2, false, true, measurement.lineColor, measurement.lineWidth, measurement.lineDash);
+
+        // 3. Third call to setLineStyles (for the main measurement line and extension lines)
+        // This is the one set in the draw() method itself before drawing the main line and extension lines
+        expect(mockDrawController.setLineStyles).toHaveBeenNthCalledWith(3, false, true, measurement.lineColor, measurement.lineWidth, measurement.lineDash);
+        
+        // 4. Fourth call to setLineStyles (also for main measurement line and extension lines, called again before drawLine)
+        // This is set inside draw() method before drawing main line, and again before extension lines
+        expect(mockDrawController.setLineStyles).toHaveBeenNthCalledWith(4, false, true, measurement.lineColor, measurement.lineWidth, measurement.lineDash);
+
+
+        // drawLine calls:
+        // Arrowheads: 2 lines per arrowhead * 2 arrowheads = 4 calls
+        // Main measurement line: 1 call
+        // Extension lines: 2 calls
+        // Total: 4 + 1 + 2 = 7 calls
+        expect(mockDrawController.drawLine).toHaveBeenCalledTimes(7);
+
+        // fillPolygon calls:
+        // Arrowheads: 1 fill per arrowhead * 2 arrowheads = 2 calls
+        expect(mockDrawController.fillPolygon).toHaveBeenCalledTimes(2);
+    });
+
+    it('should NOT apply selection styling when not selected', () => {
+        (isEntitySelected as vi.Mock).mockReturnValue(false);
+        (isEntityHighlighted as vi.Mock).mockReturnValue(false);
+
+        const measurement = new MeasurementEntity('mockLayerId', new Point(0, 0), new Point(10, 0), new Point(5, 5));
+        measurement.lineColor = '#00FF00';
+        measurement.lineWidth = 1;
+        measurement.lineDash = undefined; // Explicitly no dash for non-selected
+
+        measurement.draw(mockDrawController as any);
+
+        expect(mockDrawController.setLineStyles).toHaveBeenCalledTimes(4);
+
+        // Check each call to ensure isSelected is false and lineDash is as defined
+        mockDrawController.setLineStyles.mock.calls.forEach(callArgs => {
+            expect(callArgs[0]).toBe(false); // isHighlighted
+            expect(callArgs[1]).toBe(false); // isSelected
+            expect(callArgs[2]).toBe(measurement.lineColor);
+            expect(callArgs[3]).toBe(measurement.lineWidth);
+            expect(callArgs[4]).toBe(measurement.lineDash); // Should be undefined
+        });
+        
+        // Verify other drawing operations still happen
+        expect(mockDrawController.drawLine).toHaveBeenCalledTimes(7);
+        expect(mockDrawController.fillPolygon).toHaveBeenCalledTimes(2);
+    });
+});

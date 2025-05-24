@@ -41,6 +41,9 @@ export class MeasurementEntity implements Entity {
 	}
 
 	private getDrawPoints() {
+		if (isPointEqual(this.startPoint, this.endPoint)) {
+			return null;
+		}
 		const lineStartToEnd = new Line(this.startPoint, this.endPoint);
 		const [, segment] = this.offsetPoint.distanceTo(lineStartToEnd);
 		const closestPointToOffsetOnLine = segment.end;
@@ -260,6 +263,10 @@ export class MeasurementEntity implements Entity {
 	public intersectsWithBox(box: Box): boolean {
 		const drawPoints = this.getDrawPoints();
 
+		if (!drawPoints) {
+			return false;
+		}
+
 		const measurementLines = [
 			new Segment(drawPoints.offsetStartPoint, drawPoints.offsetEndPoint),
 			new Segment(drawPoints.offsetStartPointMargin, drawPoints.offsetStartPointExtend),
@@ -281,6 +288,10 @@ export class MeasurementEntity implements Entity {
 	public isContainedInBox(box: Box): boolean {
 		const drawPoints = this.getDrawPoints();
 
+		if (!drawPoints) {
+			return false; 
+		}
+
 		const measurementLines = [
 			new Segment(drawPoints.offsetStartPoint, drawPoints.offsetEndPoint),
 			new Segment(drawPoints.offsetStartPointMargin, drawPoints.offsetStartPointExtend),
@@ -298,6 +309,10 @@ export class MeasurementEntity implements Entity {
 
 	public getBoundingBox(): Box {
 		const drawPoints = this.getDrawPoints();
+
+		if (!drawPoints) {
+			return new Box(this.startPoint.x, this.startPoint.y, this.startPoint.x, this.startPoint.y);
+		}
 
 		const extremePoints = [
 			drawPoints.offsetStartPointMargin,

@@ -3,12 +3,23 @@ import { Point, Vector } from '@flatten-js/core';
 import { MeasurementEntity } from './MeasurementEntity';
 import { MEASUREMENT_FONT_SIZE } from '../App.consts'; // For default options
 
-// Mock dependencies from '../state.ts'
-vi.mock('../state.ts', () => ({
-    getActiveLayerId: () => 'mockLayerId',
-    isEntityHighlighted: () => false,
-    isEntitySelected: () => false,
-}));
+// Consolidated mock for ../state.ts
+vi.mock('../state.ts', async () => {
+    return {
+        getActiveLayerId: () => 'mockLayerIdGlobal', // Global default
+        isEntityHighlighted: vi.fn(), // Mock for styling tests and potentially others
+        isEntitySelected: vi.fn(),  // Mock for styling tests and potentially others
+        // Add other functions from state.ts if they are used in tests and need default mock behavior
+    };
+});
+
+// Helper function for point comparison
+function expectPointToBeCloseTo(actualPoint: Point | undefined, expectedPoint: Point, precision = 3) {
+    expect(actualPoint).toBeDefined();
+    if (!actualPoint) return; // Should be caught by expect(actualPoint).toBeDefined()
+    expect(actualPoint.x).toBeCloseTo(expectedPoint.x, precision);
+    expect(actualPoint.y).toBeCloseTo(expectedPoint.y, precision);
+}
 
 describe('MeasurementEntity text orientation in draw() method', () => {
     // Mock DrawController
@@ -23,6 +34,9 @@ describe('MeasurementEntity text orientation in draw() method', () => {
         // For now, these cover the primary interactions.
     };
 
+    // Import the mocked functions for use in this suite
+    const { isEntitySelected, isEntityHighlighted } = await vi.importActual<typeof import('../state.ts')>('../state.ts');
+
     beforeEach(() => {
         // Reset mocks before each test
         mockDrawController.drawText.mockClear();
@@ -31,10 +45,14 @@ describe('MeasurementEntity text orientation in draw() method', () => {
         mockDrawController.drawLine.mockClear();
         mockDrawController.fillPolygon.mockClear();
         mockDrawController.getScreenScale.mockClear().mockReturnValue(1);
+        // Set default mock values for this suite
+        (isEntitySelected as vi.Mock).mockReturnValue(false);
+        (isEntityHighlighted as vi.Mock).mockReturnValue(false);
     });
 
     const runTest = (startPoint: Point, endPoint: Point, offsetPoint: Point, expectedDirectionX: number, expectedDirectionY: number) => {
-        const measurement = new MeasurementEntity('mockLayerId', startPoint, endPoint, offsetPoint);
+        const measurement = new MeasurementEntity('mockLayerIdGlobal', startPoint, endPoint, offsetPoint);
+        const measurement = new MeasurementEntity('mockLayerIdGlobal', startPoint, endPoint, offsetPoint);
         measurement.lineColor = '#fff'; // Set a default color
         measurement.draw(mockDrawController as any);
 
@@ -89,7 +107,7 @@ describe('MeasurementEntity text orientation in draw() method', () => {
     });
 
     it('should not draw text if start and end points are the same', () => {
-        const measurement = new MeasurementEntity('mockLayerId', new Point(0,0), new Point(0,0), new Point(5,5));
+        const measurement = new MeasurementEntity('mockLayerIdGlobal', new Point(0,0), new Point(0,0), new Point(5,5));
         measurement.draw(mockDrawController as any);
         expect(mockDrawController.drawText).not.toHaveBeenCalled();
     });
@@ -114,21 +132,22 @@ describe('MeasurementEntity.distanceTo', () => {
         const distanceInfo = measurement.distanceTo(testPoint);
         expect(distanceInfo).not.toBeNull();
         expect(distanceInfo![0]).toBeCloseTo(10);
-        expect(distanceInfo![1].ps.equalTo(testPoint)).toBe(true); // Segment starts at testPoint
-        expect(distanceInfo![1].pe.equalTo(new Point(50, 20))).toBe(true); // Segment ends at closest point on main segment
+        expectPointToBeCloseTo(distanceInfo![1].ps, testPoint); // Segment starts at testPoint
+        expectPointToBeCloseTo(distanceInfo![1].pe, new Point(50, 20)); // Segment ends at closest point on main segment
     });
 
     it('should return correct distance for a point closest to an endpoint of the main horizontal segment', () => {
         // Main segment from (0,20) to (100,20)
+        // Extension line end: (100,20) + (0,1)*8 = (100,28)
         const measurement = createMeasurement(new Point(0,0), new Point(100,0), new Point(0,20)); 
         const testPoint = new Point(110, 30); // Diagonally off the endPoint (100,20)
-                                              // dx = 10, dy = 10. Distance = sqrt(10^2 + 10^2) = sqrt(200)
+                                              // dx = 10, dy = 2. Distance = sqrt(10^2 + 2^2) = sqrt(104)
         
         const distanceInfo = measurement.distanceTo(testPoint);
         expect(distanceInfo).not.toBeNull();
-        expect(distanceInfo![0]).toBeCloseTo(Math.sqrt(200));
-        expect(distanceInfo![1].ps.equalTo(testPoint)).toBe(true);
-        expect(distanceInfo![1].pe.equalTo(new Point(100, 20))).toBe(true); // Closest to offsetEndPoint
+        expect(distanceInfo![0]).toBeCloseTo(Math.sqrt(104));
+        expectPointToBeCloseTo(distanceInfo![1].ps, testPoint);
+        expectPointToBeCloseTo(distanceInfo![1].pe, new Point(100, 28)); // Closest to offsetEndPointExtend
     });
 
     it('should return correct distance for a point closest to one of the vertical extension lines', () => {
@@ -156,8 +175,8 @@ describe('MeasurementEntity.distanceTo', () => {
         const distanceInfo = measurement.distanceTo(testPoint);
         expect(distanceInfo).not.toBeNull();
         expect(distanceInfo![0]).toBeCloseTo(5);
-        expect(distanceInfo![1].ps.equalTo(testPoint)).toBe(true);
-        expect(distanceInfo![1].pe.equalTo(new Point(0, 15))).toBe(true); // Closest point on segment (0,2)-(0,28)
+        expectPointToBeCloseTo(distanceInfo![1].ps, testPoint);
+        expectPointToBeCloseTo(distanceInfo![1].pe, new Point(0, 15)); // Closest point on segment (0,2)-(0,28)
     });
 
     it('should return correct distance for a point collinear with main segment but outside', () => {
@@ -168,8 +187,8 @@ describe('MeasurementEntity.distanceTo', () => {
         const distanceInfo = measurement.distanceTo(testPoint);
         expect(distanceInfo).not.toBeNull();
         expect(distanceInfo![0]).toBeCloseTo(20);
-        expect(distanceInfo![1].ps.equalTo(testPoint)).toBe(true);
-        expect(distanceInfo![1].pe.equalTo(new Point(100, 20))).toBe(true);
+        expectPointToBeCloseTo(distanceInfo![1].ps, testPoint);
+        expectPointToBeCloseTo(distanceInfo![1].pe, new Point(100, 20));
     });
     
     it('should return null for a zero-length measurement', () => {
@@ -192,8 +211,8 @@ describe('MeasurementEntity.distanceTo', () => {
         const distanceInfo = measurement.distanceTo(testPoint);
         expect(distanceInfo).not.toBeNull();
         expect(distanceInfo![0]).toBeCloseTo(5);
-        expect(distanceInfo![1].ps.equalTo(testPoint)).toBe(true);
-        expect(distanceInfo![1].pe.equalTo(new Point(100, 15))).toBe(true); // Closest point on segment (100,2)-(100,28)
+        expectPointToBeCloseTo(distanceInfo![1].ps, testPoint);
+        expectPointToBeCloseTo(distanceInfo![1].pe, new Point(100, 15)); // Closest point on segment (100,2)-(100,28)
     });
 });
 
@@ -328,19 +347,10 @@ describe('MeasurementEntity.containsPointOnShape', () => {
     });
 });
 
-// Mock isEntitySelected and isEntityHighlighted for the selection styling tests
-// Need to use a different path for the mock to avoid conflicts with the global mock
-vi.mock('../state.ts', async (importOriginal) => {
-    const actual = await importOriginal() as typeof import('../state.ts');
-    return {
-        ...actual, // Preserve other exports
-        isEntitySelected: vi.fn(), // Mock this specifically
-        isEntityHighlighted: vi.fn(), // Mock this specifically
-    };
-});
-
-
 describe('MeasurementEntity draw() styling for selection', () => {
+    // Import the mocked functions for use in this suite
+    const { isEntitySelected, isEntityHighlighted } = await vi.importActual<typeof import('../state.ts')>('../state.ts');
+
     const mockDrawController = {
         drawText: vi.fn(),
         setLineStyles: vi.fn(),
@@ -350,28 +360,28 @@ describe('MeasurementEntity draw() styling for selection', () => {
         getScreenScale: vi.fn().mockReturnValue(1),
     };
 
-    // Import here to use the mocked version of isEntitySelected
-    const { isEntitySelected, isEntityHighlighted } = await vi.importActual<typeof import('../state.ts')>('../state.ts');
-
-
     beforeEach(() => {
-        vi.clearAllMocks(); // Clears all mocks including those from vi.mock
-        // Reset specific mock implementations for each test if needed
-        (isEntitySelected as vi.Mock).mockReturnValue(false); // Default to not selected
-        (isEntityHighlighted as vi.Mock).mockReturnValue(false); // Default to not highlighted
+        // Clear specific mocks used in this suite
+        (isEntitySelected as vi.Mock).mockClear();
+        (isEntityHighlighted as vi.Mock).mockClear();
         mockDrawController.drawText.mockClear();
         mockDrawController.setLineStyles.mockClear();
         mockDrawController.setFillStyles.mockClear();
         mockDrawController.drawLine.mockClear();
         mockDrawController.fillPolygon.mockClear();
         mockDrawController.getScreenScale.mockClear().mockReturnValue(1);
+
+        // Default for this suite, can be overridden in specific tests
+        (isEntitySelected as vi.Mock).mockReturnValue(false); 
+        (isEntityHighlighted as vi.Mock).mockReturnValue(false);
     });
 
     it('should apply selection styling to all components when selected', () => {
         (isEntitySelected as vi.Mock).mockReturnValue(true);
         (isEntityHighlighted as vi.Mock).mockReturnValue(false);
 
-        const measurement = new MeasurementEntity('mockLayerId', new Point(0, 0), new Point(10, 0), new Point(5, 5));
+        const measurement = new MeasurementEntity('mockLayerIdGlobal', new Point(0, 0), new Point(10, 0), new Point(5, 5));
+        const measurement = new MeasurementEntity('mockLayerIdGlobal', new Point(0, 0), new Point(10, 0), new Point(5, 5));
         measurement.lineColor = '#FF0000'; // Use a distinct color for the test
         measurement.lineWidth = 2;
         measurement.lineDash = [10, 5]; // Custom dash for non-selected state

@@ -1,7 +1,7 @@
 import type {Point} from '@flatten-js/core';
 import {isEqual} from 'es-toolkit';
-import type {Actor, MachineSnapshot} from 'xstate';
 import {toast} from 'react-toastify';
+import type {Actor, MachineSnapshot} from 'xstate';
 import {type HoverPoint, HtmlEvent, type Layer, type SnapPoint, type StateMetaData,} from './App.types';
 import type {ScreenCanvasDrawController} from './drawControllers/screenCanvas.drawController';
 import type {Entity} from './entities/Entity';
@@ -203,23 +203,27 @@ export const setActiveToolActor = (
 
 	activeToolActor = newToolActor;
 	activeToolActor.subscribe({
-			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-			next: (state: MachineSnapshot<any, any, any, any, any, any, any, any>) => {
-				const stateInstructions = Object.values(state?.getMeta() as Record<string, StateMetaData>)[0]
-					?.instructions;
+		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+		next: (state: MachineSnapshot<any, any, any, any, any, any, any, any>) => {
+			const stateInstructions = Object.values(state?.getMeta() as Record<string, StateMetaData>)[0]
+				?.instructions;
 
-				if (getLastStateInstructions() === stateInstructions) {
-					return;
-				}
-
-				setLastStateInstructions(stateInstructions || null);
-			},
-			error: (err) => {
-				toast.error(`Error in tool actor: ${err?.message}`);
-				console.error('Error in tool actor', {err, newToolActor});
+			if (getLastStateInstructions() === stateInstructions) {
+				return;
 			}
-		}
-	);
+
+			setLastStateInstructions(stateInstructions || null);
+		},
+		error: (err) => {
+			toast.error(
+				`Error in tool actor: ${
+					// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+					(err as any)?.message || 'unknown error'
+				}`
+			);
+			console.error('Error in tool actor', { err, newToolActor });
+		},
+	});
 	activeToolActor.start();
 
 	console.log('User clicked on tool: ', {
@@ -362,7 +366,7 @@ function trackUndoState(variable: StateVariable, value: any) {
 	}
 
 	// Push the new undo state
-	undoStack.push({variable: variable, value: value});
+	undoStack.push({ variable: variable, value: value });
 }
 
 function updateStates(undoState: UndoState) {

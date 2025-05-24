@@ -55,6 +55,9 @@ export const LayerManager: FC<LayerManagerProps> = ({
 		}
 		layer.isVisible = !layer.isVisible;
 		setLayers([...layers]);
+		if (getActiveLayerId() === layerId && !layer.isVisible) {
+			setActiveLayerId(getLayers()[0].id);
+		}
 	};
 
 	const handleLockUnlockLayer = (evt: MouseEvent, layerId: string): void => {
@@ -65,6 +68,9 @@ export const LayerManager: FC<LayerManagerProps> = ({
 		}
 		layer.isLocked = !layer.isLocked;
 		setLayers([...layers]);
+		if (getActiveLayerId() === layerId && layer.isLocked) {
+			setActiveLayerId(getLayers()[0].id);
+		}
 	};
 
 	const handleCreateNewLayer = (evt: MouseEvent): void => {

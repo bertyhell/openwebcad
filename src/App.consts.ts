@@ -1,7 +1,12 @@
 /**
- * Width of the toolbar containing all the tools on the left side of the screen
+ * Width of the expanded toolbar containing all the tools on the left side of the screen
  */
-export const TOOLBAR_WIDTH = 320;
+export const TOOLBAR_WIDTH_EXPANDED = 320;
+
+/**
+ * Width of the collapsed toolbar containing all the tools on the left side of the screen
+ */
+export const TOOLBAR_WIDTH_COLLAPSED = 48;
 
 /**
  * Very small number that will be used to compare floating point numbers on equality

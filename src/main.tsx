@@ -2,7 +2,7 @@ import {Point} from '@flatten-js/core';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import {Actor, type MachineSnapshot} from 'xstate';
-import {HIGHLIGHT_ENTITY_DISTANCE, SNAP_POINT_DISTANCE, TOOLBAR_WIDTH} from './App.consts';
+import {HIGHLIGHT_ENTITY_DISTANCE, SNAP_POINT_DISTANCE} from './App.consts';
 import App from './App.tsx';
 import {ScreenCanvasDrawController} from './drawControllers/screenCanvas.drawController';
 import {draw} from './helpers/draw';
@@ -20,6 +20,7 @@ import {
 	getLastDrawTimestamp,
 	getScreenCanvasDrawController,
 	getSnapPoint,
+	getToolbarWidth,
 	setActiveLayerId,
 	setActiveToolActor,
 	setCanvas,
@@ -102,12 +103,15 @@ function startDrawLoop(
 	});
 }
 
-function handleWindowResize() {
-	getScreenCanvasDrawController().setCanvasSize(new Point(window.innerWidth, window.innerHeight));
+export function handleWindowResize() {
 	const canvas = getCanvas();
 	if (canvas) {
-		canvas.width = window.innerWidth - TOOLBAR_WIDTH;
+		const toolbarWidth = getToolbarWidth();
+		canvas.width = window.innerWidth - toolbarWidth;
 		canvas.height = window.innerHeight;
+		getScreenCanvasDrawController().setCanvasSize(
+			new Point(window.innerWidth - toolbarWidth, window.innerHeight)
+		);
 	}
 }
 

@@ -26,16 +26,19 @@ import FolderXIcon from 'teenyicons/outline/folder-x.svg?react';
 import FolderIcon from 'teenyicons/outline/folder.svg?react';
 import GithubIcon from 'teenyicons/outline/github.svg?react';
 import GridLayoutIcon from 'teenyicons/outline/grid-layout.svg?react';
-import Menu from 'teenyicons/outline/menu.svg?react';
 import ImageIcon from 'teenyicons/outline/image.svg?react';
 import JavascriptIcon from 'teenyicons/outline/javascript.svg?react';
 import LayersDifferenceIcon from 'teenyicons/outline/layers-difference.svg?react';
 import LineIcon from 'teenyicons/outline/line.svg?react';
 import LockIcon from 'teenyicons/outline/lock.svg?react';
+import Menu from 'teenyicons/outline/menu.svg?react';
 import PdfIcon from 'teenyicons/outline/pdf.svg?react';
 import PngIcon from 'teenyicons/outline/png.svg?react';
+import QuestionSmallIcon from 'teenyicons/outline/question-small.svg?react';
 import SaveIcon from 'teenyicons/outline/save.svg?react';
 import SendDownIcon from 'teenyicons/outline/send-down.svg?react';
+import SendLeftIcon from 'teenyicons/outline/send-left.svg?react';
+import SendRightIcon from 'teenyicons/outline/send-right.svg?react'; // https://icon-sets.iconify.design/teenyicons
 import SendUpIcon from 'teenyicons/outline/send-up.svg?react';
 import SquareIcon from 'teenyicons/outline/square.svg?react';
 import SvgIcon from 'teenyicons/outline/svg.svg?react';
@@ -48,9 +51,9 @@ import JavascriptSolidIcon from 'teenyicons/solid/javascript.svg?react';
 import PdfSolidIcon from 'teenyicons/solid/pdf.svg?react';
 import SolidUpSmallIcon from 'teenyicons/solid/up-small.svg?react';
 import SolidUpIcon from 'teenyicons/solid/up.svg?react';
-import VectorDocumentSolidIcon from 'teenyicons/solid/vector-document.svg?react';
+import VectorDocumentSolidIcon from 'teenyicons/solid/vector-document.svg?react'; // Custom icons
 import MeasurementIcon from './custom-icons/measurement.svg?react';
-import ScaleIcon from './custom-icons/scale.svg?react'; // https://icon-sets.iconify.design/teenyicons
+import ScaleIcon from './custom-icons/scale.svg?react';
 
 // https://icon-sets.iconify.design/teenyicons
 enum IconName {
@@ -102,6 +105,9 @@ enum IconName {
 	Unlock = 'Unlock',
 	GridLayout = 'GridLayout',
 	Menu = 'Menu',
+	SendLeft = 'SendLeft',
+	SendRight = 'SendRight',
+	QuestionSmall = 'QuestionSmall',
 
 	// Solid icons
 	SolidDown = 'SolidDown',
@@ -162,6 +168,9 @@ const icons: Record<IconName, FC> = {
 	[IconName.Unlock]: UnlockIcon,
 	[IconName.GridLayout]: GridLayoutIcon,
 	[IconName.Menu]: Menu,
+	[IconName.SendLeft]: SendLeftIcon,
+	[IconName.SendRight]: SendRightIcon,
+	[IconName.QuestionSmall]: QuestionSmallIcon,
 
 	// Solid icons
 	[IconName.SolidDown]: SolidDownIcon,

@@ -2,11 +2,13 @@ import type {Point} from '@flatten-js/core';
 import {isEqual} from 'es-toolkit';
 import {toast} from 'react-toastify';
 import type {Actor, MachineSnapshot} from 'xstate';
+import {TOOLBAR_WIDTH_COLLAPSED, TOOLBAR_WIDTH_EXPANDED} from './App.consts.ts'; // state variables
 import {type HoverPoint, HtmlEvent, type Layer, type SnapPoint, type StateMetaData,} from './App.types';
 import type {ScreenCanvasDrawController} from './drawControllers/screenCanvas.drawController';
 import type {Entity} from './entities/Entity';
 import {createStack, StateVariable, type UndoState} from './helpers/undo-stack';
-import type {InputController} from './inputController/input-controller.ts'; // state variables
+import type {InputController} from './inputController/input-controller.ts';
+import {handleWindowResize} from './main.tsx'; // state variables
 
 // state variables
 /**
@@ -141,7 +143,18 @@ let layers: Layer[] = [
  */
 let activeLayerId: string = layers[0].id;
 
-// getters
+/**
+ * Is toolbar collapsed
+ */
+let isToolbarCollapsed = false;
+
+/**
+ *
+ *
+ * getters
+ *
+ *
+ */
 export const getCanvas = () => canvas;
 export const getActiveToolActor = () => activeToolActor;
 export const getLastStateInstructions = () => lastStateInstructions;
@@ -188,8 +201,20 @@ export const getLayers = () => {
 export const getActiveLayerId = (): string => {
 	return activeLayerId;
 };
+export const getIsToolbarCollapsed = (): boolean => {
+	return isToolbarCollapsed;
+};
+export const getToolbarWidth = (): number => {
+	return isToolbarCollapsed ? TOOLBAR_WIDTH_COLLAPSED : TOOLBAR_WIDTH_EXPANDED;
+};
 
-// setters
+/**
+ *
+ *
+ * Setters
+ *
+ *
+ */
 export const setCanvas = (newCanvas: HTMLCanvasElement) => {
 	canvas = newCanvas;
 };
@@ -329,8 +354,22 @@ export const setActiveLayerId = (newActiveLayerId: string, triggerReact = true) 
 		triggerReactUpdate(StateVariable.layers);
 	}
 };
+export const setIsToolbarCollapsed = (newValue: boolean, triggerReact = true) => {
+	isToolbarCollapsed = newValue;
+	handleWindowResize();
 
-// Computed setters
+	if (triggerReact) {
+		triggerReactUpdate(StateVariable.isToolbarCollapsed);
+	}
+};
+
+/**
+ *
+ *
+ * Computed setters
+ *
+ *
+ */
 export const deleteEntities = (entitiesToDelete: Entity[], trackInUndoStack: boolean): Entity[] => {
 	const entityIdsToBeDeleted = entitiesToDelete.map((entity) => entity.id);
 	const newEntities = getEntities().filter((entity) => !entityIdsToBeDeleted.includes(entity.id));
@@ -343,7 +382,13 @@ export const addEntities = (entitiesToAdd: Entity[], trackInUndoStack: boolean):
 	return newEntities;
 };
 
-// Undo redo states
+/**
+ *
+ *
+ * Undo redo states
+ *
+ *
+ */
 const reactStateVariables: StateVariable[] = [
 	StateVariable.activeTool,
 	StateVariable.angleStep,

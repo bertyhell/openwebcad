@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import {noop} from 'es-toolkit';
 import type {CSSProperties, FC, MouseEvent, ReactNode} from 'react';
 import {Icon, type IconName} from './Icon/Icon.tsx';
@@ -70,7 +71,12 @@ export const Button: FC<ButtonProps> = ({
 					(iconName && (
 						<Icon
 							name={iconName}
-							className={`${iconClassname} text-blue-700 ${active ? 'text-white' : ''} ${size === 'small' ? 'min-w-4' : 'min-w-5'}`}
+							className={clsx(
+								iconClassname,
+								'text-blue-700 max-w-10',
+								active ? 'text-white' : '',
+								size === 'small' ? 'min-w-4' : 'min-w-5'
+							)}
 						/>
 					))}
 				<div className="flex flex-row flex-nowrap">{left}</div>

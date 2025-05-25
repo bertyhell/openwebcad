@@ -47,8 +47,7 @@ export const DropdownButton: FC<DropdownButtonProps> = ({
 	return (
 		<div className={classParts.join(' ')} style={style} data-id={dataId}>
 			<Button
-				iconName={iconName}
-				iconComponent={iconComponent}
+				iconComponent={iconComponent || <Icon name={iconName || IconName.QuestionSmall} />}
 				label={!isCollapsed ? label : undefined}
 				title={title}
 				active={!isCollapsed && isOpen}
@@ -63,7 +62,9 @@ export const DropdownButton: FC<DropdownButtonProps> = ({
 				className={'w-full data-[active=true]:bg-blue-950 data-[active=true]:text-white'}
 				isCollapsed={isCollapsed} // Pass down for Button's own label handling
 			/>
-			{!isCollapsed && <Icon name={IconName.SolidDownSmall} className={'absolute top-2.5 right-1 text-blue-700'} />}
+			{!isCollapsed && (
+				<Icon name={IconName.SolidDownSmall} className={'absolute top-2.5 right-1 text-blue-700'} />
+			)}
 			{!isCollapsed && isOpen && (
 				<div
 					className="flex flex-row flex-wrap max-w-72 gap-1 pl-1 pb-6"

@@ -27,6 +27,7 @@ export enum StateVariable {
 	activeLineColor = 'activeLineColor',
 	activeLineWidth = 'activeLineWidth',
 	layers = 'layers',
+	isToolbarCollapsed = 'isToolbarCollapsed',
 }
 
 /**

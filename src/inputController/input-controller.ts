@@ -10,7 +10,6 @@ import {
 	CANVAS_INPUT_FIELD_WIDTH,
 	HIGHLIGHT_ENTITY_DISTANCE,
 	SNAP_POINT_DISTANCE,
-	TOOLBAR_WIDTH,
 } from '../App.consts.ts';
 import {MouseButton} from '../App.types.ts';
 import type {ScreenCanvasDrawController} from '../drawControllers/screenCanvas.drawController.ts';
@@ -27,6 +26,7 @@ import {
 	getSelectedEntities,
 	getSnapPoint,
 	getSnapPointOnAngleGuide,
+	getToolbarWidth,
 	redo,
 	setActiveToolActor,
 	setGhostHelperEntities,
@@ -147,7 +147,7 @@ export class InputController {
 
 			const worldMouseLocationTemp = getScreenCanvasDrawController().targetToWorld(
 				new Point(
-					evt.clientX - TOOLBAR_WIDTH,
+					evt.clientX - getToolbarWidth(),
 					getScreenCanvasDrawController().getCanvasSize().y - evt.clientY
 				)
 			);
@@ -172,7 +172,7 @@ export class InputController {
 		setShouldDrawCursor(true);
 		const screenCanvasDrawController = getScreenCanvasDrawController();
 		const newScreenMouseLocation = new Point(
-			evt.clientX - TOOLBAR_WIDTH,
+			evt.clientX - getToolbarWidth(),
 			getScreenCanvasDrawController().getCanvasSize().y - evt.clientY
 		);
 		screenCanvasDrawController.setScreenMouseLocation(newScreenMouseLocation);
@@ -222,7 +222,7 @@ export class InputController {
 
 		setPanStartLocation(
 			new Point(
-				evt.clientX - TOOLBAR_WIDTH,
+				evt.clientX - getToolbarWidth(),
 				getScreenCanvasDrawController().getCanvasSize().y - evt.clientY
 			)
 		);

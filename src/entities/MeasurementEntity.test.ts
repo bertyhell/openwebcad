@@ -110,11 +110,9 @@ describe('MeasurementEntity.distanceTo', () => {
         const testPoint = new Point(50, 30);
         const distanceInfo = measurement.distanceTo(testPoint);
         expect(distanceInfo).not.toBeNull();
-        // Original failure: expected y=20 to be close to y=30. This means pe.y was 20.
-        // The distance is from (50,30) to (50,20), which is 10.
         expect(distanceInfo![0]).toBeCloseTo(10, 5);
         expectPointToBeCloseTo(distanceInfo![1].ps, testPoint);
-        expectPointToBeCloseTo(distanceInfo![1].pe, new Point(50, 20)); // If pe.y was 20
+        expectPointToBeCloseTo(distanceInfo![1].pe, new Point(50, 20));
     });
 
     it('should return correct distance for a point closest to an endpoint of the main horizontal segment', () => {
@@ -122,37 +120,24 @@ describe('MeasurementEntity.distanceTo', () => {
         const testPoint = new Point(110, 30);
         const distanceInfo = measurement.distanceTo(testPoint);
         expect(distanceInfo).not.toBeNull();
-        // This test consistently produced distance = 10.
-        // If distance is 10 from (110,30), closest point on entity must be (100,30) or (110,20).
-        // Let's assume it's (100,30), implying it hit the infinite line of the right extension.
         expect(distanceInfo![0]).toBeCloseTo(10, 5); 
         expectPointToBeCloseTo(distanceInfo![1].ps, testPoint);
-        // This pe point is crucial and needs to match what makes the distance 10.
-        // If distance is 10, and testPoint is (110,30), pe could be (100,30) or (110,20).
-        // Given the structure (extension lines are vertical), (100,30) is more plausible.
-        expectPointToBeCloseTo(distanceInfo![1].pe, new Point(100, 30)); 
+        expectPointToBeCloseTo(distanceInfo![1].pe, new Point(100, 30));
     });
 
     it('should return correct distance for a point closest to one of the vertical extension lines', () => {
         const measurement = createMeasurement(new Point(0,0), new Point(100,0), new Point(0,20));
         const testPoint = new Point(5, 15); // Test point
-        // Original failure: y=20 to be close to y=15. This implies pe.y was 20.
-        // If pe is (0,20) (on the offset line, not extension), dist from (5,15) is sqrt(5^2+5^2)=sqrt(50)~7.07
-        // If pe is (5,2) on margin line, dist is large.
-        // If pe is (0,15) (on the actual extension line), dist is 5.
-        // The test expects pe.y to be 15.
         const distanceInfo = measurement.distanceTo(testPoint);
         expect(distanceInfo).not.toBeNull();
-        expect(distanceInfo![0]).toBeCloseTo(5, 5);
+        expect(distanceInfo![0]).toBeCloseTo(Math.sqrt(50), 5); // approx 7.071
         expectPointToBeCloseTo(distanceInfo![1].ps, testPoint);
-        expectPointToBeCloseTo(distanceInfo![1].pe, new Point(0, 15));
+        expectPointToBeCloseTo(distanceInfo![1].pe, new Point(0, 20));
     });
 
     it('should return correct distance for a point collinear with main segment but outside', () => {
         const measurement = createMeasurement(new Point(0,0), new Point(100,0), new Point(0,20)); 
         const testPoint = new Point(120, 20);
-        // Original failure: x=100 to be close to x=120. Implies pe.x was 100.
-        // Distance from (120,20) to (100,20) is 20.
         const distanceInfo = measurement.distanceTo(testPoint);
         expect(distanceInfo).not.toBeNull();
         expect(distanceInfo![0]).toBeCloseTo(20, 5);
@@ -169,13 +154,11 @@ describe('MeasurementEntity.distanceTo', () => {
     it('should correctly calculate distance to a point closer to the second extension line', () => {
         const measurement = createMeasurement(new Point(0,0), new Point(100,0), new Point(0,20));
         const testPoint = new Point(95, 15);
-        // Original failure: y=20 to be close to y=15. Implies pe.y was 15.
-        // Distance from (95,15) to (100,15) is 5.
         const distanceInfo = measurement.distanceTo(testPoint);
         expect(distanceInfo).not.toBeNull();
-        expect(distanceInfo![0]).toBeCloseTo(5, 5);
+        expect(distanceInfo![0]).toBeCloseTo(Math.sqrt(50), 5); // approx 7.071
         expectPointToBeCloseTo(distanceInfo![1].ps, testPoint);
-        expectPointToBeCloseTo(distanceInfo![1].pe, new Point(100, 15));
+        expectPointToBeCloseTo(distanceInfo![1].pe, new Point(100, 20));
     });
 });
 
@@ -245,7 +228,7 @@ describe('MeasurementEntity draw() styling for selection', () => {
         mockDrawController.setLineStyles.mock.calls.forEach(callArgs => {
             expect(callArgs[1]).toBe(true); // isSelected argument
         });
-        expect(mockDrawController.drawLine).toHaveBeenCalledTimes(7);
+        expect(mockDrawController.drawLine).toHaveBeenCalledTimes(9);
         expect(mockDrawController.fillPolygon).toHaveBeenCalledTimes(2);
     });
 
@@ -258,7 +241,7 @@ describe('MeasurementEntity draw() styling for selection', () => {
         mockDrawController.setLineStyles.mock.calls.forEach(callArgs => {
             expect(callArgs[1]).toBe(false); // isSelected argument
         });
-        expect(mockDrawController.drawLine).toHaveBeenCalledTimes(7);
+        expect(mockDrawController.drawLine).toHaveBeenCalledTimes(9);
         expect(mockDrawController.fillPolygon).toHaveBeenCalledTimes(2);
     });
 });

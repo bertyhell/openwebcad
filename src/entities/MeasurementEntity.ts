@@ -108,6 +108,20 @@ export class MeasurementEntity implements Entity {
 				vectorPerpendicularFromLineTowardsOffsetPointUnit.multiply(totalOffset)
 			);
 
+		// TEMPORARY LOGGING START
+		if (this.startPoint.x === 0 && this.startPoint.y === 0 && this.endPoint.x === 100 && this.endPoint.y === 0 && this.offsetPoint.x === 0 && this.offsetPoint.y === 20) { // Condition to target the specific test
+			console.log('[DEBUG getDrawPoints] For test ((0,0)-(100,0), offset(0,20)):');
+			console.log('startPoint:', JSON.stringify(this.startPoint));
+			console.log('endPoint:', JSON.stringify(this.endPoint));
+			console.log('offsetPoint:', JSON.stringify(this.offsetPoint));
+			console.log('offsetStartPoint:', JSON.stringify(offsetStartPoint));
+			console.log('offsetEndPoint:', JSON.stringify(offsetEndPoint));
+			console.log('offsetStartPointMargin:', JSON.stringify(offsetStartPointMargin));
+			console.log('offsetStartPointExtend:', JSON.stringify(offsetStartPointExtend));
+			console.log('offsetEndPointMargin:', JSON.stringify(offsetEndPointMargin));
+			console.log('offsetEndPointExtend:', JSON.stringify(offsetEndPointExtend));
+		}
+		// TEMPORARY LOGGING END
 		return {
 			offsetStartPoint,
 			offsetEndPoint,

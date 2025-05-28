@@ -211,8 +211,17 @@ export class SvgDrawController implements DrawController {
 			...options,
 		};
 
+    let finalTextColor = textOptions.textColor;
+    const lowerCaseTextColor = textOptions.textColor.toLowerCase();
+    if (lowerCaseTextColor === '#fff' || lowerCaseTextColor === '#ffffff' || lowerCaseTextColor === 'white') {
+        finalTextColor = '#000'; // Change to black if current color is white
+    }
+    // No need to handle black to white, as SVG background is white.
+    // Other colors will remain as they are.
+
 		this.svgStrings.push(
-			`<text x="${canvasBasePoint.x}" y="${canvasBasePoint.y}" fill="${textOptions.textColor}" font-size="${textOptions.fontSize}" font-family="${textOptions.fontFamily}">${label}</text>`
+        // Use finalTextColor here
+        `<text x="${canvasBasePoint.x}" y="${canvasBasePoint.y}" fill="${finalTextColor}" font-size="${textOptions.fontSize}" font-family="${textOptions.fontFamily}">${label}</text>`
 		);
 	}
 

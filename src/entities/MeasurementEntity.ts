@@ -351,21 +351,78 @@ export class MeasurementEntity implements Entity {
 		const drawPoints = this.getDrawPoints();
 
 		if (!drawPoints) {
-			return new Box(this.startPoint.x, this.startPoint.y, this.startPoint.x, this.startPoint.y);
+			throw new Error('Failed to get draw points from measurement entity');
 		}
 
-		const extremePoints = [
+		const lineExtremePoints = [
 			drawPoints.offsetStartPointMargin,
 			drawPoints.offsetStartPointExtend,
 			drawPoints.offsetEndPointMargin,
 			drawPoints.offsetEndPointExtend,
+			// Also include the main measurement line itself in the bounding box calculation for lines
+			drawPoints.offsetStartPoint,
+			drawPoints.offsetEndPoint,
 		];
 
+		// Calculate text properties
+		const distance = String(
+			round(pointDistance(this.startPoint, this.endPoint), MEASUREMENT_DECIMAL_PLACES)
+		);
+		const textHeight = MEASUREMENT_FONT_SIZE;
+		// Estimate width: textString.length * fontSize * aspectRatioFactor
+		const textWidth = distance.length * MEASUREMENT_FONT_SIZE * 0.6;
+
+		const {midpointMeasurementLineOffset, normalUnit} = drawPoints;
+
+		// Determine text direction (similar to draw method)
+		const originalTextDirection = normalUnit.rotate90CW();
+		let finalTextDirection = originalTextDirection;
+		if (
+			originalTextDirection.x < -EPSILON ||
+			(Math.abs(originalTextDirection.x) < EPSILON && originalTextDirection.y > EPSILON)
+		) {
+			finalTextDirection = new Vector(-originalTextDirection.x, -originalTextDirection.y);
+		}
+
+		// Text center
+		const textCenterX = midpointMeasurementLineOffset.x;
+		const textCenterY = midpointMeasurementLineOffset.y;
+
+		// Half dimensions
+		const halfTextWidth = textWidth / 2;
+		const halfTextHeight = textHeight / 2;
+
+		// Text corner calculations
+		// Vector along the text direction for width, and perpendicular for height
+		const dirVec = finalTextDirection.normalize(); // Vector along the text direction
+		const perpVec = dirVec.rotate90CW(); // Vector perpendicular to text direction (for height offset)
+
+		const textCorners = [
+			new Point(
+				textCenterX - dirVec.x * halfTextWidth - perpVec.x * halfTextHeight,
+				textCenterY - dirVec.y * halfTextWidth - perpVec.y * halfTextHeight
+			),
+			new Point(
+				textCenterX + dirVec.x * halfTextWidth - perpVec.x * halfTextHeight,
+				textCenterY + dirVec.y * halfTextWidth - perpVec.y * halfTextHeight
+			),
+			new Point(
+				textCenterX + dirVec.x * halfTextWidth + perpVec.x * halfTextHeight,
+				textCenterY + dirVec.y * halfTextWidth + perpVec.y * halfTextHeight
+			),
+			new Point(
+				textCenterX - dirVec.x * halfTextWidth + perpVec.x * halfTextHeight,
+				textCenterY - dirVec.y * halfTextWidth + perpVec.y * halfTextHeight
+			),
+		];
+
+		const allExtremePoints = [...lineExtremePoints, ...textCorners];
+
 		return new Box(
-			min(extremePoints.map((point) => point.x)),
-			min(extremePoints.map((point) => point.y)),
-			max(extremePoints.map((point) => point.x)),
-			max(extremePoints.map((point) => point.y))
+			min(allExtremePoints.map((point) => point.x)),
+			min(allExtremePoints.map((point) => point.y)),
+			max(allExtremePoints.map((point) => point.x)),
+			max(allExtremePoints.map((point) => point.y))
 		);
 	}
 

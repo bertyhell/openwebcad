@@ -1,7 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Point, Vector } from '@flatten-js/core';
+import { Point, Vector, Line, Box } from '@flatten-js/core';
+import { round } from 'es-toolkit';
 import { MeasurementEntity } from './MeasurementEntity';
-import { MEASUREMENT_FONT_SIZE } from '../App.consts'; // For default options
+import {
+	MEASUREMENT_FONT_SIZE,
+	MEASUREMENT_DECIMAL_PLACES,
+	MEASUREMENT_LABEL_OFFSET,
+	EPSILON
+} from '../App.consts';
 
 // Mock dependencies from '../state.ts'
 vi.mock('../state.ts', () => ({
@@ -93,6 +99,217 @@ describe('MeasurementEntity text orientation in draw() method', () => {
         measurement.draw(mockDrawController as any);
         expect(mockDrawController.drawText).not.toHaveBeenCalled();
     });
+});
+
+describe('MeasurementEntity.getBoundingBox', () => {
+	const layerId = 'test-layer'; // Changed to specified layerId
+
+	it('should return a bounding box that includes the text label', () => {
+		const startPoint = new Point(0, 0);
+		const endPoint = new Point(100, 0); // Distance = 100
+		const offsetPoint = new Point(50, 50); // Text above the line
+
+		const entity = new MeasurementEntity(layerId, startPoint, endPoint, offsetPoint);
+		const actualBoundingBox: Box = entity.getBoundingBox();
+
+		// --- Start: Recalculate expected text properties (similar to getDrawPoints and draw) ---
+
+		const lineStartToEnd = new Line(startPoint, endPoint); // Corrected Line creation
+		const [, segmentToOffset] = offsetPoint.distanceTo(lineStartToEnd);
+		const closestPointToOffsetOnLine = segmentToOffset.end;
+
+		let vectorPerpendicularFromLineTowardsOffsetPoint: Vector; // Correct type
+		if (closestPointToOffsetOnLine.equalTo(offsetPoint)) {
+			// This case implies offsetPoint is on the line, so norm might be ambiguous.
+			// For this specific test (50,50) and line (0,0)-(100,0), closestPointToOffsetOnLine is (50,0).
+			// So the 'else' branch will be taken.
+			// If offsetPoint was, for example, (50,0), then norm would be (0,1) or (0,-1)
+			// The original implementation of getDrawPoints uses lineStartToEnd.norm in this case.
+			// Let's assume standard orientation for norm (e.g. points "up" or "left" from segment direction)
+			vectorPerpendicularFromLineTowardsOffsetPoint = lineStartToEnd.norm.clone();
+			// Check if the offsetPoint is "on the other side" of the norm
+			// For horizontal line (0,0) to (100,0), norm is (0,1)
+			// If offsetPoint was (50, -1), it's on the other side, so norm should be (0,-1)
+			// This logic is complex and might need direct use of the offsetPoint if it's collinear
+			// For this test case, offsetPoint is NOT on the line, so the else is fine.
+		} else {
+			vectorPerpendicularFromLineTowardsOffsetPoint = new Vector(
+				closestPointToOffsetOnLine,
+				offsetPoint
+			);
+		}
+		const normalUnit = vectorPerpendicularFromLineTowardsOffsetPoint.normalize();
+
+		// Points for horizontal measurement line (used to find its midpoint)
+		const offsetStart = startPoint.translate(vectorPerpendicularFromLineTowardsOffsetPoint);
+		const offsetEnd = endPoint.translate(vectorPerpendicularFromLineTowardsOffsetPoint);
+
+		// Location for label
+		const midpointMeasurementLine = new Point(
+			(offsetStart.x + offsetEnd.x) / 2,
+			(offsetStart.y + offsetEnd.y) / 2
+		);
+
+		// Using imported constants directly
+		const totalOffsetText = MEASUREMENT_LABEL_OFFSET + MEASUREMENT_FONT_SIZE / 2;
+		const midpointMeasurementLineOffset = midpointMeasurementLine
+			.clone()
+			.translate(normalUnit.multiply(totalOffsetText)); // This is the text center
+
+		// Correct distance calculation and rounding
+		const distanceVal = startPoint.distanceTo(endPoint)[0]; // distanceTo returns [distance, segment]
+		const distanceString = round(distanceVal, MEASUREMENT_DECIMAL_PLACES).toString();
+
+
+		const textHeight = MEASUREMENT_FONT_SIZE;
+		const textWidth = distanceString.length * MEASUREMENT_FONT_SIZE * 0.6; // As per implementation
+
+		const originalTextDirection = normalUnit.rotate90CW();
+		let finalTextDirection = originalTextDirection.clone(); // Clone before potential modification
+		if (
+			originalTextDirection.x < -EPSILON || // Using imported EPSILON
+			(Math.abs(originalTextDirection.x) < EPSILON && originalTextDirection.y > EPSILON)
+		) {
+			finalTextDirection = new Vector(-originalTextDirection.x, -originalTextDirection.y);
+		}
+
+		// Text center
+		const textCenterX = midpointMeasurementLineOffset.x;
+		const textCenterY = midpointMeasurementLineOffset.y;
+
+		// Half dimensions
+		const halfTextWidth = textWidth / 2;
+		const halfTextHeight = textHeight / 2;
+
+		// Text corner calculations
+		// dirVec is along the finalTextDirection (for width)
+		// perpVec is perpendicular to finalTextDirection (for height)
+		const dirVec = finalTextDirection.normalize();
+		const perpVec = dirVec.rotate90CW(); // Perpendicular to text flow, for height offset
+
+		const textCorners = [
+			new Point( // Top-left
+				textCenterX - dirVec.x * halfTextWidth - perpVec.x * halfTextHeight,
+				textCenterY - dirVec.y * halfTextWidth - perpVec.y * halfTextHeight
+			),
+			new Point( // Top-right
+				textCenterX + dirVec.x * halfTextWidth - perpVec.x * halfTextHeight,
+				textCenterY + dirVec.y * halfTextWidth - perpVec.y * halfTextHeight
+			),
+			new Point( // Bottom-right
+				textCenterX + dirVec.x * halfTextWidth + perpVec.x * halfTextHeight,
+				textCenterY + dirVec.y * halfTextWidth + perpVec.y * halfTextHeight
+			),
+			new Point( // Bottom-left
+				textCenterX - dirVec.x * halfTextWidth + perpVec.x * halfTextHeight,
+				textCenterY - dirVec.y * halfTextWidth + perpVec.y * halfTextHeight
+			),
+		];
+		// --- End: Recalculate expected text properties ---
+
+		// Assert that the actualBoundingBox contains all text corners
+		// It's important to also consider that the bounding box might be larger due to the lines,
+		// so we check that the box *at least* encompasses the text.
+		const minTextX = Math.min(...textCorners.map(c => c.x));
+		const maxTextX = Math.max(...textCorners.map(c => c.x));
+		const minTextY = Math.min(...textCorners.map(c => c.y));
+		const maxTextY = Math.max(...textCorners.map(c => c.y));
+
+		expect(actualBoundingBox.xmin).toBeLessThanOrEqual(minTextX + EPSILON); // Add epsilon for float comparisons
+		expect(actualBoundingBox.ymin).toBeLessThanOrEqual(minTextY + EPSILON);
+		expect(actualBoundingBox.xmax).toBeGreaterThanOrEqual(maxTextX - EPSILON);
+		expect(actualBoundingBox.ymax).toBeGreaterThanOrEqual(maxTextY - EPSILON);
+
+		// For this specific case:
+		// startPoint = (0,0), endPoint = (100,0), offsetPoint = (50,50)
+		// vectorPerpendicularFromLineTowardsOffsetPoint = (0,50)
+		// normalUnit = (0,1)
+		// offsetStart = (0,50), offsetEnd = (100,50)
+		// midpointMeasurementLine = (50,50)
+		// totalOffsetText = MEASUREMENT_LABEL_OFFSET (20) + MEASUREMENT_FONT_SIZE/2 (20) = 40
+		// midpointMeasurementLineOffset (textCenter) = (50,50) + (0,1)*40 = (50,90)
+		// distanceVal = 100. MEASUREMENT_DECIMAL_PLACES = 2. distanceString = "100.00" (length 6)
+		// textHeight = 40. textWidth = 6 * 40 * 0.6 = 144
+		// originalTextDirection = (0,1).rotate90CW() = (1,0). finalTextDirection = (1,0)
+		// dirVec = (1,0). perpVec = (0,1)
+		// halfTextWidth = 72, halfTextHeight = 20
+		// textCenterX = 50, textCenterY = 90
+		// Corners:
+		// TL: (50 - 1*72 - 0*20, 90 - 0*72 - 1*20) = (50 - 72, 90 - 20) = (-22, 70)
+		// TR: (50 + 1*72 - 0*20, 90 + 0*72 - 1*20) = (50 + 72, 90 - 20) = (122, 70)
+		// BR: (50 + 1*72 + 0*20, 90 + 0*72 + 1*20) = (50 + 72, 90 + 20) = (122, 110)
+		// BL: (50 - 1*72 + 0*20, 90 - 0*72 + 1*20) = (50 - 72, 90 + 20) = (-22, 110)
+		// minTextX = -22, maxTextX = 122, minTextY = 70, maxTextY = 110
+
+		// The line parts of the bounding box are:
+		// drawPoints.offsetStartPointMargin, drawPoints.offsetStartPointExtend,
+		// drawPoints.offsetEndPointMargin, drawPoints.offsetEndPointExtend,
+		// drawPoints.offsetStartPoint, drawPoints.offsetEndPoint
+		// offsetStartPoint = (0,50), offsetEndPoint = (100,50)
+		// MEASUREMENT_ORIGIN_MARGIN = 20, MEASUREMENT_EXTENSION_LENGTH = 20 (from App.consts.ts - actually 8, but test used 20 before)
+		// Let's use actual consts: EXTENSION_LENGTH = 8, ORIGIN_MARGIN = 20
+		// offsetStartPointMargin = startPoint.translate(normalUnit.multiply(MEASUREMENT_ORIGIN_MARGIN)) = (0,0) + (0,1)*20 = (0,20)
+		// offsetStartPointExtend = offsetStartPoint.translate(normalUnit.multiply(MEASUREMENT_EXTENSION_LENGTH)) = (0,50) + (0,1)*8 = (0,58)
+		// offsetEndPointMargin = endPoint.translate(normalUnit.multiply(MEASUREMENT_ORIGIN_MARGIN)) = (100,0) + (0,1)*20 = (100,20)
+		// offsetEndPointExtend = offsetEndPoint.translate(normalUnit.multiply(MEASUREMENT_EXTENSION_LENGTH)) = (100,50) + (0,1)*8 = (100,58)
+		// Line extreme points: (0,50), (100,50), (0,20), (0,58), (100,20), (100,58)
+		// Line minX = 0, maxX = 100, minY = 20, maxY = 58
+		// Combined with text:
+		// allExtremePoints.map(p => p.x): -22, 122, 0, 100 => minX = -22, maxX = 122
+		// allExtremePoints.map(p => p.y): 70, 110, 20, 58 => minY = 20, maxY = 110
+		// So, actualBoundingBox should be: Box{xmin: -22, ymin: 20, xmax: 122, ymax: 110}
+		// The assertions check this:
+		// actual.xmin (-22) <= minTextX (-22) (true)
+		// actual.ymin (20) <= minTextY (70) (true)
+		// actual.xmax (122) >= maxTextX (122) (true)
+		// actual.ymax (110) >= maxTextY (110) (true)
+	});
+});
+
+		// Text center
+		const textCenterX = midpointMeasurementLineOffset.x;
+		const textCenterY = midpointMeasurementLineOffset.y;
+
+		// Half dimensions
+		const halfTextWidth = textWidth / 2;
+		const halfTextHeight = textHeight / 2;
+
+		// Text corner calculations
+		const dirVec = finalTextDirection.normalize();
+		const perpVec = dirVec.rotate90CW();
+
+		const textCorners = [
+			new Point(
+				textCenterX - dirVec.x * halfTextWidth - perpVec.x * halfTextHeight,
+				textCenterY - dirVec.y * halfTextWidth - perpVec.y * halfTextHeight
+			),
+			new Point(
+				textCenterX + dirVec.x * halfTextWidth - perpVec.x * halfTextHeight,
+				textCenterY + dirVec.y * halfTextWidth - perpVec.y * halfTextHeight
+			),
+			new Point(
+				textCenterX + dirVec.x * halfTextWidth + perpVec.x * halfTextHeight,
+				textCenterY + dirVec.y * halfTextWidth + perpVec.y * halfTextHeight
+			),
+			new Point(
+				textCenterX - dirVec.x * halfTextWidth + perpVec.x * halfTextHeight,
+				textCenterY - dirVec.y * halfTextWidth + perpVec.y * halfTextHeight
+			),
+		];
+		// --- End: Recalculate expected text properties ---
+
+		// Assert that the actualBoundingBox contains all text corners
+		textCorners.forEach(corner => {
+			expect(actualBoundingBox.xmin).toBeLessThanOrEqual(corner.x);
+			expect(actualBoundingBox.ymin).toBeLessThanOrEqual(corner.y);
+			expect(actualBoundingBox.xmax).toBeGreaterThanOrEqual(corner.x);
+			expect(actualBoundingBox.ymax).toBeGreaterThanOrEqual(corner.y);
+		});
+
+		// Additionally, check if the box.contains(point) method works (if available and reliable)
+		// For example: textCorners.forEach(corner => expect(actualBoundingBox.contains(corner)).toBe(true));
+		// However, checking min/max is more direct for this assertion.
+	});
 });
 
 describe('MeasurementEntity.distanceTo', () => {

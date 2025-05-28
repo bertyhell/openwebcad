@@ -219,9 +219,21 @@ export class SvgDrawController implements DrawController {
     // No need to handle black to white, as SVG background is white.
     // Other colors will remain as they are.
 
+    let transformAttribute = '';
+    if (textOptions.textDirection) {
+      const angleRadians = Math.atan2(textOptions.textDirection.y, textOptions.textDirection.x);
+      const angleDegrees = angleRadians * 180 / Math.PI;
+      transformAttribute = `transform="rotate(${angleDegrees}, ${canvasBasePoint.x}, ${canvasBasePoint.y})"`;
+    }
+
+    let textAnchorAttribute = '';
+    if (textOptions.textAlign === 'center') {
+      textAnchorAttribute = 'text-anchor="middle"';
+    }
+
 		this.svgStrings.push(
         // Use finalTextColor here
-        `<text x="${canvasBasePoint.x}" y="${canvasBasePoint.y}" fill="${finalTextColor}" font-size="${textOptions.fontSize}" font-family="${textOptions.fontFamily}">${label}</text>`
+        `<text x="${canvasBasePoint.x}" y="${canvasBasePoint.y}" fill="${finalTextColor}" font-size="${textOptions.fontSize}" font-family="${textOptions.fontFamily}" ${transformAttribute} ${textAnchorAttribute}>${label}</text>`
 		);
 	}
 

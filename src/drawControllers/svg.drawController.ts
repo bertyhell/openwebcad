@@ -1,11 +1,11 @@
-import {Point} from '@flatten-js/core';
-import {DEFAULT_TEXT_OPTIONS, type DrawController} from './DrawController';
-import {SVG_MARGIN} from '../App.consts.ts';
+import {Point, Vector} from '@flatten-js/core';
 import {toast} from 'react-toastify';
+import {SVG_MARGIN, TO_DEGREES} from '../App.consts.ts';
 import type {TextOptions} from '../entities/TextEntity.ts';
-import {triggerReactUpdate} from '../state.ts';
-import {StateVariable} from '../helpers/undo-stack.ts';
 import {isLengthEqual} from '../helpers/is-length-equal.ts';
+import {StateVariable} from '../helpers/undo-stack.ts';
+import {triggerReactUpdate} from '../state.ts';
+import {DEFAULT_TEXT_OPTIONS, type DrawController} from './DrawController';
 
 export class SvgDrawController implements DrawController {
 	private lineColor = '#000';
@@ -211,29 +211,32 @@ export class SvgDrawController implements DrawController {
 			...options,
 		};
 
-    let finalTextColor = textOptions.textColor;
-    const lowerCaseTextColor = textOptions.textColor.toLowerCase();
-    if (lowerCaseTextColor === '#fff' || lowerCaseTextColor === '#ffffff' || lowerCaseTextColor === 'white') {
-        finalTextColor = '#000'; // Change to black if current color is white
-    }
-    // No need to handle black to white, as SVG background is white.
-    // Other colors will remain as they are.
+		let finalTextColor = textOptions.textColor;
+		const lowerCaseTextColor = textOptions.textColor.toLowerCase();
+		if (
+			lowerCaseTextColor === '#fff' ||
+			lowerCaseTextColor === '#ffffff' ||
+			lowerCaseTextColor === 'white'
+		) {
+			finalTextColor = '#000'; // Change to black if current color is white
+		}
+		// No need to handle black to white, as SVG background is white.
+		// Other colors will remain as they are.
 
-    let transformAttribute = '';
-    if (textOptions.textDirection) {
-      const angleRadians = Math.atan2(textOptions.textDirection.y, textOptions.textDirection.x);
-      const angleDegrees = angleRadians * 180 / Math.PI;
-      transformAttribute = `transform="rotate(${angleDegrees}, ${canvasBasePoint.x}, ${canvasBasePoint.y})"`;
-    }
+		let transformAttribute = '';
+		if (textOptions.textDirection) {
+			const angle = textOptions.textDirection.angleTo(new Vector(1, 0)) * TO_DEGREES;
+			transformAttribute = `transform="rotate(${angle}, ${canvasBasePoint.x}, ${canvasBasePoint.y})"`;
+		}
 
-    let textAnchorAttribute = '';
-    if (textOptions.textAlign === 'center') {
-      textAnchorAttribute = 'text-anchor="middle"';
-    }
+		let textAnchorAttribute = '';
+		if (textOptions.textAlign === 'center') {
+			textAnchorAttribute = 'text-anchor="middle"';
+		}
 
 		this.svgStrings.push(
-        // Use finalTextColor here
-        `<text x="${canvasBasePoint.x}" y="${canvasBasePoint.y}" fill="${finalTextColor}" font-size="${textOptions.fontSize}" font-family="${textOptions.fontFamily}" ${transformAttribute} ${textAnchorAttribute}>${label}</text>`
+			// Use finalTextColor here
+			`<text x="${canvasBasePoint.x}" y="${canvasBasePoint.y}" fill="${finalTextColor}" font-size="${textOptions.fontSize}" font-family="${textOptions.fontFamily}" ${transformAttribute} ${textAnchorAttribute}>${label}</text>`
 		);
 	}
 

@@ -208,14 +208,8 @@ export const setActiveToolActor = (
 			const stateInstructions = Object.values(state?.getMeta() as Record<string, StateMetaData>)[0]
 				?.instructions;
 
-				if (getLastStateInstructions() === stateInstructions) {
-					return;
-				}
-
-				setLastStateInstructions(stateInstructions || null);
-			},
-			error: (err) => {
-				console.error('Error in tool actor', {err, newToolActor});
+			if (getLastStateInstructions() === stateInstructions) {
+				return;
 			}
 
 			setLastStateInstructions(stateInstructions || null);
@@ -372,7 +366,7 @@ function trackUndoState(variable: StateVariable, value: any) {
 	}
 
 	// Push the new undo state
-	undoStack.push({variable: variable, value: value});
+	undoStack.push({ variable: variable, value: value });
 }
 
 function updateStates(undoState: UndoState) {

@@ -1,3 +1,5 @@
+import {toast} from 'react-toastify';
+
 // A small type alias for clarity.
 type Point = { x: number; y: number };
 
@@ -88,32 +90,34 @@ function approximateArc(
 	const phiRad = (phi * Math.PI) / 180;
 	const dx = (p0.x - p2.x) / 2;
 	const dy = (p0.y - p2.y) / 2;
+	let rxInternal = rx;
+	let ryInternal = ry;
 
 	// Step 1: Compute the transformed start point.
 	const x1p = Math.cos(phiRad) * dx + Math.sin(phiRad) * dy;
 	const y1p = -Math.sin(phiRad) * dx + Math.cos(phiRad) * dy;
 
 	// Ensure the radii are large enough.
-	let rxSq = rx * rx;
-	let rySq = ry * ry;
+	let rxSq = rxInternal * rxInternal;
+	let rySq = ryInternal * ryInternal;
 	const x1pSq = x1p * x1p;
 	const y1pSq = y1p * y1p;
 	const lambda = x1pSq / rxSq + y1pSq / rySq;
 	if (lambda > 1) {
 		const factor = Math.sqrt(lambda);
-		rx *= factor;
-		ry *= factor;
-		rxSq = rx * rx;
-		rySq = ry * ry;
+		rxInternal *= factor;
+		ryInternal *= factor;
+		rxSq = rxInternal * rxInternal;
+		rySq = ryInternal * ryInternal;
 	}
 
 	// Step 2: Compute the center.
 	const sign = largeArcFlag === sweepFlag ? -1 : 1;
 	const numerator = rxSq * rySq - rxSq * y1pSq - rySq * x1pSq;
-	const denom = rxSq * y1pSq + rySq * x1pSq;
-	const coeff = sign * Math.sqrt(Math.max(0, numerator / denom));
-	const cxp = (coeff * (rx * y1p)) / ry;
-	const cyp = (coeff * (-ry * x1p)) / rx;
+	const denominator = rxSq * y1pSq + rySq * x1pSq;
+	const coefficient = sign * Math.sqrt(Math.max(0, numerator / denominator));
+	const cxp = (coefficient * (rxInternal * y1p)) / ryInternal;
+	const cyp = (coefficient * (-ryInternal * x1p)) / rxInternal;
 
 	// Step 3: Transform back to original coordinates.
 	const cx = Math.cos(phiRad) * cxp - Math.sin(phiRad) * cyp + (p0.x + p2.x) / 2;
@@ -170,20 +174,22 @@ interface SvgCommand {
 function parseSvgPath(path: string): SvgCommand[] {
 	const commands: SvgCommand[] = [];
 	const re = /([MmLlHhVvCcQqAaZz])([^MmLlHhVvCcQqAaZz]*)/g;
-	let match: RegExpExecArray | null;
-	while ((match = re.exec(path)) !== null) {
+	let match: RegExpExecArray | null = re.exec(path);
+	while (match !== null) {
 		const type = match[1];
 		const argsStr = match[2].trim();
 		const args: number[] = [];
 		if (argsStr.length > 0) {
 			// Match numbers (including decimals, negatives, exponents)
 			const numberRe = /-?\d*\.?\d+(?:e[-+]?\d+)?/gi;
-			let numberMatch: RegExpExecArray | null;
-			while ((numberMatch = numberRe.exec(argsStr)) !== null) {
+			let numberMatch: RegExpExecArray | null = numberRe.exec(argsStr);
+			while (numberMatch !== null) {
 				args.push(Number.parseFloat(numberMatch[0]));
+				numberMatch = numberRe.exec(argsStr);
 			}
 		}
 		commands.push({ type, args });
+		match = re.exec(path);
 	}
 	return commands;
 }
@@ -451,7 +457,8 @@ export function svgPathToSegments(
 					break;
 				}
 				default: {
-					console.error('unsupported SVG command type: ' + type + ' ' + args.join(' '));
+					toast.error(`Unsupported SVG command type: ${type} ${args.join(' ')}`);
+					console.error(`unsupported SVG command type: ${type} ${args.join(' ')}`);
 					// Unsupported commands can be skipped.
 					idx = args.length;
 					break;

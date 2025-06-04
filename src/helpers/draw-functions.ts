@@ -5,11 +5,13 @@ import type {DrawController} from '../drawControllers/DrawController';
 import type {ScreenCanvasDrawController} from '../drawControllers/screenCanvas.drawController';
 import type {Entity} from '../entities/Entity';
 import {getLayers, isEntityHighlighted, isEntitySelected} from '../state';
+import {toast} from 'react-toastify';
 
 export function drawEntities(drawController: DrawController, entities: Entity[]) {
 	for (const entity of entities) {
 		const layer = getLayers().find((layer) => layer.id === entity.layerId);
 		if (!layer) {
+			toast.error(`Failed to find layer for entity: ${entity?.id}`);
 			console.error('Failed to find layer for entity: ', entity);
 			continue;
 		}

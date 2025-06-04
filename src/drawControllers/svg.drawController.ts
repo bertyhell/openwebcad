@@ -1,10 +1,11 @@
-import {Point} from '@flatten-js/core';
-import {DEFAULT_TEXT_OPTIONS, type DrawController} from './DrawController';
-import {SVG_MARGIN} from '../App.consts.ts';
+import {Point, Vector} from '@flatten-js/core';
+import {toast} from 'react-toastify';
+import {SVG_MARGIN, TO_DEGREES} from '../App.consts.ts';
 import type {TextOptions} from '../entities/TextEntity.ts';
-import {triggerReactUpdate} from '../state.ts';
-import {StateVariable} from '../helpers/undo-stack.ts';
 import {isLengthEqual} from '../helpers/is-length-equal.ts';
+import {StateVariable} from '../helpers/undo-stack.ts';
+import {triggerReactUpdate} from '../state.ts';
+import {DEFAULT_TEXT_OPTIONS, type DrawController} from './DrawController';
 
 export class SvgDrawController implements DrawController {
 	private lineColor = '#000';
@@ -159,7 +160,7 @@ export class SvgDrawController implements DrawController {
 	public drawLine(startPoint: Point, endPoint: Point): void {
 		const [canvasStartPoint, canvasEndPoint] = this.worldsToTargets([startPoint, endPoint]);
 		this.svgStrings.push(
-			`<line x1="${canvasStartPoint.x}" y1="${canvasStartPoint.y}" x2="${canvasEndPoint.x}" y2="${canvasEndPoint.y}" stroke="${this.lineColor}" stroke-width="${this.lineWidth}" stroke-dasharray="${this.lineDash.join(',')}" />`
+			`<line x1="${canvasStartPoint.x}" y1="${canvasStartPoint.y}" x2="${canvasEndPoint.x}" y2="${canvasEndPoint.y}" stroke="${this.lineColor}" stroke-width="${this.lineWidth}" stroke-dasharray="${this.lineDash.join(',')}" stroke-linecap="round" />`
 		);
 	}
 
@@ -190,12 +191,12 @@ export class SvgDrawController implements DrawController {
 		const largeArcFlag = Math.abs(sweep) > Math.PI ? '1' : '0';
 		const sweepFlag = counterClockwise ? '0' : '1'; // SVG: 0 = CCW, 1 = CW
 
-		const attributes = `fill="none" stroke="${this.lineColor}" stroke-width="${this.lineWidth}" stroke-dasharray="${this.lineDash.join(',')}"`;
+		const attributes = `fill="none" stroke="${this.lineColor}" stroke-width="${this.lineWidth}" stroke-dasharray="${this.lineDash.join(',')}" stroke-linecap="round"`;
 		let svgPath: string;
 		if (isLengthEqual(sweep, 2 * Math.PI)) {
 			svgPath = `<circle cx="${canvasCenterPoint.x}" cy="${canvasCenterPoint.y}" r="${canvasRadius}" ${attributes} />`;
 		} else {
-			svgPath = `<path d="M${startPoint.x},${startPoint.y} A${canvasRadius},${canvasRadius} 0 ${largeArcFlag},${sweepFlag} ${endPoint.x},${endPoint.y}" ${attributes}  />`;
+			svgPath = `<path d="M${startPoint.x},${startPoint.y} A${canvasRadius},${canvasRadius} 0 ${largeArcFlag},${sweepFlag} ${endPoint.x},${endPoint.y}" ${attributes} />`;
 		}
 
 		// Push the SVG path data string to the svgStrings array
@@ -210,8 +211,32 @@ export class SvgDrawController implements DrawController {
 			...options,
 		};
 
+		let finalTextColor = textOptions.textColor;
+		const lowerCaseTextColor = textOptions.textColor.toLowerCase();
+		if (
+			lowerCaseTextColor === '#fff' ||
+			lowerCaseTextColor === '#ffffff' ||
+			lowerCaseTextColor === 'white'
+		) {
+			finalTextColor = '#000'; // Change to black if current color is white
+		}
+		// No need to handle black to white, as SVG background is white.
+		// Other colors will remain as they are.
+
+		let transformAttribute = '';
+		if (textOptions.textDirection) {
+			const angle = textOptions.textDirection.angleTo(new Vector(1, 0)) * TO_DEGREES;
+			transformAttribute = `transform="rotate(${angle}, ${canvasBasePoint.x}, ${canvasBasePoint.y})"`;
+		}
+
+		let textAnchorAttribute = '';
+		if (textOptions.textAlign === 'center') {
+			textAnchorAttribute = 'text-anchor="middle"';
+		}
+
 		this.svgStrings.push(
-			`<text x="${canvasBasePoint.x}" y="${canvasBasePoint.y}" fill="${textOptions.textColor}" font-size="${textOptions.fontSize}" font-family="${textOptions.fontFamily}">${label}</text>`
+			// Use finalTextColor here
+			`<text x="${canvasBasePoint.x}" y="${canvasBasePoint.y}" fill="${finalTextColor}" font-size="${textOptions.fontSize}" font-family="${textOptions.fontFamily}" ${transformAttribute} ${textAnchorAttribute}>${label}</text>`
 		);
 	}
 
@@ -228,6 +253,7 @@ export class SvgDrawController implements DrawController {
 		canvas.height = imageElement.height;
 		const ctx = canvas.getContext('2d');
 		if (!ctx) {
+			toast.warn('Failed to create canvas context');
 			console.warn('Failed to create canvas context');
 			return;
 		}
@@ -235,13 +261,26 @@ export class SvgDrawController implements DrawController {
 		ctx.drawImage(imageElement, 0, 0);
 		const dataUri = canvas.toDataURL(); // Convert the image to Base64
 
-		const transform = angle
-			? `transform="rotate(${angle}, ${xMin + width / 2}, ${yMin + height / 2})"`
-			: '';
+		const svgWidth = width * this.getScreenScale();
+		const svgHeight = height * this.getScreenScale();
+
+		const worldCenterX = xMin + width / 2;
+		const worldCenterY = yMin + height / 2;
+
+		const targetCenter = this.worldToTarget(new Point(worldCenterX, worldCenterY));
+
+		const svgX = targetCenter.x - svgWidth / 2;
+		const svgY = targetCenter.y - svgHeight / 2;
+
+		let transformAttribute = '';
+		if (angle !== 0) {
+			const svgAngleDegrees = angle * (180 / Math.PI);
+			transformAttribute = `transform="rotate(${svgAngleDegrees}, ${targetCenter.x}, ${targetCenter.y})"`;
+		}
 
 		// noinspection HtmlUnknownAttribute
 		this.svgStrings.push(
-			`<image href="${dataUri}" x="${xMin}" y="${yMin}" width="${width}" height="${height}" ${transform} />`
+			`<image href="${dataUri}" x="${svgX}" y="${svgY}" width="${svgWidth}" height="${svgHeight}" ${transformAttribute} />`
 		);
 	}
 

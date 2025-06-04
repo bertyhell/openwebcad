@@ -10,6 +10,7 @@ import {exportEntitiesToSvgFile} from '../helpers/import-export-handlers/export-
 import {importEntitiesFromJsonFile} from '../helpers/import-export-handlers/import-entities-from-json';
 import {importEntitiesFromSvgFile} from '../helpers/import-export-handlers/import-entities-from-svg.ts';
 import {importImageFromFile} from '../helpers/import-export-handlers/import-image-from-file';
+import {importEntitiesFromDxfFile} from '../helpers/import-export-handlers/import-entities-from-dxf';
 import {times} from '../helpers/times';
 import {
 	getActiveLayerId,
@@ -524,6 +525,24 @@ export const Toolbar: FC = () => {
 								image,
 							});
 							setActiveToolActor(imageImportActor);
+							evt.target.files = null;
+						}}
+					/>
+				</Button>
+				<Button
+					className="relative w-full"
+					title="Load from DXF file"
+					dataId="dxf-open-button"
+					iconName={IconName.VectorDocumentSolid}
+					onClick={noopClickHandler}
+					label="DXF"
+				>
+					<input
+						className="absolute inset-0 opacity-0"
+						type="file"
+						accept="*.dxf"
+						onChange={async (evt) => {
+							await importEntitiesFromDxfFile(evt.target.files?.[0]);
 							evt.target.files = null;
 						}}
 					/>

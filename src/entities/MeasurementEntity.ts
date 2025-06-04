@@ -4,6 +4,7 @@ import {max, min} from 'es-toolkit/compat';
 import {
 	ARROW_HEAD_LENGTH,
 	ARROW_HEAD_WIDTH,
+	EPSILON,
 	MEASUREMENT_DECIMAL_PLACES,
 	MEASUREMENT_EXTENSION_LENGTH,
 	MEASUREMENT_FONT_SIZE,
@@ -39,21 +40,32 @@ export class MeasurementEntity implements Entity {
 		this.offsetPoint = offsetPoint;
 	}
 
-	private getDrawPoints() {
+	public getDrawPoints() {
+		// Return if measurement is zero length
+		if (isPointEqual(this.startPoint, this.endPoint)) {
+			return null;
+		}
+		// Base line of measurement
 		const lineStartToEnd = new Line(this.startPoint, this.endPoint);
+
+		// Calculate distance to offset point
 		const [, segment] = this.offsetPoint.distanceTo(lineStartToEnd);
 		const closestPointToOffsetOnLine = segment.end;
 
+		// Calculate 2 extension lines
 		let vectorPerpendicularFromLineTowardsOffsetPoint: Vector;
 		if (isPointEqual(closestPointToOffsetOnLine, this.offsetPoint)) {
+			// Offset point lies on baseline
 			vectorPerpendicularFromLineTowardsOffsetPoint = lineStartToEnd.norm;
 		} else {
+			// Offset point doesn't lie on baseline
 			vectorPerpendicularFromLineTowardsOffsetPoint = new Vector(
 				closestPointToOffsetOnLine,
 				this.offsetPoint
 			);
 		}
 
+		// Unit vector for offset direction
 		const vectorPerpendicularFromLineTowardsOffsetPointUnit =
 			vectorPerpendicularFromLineTowardsOffsetPoint.normalize();
 
@@ -96,12 +108,34 @@ export class MeasurementEntity implements Entity {
 			(offsetStartPoint.x + offsetEndPoint.x) / 2,
 			(offsetStartPoint.y + offsetEndPoint.y) / 2
 		);
+		const textHeight = MEASUREMENT_FONT_SIZE;
+		const totalOffset = MEASUREMENT_LABEL_OFFSET + textHeight / 2;
 		const midpointMeasurementLineOffset = midpointMeasurementLine
 			.clone()
-			.translate(
-				vectorPerpendicularFromLineTowardsOffsetPointUnit.multiply(MEASUREMENT_LABEL_OFFSET)
-			);
+			.translate(vectorPerpendicularFromLineTowardsOffsetPointUnit.multiply(totalOffset));
 
+		// TEMPORARY LOGGING START
+		if (
+			this.startPoint.x === 0 &&
+			this.startPoint.y === 0 &&
+			this.endPoint.x === 100 &&
+			this.endPoint.y === 0 &&
+			this.offsetPoint.x === 0 &&
+			this.offsetPoint.y === 20
+		) {
+			// Condition to target the specific test
+			console.log('[DEBUG getDrawPoints] For test ((0,0)-(100,0), offset(0,20)):');
+			console.log('startPoint:', JSON.stringify(this.startPoint));
+			console.log('endPoint:', JSON.stringify(this.endPoint));
+			console.log('offsetPoint:', JSON.stringify(this.offsetPoint));
+			console.log('offsetStartPoint:', JSON.stringify(offsetStartPoint));
+			console.log('offsetEndPoint:', JSON.stringify(offsetEndPoint));
+			console.log('offsetStartPointMargin:', JSON.stringify(offsetStartPointMargin));
+			console.log('offsetStartPointExtend:', JSON.stringify(offsetStartPointExtend));
+			console.log('offsetEndPointMargin:', JSON.stringify(offsetEndPointMargin));
+			console.log('offsetEndPointExtend:', JSON.stringify(offsetEndPointExtend));
+		}
+		// TEMPORARY LOGGING END
 		return {
 			offsetStartPoint,
 			offsetEndPoint,
@@ -125,7 +159,9 @@ export class MeasurementEntity implements Entity {
 	private drawArrowHead = (
 		drawController: DrawController,
 		startPoint: Point,
-		endPoint: Point
+		endPoint: Point,
+		isHighlighted: boolean,
+		isSelected: boolean
 	): void => {
 		const screenScale = drawController.getScreenScale();
 		const vectorFromEndToStart = new Vector(endPoint, startPoint);
@@ -142,7 +178,13 @@ export class MeasurementEntity implements Entity {
 			.clone()
 			.translate(perpendicularVector2.multiply(ARROW_HEAD_WIDTH * screenScale));
 
-		drawController.setLineStyles(false, false, this.lineColor, this.lineWidth, []);
+		drawController.setLineStyles(
+			isHighlighted,
+			isSelected,
+			this.lineColor,
+			this.lineWidth,
+			this.lineDash
+		);
 		drawController.drawLine(endPoint, leftCornerOfArrow);
 		drawController.drawLine(endPoint, rightCornerOfArrow);
 		drawController.drawLine(leftCornerOfArrow, rightCornerOfArrow);
@@ -168,9 +210,11 @@ export class MeasurementEntity implements Entity {
 		if (isPointEqual(this.startPoint, this.endPoint)) {
 			return; // We can't draw a measurement with 0 length
 		}
+		const isHighlighted = isEntityHighlighted(this);
+		const isSelected = isEntitySelected(this);
 		drawController.setLineStyles(
-			isEntityHighlighted(this),
-			isEntitySelected(this),
+			isHighlighted,
+			isSelected,
 			this.lineColor,
 			this.lineWidth,
 			this.lineDash
@@ -191,8 +235,15 @@ export class MeasurementEntity implements Entity {
 			normalUnit,
 		} = drawPoints;
 
-		this.drawArrowHead(drawController, offsetStartPoint, offsetEndPoint);
-		this.drawArrowHead(drawController, offsetEndPoint, offsetStartPoint);
+		this.drawArrowHead(drawController, offsetStartPoint, offsetEndPoint, isHighlighted, isSelected);
+		this.drawArrowHead(drawController, offsetEndPoint, offsetStartPoint, isHighlighted, isSelected);
+		drawController.setLineStyles(
+			isHighlighted,
+			isSelected,
+			this.lineColor,
+			this.lineWidth,
+			this.lineDash
+		);
 		drawController.drawLine(offsetStartPoint, offsetEndPoint);
 		drawController.drawLine(offsetStartPointMargin, offsetStartPointExtend);
 		drawController.drawLine(offsetEndPointMargin, offsetEndPointExtend);
@@ -200,9 +251,17 @@ export class MeasurementEntity implements Entity {
 		const distance = String(
 			round(pointDistance(this.startPoint, this.endPoint), MEASUREMENT_DECIMAL_PLACES)
 		);
+		const originalTextDirection = normalUnit.rotate90CW();
+		let finalTextDirection = originalTextDirection;
+		if (
+			originalTextDirection.x < -EPSILON ||
+			(Math.abs(originalTextDirection.x) < EPSILON && originalTextDirection.y > EPSILON)
+		) {
+			finalTextDirection = new Vector(-originalTextDirection.x, -originalTextDirection.y);
+		}
 		drawController.drawText(distance, midpointMeasurementLineOffset, {
 			textAlign: 'center',
-			textDirection: normalUnit.rotate90CW(),
+			textDirection: finalTextDirection,
 			fontSize: MEASUREMENT_FONT_SIZE,
 			textColor: this.lineColor,
 		});
@@ -244,6 +303,10 @@ export class MeasurementEntity implements Entity {
 	public intersectsWithBox(box: Box): boolean {
 		const drawPoints = this.getDrawPoints();
 
+		if (!drawPoints) {
+			return false;
+		}
+
 		const measurementLines = [
 			new Segment(drawPoints.offsetStartPoint, drawPoints.offsetEndPoint),
 			new Segment(drawPoints.offsetStartPointMargin, drawPoints.offsetStartPointExtend),
@@ -265,6 +328,10 @@ export class MeasurementEntity implements Entity {
 	public isContainedInBox(box: Box): boolean {
 		const drawPoints = this.getDrawPoints();
 
+		if (!drawPoints) {
+			return false;
+		}
+
 		const measurementLines = [
 			new Segment(drawPoints.offsetStartPoint, drawPoints.offsetEndPoint),
 			new Segment(drawPoints.offsetStartPointMargin, drawPoints.offsetStartPointExtend),
@@ -283,18 +350,79 @@ export class MeasurementEntity implements Entity {
 	public getBoundingBox(): Box {
 		const drawPoints = this.getDrawPoints();
 
-		const extremePoints = [
+		if (!drawPoints) {
+			throw new Error('Failed to get draw points from measurement entity');
+		}
+
+		const lineExtremePoints = [
 			drawPoints.offsetStartPointMargin,
 			drawPoints.offsetStartPointExtend,
 			drawPoints.offsetEndPointMargin,
 			drawPoints.offsetEndPointExtend,
+			// Also include the main measurement line itself in the bounding box calculation for lines
+			drawPoints.offsetStartPoint,
+			drawPoints.offsetEndPoint,
 		];
 
+		// Calculate text properties
+		const distance = String(
+			round(pointDistance(this.startPoint, this.endPoint), MEASUREMENT_DECIMAL_PLACES)
+		);
+		const textHeight = MEASUREMENT_FONT_SIZE;
+		// Estimate width: textString.length * fontSize * aspectRatioFactor
+		const textWidth = distance.length * MEASUREMENT_FONT_SIZE * 0.6;
+
+		const {midpointMeasurementLineOffset, normalUnit} = drawPoints;
+
+		// Determine text direction (similar to draw method)
+		const originalTextDirection = normalUnit.rotate90CW();
+		let finalTextDirection = originalTextDirection;
+		if (
+			originalTextDirection.x < -EPSILON ||
+			(Math.abs(originalTextDirection.x) < EPSILON && originalTextDirection.y > EPSILON)
+		) {
+			finalTextDirection = new Vector(-originalTextDirection.x, -originalTextDirection.y);
+		}
+
+		// Text center
+		const textCenterX = midpointMeasurementLineOffset.x;
+		const textCenterY = midpointMeasurementLineOffset.y;
+
+		// Half dimensions
+		const halfTextWidth = textWidth / 2;
+		const halfTextHeight = textHeight / 2;
+
+		// Text corner calculations
+		// Vector along the text direction for width, and perpendicular for height
+		const dirVec = finalTextDirection.normalize(); // Vector along the text direction
+		const perpVec = dirVec.rotate90CW(); // Vector perpendicular to text direction (for height offset)
+
+		const textCorners = [
+			new Point(
+				textCenterX - dirVec.x * halfTextWidth - perpVec.x * halfTextHeight,
+				textCenterY - dirVec.y * halfTextWidth - perpVec.y * halfTextHeight
+			),
+			new Point(
+				textCenterX + dirVec.x * halfTextWidth - perpVec.x * halfTextHeight,
+				textCenterY + dirVec.y * halfTextWidth - perpVec.y * halfTextHeight
+			),
+			new Point(
+				textCenterX + dirVec.x * halfTextWidth + perpVec.x * halfTextHeight,
+				textCenterY + dirVec.y * halfTextWidth + perpVec.y * halfTextHeight
+			),
+			new Point(
+				textCenterX - dirVec.x * halfTextWidth + perpVec.x * halfTextHeight,
+				textCenterY - dirVec.y * halfTextWidth + perpVec.y * halfTextHeight
+			),
+		];
+
+		const allExtremePoints = [...lineExtremePoints, ...textCorners];
+
 		return new Box(
-			min(extremePoints.map((point) => point.x)),
-			min(extremePoints.map((point) => point.y)),
-			max(extremePoints.map((point) => point.x)),
-			max(extremePoints.map((point) => point.y))
+			min(allExtremePoints.map((point) => point.x)),
+			min(allExtremePoints.map((point) => point.y)),
+			max(allExtremePoints.map((point) => point.x)),
+			max(allExtremePoints.map((point) => point.y))
 		);
 	}
 
@@ -328,14 +456,14 @@ export class MeasurementEntity implements Entity {
 			offsetEndPointMargin,
 		} = drawPoints;
 
-		const lineStartToEnd = new Line(offsetStartPoint, offsetEndPoint);
-		const horizontalLineDistanceInfo = lineStartToEnd.distanceTo(shape);
+		const mainSegment = new Segment(offsetStartPoint, offsetEndPoint);
+		const horizontalLineDistanceInfo = mainSegment.distanceTo(shape);
 
-		const leftVerticalLine = new Line(offsetStartPointMargin, offsetStartPointExtend);
-		const leftVerticalLineDistanceInfo = leftVerticalLine.distanceTo(shape);
+		const leftExtensionSegment = new Segment(offsetStartPointMargin, offsetStartPointExtend);
+		const leftVerticalLineDistanceInfo = leftExtensionSegment.distanceTo(shape);
 
-		const rightVerticalLine = new Line(offsetEndPointMargin, offsetEndPointExtend);
-		const rightVerticalLineDistanceInfo = rightVerticalLine.distanceTo(shape);
+		const rightExtensionSegment = new Segment(offsetEndPointMargin, offsetEndPointExtend);
+		const rightVerticalLineDistanceInfo = rightExtensionSegment.distanceTo(shape);
 
 		return minBy(
 			[horizontalLineDistanceInfo, leftVerticalLineDistanceInfo, rightVerticalLineDistanceInfo],
@@ -358,9 +486,38 @@ export class MeasurementEntity implements Entity {
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	public containsPointOnShape(_point: Point): boolean {
-		throw new Error('containsPointOnShape for MeasurementEntity not yet implemented');
-		// return this.segment.contains(point);
+	public containsPointOnShape(point: Point): boolean {
+		const drawPoints = this.getDrawPoints();
+
+		if (!drawPoints) {
+			return false; // No visual representation, so no point can be on it.
+		}
+
+		const {
+			offsetStartPoint,
+			offsetEndPoint,
+			offsetStartPointMargin,
+			offsetStartPointExtend,
+			offsetEndPointMargin,
+			offsetEndPointExtend,
+		} = drawPoints;
+
+		const measurementLine = new Segment(offsetStartPoint, offsetEndPoint);
+		if (measurementLine.contains(point)) {
+			return true;
+		}
+
+		const extensionLine1 = new Segment(offsetStartPointMargin, offsetStartPointExtend);
+		if (extensionLine1.contains(point)) {
+			return true;
+		}
+
+		const extensionLine2 = new Segment(offsetEndPointMargin, offsetEndPointExtend);
+		if (extensionLine2.contains(point)) {
+			return true;
+		}
+
+		return false;
 	}
 
 	public async toJson(): Promise<JsonEntity<MeasurementJsonData> | null> {

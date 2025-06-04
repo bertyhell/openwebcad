@@ -2,10 +2,14 @@ import {compact} from 'es-toolkit';
 import {ArcEntity, type ArcJsonData} from '../../entities/ArcEntity';
 import {CircleEntity, type CircleJsonData} from '../../entities/CircleEntity';
 import {type Entity, EntityName, type JsonEntity} from '../../entities/Entity';
+import {ImageEntity, type ImageJsonData} from "../../entities/ImageEntity.ts";
 import {LineEntity, type LineJsonData} from '../../entities/LineEntity';
+import {MeasurementEntity, type MeasurementJsonData} from "../../entities/MeasurementEntity.ts";
 import {PointEntity, type PointJsonData} from '../../entities/PointEntity';
 import {RectangleEntity, type RectangleJsonData} from '../../entities/RectangleEntity';
+import {TextEntity, type TextJsonData} from "../../entities/TextEntity.ts";
 import {setActiveLayerId, setEntities, setLayers} from '../../state';
+import {getNewLayer} from "../get-new-layer.ts";
 import type {JsonDrawingFileDeserialized, JsonDrawingFileSerialized} from './export-entities-to-json';
 import {getNewLayer} from "../get-new-layer.ts";
 
@@ -55,6 +59,12 @@ export async function getEntitiesAndLayersFromJsonString(
 					return PointEntity.fromJson(entity as JsonEntity<PointJsonData>);
 				case EntityName.Rectangle:
 					return RectangleEntity.fromJson(entity as JsonEntity<RectangleJsonData>);
+				case EntityName.Text:
+					return TextEntity.fromJson(entity as JsonEntity<TextJsonData>);
+				case EntityName.Measurement:
+					return MeasurementEntity.fromJson(entity as JsonEntity<MeasurementJsonData>);
+				case EntityName.Image:
+					return ImageEntity.fromJson(entity as JsonEntity<ImageJsonData>);
 
 				default:
 					throw new Error(`Invalid entity type: ${entity.type}`);

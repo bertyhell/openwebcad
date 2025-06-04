@@ -238,6 +238,18 @@ export class ScreenCanvasDrawController implements DrawController {
         this.context.moveTo(screenStartPoint.x, this.canvasSize.y - screenStartPoint.y);
         this.context.lineTo(screenEndPoint.x, this.canvasSize.y - screenEndPoint.y);
         this.context.stroke();
+
+        const lineWidth = this.context.lineWidth;
+        const style = this.context.strokeStyle as string;
+        this._drawRoundedEndpoint(screenStartPoint, lineWidth, style);
+        this._drawRoundedEndpoint(screenEndPoint, lineWidth, style);
+    }
+
+    private _drawRoundedEndpoint(screenPoint: Point, lineWidth: number, style: string): void {
+        this.context.fillStyle = style;
+        this.context.beginPath();
+        this.context.arc(screenPoint.x, this.canvasSize.y - screenPoint.y, lineWidth / 2, 0, 2 * Math.PI);
+        this.context.fill();
     }
 
     /**
@@ -283,6 +295,23 @@ export class ScreenCanvasDrawController implements DrawController {
             counterClockWise,
         );
         this.context.stroke();
+
+        const lineWidth = this.context.lineWidth;
+        const style = this.context.strokeStyle as string;
+
+        // Calculate arc endpoints
+        const startScreenX = screenCenterPoint.x + screenRadius * Math.cos(startAngle);
+        // Y is inverted in canvas, but also for the arc angles, so we subtract from canvasSize.y and then add sin
+        const startScreenY = (this.canvasSize.y - screenCenterPoint.y) + screenRadius * Math.sin(startAngle); 
+        const endScreenX = screenCenterPoint.x + screenRadius * Math.cos(endAngle);
+        const endScreenY = (this.canvasSize.y - screenCenterPoint.y) + screenRadius * Math.sin(endAngle);
+
+        // Convert back to Point objects, note that _drawRoundedEndpoint expects y to be from top of canvas
+        const arcStartPoint = new Point(startScreenX, this.canvasSize.y - startScreenY);
+        const arcEndPoint = new Point(endScreenX, this.canvasSize.y - endScreenY);
+        
+        this._drawRoundedEndpoint(arcStartPoint, lineWidth, style);
+        this._drawRoundedEndpoint(arcEndPoint, lineWidth, style);
     }
 
     /**
@@ -341,6 +370,7 @@ export class ScreenCanvasDrawController implements DrawController {
         this.context.font = `${opts.fontSize}px ${opts.fontFamily}`;
         this.context.textAlign = opts.textAlign;
         this.context.fillStyle = opts.textColor;
+        this.context.textBaseline = 'middle';
         this.context.fillText(label, 0, 0);
         this.context.restore();
     }
@@ -438,9 +468,9 @@ export class ScreenCanvasDrawController implements DrawController {
         this.context.beginPath();
         screenPoints.forEach((screenPoint, index) => {
             if (index === 0) {
-                this.context.moveTo(screenPoint.x, screenPoint.y);
+                this.context.moveTo(screenPoint.x, this.canvasSize.y - screenPoint.y);
             } else {
-                this.context.lineTo(screenPoint.x, screenPoint.y);
+                this.context.lineTo(screenPoint.x, this.canvasSize.y - screenPoint.y);
             }
         });
         this.context.closePath();

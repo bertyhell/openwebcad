@@ -1,4 +1,4 @@
-import {type Box, Point, Segment} from '@flatten-js/core';
+import {type Box, Point, Segment} from '@flatten-js/core'; // Vector is implicitly used via Point methods
 import {sortBy, uniqWith} from 'es-toolkit';
 import {type Shape, type SnapPoint, SnapPointType} from '../App.types';
 import type {DrawController} from '../drawControllers/DrawController';
@@ -110,9 +110,56 @@ export class LineEntity implements Entity {
 		return this.segment.start;
 	}
 
-	public distanceTo(shape: Shape): [number, Segment] | null {
-		return this.segment.distanceTo(shape);
-	}
+    public distanceTo(shape: Shape): [number, Segment] | null {
+        if (!(shape instanceof Point)) {
+            // Fallback for non-Point shapes, similar to ArcEntity's updated distanceTo.
+            // For this specific issue, 'shape' is always a Point from findClosestEntity.
+            try {
+                if (typeof this.segment.distanceTo === 'function') {
+                    const result = this.segment.distanceTo(shape);
+                    if (result && Array.isArray(result) && result.length === 2 && typeof result[0] === 'number') {
+                        return result as [number, Segment | null];
+                    }
+                }
+            } catch (e) {
+                // console.error("LineEntity.distanceTo fallback failed for non-Point shape:", e);
+            }
+            return null;
+        }
+
+        const P: Point = shape;
+        const A = this.segment.start;
+        const B = this.segment.end;
+
+        const vecAB = B.subtract(A); // Vector from A to B
+        const vecAP = P.subtract(A); // Vector from A to P
+
+        // Handle degenerate segment case (A and B are the same point)
+        const lenSqVecAB = vecAB.dot(vecAB); // Equivalent to vecAB.length * vecAB.length
+
+        let closestPointOnSegment: Point;
+
+        if (lenSqVecAB < 1e-12) { // Consider segment degenerate if length squared is very small
+            closestPointOnSegment = A;
+        } else {
+            // Calculate projection of AP onto AB, t = (AP . AB) / |AB|^2
+            const t = vecAP.dot(vecAB) / lenSqVecAB;
+
+            if (t < 0) {
+                closestPointOnSegment = A; // Closest point is A
+            } else if (t > 1) {
+                closestPointOnSegment = B; // Closest point is B
+            } else {
+                // Projection falls within the segment
+                // closestPointOnSegment = A.add(vecAB.multiply(t)); // A + t * (B - A)
+                // flatten-js Point.add() expects a Vector. B.subtract(A) is already a Vector.
+                closestPointOnSegment = A.translate(vecAB.multiply(t)); // A.translate is A.add for Vector
+            }
+        }
+
+        const distance = P.distanceTo(closestPointOnSegment)[0];
+        return [distance, new Segment(P, closestPointOnSegment)];
+    }
 
 	public getSvgString(): string | null {
 		return (

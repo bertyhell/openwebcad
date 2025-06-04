@@ -7,10 +7,10 @@ import {exportEntitiesToLocalStorage} from '../helpers/import-export-handlers/ex
 import {exportEntitiesToPdfFile} from '../helpers/import-export-handlers/export-entities-to-pdf.ts';
 import {exportEntitiesToPngFile} from '../helpers/import-export-handlers/export-entities-to-png';
 import {exportEntitiesToSvgFile} from '../helpers/import-export-handlers/export-entities-to-svg';
+import {importEntitiesFromDxfFile} from '../helpers/import-export-handlers/import-entities-from-dxf';
 import {importEntitiesFromJsonFile} from '../helpers/import-export-handlers/import-entities-from-json';
 import {importEntitiesFromSvgFile} from '../helpers/import-export-handlers/import-entities-from-svg.ts';
 import {importImageFromFile} from '../helpers/import-export-handlers/import-image-from-file';
-import {importEntitiesFromDxfFile} from '../helpers/import-export-handlers/import-entities-from-dxf';
 import {times} from '../helpers/times';
 import {
 	getActiveLayerId,
@@ -470,8 +470,20 @@ export const Toolbar: FC = () => {
 						}}
 						active={zoom === screenZoomLocal}
 					/>
-					// TODO add option to fit screen
 				))}
+				<Button
+					key="zoom-level--fit"
+					title="Zoom fit screen"
+					dataId="zoom-level-fit-button"
+					label="Fit screen"
+					style={{ width: 'calc(60% - 2px)', padding: '8px' }}
+					onClick={(evt) => {
+						evt.stopPropagation();
+						getScreenCanvasDrawController().zoomToFitScreen();
+						setScreenZoomLocal(getScreenCanvasDrawController().getScreenScale());
+					}}
+					active={false}
+				/>
 			</DropdownButton>
 
 			<Button

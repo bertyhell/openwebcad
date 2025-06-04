@@ -229,6 +229,7 @@ export class InputController {
 	}
 
 	public handleKeyStroke(evt: KeyboardEvent) {
+		console.log(`key pressed: ${evt.key}`);
 		if (evt.key === 'F12') {
 			// F12 => open developer tools
 			return;
@@ -277,6 +278,58 @@ export class InputController {
 		} else if (evt.key === 'Enter') {
 			// User wants to submit the input or submit the action
 			this.handleEnterKey();
+		} else if (evt.key === 'ArrowDown') {
+			// Move the screen down
+			const screenOffset = getScreenCanvasDrawController().getScreenOffset();
+			let step = 20;
+			if (evt.shiftKey) {
+				step = 100;
+			}
+			getScreenCanvasDrawController().setScreenOffset(
+				new Point(screenOffset.x, screenOffset.y + step)
+			);
+		} else if (evt.key === 'ArrowUp') {
+			// Move the screen up
+			const screenOffset = getScreenCanvasDrawController().getScreenOffset();
+			let step = 20;
+			if (evt.shiftKey) {
+				step = 100;
+			}
+			getScreenCanvasDrawController().setScreenOffset(
+				new Point(screenOffset.x, screenOffset.y - step)
+			);
+		} else if (evt.key === 'ArrowLeft') {
+			// Move the screen left
+			const screenOffset = getScreenCanvasDrawController().getScreenOffset();
+			let step = 20;
+			if (evt.shiftKey) {
+				step = 100;
+			}
+			getScreenCanvasDrawController().setScreenOffset(
+				new Point(screenOffset.x + step, screenOffset.y)
+			);
+		} else if (evt.key === 'ArrowRight') {
+			// Move the screen right
+			const screenOffset = getScreenCanvasDrawController().getScreenOffset();
+			let step = 20;
+			if (evt.shiftKey) {
+				step = 100;
+			}
+			getScreenCanvasDrawController().setScreenOffset(
+				new Point(screenOffset.x - step, screenOffset.y)
+			);
+		} else if (evt.key === '+') {
+			// Zoom in
+			// TODO keep the center of the screen centered during zoom
+			getScreenCanvasDrawController().setScreenScale(
+				getScreenCanvasDrawController().getScreenScale() * 1.1
+			);
+		} else if (evt.key === '-') {
+			// Zoom in
+			// TODO keep the center of the screen centered during zoom
+			getScreenCanvasDrawController().setScreenScale(
+				getScreenCanvasDrawController().getScreenScale() * 0.9
+			);
 		} else if (evt.key?.length === 1) {
 			// User entered a single character => add to input field text
 			this.text += evt.key.toUpperCase();

@@ -11,7 +11,6 @@ import {TextEntity, type TextJsonData} from "../../entities/TextEntity.ts";
 import {setActiveLayerId, setEntities, setLayers} from '../../state';
 import {getNewLayer} from "../get-new-layer.ts";
 import type {JsonDrawingFileDeserialized, JsonDrawingFileSerialized} from './export-entities-to-json';
-import {getNewLayer} from "../get-new-layer.ts";
 
 /**
  * Open a file selection dialog to select *.json files

@@ -1,4 +1,5 @@
 import {type FC, type MouseEvent, useCallback, useEffect, useState} from 'react';
+import {toast} from 'react-toastify';
 import {Actor} from 'xstate';
 import {COLOR_LIST} from '../App.consts';
 import {HtmlEvent, type Layer} from '../App.types';
@@ -494,6 +495,7 @@ export const Toolbar: FC = () => {
 				onClick={async (evt) => {
 					evt.stopPropagation();
 					await exportEntitiesToLocalStorage();
+					toast.success('Saved');
 				}}
 				label="Save drawing"
 			/>

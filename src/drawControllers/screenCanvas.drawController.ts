@@ -1,11 +1,11 @@
 import {Point, type Vector} from '@flatten-js/core';
 import {CANVAS_BACKGROUND_COLOR, MOUSE_ZOOM_MULTIPLIER} from '../App.consts';
+import {containRectangle} from '../helpers/contain-rect.ts';
+import {getBoundingBoxOfMultipleEntities} from '../helpers/get-bounding-box-of-multiple-entities.ts';
 import {mapNumberRange} from '../helpers/map-number-range.ts';
 import {StateVariable} from '../helpers/undo-stack.ts';
 import {getEntities, getScreenCanvasDrawController, triggerReactUpdate} from '../state.ts';
 import {DEFAULT_TEXT_OPTIONS, type DrawController} from './DrawController';
-import {getBoundingBoxOfMultipleEntities} from "../helpers/get-bounding-box-of-multiple-entities.ts";
-import {containRectangle} from "../helpers/contain-rect.ts";
 
 /**
  * Screen coordinate system:
@@ -51,6 +51,7 @@ export class ScreenCanvasDrawController implements DrawController {
 	}
 
 	public setScreenScale(newScreenScale: number) {
+		console.log(`set screen scale: ${newScreenScale}`);
 		this.screenScale = newScreenScale;
 		triggerReactUpdate(StateVariable.screenZoom);
 	}

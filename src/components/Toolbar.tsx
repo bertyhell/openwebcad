@@ -7,6 +7,7 @@ import {exportEntitiesToLocalStorage} from '../helpers/import-export-handlers/ex
 import {exportEntitiesToPdfFile} from '../helpers/import-export-handlers/export-entities-to-pdf.ts';
 import {exportEntitiesToPngFile} from '../helpers/import-export-handlers/export-entities-to-png';
 import {exportEntitiesToSvgFile} from '../helpers/import-export-handlers/export-entities-to-svg';
+import {exportEntitiesToDxfFile} from '../helpers/import-export-handlers/export-entities-to-dxf';
 import {importEntitiesFromJsonFile} from '../helpers/import-export-handlers/import-entities-from-json';
 import {importEntitiesFromSvgFile} from '../helpers/import-export-handlers/import-entities-from-svg.ts';
 import {importImageFromFile} from '../helpers/import-export-handlers/import-image-from-file';
@@ -600,6 +601,17 @@ export const Toolbar: FC = () => {
 						exportEntitiesToSvgFile();
 					}}
 					label="SVG"
+				/>
+				<Button
+					className="w-full"
+					title="Export to DXF file"
+					dataId="dxf-export-button"
+					iconName={IconName.VectorDocumentSolid}
+					onClick={async (evt) => {
+						evt.stopPropagation();
+						await exportEntitiesToDxfFile();
+					}}
+					label="DXF"
 				/>
 				<Button
 					className="w-full"

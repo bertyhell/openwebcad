@@ -7,7 +7,7 @@ import type {Shape, SnapPoint} from '../App.types';
 import type {DrawController} from '../drawControllers/DrawController';
 import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
 import {ArcEntity, type ArcJsonData} from './ArcEntity.ts';
-import {type Entity, EntityName, type JsonEntity, type ShapeJsonData} from './Entity';
+import {type Entity, EntityName, type JsonEntity} from './Entity';
 import {LineEntity, type LineJsonData} from './LineEntity.ts';
 
 export class PolyLineEntity implements Entity {
@@ -30,16 +30,17 @@ export class PolyLineEntity implements Entity {
 		return this.entities.length;
 	}
 
-	public draw(drawController: DrawController, highlighted?: boolean, selected?: boolean): void {
-		drawController.setLineStyles(
-			highlighted ?? isEntityHighlighted(this),
-			selected ?? isEntitySelected(this),
-			this.lineColor,
-			this.lineWidth,
-			this.lineDash
-		);
+	public draw(
+		drawController: DrawController,
+		parentHighlighted?: boolean,
+		parentSelected?: boolean
+	): void {
 		for (const entity of this.entities) {
-			entity.draw(drawController);
+			entity.draw(
+				drawController,
+				parentHighlighted ?? isEntityHighlighted(this),
+				parentSelected ?? isEntitySelected(this)
+			);
 		}
 	}
 
@@ -142,7 +143,7 @@ export class PolyLineEntity implements Entity {
 		const entities: (ArcEntity | LineEntity | null)[] = await mapLimit(
 			jsonEntity.children || [],
 			20,
-			async (childEntity: JsonEntity<ShapeJsonData>): Promise<LineEntity | ArcEntity | null> => {
+			async (childEntity: JsonEntity): Promise<LineEntity | ArcEntity | null> => {
 				const type = childEntity.type;
 				switch (type) {
 					case EntityName.Arc:
@@ -181,4 +182,4 @@ export class PolyLineEntity implements Entity {
 	}
 }
 
-export type PolyLineJsonData = {};
+export type PolyLineJsonData = Record<never, never>;

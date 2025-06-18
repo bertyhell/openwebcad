@@ -1,8 +1,9 @@
 import {type Box, Point, Segment} from '@flatten-js/core';
 import {sortBy, uniqWith} from 'es-toolkit';
-import {type Shape, type SnapPoint, SnapPointType} from '../App.types';
+import {type Shape, type SnapPoint, SnapPointType, type StartAndEndpointEntity} from '../App.types';
 import type {DrawController} from '../drawControllers/DrawController';
 import {pointDistance} from '../helpers/distance-between-points';
+import {getAngleWithXAxis} from '../helpers/get-angle-with-x-axis.ts';
 import {getExportColor} from '../helpers/get-export-color';
 import {isPointEqual} from '../helpers/is-point-equal';
 import {mirrorPointOverAxis} from '../helpers/mirror-point-over-axis.ts';
@@ -10,7 +11,7 @@ import {scalePoint} from '../helpers/scale-point';
 import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
 import {type Entity, EntityName, type JsonEntity} from './Entity';
 
-export class LineEntity implements Entity {
+export class LineEntity implements Entity, StartAndEndpointEntity {
 	public id: string = crypto.randomUUID();
 	public lineColor = '#fff';
 	public lineWidth = 1;
@@ -28,10 +29,14 @@ export class LineEntity implements Entity {
 		}
 	}
 
-	public draw(drawController: DrawController, highlighted?: boolean, selected?: boolean): void {
+	public draw(
+		drawController: DrawController,
+		parentHighlighted?: boolean,
+		parentSelected?: boolean
+	): void {
 		drawController.setLineStyles(
-			highlighted ?? isEntityHighlighted(this),
-			selected ?? isEntitySelected(this),
+			parentHighlighted ?? isEntityHighlighted(this),
+			parentSelected ?? isEntitySelected(this),
 			this.lineColor,
 			this.lineWidth,
 			this.lineDash
@@ -131,16 +136,11 @@ export class LineEntity implements Entity {
 		return this.segment.contains(point);
 	}
 
+	/**
+	 * Returns angle of the line with the x-axis in radians
+	 */
 	public getAngle(): number {
-		const diffX = this.segment.end.x - this.segment.start.x;
-		const diffY = this.segment.end.y - this.segment.start.y;
-		if (diffX === 0) {
-			// Vertical line
-			return Math.PI / 2;
-		}
-		const slope = diffY / diffX;
-		const angle = Math.atan(slope);
-		return (angle + Math.PI) % Math.PI; // always reduce to a number between 0 and 180 degrees
+		return getAngleWithXAxis(this.segment.start, this.segment.end);
 	}
 
 	/**
@@ -203,6 +203,14 @@ export class LineEntity implements Entity {
 		lineEntity.lineColor = jsonEntity.lineColor;
 		lineEntity.lineWidth = jsonEntity.lineWidth;
 		return lineEntity;
+	}
+
+	public getStartPoint(): Point {
+		return this.segment.start;
+	}
+
+	public getEndPoint(): Point {
+		return this.segment.end;
 	}
 }
 

@@ -1,4 +1,4 @@
-import type {Circle, Point, Segment} from '@flatten-js/core';
+import {type Circle, Point, type Segment} from '@flatten-js/core';
 import {compact} from 'es-toolkit';
 import {ArcEntity} from '../entities/ArcEntity';
 import type {CircleEntity} from '../entities/CircleEntity';
@@ -7,18 +7,21 @@ import type {LineEntity} from '../entities/LineEntity';
 import {findNeighboringPointsOnArc} from '../helpers/find-neighboring-points-on-arc';
 import {findNeighboringPointsOnCircle} from '../helpers/find-neighboring-points-on-circle';
 import {findNeighboringPointsOnLine} from '../helpers/find-neighboring-points-on-line';
+import {getAngleWithXAxis} from '../helpers/get-angle-with-x-axis.ts';
 import {isPointEqual} from '../helpers/is-point-equal';
 import {addEntities, deleteEntities, getActiveLayerId} from '../state';
 
 export function getAllIntersectionPoints(entity: Entity, entities: Entity[]): Point[] {
 	// TODO see if we need to make this list unique
 	return compact(
-		entities.flatMap((otherEntity) => {
-			if (entity.id === otherEntity.id) {
-				return null;
-			}
-			return entity.getIntersections(otherEntity);
-		})
+		entities
+			.filter((otherEntity) => otherEntity.id !== entity.id)
+			.flatMap((otherEntity) => {
+				if (entity.id === otherEntity.id) {
+					return null;
+				}
+				return entity.getIntersections(otherEntity);
+			})
 	);
 }
 
@@ -64,7 +67,7 @@ export function eraseCircleSegment(
 	const center = circleShape.center;
 
 	const angles = [firstCutPoint, secondCutPoint, clickedPointOnShape].map((p) =>
-		Math.atan2(center.y - p.y, p.x - center.x)
+		getAngleWithXAxis(new Point(center.x, center.y), new Point(p.x, p.y))
 	);
 
 	const [startAngle, endAngle] = isAngleBetween(angles[2], angles[0], angles[1])
@@ -75,8 +78,8 @@ export function eraseCircleSegment(
 		getActiveLayerId(),
 		center,
 		circleShape.r,
-		endAngle,
 		startAngle,
+		endAngle,
 		true
 	);
 	Object.assign(newArc, {

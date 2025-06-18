@@ -6,6 +6,7 @@ import {ImageEntity, type ImageJsonData} from '../../entities/ImageEntity.ts';
 import {LineEntity, type LineJsonData} from '../../entities/LineEntity';
 import {MeasurementEntity, type MeasurementJsonData} from '../../entities/MeasurementEntity.ts';
 import {PointEntity, type PointJsonData} from '../../entities/PointEntity';
+import {PolyLineEntity, type PolyLineJsonData} from '../../entities/PolyLineEntity.ts';
 import {RectangleEntity, type RectangleJsonData} from '../../entities/RectangleEntity';
 import {TextEntity, type TextJsonData} from '../../entities/TextEntity.ts';
 import {setActiveLayerId, setEntities, setLayers} from '../../state';
@@ -57,6 +58,8 @@ export async function getEntitiesAndLayersFromJsonObject(
 					return MeasurementEntity.fromJson(entity as JsonEntity<MeasurementJsonData>);
 				case EntityName.Image:
 					return ImageEntity.fromJson(entity as JsonEntity<ImageJsonData>);
+				case EntityName.PolyLine:
+					return PolyLineEntity.fromJson(entity as JsonEntity<PolyLineJsonData>);
 
 				default:
 					throw new Error(`Invalid entity type: ${entity.type}`);

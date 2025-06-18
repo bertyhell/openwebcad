@@ -1,6 +1,7 @@
 import {Point, type Vector} from '@flatten-js/core';
 import {CANVAS_BACKGROUND_COLOR, MOUSE_ZOOM_MULTIPLIER} from '../App.consts';
 import {containRectangle} from '../helpers/contain-rect.ts';
+import {getAngleWithXAxis} from '../helpers/get-angle-with-x-axis.ts';
 import {getBoundingBoxOfMultipleEntities} from '../helpers/get-bounding-box-of-multiple-entities.ts';
 import {mapNumberRange} from '../helpers/map-number-range.ts';
 import {StateVariable} from '../helpers/undo-stack.ts';
@@ -291,7 +292,8 @@ export class ScreenCanvasDrawController implements DrawController {
 	) {
 		const screenCenterPoint = this.worldToTarget(centerPoint);
 		const screenRadius = radius * this.screenScale;
-		this.drawArcScreen(screenCenterPoint, screenRadius, startAngle, endAngle, counterClockWise);
+		// Flip angles over the x-axis, because we go from world to screen coordinates which flips the y-axis direction
+		this.drawArcScreen(screenCenterPoint, screenRadius, -startAngle, -endAngle, counterClockWise);
 	}
 
 	public drawArcScreen(
@@ -380,7 +382,10 @@ export class ScreenCanvasDrawController implements DrawController {
 		};
 		this.context.save();
 		this.context.translate(basePoint.x, this.canvasSize.y - basePoint.y);
-		const angle = Math.atan2(-opts.textDirection.y, opts.textDirection.x);
+		const angle = getAngleWithXAxis(
+			new Point(0, 0),
+			new Point(opts.textDirection.x, -opts.textDirection.y)
+		);
 		this.context.rotate(angle);
 		this.context.font = `${opts.fontSize}px ${opts.fontFamily}`;
 		this.context.textAlign = opts.textAlign;

@@ -4,12 +4,12 @@ import {type Shape, type SnapPoint, SnapPointType} from '../App.types';
 import type {DrawController} from '../drawControllers/DrawController';
 import {twoPointBoxToPolygon} from '../helpers/box-to-polygon';
 import {getExportColor} from '../helpers/get-export-color';
-import {mirrorPointOverAxis} from "../helpers/mirror-point-over-axis.ts";
+import {mirrorPointOverAxis} from '../helpers/mirror-point-over-axis.ts';
 import {polygonToSegments} from '../helpers/polygon-to-segments';
 import {scalePoint} from '../helpers/scale-point';
 import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
 import {type Entity, EntityName, type JsonEntity} from './Entity';
-import type {LineEntity} from "./LineEntity.ts";
+import type {LineEntity} from './LineEntity.ts';
 
 export class RectangleEntity implements Entity {
 	public id: string = crypto.randomUUID();
@@ -29,10 +29,14 @@ export class RectangleEntity implements Entity {
 		}
 	}
 
-	public draw(drawController: DrawController, highlighted?: boolean, selected?: boolean): void {
+	public draw(
+		drawController: DrawController,
+		parentHighlighted?: boolean,
+		parentSelected?: boolean
+	): void {
 		drawController.setLineStyles(
-			highlighted ?? isEntityHighlighted(this),
-			selected ?? isEntitySelected(this),
+			parentHighlighted ?? isEntityHighlighted(this),
+			parentSelected ?? isEntitySelected(this),
 			this.lineColor,
 			this.lineWidth,
 			this.lineDash

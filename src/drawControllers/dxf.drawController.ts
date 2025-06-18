@@ -44,10 +44,9 @@ export class DxfDrawController implements DrawController {
     // DXF typically uses world coordinates directly. No complex transformations needed here unless dealing with viewports.
     // For this implementation, we assume entities are already in world coordinates.
     worldToTarget(worldCoordinate: Point): Point {
-        // In DXF, the Y-axis is typically positive upwards.
-        // Our internal representation might be different (e.g., Y positive downwards for screen).
-        // For now, assume direct mapping, but this might need adjustment based on how entities are defined.
-        return worldCoordinate;
+        // Assuming application world is Y-down, DXF is Y-up.
+        // This simple negation assumes the mirroring axis is y=0 in the application's world.
+        return new Point(worldCoordinate.x, -worldCoordinate.y);
     }
 
     worldsToTargets(worldCoordinates: Point[]): Point[] {
@@ -73,16 +72,34 @@ export class DxfDrawController implements DrawController {
     }
 
     drawArc(centerPoint: Point, radius: number, startAngle: number, endAngle: number, counterClockwise: boolean): void {
-        const center = this.worldToTarget(centerPoint);
-        let dxfStartAngle = startAngle * TO_DEGREES;
-        let dxfEndAngle = endAngle * TO_DEGREES;
+        const center = this.worldToTarget(centerPoint); // Center Y is now flipped by worldToTarget
 
-        if (!counterClockwise) {
-            [dxfStartAngle, dxfEndAngle] = [dxfEndAngle, dxfStartAngle];
+        let sAngleAppRad = startAngle; // Original app angles in radians
+        let eAngleAppRad = endAngle;
+
+        // Negate app angles because Y-axis is flipped (transforming from Y-down to Y-up system)
+        // CCW in Y-down becomes CW in Y-up. CW in Y-down becomes CCW in Y-up.
+        sAngleAppRad = -sAngleAppRad;
+        eAngleAppRad = -eAngleAppRad;
+
+        // The counterClockwise flag from app also needs to be flipped in its meaning
+        let effectiveCounterClockwise = !counterClockwise;
+
+        let sAngleDxfDeg = sAngleAppRad * TO_DEGREES;
+        let eAngleDxfDeg = eAngleAppRad * TO_DEGREES;
+
+        if (!effectiveCounterClockwise) { // If effectively CW for DXF (Y-up)
+            [sAngleDxfDeg, eAngleDxfDeg] = [eAngleDxfDeg, sAngleDxfDeg];
         }
 
-        // Styling (color, lineWeight) is assumed to be handled by current layer properties in DxfWriter
-        this.dxfDrawing.drawArc(center.x, center.y, radius, dxfStartAngle, dxfEndAngle);
+        sAngleDxfDeg = (sAngleDxfDeg % 360 + 360) % 360;
+        eAngleDxfDeg = (eAngleDxfDeg % 360 + 360) % 360;
+
+        if (eAngleDxfDeg < sAngleDxfDeg) {
+            eAngleDxfDeg += 360;
+        }
+
+        this.dxfDrawing.drawArc(center.x, center.y, radius, sAngleDxfDeg, eAngleDxfDeg);
     }
 
     drawCircle(centerPoint: Point, radius: number): void {

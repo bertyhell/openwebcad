@@ -1,12 +1,12 @@
-import {type Entity, EntityName, type JsonEntity} from './Entity';
-import {type Shape, type SnapPoint, SnapPointType} from '../App.types';
 import {type Box, Circle, Point, type Segment} from '@flatten-js/core';
-import {getExportColor} from '../helpers/get-export-color';
-import {scalePoint} from '../helpers/scale-point';
+import {type Shape, type SnapPoint, SnapPointType} from '../App.types';
 import type {DrawController} from '../drawControllers/DrawController';
+import {getExportColor} from '../helpers/get-export-color';
+import {mirrorPointOverAxis} from '../helpers/mirror-point-over-axis.ts';
+import {scalePoint} from '../helpers/scale-point';
 import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
-import type {LineEntity} from "./LineEntity.ts";
-import {mirrorPointOverAxis} from "../helpers/mirror-point-over-axis.ts";
+import {type Entity, EntityName, type JsonEntity} from './Entity';
+import type {LineEntity} from './LineEntity.ts';
 
 export class CircleEntity implements Entity {
 	public id: string = crypto.randomUUID();
@@ -22,28 +22,23 @@ export class CircleEntity implements Entity {
 		if (centerPointOrCircle instanceof Circle) {
 			this.circle = centerPointOrCircle as Circle;
 		} else {
-			this.circle = new Circle(
-				centerPointOrCircle as Point,
-				radius as number,
-			);
+			this.circle = new Circle(centerPointOrCircle as Point, radius as number);
 		}
 	}
 
-	public draw(drawController: DrawController): void {
+	public draw(
+		drawController: DrawController,
+		parentHighlighted?: boolean,
+		parentSelected?: boolean
+	): void {
 		drawController.setLineStyles(
-			isEntityHighlighted(this),
-			isEntitySelected(this),
+			parentHighlighted ?? isEntityHighlighted(this),
+			parentSelected ?? isEntitySelected(this),
 			this.lineColor,
 			this.lineWidth,
-			this.lineDash,
+			this.lineDash
 		);
-		drawController.drawArc(
-			this.circle.center,
-			this.circle.r,
-			0,
-			2 * Math.PI,
-			false,
-		);
+		drawController.drawArc(this.circle.center, this.circle.r, 0, 2 * Math.PI, false);
 	}
 
 	public move(x: number, y: number) {
@@ -62,23 +57,14 @@ export class CircleEntity implements Entity {
 	}
 
 	public mirror(mirrorAxis: LineEntity) {
-		const mirroredCenter = mirrorPointOverAxis(
-			this.circle.center,
-			mirrorAxis,
-		);
+		const mirroredCenter = mirrorPointOverAxis(this.circle.center, mirrorAxis);
 		mirrorAxis.getAngle();
-		this.circle = new Circle(
-			mirroredCenter,
-			this.circle.r.valueOf(),
-		);
+		this.circle = new Circle(mirroredCenter, this.circle.r.valueOf());
 	}
 
 	public clone(): Entity {
 		if (this.circle) {
-			return new CircleEntity(
-				getActiveLayerId(),
-				this.circle.clone()
-			);
+			return new CircleEntity(getActiveLayerId(), this.circle.clone());
 		}
 		return this;
 	}
@@ -115,31 +101,19 @@ export class CircleEntity implements Entity {
 				type: SnapPointType.CircleCenter,
 			},
 			{
-				point: new Point(
-					this.circle.center.x + this.circle.r,
-					this.circle.center.y,
-				),
+				point: new Point(this.circle.center.x + this.circle.r, this.circle.center.y),
 				type: SnapPointType.CircleCardinal,
 			},
 			{
-				point: new Point(
-					this.circle.center.x - this.circle.r,
-					this.circle.center.y,
-				),
+				point: new Point(this.circle.center.x - this.circle.r, this.circle.center.y),
 				type: SnapPointType.CircleCardinal,
 			},
 			{
-				point: new Point(
-					this.circle.center.x,
-					this.circle.center.y + this.circle.r,
-				),
+				point: new Point(this.circle.center.x, this.circle.center.y + this.circle.r),
 				type: SnapPointType.CircleCardinal,
 			},
 			{
-				point: new Point(
-					this.circle.center.x,
-					this.circle.center.y - this.circle.r,
-				),
+				point: new Point(this.circle.center.x, this.circle.center.y - this.circle.r),
 				type: SnapPointType.CircleCardinal,
 			},
 			// TODO add tangent points from mouse location to circle
@@ -196,25 +170,19 @@ export class CircleEntity implements Entity {
 			lineWidth: this.lineWidth,
 			layerId: this.layerId,
 			shapeData: {
-				center: {x: this.circle.center.x, y: this.circle.center.y},
+				center: { x: this.circle.center.x, y: this.circle.center.y },
 				radius: this.circle?.r,
 			},
 		};
 	}
 
-	public static async fromJson(
-		jsonEntity: JsonEntity<CircleJsonData>,
-	): Promise<CircleEntity> {
+	public static async fromJson(jsonEntity: JsonEntity<CircleJsonData>): Promise<CircleEntity> {
 		if (!jsonEntity.shapeData) {
 			throw new Error('Invalid JSON entity of type Circle: missing shapeData');
 		}
-		const center = new Point(
-			jsonEntity.shapeData.center.x,
-			jsonEntity.shapeData.center.y,
-		);
+		const center = new Point(jsonEntity.shapeData.center.x, jsonEntity.shapeData.center.y);
 		const radius = jsonEntity.shapeData.radius;
-		const circleEntity = new CircleEntity(
-			jsonEntity.layerId || getActiveLayerId(), center, radius);
+		const circleEntity = new CircleEntity(jsonEntity.layerId || getActiveLayerId(), center, radius);
 		circleEntity.id = jsonEntity.id;
 		circleEntity.lineColor = jsonEntity.lineColor;
 		circleEntity.lineWidth = jsonEntity.lineWidth;

@@ -5,7 +5,7 @@ import type {DrawController} from '../drawControllers/DrawController.ts';
 import {twoPointBoxToPolygon} from '../helpers/box-to-polygon';
 import {getExportColor} from '../helpers/get-export-color';
 import {mirrorAngleOverAxis} from '../helpers/mirror-angle-over-axis.ts';
-import {mirrorPointOverAxis} from "../helpers/mirror-point-over-axis.ts";
+import {mirrorPointOverAxis} from '../helpers/mirror-point-over-axis.ts';
 import {polygonToSegments} from '../helpers/polygon-to-segments';
 import {scalePoint} from '../helpers/scale-point';
 import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
@@ -44,10 +44,14 @@ export class ImageEntity implements Entity {
 		}
 	}
 
-	public draw(drawController: DrawController): void {
+	public draw(
+		drawController: DrawController,
+		parentHighlighted?: boolean,
+		parentSelected?: boolean
+	): void {
 		drawController.setLineStyles(
-			isEntityHighlighted(this),
-			isEntitySelected(this),
+			parentHighlighted ?? isEntityHighlighted(this),
+			parentSelected ?? isEntitySelected(this),
 			this.lineColor,
 			this.lineWidth,
 			this.lineDash

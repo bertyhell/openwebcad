@@ -1,12 +1,12 @@
 import {Box, Point, type Segment, Vector} from '@flatten-js/core';
 import {cloneDeep} from 'es-toolkit/compat';
 import type {Shape, SnapPoint} from '../App.types';
-import {DEFAULT_TEXT_OPTIONS, type DrawController,} from '../drawControllers/DrawController';
-import {mirrorPointOverAxis} from "../helpers/mirror-point-over-axis.ts";
+import {DEFAULT_TEXT_OPTIONS, type DrawController} from '../drawControllers/DrawController';
+import {mirrorPointOverAxis} from '../helpers/mirror-point-over-axis.ts';
 import {scalePoint} from '../helpers/scale-point.ts';
 import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
 import {type Entity, EntityName, type JsonEntity} from './Entity';
-import type {LineEntity} from "./LineEntity.ts";
+import type {LineEntity} from './LineEntity.ts';
 
 export interface TextOptions {
 	textDirection: Vector;
@@ -37,10 +37,14 @@ export class TextEntity implements Entity {
 		};
 	}
 
-	public draw(drawController: DrawController): void {
+	public draw(
+		drawController: DrawController,
+		parentHighlighted?: boolean,
+		parentSelected?: boolean
+	): void {
 		drawController.setLineStyles(
-			isEntityHighlighted(this),
-			isEntitySelected(this),
+			parentHighlighted ?? isEntityHighlighted(this),
+			parentSelected ?? isEntitySelected(this),
 			this.lineColor,
 			this.lineWidth,
 			this.lineDash

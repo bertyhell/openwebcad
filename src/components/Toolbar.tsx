@@ -1,4 +1,5 @@
 import {type FC, type MouseEvent, useCallback, useEffect, useState} from 'react';
+import {toast} from 'react-toastify';
 import {Actor} from 'xstate';
 import {COLOR_LIST} from '../App.consts';
 import {HtmlEvent, type Layer} from '../App.types';
@@ -7,10 +8,10 @@ import {exportEntitiesToLocalStorage} from '../helpers/import-export-handlers/ex
 import {exportEntitiesToPdfFile} from '../helpers/import-export-handlers/export-entities-to-pdf.ts';
 import {exportEntitiesToPngFile} from '../helpers/import-export-handlers/export-entities-to-png';
 import {exportEntitiesToSvgFile} from '../helpers/import-export-handlers/export-entities-to-svg';
+import {importEntitiesFromDxfFile} from '../helpers/import-export-handlers/import-entities-from-dxf';
 import {importEntitiesFromJsonFile} from '../helpers/import-export-handlers/import-entities-from-json';
 import {importEntitiesFromSvgFile} from '../helpers/import-export-handlers/import-entities-from-svg.ts';
 import {importImageFromFile} from '../helpers/import-export-handlers/import-image-from-file';
-import {importEntitiesFromDxfFile} from '../helpers/import-export-handlers/import-entities-from-dxf';
 import {times} from '../helpers/times';
 import {
 	getActiveLayerId,
@@ -36,7 +37,7 @@ import {TOOL_STATE_MACHINES} from '../tools/tool.consts';
 import {ActorEvent} from '../tools/tool.types';
 import {Button} from './Button.tsx';
 import {DropdownButton} from './DropdownButton.tsx';
-import {IconName} from './Icon/Icon.tsx';
+import {Icon, IconName} from './Icon/Icon.tsx';
 import {LayerManager} from './LayerManager.tsx';
 
 export const Toolbar: FC = () => {
@@ -218,6 +219,18 @@ export const Toolbar: FC = () => {
 					}}
 					active={activeToolLocal === Tool.ARRAY}
 					label="Array copy"
+				/>
+				<Button
+					className="w-full"
+					title="Create polyline lines and arcs"
+					dataId="pedit-button"
+					iconComponent={<Icon name={IconName.HomeAlt} className="rotate-270" />}
+					onClick={(evt) => {
+						evt.stopPropagation();
+						handleToolClick(Tool.PEDIT);
+					}}
+					active={activeToolLocal === Tool.PEDIT}
+					label="Polyline edit"
 				/>
 
 				<Button
@@ -458,8 +471,20 @@ export const Toolbar: FC = () => {
 						}}
 						active={zoom === screenZoomLocal}
 					/>
-					// TODO add option to fit screen
 				))}
+				<Button
+					key="zoom-level--fit"
+					title="Zoom fit screen"
+					dataId="zoom-level-fit-button"
+					label="Fit screen"
+					style={{ width: 'calc(60% - 2px)', padding: '8px' }}
+					onClick={(evt) => {
+						evt.stopPropagation();
+						getScreenCanvasDrawController().zoomToFitScreen();
+						setScreenZoomLocal(getScreenCanvasDrawController().getScreenScale());
+					}}
+					active={false}
+				/>
 			</DropdownButton>
 
 			<Button
@@ -470,6 +495,7 @@ export const Toolbar: FC = () => {
 				onClick={async (evt) => {
 					evt.stopPropagation();
 					await exportEntitiesToLocalStorage();
+					toast.success('Saved');
 				}}
 				label="Save drawing"
 			/>

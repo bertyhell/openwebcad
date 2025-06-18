@@ -2,15 +2,16 @@ import {compact} from 'es-toolkit';
 import {ArcEntity, type ArcJsonData} from '../../entities/ArcEntity';
 import {CircleEntity, type CircleJsonData} from '../../entities/CircleEntity';
 import {type Entity, EntityName, type JsonEntity} from '../../entities/Entity';
-import {ImageEntity, type ImageJsonData} from "../../entities/ImageEntity.ts";
+import {ImageEntity, type ImageJsonData} from '../../entities/ImageEntity.ts';
 import {LineEntity, type LineJsonData} from '../../entities/LineEntity';
-import {MeasurementEntity, type MeasurementJsonData} from "../../entities/MeasurementEntity.ts";
+import {MeasurementEntity, type MeasurementJsonData} from '../../entities/MeasurementEntity.ts';
 import {PointEntity, type PointJsonData} from '../../entities/PointEntity';
+import {PolyLineEntity, type PolyLineJsonData} from '../../entities/PolyLineEntity.ts';
 import {RectangleEntity, type RectangleJsonData} from '../../entities/RectangleEntity';
-import {TextEntity, type TextJsonData} from "../../entities/TextEntity.ts";
+import {TextEntity, type TextJsonData} from '../../entities/TextEntity.ts';
 import {setActiveLayerId, setEntities, setLayers} from '../../state';
-import {getNewLayer} from "../get-new-layer.ts";
-import type {JsonDrawingFileDeserialized, JsonDrawingFileSerialized} from './export-entities-to-json';
+import {getNewLayer} from '../get-new-layer.ts';
+import type {JsonDrawingFileDeserialized, JsonDrawingFileSerialized,} from './export-entities-to-json';
 
 /**
  * Open a file selection dialog to select *.json files
@@ -35,16 +36,9 @@ export function importEntitiesFromJsonFile(file: File | null | undefined) {
 	});
 }
 
-export async function getEntitiesAndLayersFromJsonString(
-	json: string
+export async function getEntitiesAndLayersFromJsonObject(
+	data: JsonDrawingFileSerialized
 ): Promise<JsonDrawingFileDeserialized> {
-	const data = JSON.parse(json) as JsonDrawingFileSerialized;
-
-	if (!data.entities) {
-		throw new Error('Invalid JSON file');
-	}
-
-	// TODO use map limit to avoid overloading the event loop
 	const entityPromises: Promise<Entity | null>[] = compact(
 		data.entities.map((entity) => {
 			switch (entity.type) {
@@ -64,6 +58,8 @@ export async function getEntitiesAndLayersFromJsonString(
 					return MeasurementEntity.fromJson(entity as JsonEntity<MeasurementJsonData>);
 				case EntityName.Image:
 					return ImageEntity.fromJson(entity as JsonEntity<ImageJsonData>);
+				case EntityName.PolyLine:
+					return PolyLineEntity.fromJson(entity as JsonEntity<PolyLineJsonData>);
 
 				default:
 					throw new Error(`Invalid entity type: ${entity.type}`);
@@ -80,4 +76,17 @@ export async function getEntitiesAndLayersFromJsonString(
 		entities,
 		layers,
 	};
+}
+
+export async function getEntitiesAndLayersFromJsonString(
+	json: string
+): Promise<JsonDrawingFileDeserialized> {
+	const data = JSON.parse(json) as JsonDrawingFileSerialized;
+
+	if (!data.entities) {
+		throw new Error('Invalid JSON file');
+	}
+
+	// TODO use map limit to avoid overloading the event loop
+	return await getEntitiesAndLayersFromJsonObject(data);
 }

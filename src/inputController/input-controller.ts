@@ -213,6 +213,9 @@ export class InputController {
 	 * @param evt
 	 */
 	public handleMouseWheel(evt: WheelEvent) {
+		if (Math.abs(evt.deltaY) === 0) {
+			return; // We can't zoom by zero delta
+		}
 		const drawController = getScreenCanvasDrawController();
 		drawController.zoomScreen(evt.deltaY);
 	}
@@ -228,7 +231,37 @@ export class InputController {
 		);
 	}
 
+	/**
+	 * Returns a distance to pan the screen when a directional arrow is pressed
+	 * Offset is based on shift key being pressed (larger offset)
+	 * and zoom level
+	 * @private
+	 */
+	private getScreenPanStep(
+		direction: 'up' | 'right' | 'down' | 'left',
+		shiftPressed: boolean
+	): Point {
+		const screenOffset = getScreenCanvasDrawController().getScreenOffset();
+		const screenZoom = getScreenCanvasDrawController().getScreenScale();
+		let step = 20;
+		if (shiftPressed) {
+			step = 100;
+		}
+		step *= screenZoom;
+		switch (direction) {
+			case 'up':
+				return new Point(screenOffset.x, screenOffset.y - step);
+			case 'right':
+				return new Point(screenOffset.x - step, screenOffset.y);
+			case 'down':
+				return new Point(screenOffset.x, screenOffset.y + step);
+			case 'left':
+				return new Point(screenOffset.x + step, screenOffset.y);
+		}
+	}
+
 	public handleKeyStroke(evt: KeyboardEvent) {
+		console.log(`key pressed: ${evt.key}`);
 		if (evt.key === 'F12') {
 			// F12 => open developer tools
 			return;
@@ -277,6 +310,30 @@ export class InputController {
 		} else if (evt.key === 'Enter') {
 			// User wants to submit the input or submit the action
 			this.handleEnterKey();
+		} else if (evt.key === 'ArrowDown') {
+			// Move the screen down
+			getScreenCanvasDrawController().setScreenOffset(this.getScreenPanStep('down', evt.shiftKey));
+		} else if (evt.key === 'ArrowUp') {
+			// Move the screen up
+			getScreenCanvasDrawController().setScreenOffset(this.getScreenPanStep('up', evt.shiftKey));
+		} else if (evt.key === 'ArrowLeft') {
+			// Move the screen left
+			getScreenCanvasDrawController().setScreenOffset(this.getScreenPanStep('left', evt.shiftKey));
+		} else if (evt.key === 'ArrowRight') {
+			// Move the screen right
+			getScreenCanvasDrawController().setScreenOffset(this.getScreenPanStep('right', evt.shiftKey));
+		} else if (evt.key === '+') {
+			// Zoom in
+			// TODO keep the center of the screen centered during zoom
+			getScreenCanvasDrawController().setScreenScale(
+				getScreenCanvasDrawController().getScreenScale() * 1.1
+			);
+		} else if (evt.key === '-') {
+			// Zoom in
+			// TODO keep the center of the screen centered during zoom
+			getScreenCanvasDrawController().setScreenScale(
+				getScreenCanvasDrawController().getScreenScale() * 0.9
+			);
 		} else if (evt.key?.length === 1) {
 			// User entered a single character => add to input field text
 			this.text += evt.key.toUpperCase();

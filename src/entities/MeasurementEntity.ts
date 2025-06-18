@@ -205,13 +205,19 @@ export class MeasurementEntity implements Entity {
 	 *                          startPoint
 	 *
 	 * @param drawController
+	 * @param parentHighlighted
+	 * @param parentSelected
 	 */
-	public draw(drawController: DrawController): void {
+	public draw(
+		drawController: DrawController,
+		parentHighlighted?: boolean,
+		parentSelected?: boolean
+	): void {
 		if (isPointEqual(this.startPoint, this.endPoint)) {
 			return; // We can't draw a measurement with 0 length
 		}
-		const isHighlighted = isEntityHighlighted(this);
-		const isSelected = isEntitySelected(this);
+		const isHighlighted = parentHighlighted ?? isEntityHighlighted(this);
+		const isSelected = parentSelected ?? isEntitySelected(this);
 		drawController.setLineStyles(
 			isHighlighted,
 			isSelected,
@@ -372,7 +378,7 @@ export class MeasurementEntity implements Entity {
 		// Estimate width: textString.length * fontSize * aspectRatioFactor
 		const textWidth = distance.length * MEASUREMENT_FONT_SIZE * 0.6;
 
-		const {midpointMeasurementLineOffset, normalUnit} = drawPoints;
+		const { midpointMeasurementLineOffset, normalUnit } = drawPoints;
 
 		// Determine text direction (similar to draw method)
 		const originalTextDirection = normalUnit.rotate90CW();

@@ -39,6 +39,8 @@ import SendUpIcon from 'teenyicons/outline/send-up.svg?react';
 import SquareIcon from 'teenyicons/outline/square.svg?react';
 import SvgIcon from 'teenyicons/outline/svg.svg?react';
 import UnlockIcon from 'teenyicons/outline/unlock.svg?react';
+import HomeAltIcon from 'teenyicons/outline/home-alt.svg?react';
+
 import VectorDocumentIcon from 'teenyicons/outline/vector-document.svg?react';
 import SolidDownSmallIcon from 'teenyicons/solid/down-small.svg?react';
 import SolidDownIcon from 'teenyicons/solid/down.svg?react';
@@ -100,6 +102,7 @@ enum IconName {
 	Lock = 'Lock',
 	Unlock = 'Unlock',
 	GridLayout = 'GridLayout',
+	HomeAlt = 'HomeAlt',
 
 	// Solid icons
 	SolidDown = 'SolidDown',
@@ -159,6 +162,7 @@ const icons: Record<IconName, FC> = {
 	[IconName.Lock]: LockIcon,
 	[IconName.Unlock]: UnlockIcon,
 	[IconName.GridLayout]: GridLayoutIcon,
+	[IconName.HomeAlt]: HomeAltIcon,
 
 	// Solid icons
 	[IconName.SolidDown]: SolidDownIcon,

@@ -2,11 +2,11 @@ import {Box, Point, Segment} from '@flatten-js/core';
 import {max, min} from 'es-toolkit/compat';
 import type {Shape, SnapPoint} from '../App.types';
 import type {DrawController} from '../drawControllers/DrawController';
-import {mirrorPointOverAxis} from "../helpers/mirror-point-over-axis.ts";
+import {mirrorPointOverAxis} from '../helpers/mirror-point-over-axis.ts';
 import {scalePoint} from '../helpers/scale-point';
-import {getActiveLayerId} from "../state.ts";
+import {getActiveLayerId} from '../state.ts';
 import {type Entity, EntityName, type JsonEntity} from './Entity';
-import type {LineEntity} from "./LineEntity.ts";
+import type {LineEntity} from './LineEntity.ts';
 
 export class ArrowHeadEntity implements Entity {
 	public id: string = crypto.randomUUID();
@@ -26,8 +26,18 @@ export class ArrowHeadEntity implements Entity {
 		this.layerId = layerId;
 	}
 
-	public draw(drawController: DrawController): void {
-		drawController.setLineStyles(false, false, this.lineColor, this.lineWidth, this.lineDash);
+	public draw(
+		drawController: DrawController,
+		parentHighlighted?: boolean,
+		parentSelected?: boolean
+	): void {
+		drawController.setLineStyles(
+			parentHighlighted ?? false,
+			parentSelected ?? false,
+			this.lineColor,
+			this.lineWidth,
+			this.lineDash
+		);
 		drawController.drawLine(this.p1, this.p2);
 		drawController.drawLine(this.p2, this.p3);
 		drawController.drawLine(this.p3, this.p1);

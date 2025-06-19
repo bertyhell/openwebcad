@@ -1,6 +1,7 @@
 import {Point, Vector} from '@flatten-js/core';
 import {toast} from 'react-toastify';
 import {SVG_MARGIN, TO_DEGREES} from '../App.consts.ts';
+import type {PolyLineEntity} from "../entities/PolyLineEntity.ts";
 import type {TextOptions} from '../entities/TextEntity.ts';
 import {isLengthEqual} from '../helpers/is-length-equal.ts';
 import {StateVariable} from '../helpers/undo-stack.ts';
@@ -290,5 +291,9 @@ export class SvgDrawController implements DrawController {
 
 		const pointsString = canvasPoints.map((p) => `${p.x},${p.y}`).join(' ');
 		this.svgStrings.push(`<polygon points="${pointsString}" fill="${this.fillColor}" />`);
+	}
+
+	public fillPolyline(fillBorder: PolyLineEntity) {
+		throw new Error(`not yet implemented svg fillPolyline: ${JSON.stringify(fillBorder)}`);
 	}
 }

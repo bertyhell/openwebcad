@@ -9,6 +9,7 @@ import type {LineEntity, LineJsonData} from './LineEntity';
 import type {PointJsonData} from './PointEntity';
 import type {RectangleJsonData} from './RectangleEntity';
 import type {TextJsonData} from './TextEntity.ts';
+import {FillJsonData} from "./FillEntity.ts";
 
 export interface Entity {
 	// Random uuid generated when the Entity is created
@@ -57,6 +58,7 @@ export enum EntityName {
 	ArrowHead = 'ArrowHead',
 	Text = 'Text',
 	PolyLine = 'PolyLine',
+	Fill = 'Fill',
 }
 
 export type ShapeJsonData =
@@ -67,7 +69,8 @@ export type ShapeJsonData =
 	| PointJsonData
 	| ImageJsonData
 	| ArrowHeadJsonData
-	| TextJsonData;
+	| TextJsonData
+	| FillJsonData;
 
 export interface JsonEntity<TShapeJsonData = ShapeJsonData> {
 	id: string;

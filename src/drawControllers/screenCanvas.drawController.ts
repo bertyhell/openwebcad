@@ -1,5 +1,6 @@
 import {Point, type Vector} from '@flatten-js/core';
 import {CANVAS_BACKGROUND_COLOR, MOUSE_ZOOM_MULTIPLIER} from '../App.consts';
+import type {PolyLineEntity} from '../entities/PolyLineEntity.ts';
 import {containRectangle} from '../helpers/contain-rect.ts';
 import {getAngleWithXAxis} from '../helpers/get-angle-with-x-axis.ts';
 import {getBoundingBoxOfMultipleEntities} from '../helpers/get-bounding-box-of-multiple-entities.ts';
@@ -468,7 +469,7 @@ export class ScreenCanvasDrawController implements DrawController {
 	}
 
 	/**
-	 * Fill polygon with color
+	 * Fill polygon consisting of straight line segments with color
 	 * @param points
 	 */
 	public fillPolygon(...points: Point[]) {
@@ -481,6 +482,82 @@ export class ScreenCanvasDrawController implements DrawController {
 				this.context.lineTo(screenPoint.x, this.canvasSize.y - screenPoint.y);
 			}
 		});
+		this.context.closePath();
+		this.context.fill();
+	}
+
+	/**
+	 * Fill a polyline consisting of straight lines and arcs with color
+	 * @param fillBorder
+	 */
+	public fillPolyline(fillBorder: PolyLineEntity) {
+		const segments = fillBorder.entities;
+		if (!segments || segments.length === 0) {
+			return;
+		}
+
+		this.context.beginPath();
+
+		//
+		// 1) Move to the start of the very first segment
+		//
+		const first = segments[0];
+		const startWorld = first.getStartPoint();
+		if (!startWorld) {
+			return;
+		}
+		const startScreen = this.worldToTarget(startWorld);
+		this.context.moveTo(startScreen.x, this.canvasSize.y - startScreen.y);
+
+		//
+		// 2) Walk each segment in turn
+		//
+		for (const seg of segments) {
+			switch (seg.getType()) {
+				case EntityName.Line: {
+					// a straight line → lineTo its end
+					const line = seg as LineEntity;
+					const endWorld = line.getEndPoint();
+					const endScreen = this.worldToTarget(endWorld);
+					this.context.lineTo(endScreen.x, this.canvasSize.y - endScreen.y);
+					break;
+				}
+				case EntityName.Arc: {
+					// an arc → canvas.arc with flipped Y and negated angles
+					const arcEnt = seg as ArcEntity;
+					const arcShape = arcEnt.getShape() as Arc;
+
+					// world-space center → screen
+					const cWorld = arcShape.center;
+					const cScreen = this.worldToTarget(cWorld);
+
+					// compute screen radius by transforming one point on the radius
+					const pEdge = new FlattenPoint(cWorld.x + arcShape.r.valueOf(), cWorld.y);
+					const edgeScreen = this.worldToTarget(pEdge);
+					const rScreen = Math.hypot(edgeScreen.x - cScreen.x, edgeScreen.y - cScreen.y);
+
+					// canvas y is flipped, so:
+					//   y_canvas = canvasHeight - y_screen
+					//   θ_canvas = -θ_world
+					//   anticlockwise_canvas = !anticlockwise_world
+					const cx = cScreen.x;
+					const cy = this.canvasSize.y - cScreen.y;
+					const startA = -arcShape.startAngle;
+					const endA = -arcShape.endAngle;
+					const ccw = !arcShape.counterClockwise;
+
+					this.context.arc(cx, cy, rScreen, startA, endA, ccw);
+					break;
+				}
+				default:
+					// if you ever add other segment types, handle them here
+					break;
+			}
+		}
+
+		//
+		// 3) close & fill
+		//
 		this.context.closePath();
 		this.context.fill();
 	}

@@ -5,6 +5,7 @@ import {compact, maxBy} from 'es-toolkit';
 import {minBy} from 'es-toolkit/compat';
 import type {Shape, SnapPoint} from '../App.types';
 import type {DrawController} from '../drawControllers/DrawController';
+import {checkClosedPolygon} from '../helpers/check-closed-polygon.ts';
 import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
 import {ArcEntity, type ArcJsonData} from './ArcEntity.ts';
 import {type Entity, EntityName, type JsonEntity} from './Entity';
@@ -17,7 +18,7 @@ export class PolyLineEntity implements Entity {
 	public lineDash: number[] | undefined = undefined;
 	public layerId: string;
 
-	private readonly entities: Entity[];
+	public readonly entities: Entity[];
 
 	constructor(layerId: string, entities: Entity[]) {
 		this.layerId = layerId;
@@ -139,7 +140,9 @@ export class PolyLineEntity implements Entity {
 		};
 	}
 
-	public static async fromJson(jsonEntity: JsonEntity<PolyLineJsonData>): Promise<PolyLineEntity> {
+	public static async fromJson(
+		jsonEntity: JsonEntity<PolyLineJsonData>
+	): Promise<PolyLineEntity | null> {
 		const entities: (ArcEntity | LineEntity | null)[] = await mapLimit(
 			jsonEntity.children || [],
 			20,
@@ -171,9 +174,13 @@ export class PolyLineEntity implements Entity {
 			}
 		);
 
+		const closedEntities = checkClosedPolygon(compact(entities));
+		if (!closedEntities) {
+			return null;
+		}
 		const polyLineEntity = new PolyLineEntity(
 			jsonEntity.layerId || getActiveLayerId(),
-			compact(entities)
+			closedEntities as unknown as Entity[]
 		);
 		polyLineEntity.id = jsonEntity.id;
 		polyLineEntity.lineColor = jsonEntity.lineColor;

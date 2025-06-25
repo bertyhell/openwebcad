@@ -7,7 +7,7 @@ import {getEntitiesAndLayersFromJsonObject,} from './import-export-handlers/impo
 describe('findClosestEntity', () => {
 	it('should return the arc as the closest entity', async () => {
 		const mockEntitiesAndLayers = await getEntitiesAndLayersFromJsonObject(arcAndLineEntitiesMock);
-		const clickPoint = new Point(393, 1108);
+		const clickPoint = new Point(600, 1108);
 		const closestEntityInfo = findClosestEntity(clickPoint, mockEntitiesAndLayers.entities);
 		expect(closestEntityInfo).toBeDefined();
 		if (!closestEntityInfo) return;

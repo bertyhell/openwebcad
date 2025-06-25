@@ -3,7 +3,7 @@ import {Box, type Point, type Segment} from '@flatten-js/core';
 import {mapLimit} from 'blend-promise-utils';
 import {compact, maxBy} from 'es-toolkit';
 import {minBy} from 'es-toolkit/compat';
-import type {Shape, SnapPoint} from '../App.types';
+import type {Shape, SnapPoint, StartAndEndpointEntity} from '../App.types';
 import type {DrawController} from '../drawControllers/DrawController';
 import {checkClosedPolygon} from '../helpers/check-closed-polygon.ts';
 import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
@@ -18,13 +18,13 @@ export class PolyLineEntity implements Entity {
 	public lineDash: number[] | undefined = undefined;
 	public layerId: string;
 
-	public readonly entities: Entity[];
+	public readonly entities: (Entity & StartAndEndpointEntity)[];
 
 	constructor(layerId: string, entities: Entity[]) {
 		this.layerId = layerId;
 		this.entities = entities.filter((entity) =>
 			[EntityName.Line, EntityName.Arc].includes(entity.getType())
-		);
+		) as StartAndEndpointEntity[];
 	}
 
 	public numberOfSegments(): number {

@@ -1,5 +1,8 @@
-import {Point, type Vector} from '@flatten-js/core';
+import {type Arc, Point, type Vector} from '@flatten-js/core';
 import {CANVAS_BACKGROUND_COLOR, MOUSE_ZOOM_MULTIPLIER} from '../App.consts';
+import type {ArcEntity} from '../entities/ArcEntity.ts';
+import {EntityName} from '../entities/Entity.ts';
+import type {LineEntity} from '../entities/LineEntity.ts';
 import type {PolyLineEntity} from '../entities/PolyLineEntity.ts';
 import {containRectangle} from '../helpers/contain-rect.ts';
 import {getAngleWithXAxis} from '../helpers/get-angle-with-x-axis.ts';
@@ -532,7 +535,7 @@ export class ScreenCanvasDrawController implements DrawController {
 					const cScreen = this.worldToTarget(cWorld);
 
 					// compute screen radius by transforming one point on the radius
-					const pEdge = new FlattenPoint(cWorld.x + arcShape.r.valueOf(), cWorld.y);
+					const pEdge = new Point(cWorld.x + arcShape.r.valueOf(), cWorld.y);
 					const edgeScreen = this.worldToTarget(pEdge);
 					const rScreen = Math.hypot(edgeScreen.x - cScreen.x, edgeScreen.y - cScreen.y);
 

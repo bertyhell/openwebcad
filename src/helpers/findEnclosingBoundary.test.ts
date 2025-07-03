@@ -185,6 +185,179 @@ describe('findEnclosingBoundary', () => {
 		}
 	});
 
+	/**
+	 *         ______
+	 *   |   X      |
+	 *   |
+	 *      ----
+	 */
+	it('detects no boundary for loose segments', () => {
+		const lineTop = new Segment(new Point(10, 0), new Point(30, 0));
+		const lineRight = new Segment(new Point(30, 0), new Point(30, -10));
+		const lineBottom = new Segment(new Point(20, -30), new Point(10, -30));
+		const lineLeft = new Segment(new Point(0, -10), new Point(0, -25));
+		const boundary = findEnclosingBoundary(new Point(0, 0.2), [
+			lineTop,
+			lineRight,
+			lineBottom,
+			lineLeft,
+		]);
+
+		expect(boundary).toBeNull();
+	});
+
+	/**
+	 * ----------------------------
+	 * |                          |
+	 * |                  ______  |
+	 * |            |   X      |  |
+	 * |            |             |
+	 * |               ----       |
+	 * |                          |
+	 * |---------------------------
+	 */
+	it('detects boundary outside other line segments', () => {
+		const lineTop = new Segment(new Point(10, 0), new Point(30, 0));
+		const lineRight = new Segment(new Point(30, 0), new Point(30, -10));
+		const lineBottom = new Segment(new Point(20, -30), new Point(10, -30));
+		const lineLeft = new Segment(new Point(0, -10), new Point(0, -25));
+
+		const lineTop2 = new Segment(new Point(-50, 50), new Point(50, 50));
+		const lineRight2 = new Segment(new Point(50, 50), new Point(50, -50));
+		const lineBottom2 = new Segment(new Point(50, -50), new Point(-50, -50));
+		const lineLeft2 = new Segment(new Point(-50, -50), new Point(-50, 50));
+
+		const boundary = findEnclosingBoundary(new Point(0, 0.2), [
+			lineTop,
+			lineTop2,
+			lineRight,
+			lineRight2,
+			lineBottom,
+			lineBottom2,
+			lineLeft,
+			lineLeft2,
+		]);
+
+		expect(boundary).not.toBeNull();
+		if (boundary) {
+			expect(boundary).toHaveLength(4);
+			expect(boundary).toContain(lineTop2);
+			expect(boundary).toContain(lineLeft2);
+			expect(boundary).toContain(lineBottom2);
+			expect(boundary).toContain(lineLeft2);
+			// Ensure closure
+			const [edge1, edge2, edge3, edge4] = boundary as (Segment | Arc)[];
+			expect(edge1.end.equalTo(edge2.start)).toBe(true);
+			expect(edge2.end.equalTo(edge3.start)).toBe(true);
+			expect(edge3.end.equalTo(edge4.start)).toBe(true);
+			expect(edge4.end.equalTo(edge1.start)).toBe(true);
+		}
+	});
+
+	/**
+	 *      |                          |
+	 *      |                          |
+	 * -----+--------------------------+----
+	 *      |                          |
+	 *      |                  ______  |
+	 *      |            |   X      |  |
+	 *      |            |             |
+	 *      |               ----       |
+	 *      |                          |
+	 * -----+--------------------------+----
+	 *      |                          |
+	 *      |                          |
+	 */
+	it('detects boundary outside other line segments even for not exact endpoints', () => {
+		const lineTop = new Segment(new Point(10, 0), new Point(30, 0));
+		const lineRight = new Segment(new Point(30, 0), new Point(30, -10));
+		const lineBottom = new Segment(new Point(20, -30), new Point(10, -30));
+		const lineLeft = new Segment(new Point(0, -10), new Point(0, -25));
+
+		const lineTop2 = new Segment(new Point(-70, 50), new Point(70, 50));
+		const lineRight2 = new Segment(new Point(50, 70), new Point(50, -70));
+		const lineBottom2 = new Segment(new Point(70, -50), new Point(-70, -50));
+		const lineLeft2 = new Segment(new Point(-50, -70), new Point(-50, 70));
+
+		const boundary = findEnclosingBoundary(new Point(0, 0.2), [
+			lineTop,
+			lineTop2,
+			lineRight,
+			lineRight2,
+			lineBottom,
+			lineBottom2,
+			lineLeft,
+			lineLeft2,
+		]);
+
+		expect(boundary).not.toBeNull();
+		if (boundary) {
+			expect(boundary).toHaveLength(4);
+			expect(boundary).toContain(lineTop2);
+			expect(boundary).toContain(lineLeft2);
+			expect(boundary).toContain(lineBottom2);
+			expect(boundary).toContain(lineLeft2);
+			// Ensure closure
+			const [edge1, edge2, edge3, edge4] = boundary as (Segment | Arc)[];
+			expect(edge1.end.equalTo(edge2.start)).toBe(true);
+			expect(edge2.end.equalTo(edge3.start)).toBe(true);
+			expect(edge3.end.equalTo(edge4.start)).toBe(true);
+			expect(edge4.end.equalTo(edge1.start)).toBe(true);
+		}
+	});
+
+	/**
+	 *      |                          \
+	 *      |                           \
+	 * -----+----------------------------+----------
+	 *      |                              \
+	 *      |                  ______       \
+	 *      |            |   X      |        |
+	 *      |            |                   |
+	 *      |               ----            /
+	 *      |                              /
+	 * -----+----------------------------+-----------
+	 *      |                           /
+	 *      |                         /
+	 */
+	it('detects boundary outside other line segments even for not exact endpoints with arc', () => {
+		const lineTop = new Segment(new Point(10, 0), new Point(30, 0));
+		const lineRight = new Segment(new Point(30, 0), new Point(30, -10));
+		const lineBottom = new Segment(new Point(20, -30), new Point(10, -30));
+		const lineLeft = new Segment(new Point(0, -10), new Point(0, -25));
+
+		const lineTop2 = new Segment(new Point(-70, 50), new Point(70, 50));
+		const arcRight2 = new Arc(new Point(-70, 0), 140, -Math.PI / 2, Math.PI / 2, true);
+		const lineBottom2 = new Segment(new Point(70, -50), new Point(-70, -50));
+		const lineLeft2 = new Segment(new Point(-50, -70), new Point(-50, 70));
+
+		const boundary = findEnclosingBoundary(new Point(0, 0.2), [
+			lineTop,
+			lineTop2,
+			lineRight,
+			arcRight2,
+			lineBottom,
+			lineBottom2,
+			lineLeft,
+			lineLeft2,
+		]);
+
+		expect(boundary).not.toBeNull();
+		if (boundary) {
+			expect(boundary).toHaveLength(4);
+			expect(boundary).toContain(lineTop2);
+			expect(boundary).toContain(lineLeft2);
+			expect(boundary).toContain(lineBottom2);
+			expect(boundary).toContain(lineLeft2);
+			// Ensure closure
+			const [edge1, edge2, edge3, edge4] = boundary as (Segment | Arc)[];
+			expect(edge1.end.equalTo(edge2.start)).toBe(true);
+			expect(edge2.end.equalTo(edge3.start)).toBe(true);
+			expect(edge3.end.equalTo(edge4.start)).toBe(true);
+			expect(edge4.end.equalTo(edge1.start)).toBe(true);
+		}
+	});
+
 	describe('arcs', () => {
 		/**
 		 *       -----

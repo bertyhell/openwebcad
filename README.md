@@ -66,6 +66,7 @@ This is a React-based canvas drawing application that allows users to draw vario
 - Import DWG files
 - Export to DWG
 - Export to DXF
+- Export drawing to ASCII code
 
 ### Maintenance
 

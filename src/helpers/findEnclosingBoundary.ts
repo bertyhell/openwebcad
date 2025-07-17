@@ -2,6 +2,8 @@ import {Arc, Box, Circle, Point, Polygon, Segment, type Shape} from '@flatten-js
 import {EPSILON} from '../App.consts.ts';
 import {pointDistance} from "./distance-between-points.ts";
 import {getBoundingBoxArea} from './getBoundingBoxArea.ts';
+import {isPointEqual} from "./is-point-equal.ts";
+import {splitEdgesAtIntersections} from "./split-edges-at-intersections.ts";
 
 type Edge = Segment | Arc;
 
@@ -27,6 +29,7 @@ export function findEnclosingBoundary(point: Point, shapes: Shape[]): (Segment |
 	const candidates: { boundary: Edge[]; size: number }[] = [];
 
 	// ——— 1) Single closed shapes ———
+	const edges: Edge[] = [];
 	for (const shape of shapes) {
 		let loop: Edge[] | null = null;
 
@@ -54,16 +57,21 @@ export function findEnclosingBoundary(point: Point, shapes: Shape[]): (Segment |
 			if (equivalentCircle.contains(point)) {
 				loop = [shape];
 			}
+		} else if (shape instanceof Segment) {
+			edges.push(shape);
+		} else if (shape instanceof Arc) {
+			edges.push(shape);
 		}
 
 		if (loop) {
 			candidates.push({ boundary: loop, size: getBoundingBoxArea(loop) });
+			edges.push(...loop);
 		}
 	}
 
-	// ——— 2) Arbitrary cycles among Segments/Arcs ———
-	const edgeShapes = shapes.filter((s): s is Edge => s instanceof Segment || s instanceof Arc);
+	const edgeShapes: Edge[] = splitEdgesAtIntersections(edges);
 
+	// ——— 2) Arbitrary cycles among Segments/Arcs ———
 	const edgeInfos: EdgeInfo[] = [];
 	const adj: Record<string, Edge[]> = {};
 
@@ -177,5 +185,29 @@ export function findEnclosingBoundary(point: Point, shapes: Shape[]): (Segment |
 	// ——— pick the smallest candidate ———
 	if (candidates.length === 0) return null;
 	candidates.sort((a, b) => a.size - b.size);
-	return candidates[0].boundary;
+	const boundary = candidates[0].boundary;
+
+	// For every edge in this boundary, Check if boundary edge end doesn't match next boundary edge start, invert the edge
+	for (let i = 0; i < boundary.length; i++) {
+		const currentEdge = boundary[i];
+		const nextEdge = boundary[(i + 1) % boundary.length];
+
+		if (!isPointEqual(currentEdge.end, nextEdge.start)) {
+			if (nextEdge instanceof Segment) {
+				// Flip next segment
+				boundary[(i + 1) % boundary.length] = new Segment(nextEdge.end, nextEdge.start);
+			} else {
+				// Flip next arc
+				const arc = nextEdge as Arc;
+				boundary[(i + 1) % boundary.length] = new Arc(
+					arc.center,
+					arc.r.valueOf(),
+					arc.endAngle,
+					arc.startAngle,
+					!arc.counterClockwise
+				);
+			}
+		}
+	}
+	return boundary;
 }

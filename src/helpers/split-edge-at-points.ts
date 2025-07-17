@@ -14,7 +14,7 @@ type SplitAtPointsReturn<T extends Segment | Arc> = T extends Segment
  * @param entity The Segment or Arc that needs to be split
  * @param points the points that lie on the given entity where the entity needs to be split. These points need to be unique.
  */
-export function splitAtPoints<T extends Segment | Arc>(
+export function splitEdgeAtPoints<T extends Segment | Arc>(
 	entity: T,
 	points: Point[]
 ): SplitAtPointsReturn<T> {

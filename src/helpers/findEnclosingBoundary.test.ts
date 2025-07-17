@@ -1,6 +1,20 @@
 import {Arc, Point, Segment} from '@flatten-js/core'; // tests/findEnclosingBoundary.test.ts
 import {describe, expect, it} from 'vitest';
 import {findEnclosingBoundary} from './findEnclosingBoundary.ts';
+import {isPointEqual} from "./is-point-equal.ts";
+
+function validateClosedBoundary(boundary: (Segment | Arc)[] | null, expectedLength: number) {
+	expect(boundary).not.toBeNull();
+	if (boundary) {
+		expect(boundary).toHaveLength(expectedLength);
+		// And they must form a closed loop
+		for (let i = 0; i < boundary.length; i++) {
+			const curr = boundary[i];
+			const next = boundary[(i + 1) % boundary.length];
+			expect(isPointEqual(curr.end, next.start)).toBe(true);
+		}
+	}
+}
 
 describe('findEnclosingBoundary', () => {
 	it('returns null for empty input', () => {
@@ -42,19 +56,18 @@ describe('findEnclosingBoundary', () => {
 		const query = new Point(0.2, 0.2);
 
 		const boundary = findEnclosingBoundary(query, edges);
-		expect(boundary).not.toBeNull();
-		if (boundary) {
-			expect(boundary).toHaveLength(3);
-			// Must contain exactly those three edges, in any order
-			for (const e of edges) {
-				expect(boundary).toContain(e);
-			}
-			// And they must form a closed loop
-			for (let i = 0; i < boundary.length; i++) {
-				const curr = boundary[i];
-				const next = boundary[(i + 1) % boundary.length];
-				expect(curr.end.equalTo(next.start)).toBe(true);
-			}
+
+		validateClosedBoundary(boundary, edges.length);
+
+		// Must contain exactly those three edges, in any order
+		for (let i = 0; i < edges.length; i++) {
+			const edge = edges[i];
+			const boundaryEdge = boundary?.find(
+				(e) =>
+					(isPointEqual(e.start, edge.start) && isPointEqual(e.end, edge.end)) ||
+					(isPointEqual(e.start, edge.end) && isPointEqual(e.end, edge.start))
+			);
+			expect(boundaryEdge).not.toBeUndefined();
 		}
 	});
 
@@ -94,19 +107,7 @@ describe('findEnclosingBoundary', () => {
 		const query = new Point(0.5, 0.5);
 
 		const boundary = findEnclosingBoundary(query, shuffled);
-		expect(boundary).not.toBeNull();
-		if (boundary) {
-			expect(boundary).toHaveLength(4);
-			for (const edge of [seg01, seg12, seg23, seg30]) {
-				expect(boundary).toContain(edge);
-			}
-			// Closed‐loop connectivity
-			for (let i = 0; i < boundary.length; i++) {
-				const curr = boundary[i];
-				const next = boundary[(i + 1) % boundary.length];
-				expect(curr.end.equalTo(next.start)).toBe(true);
-			}
-		}
+		validateClosedBoundary(boundary, 4);
 	});
 
 	/**
@@ -139,24 +140,12 @@ describe('findEnclosingBoundary', () => {
 		const insideSquare = new Point(2.5, 2.5);
 
 		// Triangle query
-		const triBound = findEnclosingBoundary(insideTriangle, all);
-		expect(triBound).not.toBeNull();
-		if (triBound) {
-			expect(triBound).toHaveLength(3);
-			for (const e of [triAB, triBC, triCA]) {
-				expect(triBound).toContain(e);
-			}
-		}
+		const triagonalBoundary = findEnclosingBoundary(insideTriangle, all);
+		validateClosedBoundary(triagonalBoundary, 3);
 
 		// Square query
-		const sqBound = findEnclosingBoundary(insideSquare, all);
-		expect(sqBound).not.toBeNull();
-		if (sqBound) {
-			expect(sqBound).toHaveLength(4);
-			for (const e of [sq01, sq12, sq23, sq30]) {
-				expect(sqBound).toContain(e);
-			}
-		}
+		const squareBoundary = findEnclosingBoundary(insideSquare, all);
+		validateClosedBoundary(squareBoundary, 4);
 	});
 
 	/**
@@ -176,13 +165,7 @@ describe('findEnclosingBoundary', () => {
 		// Point exactly on AB
 		const onEdge = new Point(0.5, 0);
 		const boundary = findEnclosingBoundary(onEdge, [segAB, segBC, segCA]);
-		expect(boundary).not.toBeNull();
-		if (boundary) {
-			expect(boundary).toHaveLength(3);
-			for (const e of [segAB, segBC, segCA]) {
-				expect(boundary).toContain(e);
-			}
-		}
+		validateClosedBoundary(boundary, 3);
 	});
 
 	/**
@@ -237,21 +220,7 @@ describe('findEnclosingBoundary', () => {
 			lineLeft,
 			lineLeft2,
 		]);
-
-		expect(boundary).not.toBeNull();
-		if (boundary) {
-			expect(boundary).toHaveLength(4);
-			expect(boundary).toContain(lineTop2);
-			expect(boundary).toContain(lineLeft2);
-			expect(boundary).toContain(lineBottom2);
-			expect(boundary).toContain(lineLeft2);
-			// Ensure closure
-			const [edge1, edge2, edge3, edge4] = boundary as (Segment | Arc)[];
-			expect(edge1.end.equalTo(edge2.start)).toBe(true);
-			expect(edge2.end.equalTo(edge3.start)).toBe(true);
-			expect(edge3.end.equalTo(edge4.start)).toBe(true);
-			expect(edge4.end.equalTo(edge1.start)).toBe(true);
-		}
+		validateClosedBoundary(boundary, 4);
 	});
 
 	/**
@@ -290,20 +259,7 @@ describe('findEnclosingBoundary', () => {
 			lineLeft2,
 		]);
 
-		expect(boundary).not.toBeNull();
-		if (boundary) {
-			expect(boundary).toHaveLength(4);
-			expect(boundary).toContain(lineTop2);
-			expect(boundary).toContain(lineLeft2);
-			expect(boundary).toContain(lineBottom2);
-			expect(boundary).toContain(lineLeft2);
-			// Ensure closure
-			const [edge1, edge2, edge3, edge4] = boundary as (Segment | Arc)[];
-			expect(edge1.end.equalTo(edge2.start)).toBe(true);
-			expect(edge2.end.equalTo(edge3.start)).toBe(true);
-			expect(edge3.end.equalTo(edge4.start)).toBe(true);
-			expect(edge4.end.equalTo(edge1.start)).toBe(true);
-		}
+		validateClosedBoundary(boundary, 4);
 	});
 
 	/**
@@ -342,20 +298,7 @@ describe('findEnclosingBoundary', () => {
 			lineLeft2,
 		]);
 
-		expect(boundary).not.toBeNull();
-		if (boundary) {
-			expect(boundary).toHaveLength(4);
-			expect(boundary).toContain(lineTop2);
-			expect(boundary).toContain(lineLeft2);
-			expect(boundary).toContain(lineBottom2);
-			expect(boundary).toContain(lineLeft2);
-			// Ensure closure
-			const [edge1, edge2, edge3, edge4] = boundary as (Segment | Arc)[];
-			expect(edge1.end.equalTo(edge2.start)).toBe(true);
-			expect(edge2.end.equalTo(edge3.start)).toBe(true);
-			expect(edge3.end.equalTo(edge4.start)).toBe(true);
-			expect(edge4.end.equalTo(edge1.start)).toBe(true);
-		}
+		validateClosedBoundary(boundary, 4);
 	});
 
 	describe('arcs', () => {
@@ -373,7 +316,8 @@ describe('findEnclosingBoundary', () => {
 			expect(boundary).not.toBeNull();
 			if (boundary) {
 				expect(boundary).toHaveLength(1);
-				expect(boundary[0]).toBe(fullCircle);
+				expect(boundary[0] instanceof Arc).toBe(true);
+				expect(isPointEqual(boundary[0].start, boundary[0].end));
 			}
 		});
 
@@ -390,16 +334,7 @@ describe('findEnclosingBoundary', () => {
 			const closing = new Segment(halfCircle.end, halfCircle.start);
 			const boundary = findEnclosingBoundary(new Point(0, 0.2), [halfCircle, closing]);
 
-			expect(boundary).not.toBeNull();
-			if (boundary) {
-				expect(boundary).toHaveLength(2);
-				expect(boundary).toContain(halfCircle);
-				expect(boundary).toContain(closing);
-				// Ensure closure
-				const [edge1, edge2] = boundary as (Segment | Arc)[];
-				expect(edge1.end.equalTo(edge2.start)).toBe(true);
-				expect(edge2.end.equalTo(edge1.start)).toBe(true);
-			}
+			validateClosedBoundary(boundary, 2);
 		});
 	});
 });

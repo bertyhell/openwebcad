@@ -23,15 +23,15 @@ interface EdgeInfo extends EdgePoints {
  * Generates a string identifier for a Point
  * @param point
  */
+// ...imports stay the same...
+
 function keyOf(point: Point): VertexKey {
 	return `${point.x.toFixed(6)},${point.y.toFixed(6)}`;
 }
 
 export function findEnclosingBoundary(point: Point, shapes: Shape[]): (Segment | Arc)[] | null {
-	// We'll store every candidate loop here, with its computed size.
 	const candidates: { boundary: Edge[]; sizeIndicator: number }[] = [];
 
-	// ——— 1) Single closed shapes ———
 	const edges: Edge[] = [];
 	for (const shape of shapes) {
 		let loop: Edge[] | null = null;
@@ -41,7 +41,6 @@ export function findEnclosingBoundary(point: Point, shapes: Shape[]): (Segment |
 		} else if (shape instanceof Box && shape.contains(point)) {
 			loop = shape.toSegments();
 		} else if (shape instanceof Polygon && shape.contains(point)) {
-			// polygons in Flatten may have multiple faces; find the face containing the point
 			for (const face of shape.faces) {
 				const edges = face.shapes as Edge[];
 				const poly = new Polygon(edges);
@@ -60,10 +59,8 @@ export function findEnclosingBoundary(point: Point, shapes: Shape[]): (Segment |
 			if (equivalentCircle.contains(point)) {
 				loop = [shape];
 			}
-		} else if (shape instanceof Segment) {
-			edges.push(shape);
-		} else if (shape instanceof Arc) {
-			edges.push(shape);
+		} else if (shape instanceof Segment || shape instanceof Arc) {
+			edges.push(shape as Edge);
 		}
 
 		if (loop) {
@@ -74,37 +71,27 @@ export function findEnclosingBoundary(point: Point, shapes: Shape[]): (Segment |
 
 	const edgeShapes: Edge[] = splitEdgesAtIntersections(edges);
 
-	// ——— 2) Arbitrary cycles among Segments/Arcs ———
 	const edgeInfos: EdgeInfo[] = [];
-	const adj: Record<VertexKey, Edge[]> = {};
+	const adjEdges: Record<VertexKey, Edge[]> = {};
 
-	for (let originalIndex = 0; originalIndex < edgeShapes.length; originalIndex++) {
-		const shape = edgeShapes[originalIndex];
-		let startPoint: Point;
-		let endPoint: Point;
-		if (shape instanceof Segment) {
-			startPoint = shape.start;
-			endPoint = shape.end;
-		} else {
-			const { center, startAngle, endAngle } = shape as Arc;
-			const radius = (shape as Arc).r.valueOf();
-			startPoint = new Point(
-				center.x + radius * Math.cos(startAngle),
-				center.y + radius * Math.sin(startAngle)
-			);
-			endPoint = new Point(
-				center.x + radius * Math.cos(endAngle),
-				center.y + radius * Math.sin(endAngle)
-			);
-		}
-		const startPointKey: VertexKey = keyOf(startPoint);
-		const endPointKey: VertexKey = keyOf(endPoint);
-		adj[startPointKey] = (adj[startPointKey] || []).concat(shape);
-		adj[endPointKey] = (adj[endPointKey] || []).concat(shape);
+	for (const shape of edgeShapes) {
+		// ★ Use arc.start / arc.end to avoid recompute drift
+		const startPoint =
+			shape instanceof Segment ? shape.start : shape instanceof Arc ? (shape as Arc).start : null;
+		const endPoint =
+			shape instanceof Segment ? shape.end : shape instanceof Arc ? (shape as Arc).end : null;
+
+		if (!startPoint || !endPoint) continue;
+
+		const startPointKey = keyOf(startPoint);
+		const endPointKey = keyOf(endPoint);
+
+		adjEdges[startPointKey] = (adjEdges[startPointKey] || []).concat(shape);
+		adjEdges[endPointKey] = (adjEdges[endPointKey] || []).concat(shape);
+
 		edgeInfos.push({ shape, startPointKey, endPointKey });
 	}
 
-	// Detect loops in the segments/arcs
 	const visited = new Set<Edge>();
 
 	for (const { shape: seed } of edgeInfos) {
@@ -119,76 +106,69 @@ export function findEnclosingBoundary(point: Point, shapes: Shape[]): (Segment |
 		while (queue.length) {
 			const edge = queue.shift() as Edge;
 			compEdges.add(edge);
-			const edgeInfo = edgeInfos.find((x) => x.shape === edge);
-			if (!edgeInfo) {
-				continue;
+			const info = edgeInfos.find((x) => x.shape === edge);
+			if (!info) {
+				throw new Error('Failed to find edge during flood fill');
 			}
-			const { startPointKey, endPointKey } = edgeInfo;
-			for (const pointKey of [startPointKey, endPointKey]) {
-				compVerts.add(pointKey);
-				for (const nbr of adj[pointKey]) {
-					if (!visited.has(nbr)) {
-						visited.add(nbr);
-						queue.push(nbr);
+			for (const vk of [info.startPointKey, info.endPointKey]) {
+				compVerts.add(vk);
+				for (const nbrEdge of adjEdges[vk] || []) {
+					if (!visited.has(nbrEdge)) {
+						visited.add(nbrEdge);
+						queue.push(nbrEdge);
 					}
 				}
 			}
 		}
 
-		// Build component graph (undirected)
-		const graph = new Map<VertexKey, Set<VertexKey>>();
-		for (const edge of compEdges) {
-			const edgeInfo = edgeInfos.find((x) => x.shape === edge);
-			if (!edgeInfo) {
-				continue;
+		// ★ Build an edge-aware neighbor accessor (multigraph)
+		const edgesByVertex = new Map<VertexKey, { nbr: VertexKey; edge: Edge }[]>();
+		for (const e of compEdges) {
+			const info = edgeInfos.find((x) => x.shape === e);
+			if (!info) {
+				throw new Error(
+					'Failed to find edge during Build an edge-aware neighbor accessor (multigraph)'
+				);
 			}
-			const { startPointKey, endPointKey } = edgeInfo;
-			if (!graph.has(startPointKey)) graph.set(startPointKey, new Set());
-			if (!graph.has(endPointKey)) graph.set(endPointKey, new Set());
-			graph.get(startPointKey)?.add(endPointKey);
-			graph.get(endPointKey)?.add(startPointKey);
+			const a = info.startPointKey;
+			const b = info.endPointKey;
+			if (!edgesByVertex.has(a)) edgesByVertex.set(a, []);
+			if (!edgesByVertex.has(b)) edgesByVertex.set(b, []);
+			edgesByVertex.get(a)?.push({ nbr: b, edge: e });
+			edgesByVertex.get(b)?.push({ nbr: a, edge: e });
 		}
 
-		// to hold the one cycle we find
 		let cycleEdges: Edge[] = [];
-
-		// keep track of which vertices are in the current recursion stack
 		const inStack = new Set<VertexKey>();
-		// map each vertex to the edge we traversed to get there + its parent vertex
 		const parentMap = new Map<VertexKey, { parent: VertexKey | null; via: Edge | null }>();
 
-		// DFS to detect any cycle
-		function depthFirstSearchGraph(v: VertexKey, parent: VertexKey | null): boolean {
+		function dfs(v: VertexKey, parent: VertexKey | null): boolean {
 			inStack.add(v);
+			const incident = edgesByVertex.get(v) || [];
 
-			for (const nbr of graph.get(v) || []) {
-				// find the actual Edge that connects v ↔ nbr
-				const edge = edgeInfos.find(
-					(edgeInfo) =>
-						(edgeInfo.startPointKey === v && edgeInfo.endPointKey === nbr) ||
-						(edgeInfo.startPointKey === nbr && edgeInfo.endPointKey === v)
-				)?.shape;
-
-				if (!edge) continue; // should not happen, but just in case
-
+			for (const { nbr, edge } of incident) {
 				if (!inStack.has(nbr)) {
-					// tree‐edge
 					parentMap.set(nbr, { parent: v, via: edge });
-					if (depthFirstSearchGraph(nbr, v)) return true;
+					if (dfs(nbr, v)) return true;
 				} else if (nbr !== parent) {
-					// back‐edge to an ancestor: we’ve found a cycle!
-					// walk back from `v` up to `nbr` via parentMap, collecting edges
-					const edgesInCycle: Edge[] = [edge]; // close‐edge first
+					// ★ Standard back-edge: cycle of length ≥ 3
+					const edgesInCycle: Edge[] = [edge];
 					let cur = v;
 					while (cur !== nbr) {
 						const info = parentMap.get(cur);
-						if (info?.via && info.parent !== null) {
-							edgesInCycle.push(info.via);
-							cur = info.parent;
-						}
+						if (!info?.via || info.parent === null) break;
+						edgesInCycle.push(info.via);
+						cur = info.parent;
 					}
 					cycleEdges = edgesInCycle;
 					return true;
+				} else {
+					// ★ nbr === parent — check for a parallel edge (2-edge cycle)
+					const incoming = parentMap.get(v)?.via;
+					if (incoming && incoming !== edge) {
+						cycleEdges = [incoming, edge]; // two edges between parent and v
+						return true;
+					}
 				}
 			}
 
@@ -196,15 +176,14 @@ export function findEnclosingBoundary(point: Point, shapes: Shape[]): (Segment |
 			return false;
 		}
 
-		// run dfs from each vertex in this set of edges until we find a cycle
-		for (const start of graph.keys()) {
+		for (const start of compVerts) {
 			if (!inStack.has(start)) {
 				parentMap.set(start, { parent: null, via: null });
-				if (depthFirstSearchGraph(start, null)) break;
+				if (dfs(start, null)) break;
 			}
 		}
 
-		if (cycleEdges?.length) {
+		if (cycleEdges.length) {
 			candidates.push({
 				boundary: cycleEdges,
 				sizeIndicator: calculateSizeIndicator(cycleEdges, point),
@@ -212,23 +191,17 @@ export function findEnclosingBoundary(point: Point, shapes: Shape[]): (Segment |
 		}
 	}
 
-	// Remove the boundaries for which the bounding box does not contain the point
-	const candidatesWithPointInBB: { boundary: Edge[]; sizeIndicator: number }[] = [];
-	for (const candidate of candidates) {
-		if (isPointInsideBox(getBoundingBoxOfMultipleEdges(candidate.boundary), point)) {
-			candidatesWithPointInBB.push(candidate);
-		}
-	}
-
-	// Remove the boundaries for which the point isn't inside the boundary
-	const candidatesContainingPoint = candidatesWithPointInBB.filter((candidate) =>
-		isPointInsideBoundary(candidate.boundary, point)
+	// ★ Actually use the BB filter result
+	const bbFiltered = candidates.filter((c) =>
+		isPointInsideBox(getBoundingBoxOfMultipleEdges(c.boundary), point)
 	);
 
-	// ——— pick the smallest candidate ———
-	if (candidatesContainingPoint.length === 0) {
-		return null;
-	}
+	const candidatesContainingPoint = bbFiltered.filter((c) =>
+		isPointInsideBoundary(c.boundary, point)
+	);
+
+	if (candidatesContainingPoint.length === 0) return null;
+
 	candidatesContainingPoint.sort((a, b) => a.sizeIndicator - b.sizeIndicator);
 	const boundary = candidatesContainingPoint[0].boundary;
 

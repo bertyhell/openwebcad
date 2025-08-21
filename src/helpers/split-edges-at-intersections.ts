@@ -1,5 +1,6 @@
 import {type Arc, Box, PlanarSet, type Point, type Segment} from '@flatten-js/core';
 import {splitEdgeAtPoints} from "./split-edge-at-points.ts";
+import {isEqual} from "es-toolkit";
 
 type Edge = Segment | Arc;
 
@@ -21,21 +22,24 @@ export function splitEdgesAtIntersections(edges: Edge[]): Edge[] {
 		planarSet.add(edge);
 	}
 	const allCutEdges = [];
-	for (const edge of edges) {
+	for (const currentEdge of edges) {
 		const intersectionCandidates = planarSet.search(
 			new Box(
-				Math.min(edge.start.x, edge.end.x),
-				Math.min(edge.start.y, edge.end.y),
-				Math.max(edge.end.x, edge.end.x),
-				Math.max(edge.end.y, edge.end.y)
+				Math.min(currentEdge.start.x, currentEdge.end.x),
+				Math.min(currentEdge.start.y, currentEdge.end.y),
+				Math.max(currentEdge.start.x, currentEdge.end.x),
+				Math.max(currentEdge.start.y, currentEdge.end.y)
 			)
 		);
+		const intersectionCandidatesWithoutCurrentEdge = intersectionCandidates.filter(
+			(edge) => !isEqual(edge, currentEdge)
+		);
 		const allIntersections: Point[] = [];
-		for (const intersectionCandidate of intersectionCandidates) {
-			const intersections = edge.intersect(intersectionCandidate);
+		for (const intersectionCandidate of intersectionCandidatesWithoutCurrentEdge) {
+			const intersections = currentEdge.intersect(intersectionCandidate);
 			allIntersections.push(...intersections);
 		}
-		const cutEdges = splitEdgeAtPoints(edge, allIntersections);
+		const cutEdges = splitEdgeAtPoints(currentEdge, allIntersections);
 		allCutEdges.push(...cutEdges);
 	}
 	return allCutEdges;

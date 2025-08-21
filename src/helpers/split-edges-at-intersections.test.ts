@@ -33,6 +33,12 @@ describe('splitEdgesAtIntersections (using constructors)', () => {
 		expect(result).toContainEqual(new Segment(new Point(1, 0), new Point(1, 1)));
 	});
 
+	/**
+	 *      ______
+	 *    /       \
+	 *   |         |
+	 *   -----X-----
+	 */
 	it('does not split when a segment only touches an arc at its endpoints', () => {
 		const seg = new Segment(new Point(-1, 0), new Point(1, 0));
 		const arc = new Arc(
@@ -49,6 +55,14 @@ describe('splitEdgesAtIntersections (using constructors)', () => {
 		expect(result).toContainEqual(arc);
 	});
 
+	/**
+	 *     __----__ __---__
+	 *   /       / \       \
+	 *  |       |   |       |
+	 *  |       |   |       |
+	 *   \       \ /       /
+	 *     --___-- --____-
+	 */
 	it('splits two full circles (arcs) into four smaller arcs at their two intersection points', () => {
 		const arc1 = new Arc(new Point(0, 0), 1, 0, 2 * Math.PI);
 		const arc2 = new Arc(new Point(1, 0), 1, 0, 2 * Math.PI);
@@ -58,5 +72,56 @@ describe('splitEdgesAtIntersections (using constructors)', () => {
 		// Two intersection points → each circle broken into two arcs
 		const arcs = result.filter((e) => e instanceof Arc);
 		expect(arcs).toHaveLength(4);
+	});
+
+	/**
+	 *      |              |
+	 *      |              |
+	 * -----+--------------+----
+	 *      |              |
+	 *      |              |
+	 *      |              |
+	 * -----+--------------+----
+	 *      |              |
+	 *      |              |
+	 */
+	it('splits multiple lines into segments when they intersect multiple times', () => {
+		const lineTop = new Segment(new Point(-70, 50), new Point(70, 50));
+		const lineRight = new Segment(new Point(50, 70), new Point(50, -70));
+		const lineBottom = new Segment(new Point(70, -50), new Point(-70, -50));
+		const lineLeft = new Segment(new Point(-50, -70), new Point(-50, 70));
+
+		const result = splitEdgesAtIntersections([lineTop, lineRight, lineBottom, lineLeft]);
+
+		expect(result).toHaveLength(12);
+	});
+
+	/**
+	 *      |         \
+	 * -----+----------+----------
+	 *      |            \
+	 *      |             \
+	 *      |              |
+	 *      |             /
+	 *      |            /
+	 * -----+----------+-----------
+	 *      |         /
+	 */
+	it('split multiple segments and arcs', () => {
+		const lineTop = new Segment(new Point(-70, 50), new Point(70, 50));
+		const arcRight = new Arc(new Point(-70, 0), 140, -Math.PI / 2, Math.PI / 2, true);
+		const lineBottom = new Segment(new Point(70, -50), new Point(-70, -50));
+		const lineLeft = new Segment(new Point(-50, -70), new Point(-50, 70));
+
+		const edges = splitEdgesAtIntersections([
+			lineTop,
+			arcRight,
+			lineBottom,
+			lineLeft,
+		]);
+
+		expect(edges).toBeDefined();
+		expect(edges?.filter((edge) => edge instanceof Segment)).toHaveLength(9);
+		expect(edges?.filter((edge) => edge instanceof Arc)).toHaveLength(3);
 	});
 });

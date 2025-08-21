@@ -1,20 +1,8 @@
-import {Arc, Point, Segment} from '@flatten-js/core'; // tests/findEnclosingBoundary.test.ts
+import {Arc, Point, Segment} from '@flatten-js/core'; // tests/find-enclosing-boundary.test.ts
 import {describe, expect, it} from 'vitest';
-import {findEnclosingBoundary} from './findEnclosingBoundary.ts';
-import {isPointEqual} from "./is-point-equal.ts";
-
-function validateClosedBoundary(boundary: (Segment | Arc)[] | null, expectedLength: number) {
-	expect(boundary).not.toBeNull();
-	if (boundary) {
-		expect(boundary).toHaveLength(expectedLength);
-		// And they must form a closed loop
-		for (let i = 0; i < boundary.length; i++) {
-			const curr = boundary[i];
-			const next = boundary[(i + 1) % boundary.length];
-			expect(isPointEqual(curr.end, next.start)).toBe(true);
-		}
-	}
-}
+import {findEnclosingBoundary} from './find-enclosing-boundary.ts';
+import {isPointEqual} from './is-point-equal.ts';
+import {validateClosedBoundary} from './validate-closed-boundary.ts';
 
 describe('findEnclosingBoundary', () => {
 	it('returns null for empty input', () => {
@@ -87,6 +75,75 @@ describe('findEnclosingBoundary', () => {
 		const query = new Point(1, 1); // clearly outside
 		const result = findEnclosingBoundary(query, [segAB, segBC, segCA]);
 		expect(result).toBeNull();
+	});
+
+	/**
+	 *    C---___
+	 *    | \     \
+	 *    |   \    \
+	 *    | X   \  |
+	 *    A-------B
+	 */
+	it('returns triangle when triangle and arc both make a boundary', () => {
+		const A = new Point(0, 0);
+		const B = new Point(1, 0);
+		const C = new Point(0, 1);
+
+		const segAB = new Segment(A, B);
+		const segBC = new Segment(B, C);
+		const segCA = new Segment(C, A);
+		const ARC = new Arc(new Point(0, 0), 1, 0, Math.PI / 2, true);
+
+		const query = new Point(0.2, 0.2); // clearly outside
+		const result = findEnclosingBoundary(query, [segAB, segBC, segCA, ARC]);
+		validateClosedBoundary(result, 3);
+
+		const arc = result?.find((edge) => edge instanceof Arc);
+		expect(arc).toBeUndefined();
+	});
+
+	/**
+	 *       F
+	 *       |
+	 *       C
+	 *      / \
+	 *     / X \
+	 *    A-----B
+	 *   /       \
+	 *  D         E
+	 */
+	it('detects triangular boundary when vertices have other segments', () => {
+		const A = new Point(0, 0);
+		const B = new Point(1, 0);
+		const C = new Point(0, 1);
+		const D = new Point(-1, -1);
+		const E = new Point(2, -1);
+		const F = new Point(0, 2);
+
+		const segAB = new Segment(A, B);
+		const segBC = new Segment(B, C);
+		const segCA = new Segment(C, A);
+		const segDA = new Segment(A, D);
+		const segBE = new Segment(E, B);
+		const segCF = new Segment(F, C);
+
+		const edges = [segAB, segBC, segCA, segDA, segBE, segCF];
+		const query = new Point(0.5, 0.3);
+
+		const boundary = findEnclosingBoundary(query, edges);
+
+		validateClosedBoundary(boundary, 3);
+
+		// Must contain exactly the 3 center edges, in any order
+		for (let i = 0; i < 3; i++) {
+			const edge = edges[i];
+			const boundaryEdge = boundary?.find(
+				(e) =>
+					(isPointEqual(e.start, edge.start) && isPointEqual(e.end, edge.end)) ||
+					(isPointEqual(e.start, edge.end) && isPointEqual(e.end, edge.start))
+			);
+			expect(boundaryEdge).not.toBeUndefined();
+		}
 	});
 
 	/**
@@ -210,7 +267,7 @@ describe('findEnclosingBoundary', () => {
 		const lineBottom2 = new Segment(new Point(50, -50), new Point(-50, -50));
 		const lineLeft2 = new Segment(new Point(-50, -50), new Point(-50, 50));
 
-		const boundary = findEnclosingBoundary(new Point(0, 0.2), [
+		const boundary = findEnclosingBoundary(new Point(20, -10), [
 			lineTop,
 			lineTop2,
 			lineRight,
@@ -237,7 +294,7 @@ describe('findEnclosingBoundary', () => {
 	 *      |                          |
 	 *      |                          |
 	 */
-	it('detects boundary outside other line segments even for not exact endpoints', () => {
+	it('detects boundary outside other line segments even for intersections with segments', () => {
 		const lineTop = new Segment(new Point(10, 0), new Point(30, 0));
 		const lineRight = new Segment(new Point(30, 0), new Point(30, -10));
 		const lineBottom = new Segment(new Point(20, -30), new Point(10, -30));
@@ -248,7 +305,7 @@ describe('findEnclosingBoundary', () => {
 		const lineBottom2 = new Segment(new Point(70, -50), new Point(-70, -50));
 		const lineLeft2 = new Segment(new Point(-50, -70), new Point(-50, 70));
 
-		const boundary = findEnclosingBoundary(new Point(0, 0.2), [
+		const boundary = findEnclosingBoundary(new Point(20, -10), [
 			lineTop,
 			lineTop2,
 			lineRight,
@@ -276,7 +333,7 @@ describe('findEnclosingBoundary', () => {
 	 *      |                           /
 	 *      |                         /
 	 */
-	it('detects boundary outside other line segments even for not exact endpoints with arc', () => {
+	it('detects boundary outside other line segments even for intersections with arc', () => {
 		const lineTop = new Segment(new Point(10, 0), new Point(30, 0));
 		const lineRight = new Segment(new Point(30, 0), new Point(30, -10));
 		const lineBottom = new Segment(new Point(20, -30), new Point(10, -30));
@@ -287,7 +344,7 @@ describe('findEnclosingBoundary', () => {
 		const lineBottom2 = new Segment(new Point(70, -50), new Point(-70, -50));
 		const lineLeft2 = new Segment(new Point(-50, -70), new Point(-50, 70));
 
-		const boundary = findEnclosingBoundary(new Point(0, 0.2), [
+		const boundary = findEnclosingBoundary(new Point(20, -10), [
 			lineTop,
 			lineTop2,
 			lineRight,
@@ -331,8 +388,8 @@ describe('findEnclosingBoundary', () => {
 			const center = new Point(0, 0);
 			// Upper half-circle (0 → π)
 			const halfCircle = new Arc(center, 1, 0, Math.PI, true);
-			const closing = new Segment(halfCircle.end, halfCircle.start);
-			const boundary = findEnclosingBoundary(new Point(0, 0.2), [halfCircle, closing]);
+			const closingSegment = new Segment(halfCircle.end, halfCircle.start);
+			const boundary = findEnclosingBoundary(new Point(0, 0.2), [halfCircle, closingSegment]);
 
 			validateClosedBoundary(boundary, 2);
 		});

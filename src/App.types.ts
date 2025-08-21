@@ -58,3 +58,12 @@ export interface StartAndEndpointEntity extends Entity {
 	getStartPoint(): Point;
 	getEndPoint(): Point;
 }
+
+export interface BoundingBox {
+	minX: number;
+	minY: number;
+	maxX: number;
+	maxY: number;
+}
+
+export type Edge = Segment | Arc;

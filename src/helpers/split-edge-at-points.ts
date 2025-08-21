@@ -1,6 +1,5 @@
 import {Arc, type Point, Segment} from '@flatten-js/core';
 import {uniqWith} from 'es-toolkit';
-import {getAngleWithXAxis} from './get-angle-with-x-axis.ts';
 import {isPointEqual} from './is-point-equal.ts';
 
 type SplitAtPointsReturn<T extends Segment | Arc> = T extends Segment
@@ -18,12 +17,10 @@ export function splitEdgeAtPoints<T extends Segment | Arc>(
 	entity: T,
 	points: Point[]
 ): SplitAtPointsReturn<T> {
-	const uniquePoints = uniqWith(points, isPointEqual);
-
 	if (entity instanceof Segment) {
-		return splitSegmentAtPoints(entity, uniquePoints) as SplitAtPointsReturn<T>;
+		return splitSegmentAtPoints(entity, points) as SplitAtPointsReturn<T>;
 	}
-	return splitArcAtPoints(entity, uniquePoints) as SplitAtPointsReturn<T>;
+	return splitArcAtPoints(entity, points) as SplitAtPointsReturn<T>;
 }
 
 /**
@@ -33,41 +30,93 @@ export function splitEdgeAtPoints<T extends Segment | Arc>(
  */
 export function splitArcAtPoints(arc: Arc, splitPoints: Point[]): Arc[] {
 	const center = arc.center;
-	const radius = arc.r.valueOf();
+	const radius = Number(arc.r.valueOf()); // only used for tolerance scaling if needed later
 	const startAngle = arc.startAngle;
 	const endAngle = arc.endAngle;
-	const ccw = arc.counterClockwise; // invert===false → CCW, invert===true → CW
+	const ccw = arc.counterClockwise;
 
-	// 1) Make sure all points are unique
-	const uniquePoints = uniqWith(splitPoints, isPointEqual);
+	const EPS_A = 1e-12;
+	const TAU = Math.PI * 2;
 
-	// 2) Compute absolute angles of each point around the center, normalize to [0,2π)
-	const angles = uniquePoints
-		.map((point) => getAngleWithXAxis(center, point))
-		.filter((angle) => {
-			if (ccw) {
-				if (startAngle <= endAngle) return angle > startAngle && angle < endAngle;
-				return angle > startAngle || angle < endAngle;
+	const normA = (a: number) => {
+		let t = a % TAU;
+		if (t < 0) t += TAU;
+		return t;
+	};
+
+	// distance (>=0) following direction from a->b
+	const sweepSize = (a: number, b: number, dirCCW: boolean) => {
+		const na = normA(a);
+		const nb = normA(b);
+		if (dirCCW) {
+			const s = nb - na;
+			return s >= 0 ? s : s + TAU;
+		} else {
+			const s = na - nb;
+			return s >= 0 ? s : s + TAU;
+		}
+	};
+
+	const angleOfPoint = (p: Point) => Math.atan2(p.y - center.y, p.x - center.x);
+
+	const approximatelyEqAngle = (a: number, b: number) => {
+		const da = Math.abs(normA(a) - normA(b));
+		return da <= EPS_A || Math.abs(da - TAU) <= EPS_A;
+	};
+
+	const makeSegment = (a0: number, a1: number): Arc => {
+		// Preserve prototype if Arc is a class
+		return Object.assign(
+			Object.create(Object.getPrototypeOf(arc)),
+			arc,
+			{ startAngle: a0, endAngle: a1, counterClockwise: ccw }
+		) as Arc;
+	};
+
+	// Collect and convert split points to angles
+	const cutAngles: number[] = [startAngle, endAngle];
+	for (const p of splitPoints ?? []) {
+		const ang = angleOfPoint(p);
+
+		// avoid duplicates vs. existing cut angles
+		let dup = false;
+		for (const a of cutAngles) {
+			if (approximatelyEqAngle(a, ang)) {
+				dup = true;
+				break;
 			}
-			// clockwise
-			if (startAngle >= endAngle) return angle < startAngle && angle > endAngle;
-			return angle < startAngle || angle > endAngle;
-		})
-		// sort in travel order from startAng → endAng
-		.sort((firstAngle, secondAngle) => {
-			const da = (firstAngle - startAngle + 2 * Math.PI) % (2 * Math.PI);
-			const db = (secondAngle - startAngle + 2 * Math.PI) % (2 * Math.PI);
-			return ccw ? da - db : db - da;
-		});
+		}
+		if (!dup) cutAngles.push(ang);
+	}
 
-	// 3) Build angles array including both ends
-	const splitAngles = [startAngle, ...angles, endAngle];
+	// Sort by travel distance along the arc direction from startAngle
+	const ordered = cutAngles
+	.map(a => ({ a, d: sweepSize(startAngle, a, ccw) }))
+	.sort((u, v) => u.d - v.d);
 
-	// 4) Build each sub-arc
-	return splitAngles
-		.slice(0, -1)
-		.map((angle, i) => new Arc(center, radius, angle, splitAngles[i + 1], ccw));
-}
+	// Deduplicate after sort
+	const compact: number[] = [];
+	for (const { a } of ordered) {
+		if (
+			compact.length === 0 ||
+			sweepSize(compact[compact.length - 1], a, ccw) > EPS_A
+		) {
+			compact.push(a);
+		}
+	}
+
+	// Build segments between consecutive angles
+	const segments: Arc[] = [];
+	for (let i = 0; i < compact.length - 1; i++) {
+		const a0 = compact[i];
+		const a1 = compact[i + 1];
+		if (sweepSize(a0, a1, ccw) > EPS_A) {
+			segments.push(makeSegment(a0, a1));
+		}
+	}
+
+	// If no actual cuts (e.g., empty input or all duplicates), return the original arc
+	return segments.length ? segments : [arc];}
 
 export function splitSegmentAtPoints(segment: Segment, splitPoints: Point[]): Segment[] {
 	const splitPointsIncludingEndPoints = [segment.start, ...splitPoints, segment.end];

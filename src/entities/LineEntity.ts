@@ -1,6 +1,6 @@
 import {type Box, Point, Segment} from '@flatten-js/core';
 import {sortBy, uniqWith} from 'es-toolkit';
-import {type Shape, type SnapPoint, SnapPointType, type StartAndEndpointEntity} from '../App.types';
+import {type Edge, type Shape, type SnapPoint, SnapPointType, type StartAndEndpointEntity,} from '../App.types';
 import type {DrawController} from '../drawControllers/DrawController';
 import {pointDistance} from '../helpers/distance-between-points';
 import {getAngleWithXAxis} from '../helpers/get-angle-with-x-axis.ts';
@@ -20,8 +20,8 @@ export class LineEntity implements Entity, StartAndEndpointEntity {
 
 	private segment: Segment;
 
-	constructor(layerId: string, p1?: Point | Segment, p2?: Point) {
-		this.layerId = layerId;
+	constructor(p1?: Point | Segment, p2?: Point) {
+		this.layerId = getActiveLayerId();
 		if (p1 instanceof Segment) {
 			this.segment = p1;
 		} else {
@@ -67,7 +67,7 @@ export class LineEntity implements Entity, StartAndEndpointEntity {
 	}
 
 	public clone(): LineEntity {
-		return new LineEntity(getActiveLayerId(), this.segment.clone());
+		return new LineEntity(this.segment.clone());
 	}
 
 	public intersectsWithBox(box: Box): boolean {
@@ -84,6 +84,10 @@ export class LineEntity implements Entity, StartAndEndpointEntity {
 
 	public getShape(): Shape | null {
 		return this.segment;
+	}
+
+	public getEdges(): Edge[] {
+		return [this.segment];
 	}
 
 	public getSnapPoints(): SnapPoint[] {
@@ -158,11 +162,7 @@ export class LineEntity implements Entity, StartAndEndpointEntity {
 		// Until length - 2, so we can combine start points with endpoints
 		for (let i = 0; i < sortLinesByDistanceToStartPoint.length - 1; i++) {
 			lineSegments.push(
-				new LineEntity(
-					getActiveLayerId(),
-					sortLinesByDistanceToStartPoint[i],
-					sortLinesByDistanceToStartPoint[i + 1]
-				)
+				new LineEntity(sortLinesByDistanceToStartPoint[i], sortLinesByDistanceToStartPoint[i + 1])
 			);
 		}
 		return lineSegments;
@@ -194,11 +194,8 @@ export class LineEntity implements Entity, StartAndEndpointEntity {
 			jsonEntity.shapeData.startPoint.y
 		);
 		const endPoint = new Point(jsonEntity.shapeData.endPoint.x, jsonEntity.shapeData.endPoint.y);
-		const lineEntity = new LineEntity(
-			jsonEntity.layerId || getActiveLayerId(),
-			startPoint,
-			endPoint
-		);
+		const lineEntity = new LineEntity(startPoint, endPoint);
+		lineEntity.layerId = jsonEntity.layerId || getActiveLayerId();
 		lineEntity.id = jsonEntity.id;
 		lineEntity.lineColor = jsonEntity.lineColor;
 		lineEntity.lineWidth = jsonEntity.lineWidth;

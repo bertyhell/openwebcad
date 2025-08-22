@@ -3,7 +3,7 @@ import {CircleEntity} from '../../entities/CircleEntity';
 import type {Entity} from '../../entities/Entity';
 import {LineEntity} from '../../entities/LineEntity';
 import {RectangleEntity} from '../../entities/RectangleEntity';
-import {getActiveLayerId, getEntities, setEntities} from '../../state';
+import {getEntities, setEntities} from '../../state';
 
 import {Point} from '@flatten-js/core';
 import {type Node, parse, type RootNode} from 'svg-parser';
@@ -32,7 +32,6 @@ function svgChildrenToEntities(root: RootNode): Entity[] {
 				);
 				entities.push(
 					new RectangleEntity(
-						getActiveLayerId(),
 						corner,
 						new Point(
 							corner.x + Number.parseFloat(String(child.properties?.width)),
@@ -45,7 +44,6 @@ function svgChildrenToEntities(root: RootNode): Entity[] {
 				if (child.properties?.rx === child.properties?.ry) {
 					entities.push(
 						new CircleEntity(
-							getActiveLayerId(),
 							new Point(
 								Number.parseFloat(String(child.properties?.cx)),
 								Number.parseFloat(String(child.properties?.cy))
@@ -60,13 +58,7 @@ function svgChildrenToEntities(root: RootNode): Entity[] {
 			if (child.tagName === 'path' && typeof child.properties?.d === 'string') {
 				const lines = svgPathToSegments(child.properties.d);
 				for (const line of lines) {
-					entities.push(
-						new LineEntity(
-							getActiveLayerId(),
-							new Point(line.x1, line.y1),
-							new Point(line.x2, line.y2)
-						)
-					);
+					entities.push(new LineEntity(new Point(line.x1, line.y1), new Point(line.x2, line.y2)));
 				}
 			}
 			if (child.tagName === 'polygon' && typeof child.properties?.points === 'string') {
@@ -78,12 +70,12 @@ function svgChildrenToEntities(root: RootNode): Entity[] {
 						// still enough points, keep going
 						const startPoint = new Point(coords[i], coords[i + 1]);
 						const endPoint = new Point(coords[i + 2], coords[i + 3]);
-						entities.push(new LineEntity(getActiveLayerId(), startPoint, endPoint));
+						entities.push(new LineEntity(startPoint, endPoint));
 					} else if (i + 2 === coords.length) {
 						// last point, add line back to the start
 						const startPoint = new Point(coords[i], coords[i + 1]);
 						const endPoint = new Point(coords[0], coords[1]);
-						entities.push(new LineEntity(getActiveLayerId(), startPoint, endPoint));
+						entities.push(new LineEntity(startPoint, endPoint));
 					} else {
 						// stop
 						toast.error(
@@ -128,11 +120,7 @@ export function importEntitiesFromSvgFile(file: File | null | undefined) {
 					middle(boundingBox.minY, boundingBox.maxY)
 				);
 
-				const mirrorAxis = new LineEntity(
-					getActiveLayerId(),
-					centerPoint,
-					new Point(centerPoint.x + 1, centerPoint.y)
-				);
+				const mirrorAxis = new LineEntity(centerPoint, new Point(centerPoint.x + 1, centerPoint.y));
 				for (const svgEntity of svgEntities) {
 					svgEntity.mirror(mirrorAxis);
 				}

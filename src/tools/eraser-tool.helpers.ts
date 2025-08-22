@@ -9,7 +9,7 @@ import {findNeighboringPointsOnCircle} from '../helpers/find-neighboring-points-
 import {findNeighboringPointsOnLine} from '../helpers/find-neighboring-points-on-line';
 import {getAngleWithXAxis} from '../helpers/get-angle-with-x-axis.ts';
 import {isPointEqual} from '../helpers/is-point-equal';
-import {addEntities, deleteEntities, getActiveLayerId} from '../state';
+import {addEntities, deleteEntities} from '../state';
 
 export function getAllIntersectionPoints(entity: Entity, entities: Entity[]): Point[] {
 	// TODO see if we need to make this list unique
@@ -74,14 +74,7 @@ export function eraseCircleSegment(
 		? [angles[1], angles[0]]
 		: [angles[0], angles[1]];
 
-	const newArc = new ArcEntity(
-		getActiveLayerId(),
-		center,
-		circleShape.r,
-		startAngle,
-		endAngle,
-		true
-	);
+	const newArc = new ArcEntity(center, circleShape.r, startAngle, endAngle, true);
 	Object.assign(newArc, {
 		lineColor: circle.lineColor,
 		lineWidth: circle.lineWidth,

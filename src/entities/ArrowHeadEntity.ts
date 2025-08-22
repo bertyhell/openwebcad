@@ -1,6 +1,6 @@
 import {Box, Point, Segment} from '@flatten-js/core';
 import {max, min} from 'es-toolkit/compat';
-import type {Shape, SnapPoint} from '../App.types';
+import type {Edge, Shape, SnapPoint} from '../App.types';
 import type {DrawController} from '../drawControllers/DrawController';
 import {mirrorPointOverAxis} from '../helpers/mirror-point-over-axis.ts';
 import {scalePoint} from '../helpers/scale-point';
@@ -18,12 +18,11 @@ export class ArrowHeadEntity implements Entity {
 
 	// 3 corners of the arrow head
 	constructor(
-		layerId: string,
 		private p1: Point, // Tip of the arrow
 		private p2: Point,
 		private p3: Point
 	) {
-		this.layerId = layerId;
+		this.layerId = getActiveLayerId();
 	}
 
 	public draw(
@@ -96,7 +95,11 @@ export class ArrowHeadEntity implements Entity {
 	}
 
 	public getShape(): Shape | null {
-		return null; // TODO see why we need to get the shape out of an entity
+		return null;
+	}
+
+	public getEdges(): Edge[] {
+		return [];
 	}
 
 	public getSnapPoints(): SnapPoint[] {
@@ -156,7 +159,8 @@ export class ArrowHeadEntity implements Entity {
 		const p1 = new Point(jsonEntity.shapeData.p1.x, jsonEntity.shapeData.p1.y);
 		const p2 = new Point(jsonEntity.shapeData.p2.x, jsonEntity.shapeData.p2.y);
 		const p3 = new Point(jsonEntity.shapeData.p3.x, jsonEntity.shapeData.p3.y);
-		const lineEntity = new ArrowHeadEntity(jsonEntity.layerId || getActiveLayerId(), p1, p2, p3);
+		const lineEntity = new ArrowHeadEntity(p1, p2, p3);
+		lineEntity.layerId = jsonEntity.layerId || getActiveLayerId();
 		lineEntity.id = jsonEntity.id;
 		lineEntity.lineColor = jsonEntity.lineColor;
 		lineEntity.lineWidth = jsonEntity.lineWidth;

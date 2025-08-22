@@ -1,6 +1,6 @@
 import {Box, Point, type Segment, Vector} from '@flatten-js/core';
 import {cloneDeep} from 'es-toolkit/compat';
-import type {Shape, SnapPoint} from '../App.types';
+import type {Edge, Shape, SnapPoint} from '../App.types';
 import {DEFAULT_TEXT_OPTIONS, type DrawController} from '../drawControllers/DrawController';
 import {mirrorPointOverAxis} from '../helpers/mirror-point-over-axis.ts';
 import {scalePoint} from '../helpers/scale-point.ts';
@@ -25,12 +25,11 @@ export class TextEntity implements Entity {
 	private readonly options: TextOptions;
 
 	constructor(
-		layerId: string,
 		private label: string,
 		private basePoint: Point,
 		options?: Partial<TextOptions>
 	) {
-		this.layerId = layerId;
+		this.layerId = getActiveLayerId();
 		this.options = {
 			...DEFAULT_TEXT_OPTIONS,
 			...options,
@@ -75,12 +74,7 @@ export class TextEntity implements Entity {
 	}
 
 	public clone(): TextEntity {
-		return new TextEntity(
-			getActiveLayerId(),
-			this.label,
-			this.basePoint.clone(),
-			cloneDeep(this.options)
-		);
+		return new TextEntity(this.label, this.basePoint.clone(), cloneDeep(this.options));
 	}
 
 	public intersectsWithBox(box: Box): boolean {
@@ -103,6 +97,10 @@ export class TextEntity implements Entity {
 
 	public getShape(): Shape | null {
 		return null; // TODO see why we need to get the shape out of an entity
+	}
+
+	public getEdges(): Edge[] {
+		return [];
 	}
 
 	public getSnapPoints(): SnapPoint[] {
@@ -164,7 +162,6 @@ export class TextEntity implements Entity {
 			throw new Error('Invalid JSON entity of type Text: missing shapeData');
 		}
 		const textEntity = new TextEntity(
-			jsonEntity.layerId || getActiveLayerId(),
 			jsonEntity.shapeData.label,
 			new Point(jsonEntity.shapeData.basePoint.x, jsonEntity.shapeData.basePoint.y),
 			{
@@ -178,6 +175,7 @@ export class TextEntity implements Entity {
 				fontFamily: jsonEntity.shapeData.options.fontFamily,
 			}
 		);
+		textEntity.layerId = jsonEntity.layerId || getActiveLayerId();
 		textEntity.id = jsonEntity.id;
 		textEntity.lineColor = jsonEntity.lineColor;
 		textEntity.lineWidth = jsonEntity.lineWidth;

@@ -1,8 +1,8 @@
 import {Tool} from '../tools';
 import {createMachine} from 'xstate';
-import type {BoundingBox} from "../helpers/get-bounding-box-of-multiple-entities.ts";
 import {GET_ALIGN_ACTION, GET_ALIGN_TOOL_STATE} from "./align-tool.helpers.ts";
 import type {Entity} from "../entities/Entity.ts";
+import {BoundingBox} from "../App.types.ts";
 
 /**
  * AlignBottom tool state machine
@@ -11,8 +11,8 @@ import type {Entity} from "../entities/Entity.ts";
  * When the user presses enter, the selected entities are bottom aligned
  */
 export const alignBottomToolStateMachine = createMachine(
-    GET_ALIGN_TOOL_STATE(Tool.ALIGN_BOTTOM),
-    GET_ALIGN_ACTION((entity: Entity, boundingBox: BoundingBox) => {
-      entity.move(0, boundingBox.minY - entity.getBoundingBox().ymin);
-    })
+	GET_ALIGN_TOOL_STATE(Tool.ALIGN_BOTTOM),
+	GET_ALIGN_ACTION((entity: Entity, boundingBox: BoundingBox) => {
+		entity.move(0, boundingBox.minY - entity.getBoundingBox().ymin);
+	})
 );

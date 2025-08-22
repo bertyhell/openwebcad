@@ -2,11 +2,10 @@ import {type Point, Vector} from '@flatten-js/core';
 import {assign, createMachine, sendTo} from 'xstate';
 import {GUIDE_LINE_COLOR, GUIDE_LINE_STYLE, GUIDE_LINE_WIDTH, TO_RADIANS} from '../App.consts.ts';
 import type {Entity} from '../entities/Entity';
-import {LineEntity} from "../entities/LineEntity.ts";
-import {getPointFromEvent} from "../helpers/get-point-from-event.ts";
+import {LineEntity} from '../entities/LineEntity.ts';
+import {getPointFromEvent} from '../helpers/get-point-from-event.ts';
 import {
 	addEntities,
-	getActiveLayerId,
 	getSelectedEntities,
 	getSelectedEntityIds,
 	setAngleGuideOriginPoint,
@@ -309,11 +308,7 @@ export const arrayToolStateMachine = createMachine(
 				// TODO
 
 				// // Draw a dashed line between the start move point and the current mouse location
-				const activeDistanceLine = new LineEntity(
-					getActiveLayerId(),
-					context.startDistanceVector,
-					endPointTemp
-				);
+				const activeDistanceLine = new LineEntity(context.startDistanceVector, endPointTemp);
 				activeDistanceLine.lineColor = GUIDE_LINE_COLOR;
 				activeDistanceLine.lineWidth = GUIDE_LINE_WIDTH;
 				activeDistanceLine.lineDash = GUIDE_LINE_STYLE;

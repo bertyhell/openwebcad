@@ -3,7 +3,7 @@ import {Box, type Point, type Segment} from '@flatten-js/core';
 import {mapLimit} from 'blend-promise-utils';
 import {compact, maxBy} from 'es-toolkit';
 import {minBy} from 'es-toolkit/compat';
-import type {Shape, SnapPoint, StartAndEndpointEntity} from '../App.types';
+import type {Edge, Shape, SnapPoint, StartAndEndpointEntity} from '../App.types';
 import type {DrawController} from '../drawControllers/DrawController';
 import {checkClosedPolygon} from '../helpers/check-closed-polygon.ts';
 import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
@@ -20,8 +20,8 @@ export class PolyLineEntity implements Entity {
 
 	public readonly entities: (Entity & StartAndEndpointEntity)[];
 
-	constructor(layerId: string, entities: Entity[]) {
-		this.layerId = layerId;
+	constructor(entities: Entity[]) {
+		this.layerId = getActiveLayerId();
 		this.entities = entities.filter((entity) =>
 			[EntityName.Line, EntityName.Arc].includes(entity.getType())
 		) as StartAndEndpointEntity[];
@@ -71,7 +71,9 @@ export class PolyLineEntity implements Entity {
 
 	public clone(): PolyLineEntity {
 		const clonedEntities = this.entities.map((entity) => entity.clone());
-		return new PolyLineEntity(this.layerId, clonedEntities);
+		const polylineEntity = new PolyLineEntity(clonedEntities);
+		polylineEntity.layerId = this.layerId;
+		return polylineEntity;
 	}
 
 	public intersectsWithBox(selectionBox: Box): boolean {
@@ -87,20 +89,26 @@ export class PolyLineEntity implements Entity {
 		if (distanceInfos.every((distanceInfo) => distanceInfo === null)) {
 			return null;
 		}
-		return minBy(compact(distanceInfos), (distanceInfo) => distanceInfo?.[0]);
+		return minBy(compact(distanceInfos), (distanceInfo) => distanceInfo[0]) || null;
 	}
 
 	public getBoundingBox(): Box {
 		const boundingBoxes = this.entities.map((entity) => entity.getBoundingBox());
-		const xmin = minBy(boundingBoxes, (boundingBox) => boundingBox.xmin).xmin;
-		const ymin = minBy(boundingBoxes, (boundingBox) => boundingBox.ymin).ymin;
-		const xmax = maxBy(boundingBoxes, (boundingBox) => boundingBox.xmax).xmax;
-		const ymax = maxBy(boundingBoxes, (boundingBox) => boundingBox.ymax).ymax;
+		const xmin = minBy(boundingBoxes, (boundingBox) => boundingBox.xmin)?.xmin;
+		const ymin = minBy(boundingBoxes, (boundingBox) => boundingBox.ymin)?.ymin;
+		const xmax = maxBy(boundingBoxes, (boundingBox) => boundingBox.xmax)?.xmax;
+		const ymax = maxBy(boundingBoxes, (boundingBox) => boundingBox.ymax)?.ymax;
 		return new Box(xmin, ymin, xmax, ymax);
 	}
 
 	public getShape(): Shape | null {
 		return null;
+	}
+
+	public getEdges(): Edge[] {
+		return this.entities.flatMap((entity) => {
+			return entity.getEdges();
+		});
 	}
 
 	public getSnapPoints(): SnapPoint[] {
@@ -178,10 +186,8 @@ export class PolyLineEntity implements Entity {
 		if (!closedEntities) {
 			return null;
 		}
-		const polyLineEntity = new PolyLineEntity(
-			jsonEntity.layerId || getActiveLayerId(),
-			closedEntities as unknown as Entity[]
-		);
+		const polyLineEntity = new PolyLineEntity(closedEntities as unknown as Entity[]);
+		polyLineEntity.layerId = jsonEntity.layerId || getActiveLayerId();
 		polyLineEntity.id = jsonEntity.id;
 		polyLineEntity.lineColor = jsonEntity.lineColor;
 		polyLineEntity.lineWidth = jsonEntity.lineWidth;

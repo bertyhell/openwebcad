@@ -1,6 +1,6 @@
 import type * as Flatten from '@flatten-js/core';
 import {type Box, Point, Polygon, Relations, type Segment, Vector} from '@flatten-js/core';
-import {type Shape, type SnapPoint, SnapPointType} from '../App.types';
+import {type Edge, type Shape, type SnapPoint, SnapPointType} from '../App.types';
 import type {DrawController} from '../drawControllers/DrawController';
 import {twoPointBoxToPolygon} from '../helpers/box-to-polygon';
 import {getExportColor} from '../helpers/get-export-color';
@@ -20,8 +20,8 @@ export class RectangleEntity implements Entity {
 
 	private polygon: Polygon;
 
-	constructor(layerId: string, startPointOrPolygon?: Point | Polygon, endPoint?: Point) {
-		this.layerId = layerId;
+	constructor(startPointOrPolygon?: Point | Polygon, endPoint?: Point) {
+		this.layerId = getActiveLayerId();
 		if (startPointOrPolygon instanceof Polygon) {
 			this.polygon = startPointOrPolygon as Polygon;
 		} else {
@@ -70,7 +70,7 @@ export class RectangleEntity implements Entity {
 	}
 
 	public clone(): RectangleEntity {
-		return new RectangleEntity(getActiveLayerId(), this.polygon.clone());
+		return new RectangleEntity(this.polygon.clone());
 	}
 
 	public intersectsWithBox(selectionBox: Box): boolean {
@@ -100,6 +100,10 @@ export class RectangleEntity implements Entity {
 
 	public getShape(): Shape | null {
 		return this.polygon;
+	}
+
+	public getEdges(): Edge[] {
+		return polygonToSegments(this.polygon);
 	}
 
 	public getSnapPoints(): SnapPoint[] {
@@ -195,10 +199,8 @@ export class RectangleEntity implements Entity {
 		const rectangle = new Polygon(
 			jsonEntity.shapeData.points.map((point) => new Point(point.x, point.y))
 		);
-		const rectangleEntity = new RectangleEntity(
-			jsonEntity.layerId || getActiveLayerId(),
-			rectangle
-		);
+		const rectangleEntity = new RectangleEntity(rectangle);
+		rectangleEntity.layerId = jsonEntity.layerId || getActiveLayerId();
 		rectangleEntity.id = jsonEntity.id;
 		rectangleEntity.lineColor = jsonEntity.lineColor;
 		rectangleEntity.lineWidth = jsonEntity.lineWidth;

@@ -7,15 +7,7 @@ import {LineEntity} from '../entities/LineEntity';
 import type {RectangleEntity} from '../entities/RectangleEntity';
 import {findClosestEntity} from '../helpers/find-closest-entity';
 import {polygonToSegments} from '../helpers/polygon-to-segments';
-import {
-	addEntities,
-	deleteEntities,
-	getActiveLayerId,
-	getEntities,
-	setEntities,
-	setGhostHelperEntities,
-	setShouldDrawHelpers,
-} from '../state';
+import {addEntities, deleteEntities, getEntities, setEntities, setGhostHelperEntities, setShouldDrawHelpers,} from '../state';
 import {Tool} from '../tools';
 import {eraseArcSegment, eraseCircleSegment, eraseLineSegment, getAllIntersectionPoints,} from './eraser-tool.helpers';
 import type {MouseClickEvent, StateEvent, ToolContext} from './tool.types';
@@ -119,9 +111,7 @@ export function handleMouseClick(worldMouseLocation: Point) {
 		case EntityName.Rectangle: {
 			const rectangle = closestEntity.entity as RectangleEntity;
 			const segments = polygonToSegments(rectangle.getShape() as Polygon);
-			const segmentEntities = segments.map(
-				(segment) => new LineEntity(getActiveLayerId(), segment)
-			);
+			const segmentEntities = segments.map((segment) => new LineEntity(segment));
 
 			// Find the closest segment to the clicked point
 			const closestSegmentInfo = findClosestEntity(worldMouseLocation, segmentEntities);

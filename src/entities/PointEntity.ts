@@ -1,6 +1,6 @@
 import type * as Flatten from '@flatten-js/core';
 import {Box, Point, type Segment} from '@flatten-js/core';
-import {type Shape, type SnapPoint, SnapPointType} from '../App.types';
+import {type Edge, type Shape, type SnapPoint, SnapPointType} from '../App.types';
 import type {DrawController} from '../drawControllers/DrawController';
 import {getExportColor} from '../helpers/get-export-color';
 import {mirrorPointOverAxis} from '../helpers/mirror-point-over-axis.ts';
@@ -18,8 +18,8 @@ export class PointEntity implements Entity {
 
 	public point: Point;
 
-	constructor(layerId: string, pointOrX?: Point | number, y?: number) {
-		this.layerId = layerId;
+	constructor(pointOrX?: Point | number, y?: number) {
+		this.layerId = getActiveLayerId();
 		if (pointOrX instanceof Point) {
 			// Passed point
 			this.point = new Point(pointOrX.x, pointOrX.y);
@@ -61,7 +61,7 @@ export class PointEntity implements Entity {
 	}
 
 	public clone(): PointEntity {
-		return new PointEntity(getActiveLayerId(), this.point.clone());
+		return new PointEntity(this.point.clone());
 	}
 
 	public intersectsWithBox(): boolean {
@@ -78,6 +78,10 @@ export class PointEntity implements Entity {
 
 	public getShape(): Shape | null {
 		return this.point;
+	}
+
+	public getEdges(): Edge[] {
+		return [];
 	}
 
 	public getSnapPoints(): SnapPoint[] {
@@ -139,7 +143,8 @@ export class PointEntity implements Entity {
 			throw new Error('Invalid JSON entity of type Point: missing shapeData');
 		}
 		const point = new Point(jsonEntity.shapeData.point.x, jsonEntity.shapeData.point.y);
-		const lineEntity = new PointEntity(jsonEntity.layerId || getActiveLayerId(), point);
+		const lineEntity = new PointEntity(point);
+		lineEntity.layerId = jsonEntity.layerId || getActiveLayerId();
 		lineEntity.id = jsonEntity.id;
 		lineEntity.lineColor = jsonEntity.lineColor;
 		lineEntity.lineWidth = jsonEntity.lineWidth;

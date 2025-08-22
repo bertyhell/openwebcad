@@ -1,6 +1,7 @@
 import {assign, type MachineContext, sendTo} from 'xstate';
+import type {BoundingBox} from '../App.types.ts';
 import type {Entity} from '../entities/Entity.ts';
-import {type BoundingBox, getBoundingBoxOfMultipleEntities,} from '../helpers/get-bounding-box-of-multiple-entities.ts';
+import {getBoundingBoxOfMultipleEntities} from '../helpers/get-bounding-box-of-multiple-entities.ts';
 import {
 	getSelectedEntities,
 	getSelectedEntityIds,

@@ -1,5 +1,5 @@
 import type {Box, Point, Segment} from '@flatten-js/core';
-import type {Shape, SnapPoint} from '../App.types';
+import type {Edge, Shape, SnapPoint} from '../App.types';
 import type {DrawController} from '../drawControllers/DrawController.ts';
 import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
 import {type Entity, EntityName, type JsonEntity} from './Entity';
@@ -16,8 +16,8 @@ export class FillEntity implements Entity {
 
 	private fillBorder: PolyLineEntity;
 
-	constructor(layerId: string, fillBorder: PolyLineEntity) {
-		this.layerId = layerId;
+	constructor(fillBorder: PolyLineEntity) {
+		this.layerId = getActiveLayerId();
 		this.fillBorder = fillBorder;
 	}
 
@@ -55,7 +55,7 @@ export class FillEntity implements Entity {
 
 	public clone(): Entity {
 		if (this.fillBorder) {
-			return new FillEntity(getActiveLayerId(), this.fillBorder.clone());
+			return new FillEntity(this.fillBorder.clone());
 		}
 		return this;
 	}
@@ -74,6 +74,10 @@ export class FillEntity implements Entity {
 
 	public getShape(): Shape | null {
 		return this.fillBorder.getShape();
+	}
+
+	getEdges(): Edge[] {
+		return this.fillBorder.getEdges();
 	}
 
 	public getSnapPoints(): SnapPoint[] {
@@ -137,7 +141,8 @@ export class FillEntity implements Entity {
 			throw new Error('Invalid fill border entity');
 		}
 
-		const fillEntity = new FillEntity(layerId, fillBorder);
+		const fillEntity = new FillEntity(fillBorder);
+		fillEntity.layerId = layerId;
 		fillEntity.id = jsonEntity.id;
 		fillEntity.fillColor = jsonEntity.shapeData.fillColor;
 		return fillEntity;

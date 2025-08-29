@@ -63,7 +63,8 @@ export const importEntitiesFromDxfFile = async (file?: File): Promise<void> => {
 					if (dxfLine.start && dxfLine.end) {
 						const startPoint: Point = new Point(dxfLine.start.x, dxfLine.start.y);
 						const endPoint: Point = new Point(dxfLine.end.x, dxfLine.end.y);
-						const line = new LineEntity(currentLayerId, startPoint, endPoint);
+						const line = new LineEntity(startPoint, endPoint);
+						line.layerId = currentLayerId;
 						line.lineColor = getDxfLineColor(dxfLine.colorNumber);
 						line.lineWidth = dxfLine.thickness || defaultWidth;
 						line.lineDash = undefined;
@@ -75,7 +76,8 @@ export const importEntitiesFromDxfFile = async (file?: File): Promise<void> => {
 					const dxfCircle = entity as DxfEntities.Circle;
 					if (dxfCircle.x && dxfCircle.y && dxfCircle.r) {
 						const centerPoint = new Point(dxfCircle.x, dxfCircle.y);
-						const circle = new CircleEntity(currentLayerId, centerPoint, dxfCircle.r);
+						const circle = new CircleEntity(centerPoint, dxfCircle.r);
+						circle.layerId = currentLayerId;
 						circle.lineColor = getDxfLineColor(dxfCircle.colorNumber);
 						circle.lineWidth = defaultWidth;
 						circle.lineDash = undefined;

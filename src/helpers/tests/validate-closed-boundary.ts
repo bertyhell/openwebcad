@@ -1,6 +1,6 @@
 import type {Arc, Segment} from '@flatten-js/core';
-import {expect} from "vitest";
-import {isPointEqual} from './is-point-equal.ts';
+import {expect} from 'vitest';
+import {isPointEqual} from '../is-point-equal.ts';
 
 export function validateClosedBoundary(boundary: (Segment | Arc)[] | null, expectedLength: number) {
 	expect(boundary).not.toBeNull();

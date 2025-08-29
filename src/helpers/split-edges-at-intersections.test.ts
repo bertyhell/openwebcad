@@ -1,6 +1,7 @@
 import {Arc, Point, Segment} from '@flatten-js/core';
 import {describe, expect, it} from 'vitest';
 import {splitEdgesAtIntersections} from './split-edges-at-intersections.ts';
+import {expectIsEqualNumberArray} from "./tests/expect-is-equal-number-array.ts";
 
 describe('splitEdgesAtIntersections (using constructors)', () => {
 	it('returns empty array when given no edges', () => {
@@ -71,7 +72,14 @@ describe('splitEdgesAtIntersections (using constructors)', () => {
 
 		// Two intersection points → each circle broken into two arcs
 		const arcs = result.filter((e) => e instanceof Arc);
-		expect(arcs).toHaveLength(4);
+		const sweeps = arcs.map((arc) => arc.sweep);
+		expectIsEqualNumberArray(
+			sweeps,
+			[
+				1.0471975511965976, 4.188790204786391, 1.0471975511965974, 2.0943951023931957,
+				2.094395102393195, 2.0943951023931957,
+			]
+		);
 	});
 
 	/**
@@ -113,15 +121,59 @@ describe('splitEdgesAtIntersections (using constructors)', () => {
 		const lineBottom = new Segment(new Point(70, -50), new Point(-70, -50));
 		const lineLeft = new Segment(new Point(-50, -70), new Point(-50, 70));
 
-		const edges = splitEdgesAtIntersections([
-			lineTop,
-			arcRight,
-			lineBottom,
-			lineLeft,
-		]);
+		const edges = splitEdgesAtIntersections([lineTop, arcRight, lineBottom, lineLeft]);
 
 		expect(edges).toBeDefined();
-		expect(edges?.filter((edge) => edge instanceof Segment)).toHaveLength(9);
-		expect(edges?.filter((edge) => edge instanceof Arc)).toHaveLength(3);
+		const segments = edges?.filter((edge) => edge instanceof Segment);
+		expect(segments).toHaveLength(9);
+		const arcs = edges?.filter((edge) => edge instanceof Arc);
+		const sweeps = arcs.map((arc) => arc.sweep);
+		expectIsEqualNumberArray(
+			sweeps,
+			[
+				1.9360035480852633, 1.2055891055045298,
+				// biome-ignore lint/suspicious/noApproximativeNumericConstant: pi value is coincidence
+				3.141592653589793, 1.2055891055045294,
+			]
+		);
+	});
+
+	/**
+	 *      /¯¯¯¯¯¯¯¯¯¯¯¯\
+	 *   |¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯\¯¯|
+	 *  /|                  \ |
+	 * | |                    |
+	 * | |                    |\
+	 * | |                    | |
+	 * | |                    |/
+	 *  \|                   /|
+	 *   |--\-------------/--|
+	 *       \__________ /
+	 */
+	it('detects arc and segment boundary from the intersection of a square with a circle', () => {
+		// circle
+		const center = new Point(0, 0);
+		const circle = new Arc(center, 1, 0, Math.PI * 2, true);
+		// square segments
+		const side = 0.85;
+		const left = new Segment(new Point(-side, -side), new Point(-side, side));
+		const top = new Segment(new Point(-side, -side), new Point(side, -side));
+		const right = new Segment(new Point(side, -side), new Point(side, side));
+		const bottom = new Segment(new Point(side, side), new Point(-side, side));
+		const edges = splitEdgesAtIntersections([circle, left, top, right, bottom]);
+
+		expect(edges).toBeDefined();
+		const segments = edges?.filter((edge) => edge instanceof Segment);
+		expect(segments).toHaveLength(12);
+		const arcs = edges?.filter((edge) => edge instanceof Arc);
+		const arcSweeps = arcs.map((arc) => (arc as Arc).sweep);
+		expectIsEqualNumberArray(
+			arcSweeps,
+			[
+				0.5548110329800715, 0.46117426083475355, 1.1096220659601435, 0.4611742608347531,
+				1.109622065960143, 0.4611742608347531, 1.109622065960143, 0.46117426083475443,
+				0.5548110329800711,
+			]
+		);
 	});
 });

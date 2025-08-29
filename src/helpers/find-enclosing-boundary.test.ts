@@ -1,8 +1,8 @@
-import {Arc, Point, Segment} from '@flatten-js/core'; // tests/find-enclosing-boundary.test.ts
+import {Arc, Circle, Point, Segment} from '@flatten-js/core'; // tests/find-enclosing-boundary.test.ts
 import {describe, expect, it} from 'vitest';
 import {findEnclosingBoundary} from './find-enclosing-boundary.ts';
 import {isPointEqual} from './is-point-equal.ts';
-import {validateClosedBoundary} from './validate-closed-boundary.ts';
+import {validateClosedBoundary} from "./tests/validate-closed-boundary.ts";
 
 describe('findEnclosingBoundary', () => {
 	it('returns null for empty input', () => {
@@ -392,6 +392,39 @@ describe('findEnclosingBoundary', () => {
 			const boundary = findEnclosingBoundary(new Point(0, 0.2), [halfCircle, closingSegment]);
 
 			validateClosedBoundary(boundary, 2);
+		});
+
+		/**
+		 *      /¯¯¯¯¯¯¯¯¯¯¯¯\
+		 *   |¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯\¯¯|
+		 *  /|                  \ |
+		 * | |                    |
+		 * | |                    |\
+		 * | |                    | |
+		 * | |                    |/
+		 *  \|                   /|
+		 *   |--\-------------/--|
+		 *       \__________ /
+		 */
+		it('detects arc and segment boundary from the intersection of a square with a circle', () => {
+			// circle
+			const center = new Point(0, 0);
+			const circle = new Circle(center, 1);
+			// square segments
+			const side = 0.85;
+			const left = new Segment(new Point(-side, -side), new Point(-side, side));
+			const top = new Segment(new Point(-side, -side), new Point(side, -side));
+			const right = new Segment(new Point(side, -side), new Point(side, side));
+			const bottom = new Segment(new Point(side, side), new Point(-side, side));
+			const boundary = findEnclosingBoundary(new Point(0.1, 0.1), [
+				circle,
+				left,
+				top,
+				right,
+				bottom,
+			]);
+
+			validateClosedBoundary(boundary, 12);
 		});
 	});
 });

@@ -247,6 +247,18 @@ export const Toolbar: FC = () => {
 				/>
 				<Button
 					className="mt-2 w-full"
+					title="Fill area with color"
+					dataId="fill-button"
+					iconName={IconName.PaintBucket}
+					onClick={(evt) => {
+						evt.stopPropagation();
+						handleToolClick(Tool.FILL);
+					}}
+					active={activeToolLocal === Tool.FILL}
+					label="Fill"
+				/>
+				<Button
+					className="mt-2 w-full"
 					title="Delete segments"
 					dataId="delete-segment-button"
 					iconName={IconName.Crop}

@@ -10,7 +10,8 @@ describe('ArcEntity.distanceTo', () => {
 	 *  --                 --
 	 */
 	it('distance to point on arc', () => {
-		const arc = new ArcEntity('layer1', new Point(0, 0), 1, Math.PI / 4, (3 * Math.PI) / 4, true);
+		const arc = new ArcEntity(new Point(0, 0), 1, Math.PI / 4, (3 * Math.PI) / 4, true);
+		arc.layerId = 'layer1';
 		const point = (arc.getShape() as Arc).pointAtLength(
 			(arc.getShape() as Arc).length / 2
 		) as Point;
@@ -26,7 +27,8 @@ describe('ArcEntity.distanceTo', () => {
 	 *  --                 --
 	 */
 	it('distance to point outside arc', () => {
-		const arc = new ArcEntity('layer1', new Point(0, 0), 1, Math.PI / 4, (3 * Math.PI) / 4, true);
+		const arc = new ArcEntity(new Point(0, 0), 1, Math.PI / 4, (3 * Math.PI) / 4, true);
+		arc.layerId = 'layer1';
 		const point = new Point(2, 2);
 		const distanceInfo = arc.distanceTo(point);
 		expect(distanceInfo).toBeDefined();
@@ -41,7 +43,8 @@ describe('ArcEntity.distanceTo', () => {
 	 * -             X       -
 	 */
 	it('distance to point inside arc', () => {
-		const arc = new ArcEntity('layer1', new Point(0, 0), 1, Math.PI / 4, (3 * Math.PI) / 4, true);
+		const arc = new ArcEntity(new Point(0, 0), 1, Math.PI / 4, (3 * Math.PI) / 4, true);
+		arc.layerId = 'layer1';
 		const point = new Point(0.5, 0.5);
 		const distanceInfo = arc.distanceTo(point);
 		expect(distanceInfo).toBeDefined();
@@ -50,7 +53,8 @@ describe('ArcEntity.distanceTo', () => {
 	});
 
 	it('should return distance from a point to an arc', () => {
-		const arc = new ArcEntity('layer1', new Point(20, 20), 20, 0, 2 * Math.PI * 0.75, true);
+		const arc = new ArcEntity(new Point(20, 20), 20, 0, 2 * Math.PI * 0.75, true);
+		arc.layerId = 'layer1';
 		const distanceInfo = arc.distanceTo(new Point(20 - 14.14, 20 + 14.14));
 		expect(distanceInfo).toBeDefined();
 		if (!distanceInfo) return;

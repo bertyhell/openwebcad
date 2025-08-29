@@ -70,7 +70,9 @@ export class ArrowHeadEntity implements Entity {
 	}
 
 	public clone(): ArrowHeadEntity {
-		return new ArrowHeadEntity(this.layerId, this.p1.clone(), this.p2.clone(), this.p3.clone());
+		const clone = new ArrowHeadEntity(this.p1.clone(), this.p2.clone(), this.p3.clone());
+		clone.layerId = this.layerId;
+		return clone;
 	}
 
 	public intersectsWithBox(box: Box): boolean {

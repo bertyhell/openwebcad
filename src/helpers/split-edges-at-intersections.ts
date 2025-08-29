@@ -1,4 +1,4 @@
-import {type Arc, Box, PlanarSet, type Point, type Segment} from '@flatten-js/core';
+import {type Arc, PlanarSet, type Point, type Segment} from '@flatten-js/core';
 import {splitEdgeAtPoints} from "./split-edge-at-points.ts";
 import {isEqual} from "es-toolkit";
 
@@ -23,14 +23,7 @@ export function splitEdgesAtIntersections(edges: Edge[]): Edge[] {
 	}
 	const allCutEdges = [];
 	for (const currentEdge of edges) {
-		const intersectionCandidates = planarSet.search(
-			new Box(
-				Math.min(currentEdge.start.x, currentEdge.end.x),
-				Math.min(currentEdge.start.y, currentEdge.end.y),
-				Math.max(currentEdge.start.x, currentEdge.end.x),
-				Math.max(currentEdge.start.y, currentEdge.end.y)
-			)
-		);
+		const intersectionCandidates = planarSet.search(currentEdge.box);
 		const intersectionCandidatesWithoutCurrentEdge = intersectionCandidates.filter(
 			(edge) => !isEqual(edge, currentEdge)
 		);

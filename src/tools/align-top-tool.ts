@@ -1,8 +1,8 @@
 import {Tool} from '../tools';
 import {createMachine} from 'xstate';
-import type {BoundingBox} from "../helpers/get-bounding-box-of-multiple-entities.ts";
 import {GET_ALIGN_ACTION, GET_ALIGN_TOOL_STATE} from "./align-tool.helpers.ts";
 import type {Entity} from "../entities/Entity.ts";
+import type {BoundingBox} from "../App.types.ts";
 
 /**
  * AlignTop tool state machine
@@ -11,8 +11,8 @@ import type {Entity} from "../entities/Entity.ts";
  * When the user presses enter, the selected entities are top aligned
  */
 export const alignTopToolStateMachine = createMachine(
-    GET_ALIGN_TOOL_STATE(Tool.ALIGN_TOP),
-    GET_ALIGN_ACTION((entity: Entity, boundingBox: BoundingBox) => {
-      entity.move(0, -(entity.getBoundingBox().ymax - boundingBox.maxY));
-    })
+	GET_ALIGN_TOOL_STATE(Tool.ALIGN_TOP),
+	GET_ALIGN_ACTION((entity: Entity, boundingBox: BoundingBox) => {
+		entity.move(0, -(entity.getBoundingBox().ymax - boundingBox.maxY));
+	})
 );

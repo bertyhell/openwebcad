@@ -1,15 +1,37 @@
 import type {Point} from '@flatten-js/core';
 import type {StartAndEndpointEntity} from '../App.types.ts';
 import {isPointEqual} from './is-point-equal.ts';
+import {orderEdgeBoundary} from './order-edge-boundary.ts';
 
 /**
  * If entities form a closed loop, returns a new array
  * in which each segment’s end meets the next segment’s start.
- * Otherwise returns null.
+ * Otherwise, returns null.
  */
 export function checkClosedPolygon(
 	entities: StartAndEndpointEntity[]
 ): StartAndEndpointEntity[] | null {
+	const toProcess = entities.slice(1);
+	const closedLoop = [entities[0]];
+	let nextEntity = null;
+	do {
+		const previousEndPoint = closedLoop.at(-1)?.getEndPoint();
+		nextEntity = toProcess.find(
+			(entity) =>
+				isPointEqual(entity.getStartPoint(), previousEndPoint) ||
+				isPointEqual(entity.getEndPoint(), previousEndPoint)
+		);
+		if (nextEntity) {
+			closedLoop.push(nextEntity);
+		}
+	} while (nextEntity && toProcess.length > 0);
+
+	if (toProcess.length > 0) {
+		return null; // Not a closed loop
+	}
+
+	return orderEdgeBoundary(closedLoop);
+
 	const numberOfEntities = entities.length;
 	if (numberOfEntities === 0) return null;
 
@@ -94,7 +116,7 @@ export function checkClosedPolygon(
 	const usedEdge = new Array(numberOfEntities).fill(false);
 	const orderedEntities: StartAndEndpointEntity[] = [];
 
-	// start with edge 0, oriented from start→end
+	// start with edge 0, oriented from start → end
 	let currVertexIdx = edges[0].endIndex;
 	usedEdge[0] = true;
 	orderedEntities.push(entities[edges[0].entityIndex]);

@@ -1,5 +1,7 @@
 import {Arc, type Point, Segment} from '@flatten-js/core';
 import {uniqWith} from 'es-toolkit';
+import {EPSILON} from "../App.consts.ts";
+import {isApproxEqual} from "./is-approx-equal.ts";
 import {isPointEqual} from './is-point-equal.ts';
 
 type SplitAtPointsReturn<T extends Segment | Arc> = T extends Segment
@@ -30,93 +32,86 @@ export function splitEdgeAtPoints<T extends Segment | Arc>(
  */
 export function splitArcAtPoints(arc: Arc, splitPoints: Point[]): Arc[] {
 	const center = arc.center;
-	const radius = Number(arc.r.valueOf()); // only used for tolerance scaling if needed later
+	const radius = arc.r.valueOf();
 	const startAngle = arc.startAngle;
 	const endAngle = arc.endAngle;
 	const ccw = arc.counterClockwise;
-
-	const EPS_A = 1e-12;
 	const TAU = Math.PI * 2;
 
-	const normA = (a: number) => {
-		let t = a % TAU;
+	const normalizeAngle = (angle: number) => {
+		let t = angle % TAU;
 		if (t < 0) t += TAU;
 		return t;
 	};
 
-	// distance (>=0) following direction from a->b
-	const sweepSize = (a: number, b: number, dirCCW: boolean) => {
-		const na = normA(a);
-		const nb = normA(b);
-		if (dirCCW) {
-			const s = nb - na;
-			return s >= 0 ? s : s + TAU;
-		} else {
-			const s = na - nb;
-			return s >= 0 ? s : s + TAU;
+	/**
+	 * Get sweep size between angles
+	 * Expects normalized angles
+	 * distance (>=0) following direction from a->b
+	 * @param normalizedStartAngle
+	 * @param normalizedEndAngle
+	 * @param counterClockWise
+	 */
+	const sweepSize = (
+		normalizedStartAngle: number,
+		normalizedEndAngle: number,
+		counterClockWise: boolean
+	) => {
+		if (counterClockWise) {
+			const sweepAngle = normalizedEndAngle - normalizedStartAngle;
+			return sweepAngle >= 0 ? sweepAngle : sweepAngle + TAU;
 		}
+		const sweepAngle = normalizedStartAngle - normalizedEndAngle;
+		return sweepAngle >= 0 ? sweepAngle : sweepAngle + TAU;
 	};
 
-	const angleOfPoint = (p: Point) => Math.atan2(p.y - center.y, p.x - center.x);
-
-	const approximatelyEqAngle = (a: number, b: number) => {
-		const da = Math.abs(normA(a) - normA(b));
-		return da <= EPS_A || Math.abs(da - TAU) <= EPS_A;
-	};
-
-	const makeSegment = (a0: number, a1: number): Arc => {
-		// Preserve prototype if Arc is a class
-		return Object.assign(
-			Object.create(Object.getPrototypeOf(arc)),
-			arc,
-			{ startAngle: a0, endAngle: a1, counterClockwise: ccw }
-		) as Arc;
+	const angleOfPoint = (point: Point) => {
+		return Math.atan2(point.y - center.y, point.x - center.x);
 	};
 
 	// Collect and convert split points to angles
 	const cutAngles: number[] = [startAngle, endAngle];
-	for (const p of splitPoints ?? []) {
-		const ang = angleOfPoint(p);
+	for (const splitPoint of [arc.start, ...splitPoints, arc.end]) {
+		const angle = normalizeAngle(angleOfPoint(splitPoint));
 
 		// avoid duplicates vs. existing cut angles
-		let dup = false;
-		for (const a of cutAngles) {
-			if (approximatelyEqAngle(a, ang)) {
-				dup = true;
+		let isDuplicate = false;
+		for (const cutAngle of cutAngles) {
+			if (isApproxEqual(cutAngle, angle)) {
+				isDuplicate = true;
 				break;
 			}
 		}
-		if (!dup) cutAngles.push(ang);
+		if (!isDuplicate) cutAngles.push(angle);
 	}
 
 	// Sort by travel distance along the arc direction from startAngle
-	const ordered = cutAngles
-	.map(a => ({ a, d: sweepSize(startAngle, a, ccw) }))
-	.sort((u, v) => u.d - v.d);
+	const orderedAngles = cutAngles.sort((firstAngle, secondAngle) => firstAngle - secondAngle);
 
 	// Deduplicate after sort
-	const compact: number[] = [];
-	for (const { a } of ordered) {
+	const partAngles: number[] = [];
+	for (const cutAngle of orderedAngles) {
 		if (
-			compact.length === 0 ||
-			sweepSize(compact[compact.length - 1], a, ccw) > EPS_A
+			partAngles.length === 0 ||
+			sweepSize(partAngles[partAngles.length - 1], cutAngle, ccw) > EPSILON
 		) {
-			compact.push(a);
+			partAngles.push(cutAngle);
 		}
 	}
 
 	// Build segments between consecutive angles
-	const segments: Arc[] = [];
-	for (let i = 0; i < compact.length - 1; i++) {
-		const a0 = compact[i];
-		const a1 = compact[i + 1];
-		if (sweepSize(a0, a1, ccw) > EPS_A) {
-			segments.push(makeSegment(a0, a1));
+	const arcParts: Arc[] = [];
+	for (let i = 0; i < partAngles.length - 1; i++) {
+		const startAngle = partAngles[i];
+		const endAngle = partAngles[i + 1];
+		if (sweepSize(startAngle, endAngle, ccw) > EPSILON) {
+			arcParts.push(new Arc(center, radius, startAngle, endAngle, ccw));
 		}
 	}
 
 	// If no actual cuts (e.g., empty input or all duplicates), return the original arc
-	return segments.length ? segments : [arc];}
+	return arcParts.length ? arcParts : [arc];
+}
 
 export function splitSegmentAtPoints(segment: Segment, splitPoints: Point[]): Segment[] {
 	const splitPointsIncludingEndPoints = [segment.start, ...splitPoints, segment.end];

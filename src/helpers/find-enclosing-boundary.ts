@@ -5,7 +5,7 @@ import {pointDistance} from './distance-between-points.ts';
 import {getBoundingBoxOfMultipleEdges} from './get-bounding-box-of-multiple-entities.ts';
 import {isPointInsideBoundary} from './is-point-inside-boundary.ts';
 import {isPointInsideBox} from './is-point-inside-box.ts';
-import {orderBoundary} from './order-boundary.ts';
+import {orderEdgeBoundary} from './order-edge-boundary.ts';
 import {splitEdgesAtIntersections} from './split-edges-at-intersections.ts';
 
 type VertexKey = string;
@@ -138,52 +138,87 @@ export function findEnclosingBoundary(point: Point, shapes: Shape[]): (Segment |
 			edgesByVertex.get(b)?.push({ nbr: a, edge: e });
 		}
 
-		let cycleEdges: Edge[] = [];
+		// ★ Give every edge in this component a stable numeric id for cycle canonicalization
+		const edgeId = new Map<Edge, number>();
+		{
+			let i = 0;
+			for (const e of compEdges) edgeId.set(e, i++);
+		}
+		const addEdgeIds = (edges: Edge[]) =>
+			edges
+				.map((e) => edgeId.get(e))
+				.sort((a, b) => (a || 0) - (b || 0))
+				.join('|');
+
+		const allCycles: Edge[][] = [];
+		const seenCycles = new Set<string>();
+
 		const inStack = new Set<VertexKey>();
+		const visitedDFS = new Set<VertexKey>();
 		const parentMap = new Map<VertexKey, { parent: VertexKey | null; via: Edge | null }>();
 
-		function dfs(v: VertexKey, parent: VertexKey | null): boolean {
-			inStack.add(v);
-			const incident = edgesByVertex.get(v) || [];
+		function recordCycle(edgesInCycle: Edge[]) {
+			const key = addEdgeIds(edgesInCycle);
+			if (!seenCycles.has(key)) {
+				seenCycles.add(key);
+				allCycles.push(edgesInCycle.slice()); // store a copy
+			}
+		}
 
+		function reconstructCycle(vertexKey1: VertexKey, vertexKey2: VertexKey, closingEdge: Edge) {
+			// reconstruct edges from v back to w using parentMap, plus the closing edge v-w
+			const path: Edge[] = [closingEdge];
+			let cur = vertexKey1;
+			while (cur !== vertexKey2) {
+				const info = parentMap.get(cur);
+				if (!info?.via || info.parent === null) {
+					// should not happen in a well-formed back-edge case
+					return;
+				}
+				path.push(info.via);
+				cur = info.parent;
+			}
+			recordCycle(path);
+		}
+
+		function dfs(v: VertexKey, parent: VertexKey | null): void {
+			inStack.add(v);
+
+			const incident = edgesByVertex.get(v) || [];
 			for (const { nbr, edge } of incident) {
-				if (!inStack.has(nbr)) {
-					parentMap.set(nbr, { parent: v, via: edge });
-					if (dfs(nbr, v)) return true;
-				} else if (nbr !== parent) {
-					// ★ Standard back-edge: cycle of length ≥ 3
-					const edgesInCycle: Edge[] = [edge];
-					let cur = v;
-					while (cur !== nbr) {
-						const info = parentMap.get(cur);
-						if (!info?.via || info.parent === null) break;
-						edgesInCycle.push(info.via);
-						cur = info.parent;
-					}
-					cycleEdges = edgesInCycle;
-					return true;
-				} else {
-					// ★ nbr === parent — check for a parallel edge (2-edge cycle)
+				// 2-edge parallel cycle with the parent (multigraph)
+				if (nbr === parent) {
 					const incoming = parentMap.get(v)?.via;
 					if (incoming && incoming !== edge) {
-						cycleEdges = [incoming, edge]; // two edges between parent and v
-						return true;
+						recordCycle([incoming, edge]);
 					}
+					// continue scanning other incident edges
+					continue;
 				}
+
+				if (!visitedDFS.has(nbr) && !inStack.has(nbr)) {
+					parentMap.set(nbr, { parent: v, via: edge });
+					dfs(nbr, v);
+				} else if (inStack.has(nbr)) {
+					// Standard back-edge: cycle length ≥ 3
+					reconstructCycle(v, nbr, edge);
+				}
+				// else: nbr already fully processed (cross/forward edge) → ignore
 			}
 
 			inStack.delete(v);
-			return false;
+			visitedDFS.add(v);
 		}
 
 		for (const start of compVerts) {
-			if (!inStack.has(start)) {
+			if (!visitedDFS.has(start)) {
 				parentMap.set(start, { parent: null, via: null });
-				if (dfs(start, null)) break;
+				dfs(start, null);
 			}
 		}
 
-		if (cycleEdges.length) {
+		// Emit one candidate per distinct cycle found in this component
+		for (const cycleEdges of allCycles) {
 			candidates.push({
 				boundary: cycleEdges,
 				sizeIndicator: calculateSizeIndicator(cycleEdges, point),
@@ -205,7 +240,7 @@ export function findEnclosingBoundary(point: Point, shapes: Shape[]): (Segment |
 	candidatesContainingPoint.sort((a, b) => a.sizeIndicator - b.sizeIndicator);
 	const boundary = candidatesContainingPoint[0].boundary;
 
-	return orderBoundary(boundary);
+	return orderEdgeBoundary(boundary);
 }
 
 /**

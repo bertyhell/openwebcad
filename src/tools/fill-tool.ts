@@ -70,24 +70,25 @@ export const fillToolStateMachine = createMachine(
 				return {};
 			}),
 			[FillAction.DRAW_TEMP_BOUNDARY]: assign(({ context, event }) => {
-				// Draw ticker dashed line for which boundary the fill would be executed if the user clicks
-				const boundary = findEnclosingBoundary(
-					(event as MouseClickEvent).worldMouseLocation,
-					compact(getEntities().flatMap((entity) => entity.getEdges()))
-				);
-				if (boundary) {
-					const boundaryEntities = boundary.map((edge) => {
-						if (edge instanceof Segment) {
-							return new LineEntity(edge);
-						}
-						return new ArcEntity(edge);
-					});
-					const polylineEntity = new PolyLineEntity(boundaryEntities);
-					polylineEntity.lineColor = '#FFF';
-					polylineEntity.lineWidth = 2;
-					polylineEntity.lineDash = [10, 10];
-					setGhostHelperEntities([polylineEntity]);
-				}
+				// // Draw ticker dashed line for which boundary the fill would be executed if the user clicks
+				// const mouseLocation = (event as DrawEvent).drawController.getWorldMouseLocation();
+				// const boundary = findEnclosingBoundary(
+				// 	mouseLocation,
+				// 	compact(getEntities().flatMap((entity) => entity.getEdges()))
+				// );
+				// if (boundary) {
+				// 	const boundaryEntities = boundary.map((edge) => {
+				// 		if (edge instanceof Segment) {
+				// 			return new LineEntity(edge);
+				// 		}
+				// 		return new ArcEntity(edge);
+				// 	});
+				// 	const polylineEntity = new PolyLineEntity(boundaryEntities);
+				// 	polylineEntity.lineColor = '#FFF';
+				// 	polylineEntity.lineWidth = 2;
+				// 	polylineEntity.lineDash = [10, 10];
+				// 	setGhostHelperEntities([polylineEntity]);
+				// }
 
 				return context;
 			}),

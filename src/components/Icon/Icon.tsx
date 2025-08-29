@@ -26,6 +26,7 @@ import FolderXIcon from 'teenyicons/outline/folder-x.svg?react';
 import FolderIcon from 'teenyicons/outline/folder.svg?react';
 import GithubIcon from 'teenyicons/outline/github.svg?react';
 import GridLayoutIcon from 'teenyicons/outline/grid-layout.svg?react';
+import HomeAltIcon from 'teenyicons/outline/home-alt.svg?react';
 import ImageIcon from 'teenyicons/outline/image.svg?react';
 import JavascriptIcon from 'teenyicons/outline/javascript.svg?react';
 import LayersDifferenceIcon from 'teenyicons/outline/layers-difference.svg?react';
@@ -39,7 +40,7 @@ import SendUpIcon from 'teenyicons/outline/send-up.svg?react';
 import SquareIcon from 'teenyicons/outline/square.svg?react';
 import SvgIcon from 'teenyicons/outline/svg.svg?react';
 import UnlockIcon from 'teenyicons/outline/unlock.svg?react';
-import HomeAltIcon from 'teenyicons/outline/home-alt.svg?react';
+import PaintBucketIcon from 'teenyicons/outline/paintbucket.svg?react';
 
 import VectorDocumentIcon from 'teenyicons/outline/vector-document.svg?react';
 import SolidDownSmallIcon from 'teenyicons/solid/down-small.svg?react';
@@ -103,6 +104,7 @@ enum IconName {
 	Unlock = 'Unlock',
 	GridLayout = 'GridLayout',
 	HomeAlt = 'HomeAlt',
+	PaintBucket = 'PaintBucket',
 
 	// Solid icons
 	SolidDown = 'SolidDown',
@@ -163,6 +165,7 @@ const icons: Record<IconName, FC> = {
 	[IconName.Unlock]: UnlockIcon,
 	[IconName.GridLayout]: GridLayoutIcon,
 	[IconName.HomeAlt]: HomeAltIcon,
+	[IconName.PaintBucket]: PaintBucketIcon,
 
 	// Solid icons
 	[IconName.SolidDown]: SolidDownIcon,

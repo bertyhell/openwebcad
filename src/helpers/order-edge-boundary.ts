@@ -95,16 +95,6 @@ export function orderEntityBoundary(boundary: StartAndEndpointEntity[]): StartAn
 	return orderedBoundary;
 }
 
-function flipEdge(edge: Edge): Edge {
-	if (edge instanceof Segment) {
-		// Flip next segment
-		return new Segment(edge.end, edge.start);
-	}
-	// Flip next arc
-	const arc = edge as Arc;
-	return new Arc(arc.center, arc.r.valueOf(), arc.endAngle, arc.startAngle, !arc.counterClockwise);
-}
-
 function flipEntity(entity: StartAndEndpointEntity): StartAndEndpointEntity {
 	if (entity instanceof LineEntity) {
 		// Flip next segment

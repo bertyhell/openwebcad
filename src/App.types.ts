@@ -66,4 +66,7 @@ export interface BoundingBox {
 	maxY: number;
 }
 
+export type VertexId = string;
+export type EdgeId = string;
 export type Edge = Segment | Arc;
+export type EdgeWithId = Edge & { id: EdgeId };

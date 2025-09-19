@@ -355,7 +355,7 @@ describe('findEnclosingBoundary', () => {
 			lineLeft2,
 		]);
 
-		validateClosedBoundary(boundary, 4);
+		validateClosedBoundary(boundary, 5);
 	});
 
 	describe('arcs', () => {

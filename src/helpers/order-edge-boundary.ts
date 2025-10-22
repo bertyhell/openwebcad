@@ -3,6 +3,7 @@ import type {Edge, StartAndEndpointEntity} from '../App.types.ts';
 import {ArcEntity} from '../entities/ArcEntity.ts';
 import {LineEntity} from '../entities/LineEntity.ts';
 import {isPointEqual} from './is-point-equal.ts';
+import {compact} from "es-toolkit";
 
 /**
  * Orders the start and endpoints of a list of edges
@@ -15,31 +16,36 @@ import {isPointEqual} from './is-point-equal.ts';
  * [[p1, p2], [p2, p3], [p3, p4], [p4, p1]]
  */
 export function orderEdgeBoundary(boundary: Edge[]) {
-	if (boundary.length <= 1) {
+	const compactedBoundary = compact(boundary);
+	if (compactedBoundary.length <= 1) {
 		// Empty array or only one item, those are always correctly ordered
-		return boundary;
+		return compactedBoundary;
 	}
+	let remainingEdges = compactedBoundary.slice(1);
 	// For every edge in this boundary, Check if boundary edge end doesn't match next boundary edge start, invert the edge
 	const orderedBoundary: Edge[] = [];
-	if (
-		isPointEqual(boundary[0].start, boundary[1].start) ||
-		isPointEqual(boundary[0].start, boundary[1].end)
-	) {
-		// flip first edge
-		orderedBoundary.push(flipEdge(boundary[0]));
-	} else {
-		orderedBoundary.push(boundary[0]);
-	}
+	orderedBoundary.push(compactedBoundary[0]);
 
-	// Flip other edges if needed
-	for (let i = 1; i < boundary.length; i++) {
-		const previousEdge = orderedBoundary[i - 1];
-		const currentEdge = boundary[i];
+	// Find and flip other edges if needed
+	while (remainingEdges.length > 0) {
+		const previousEdge = orderedBoundary.at(-1) as Edge;
+		const currentEdgeIndex = remainingEdges.findIndex(
+			(edge) =>
+				isPointEqual(edge.start, previousEdge.end) || isPointEqual(edge.end, previousEdge.end)
+		);
+		const currentEdge = remainingEdges[currentEdgeIndex];
 
-		if (!isPointEqual(previousEdge.end, currentEdge.start)) {
-			orderedBoundary.push(flipEdge(currentEdge));
-		} else {
+		if (currentEdgeIndex === -1) {
+			throw new Error(
+				`Order boundary that isn't a self closing loop. Cannot find edge with ${JSON.stringify(boundary)}`
+			);
+		}
+
+		remainingEdges = remainingEdges.filter((_edge, index) => index !== currentEdgeIndex);
+		if (isPointEqual(previousEdge.end, currentEdge.start)) {
 			orderedBoundary.push(currentEdge);
+		} else {
+			orderedBoundary.push(flipEdge(currentEdge));
 		}
 	}
 	return orderedBoundary;
@@ -93,16 +99,6 @@ export function orderEntityBoundary(boundary: StartAndEndpointEntity[]): StartAn
 		}
 	}
 	return orderedBoundary;
-}
-
-function flipEdge(edge: Edge): Edge {
-	if (edge instanceof Segment) {
-		// Flip next segment
-		return new Segment(edge.end, edge.start);
-	}
-	// Flip next arc
-	const arc = edge as Arc;
-	return new Arc(arc.center, arc.r.valueOf(), arc.endAngle, arc.startAngle, !arc.counterClockwise);
 }
 
 function flipEntity(entity: StartAndEndpointEntity): StartAndEndpointEntity {

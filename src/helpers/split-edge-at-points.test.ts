@@ -39,4 +39,35 @@ describe('SplitEdgeAtPoints', () => {
 			]
 		);
 	});
+
+	it('Should split an Arc into 3 parts', () => {
+		// {
+		// 	"pc": {
+		// 	"x": -70,
+		// 		"y": 0,
+		// 		"name": "point"
+		// },
+		// 	"r": 140,
+		// 	"startAngle": -1.5707963267948966,
+		// 	"endAngle": 1.5707963267948966,
+		// 	"counterClockwise": true,
+		// 	"name": "arc"
+		// }
+		// [
+		// 	{
+		// 		"x": 60.76696830622021,
+		// 		"y": -50,
+		// 		"name": "point"
+		// 	},
+		// 	{
+		// 		"x": 60.76696830622021,
+		// 		"y": 50,
+		// 		"name": "point"
+		// 	}
+		// ]
+		const arc = new Arc(new Point(-70, 0), 140, -Math.PI / 2, Math.PI / 2, true);
+		const points = [new Point(60.76696830622021, 50), new Point(60.76696830622021, 50)];
+		const parts = splitArcAtPoints(arc, points);
+		expect(parts).toHaveLength(3);
+	});
 });

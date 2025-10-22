@@ -320,6 +320,33 @@ describe('findEnclosingBoundary', () => {
 	});
 
 	/**
+	 *    |            \
+	 *    |             \
+	 * ---+--------------+------
+	 *    |               \
+	 *    |               |
+	 *    |              /
+	 * ---+------------+--------
+	 *    |           /
+	 *    |         /
+	 */
+	it('detects boundary even for intersections with arc', () => {
+		const lineTop = new Segment(new Point(-70, 50), new Point(70, 50));
+		const arcRight = new Arc(new Point(-70, 0), 140, -Math.PI / 2, Math.PI / 2, true);
+		const lineBottom = new Segment(new Point(70, -50), new Point(-70, -50));
+		const lineLeft = new Segment(new Point(-50, -70), new Point(-50, 70));
+
+		const boundary = findEnclosingBoundary(new Point(20, -10), [
+			lineTop,
+			arcRight,
+			lineBottom,
+			lineLeft,
+		]);
+
+		validateClosedBoundary(boundary, 5);
+	});
+
+	/**
 	 *      |                          \
 	 *      |                           \
 	 * -----+----------------------------+----------
@@ -355,7 +382,7 @@ describe('findEnclosingBoundary', () => {
 			lineLeft2,
 		]);
 
-		validateClosedBoundary(boundary, 4);
+		validateClosedBoundary(boundary, 5);
 	});
 
 	describe('arcs', () => {

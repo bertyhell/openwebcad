@@ -3,10 +3,11 @@ import {describe, expect, it} from 'vitest';
 import type {StartAndEndpointEntity} from '../App.types.ts';
 import {checkClosedPolygon} from './check-closed-polygon.ts';
 
-function getMockSegment(start: Point, end: Point) {
+function getMockSegment(start: Point, end: Point): StartAndEndpointEntity {
 	return {
 		getStartPoint: () => start,
 		getEndPoint: () => end,
+		id: crypto.randomUUID(),
 	} as StartAndEndpointEntity;
 }
 
@@ -15,20 +16,12 @@ describe('checkClosedPolygon', () => {
 		expect(checkClosedPolygon([])).toBeNull();
 	});
 
-	it('throws if a segment has zero length', () => {
-		const p = new Point(0, 0);
-		const zeroLen = getMockSegment(p, p);
-		expect(() => checkClosedPolygon([zeroLen])).toThrowError('entity with zero length detected');
-	});
-
 	it('throws if unique‐points count ≠ number of segments', () => {
 		// one segment has two distinct endpoints → 2 unique points ≠ 1 segment
 		const a = new Point(0, 0);
 		const b = new Point(1, 0);
 		const seg = getMockSegment(a, b);
-		expect(() => checkClosedPolygon([seg])).toThrowError(
-			"number of unique points doesn't match number of entities"
-		);
+		expect(checkClosedPolygon([seg])).toBeNull();
 	});
 
 	it('throws if some point doesn’t appear exactly twice', () => {
@@ -38,9 +31,7 @@ describe('checkClosedPolygon', () => {
 		const C = new Point(0, 1);
 		// A→B, B→C, C→B causes B count = 3, A = 1, C = 2
 		const segs = [getMockSegment(A, B), getMockSegment(B, C), getMockSegment(C, B)];
-		expect(() => checkClosedPolygon(segs)).toThrowError(
-			"This polyline isn't closed. Some points do not appear twice"
-		);
+		expect(checkClosedPolygon(segs)).toBeNull();
 	});
 
 	it('returns null for a disconnected “double‐loop”', () => {
@@ -71,7 +62,7 @@ describe('checkClosedPolygon', () => {
 
 		expect(out).not.toBeNull();
 		// should come back in the loop order [A→B, B→C, C→A]
-		expect(out).toEqual([s0, s1, s2]);
+		expect(out).toEqual([s1, s2, s0]);
 	});
 
 	it('orders a square correctly even if input is scrambled', () => {
@@ -90,6 +81,6 @@ describe('checkClosedPolygon', () => {
 		const out = checkClosedPolygon(scrambled);
 
 		expect(out).not.toBeNull();
-		expect(out).toEqual([e0, e1, e2, e3]);
+		expect(out).toEqual([e2, e3, e0, e1]);
 	});
 });

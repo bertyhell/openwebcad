@@ -1,8 +1,9 @@
 import {Arc, type Point, Segment} from '@flatten-js/core';
 import {uniqWith} from 'es-toolkit';
-import {EPSILON} from "../App.consts.ts";
-import {isApproxEqual} from "./is-approx-equal.ts";
+import {EPSILON} from '../App.consts.ts';
+import {isApproxEqual} from './is-approx-equal.ts';
 import {isPointEqual} from './is-point-equal.ts';
+import {sortAngles} from "./sort-angles.ts";
 
 type SplitAtPointsReturn<T extends Segment | Arc> = T extends Segment
 	? Segment[]
@@ -39,9 +40,7 @@ export function splitArcAtPoints(arc: Arc, splitPoints: Point[]): Arc[] {
 	const TAU = Math.PI * 2;
 
 	const normalizeAngle = (angle: number) => {
-		let t = angle % TAU;
-		if (t < 0) t += TAU;
-		return t;
+		return (angle + TAU) % TAU;
 	};
 
 	/**
@@ -70,7 +69,7 @@ export function splitArcAtPoints(arc: Arc, splitPoints: Point[]): Arc[] {
 	};
 
 	// Collect and convert split points to angles
-	const cutAngles: number[] = [startAngle, endAngle];
+	const cutAngles: number[] = [];
 	for (const splitPoint of [arc.start, ...splitPoints, arc.end]) {
 		const angle = normalizeAngle(angleOfPoint(splitPoint));
 
@@ -86,24 +85,13 @@ export function splitArcAtPoints(arc: Arc, splitPoints: Point[]): Arc[] {
 	}
 
 	// Sort by travel distance along the arc direction from startAngle
-	const orderedAngles = cutAngles.sort((firstAngle, secondAngle) => firstAngle - secondAngle);
-
-	// Deduplicate after sort
-	const partAngles: number[] = [];
-	for (const cutAngle of orderedAngles) {
-		if (
-			partAngles.length === 0 ||
-			sweepSize(partAngles[partAngles.length - 1], cutAngle, ccw) > EPSILON
-		) {
-			partAngles.push(cutAngle);
-		}
-	}
+	const orderedAngles = sortAngles(cutAngles, arc.counterClockwise);
 
 	// Build segments between consecutive angles
 	const arcParts: Arc[] = [];
-	for (let i = 0; i < partAngles.length - 1; i++) {
-		const startAngle = partAngles[i];
-		const endAngle = partAngles[i + 1];
+	for (let i = 0; i < orderedAngles.length - 1; i++) {
+		const startAngle = orderedAngles[i];
+		const endAngle = orderedAngles[i + 1];
 		if (sweepSize(startAngle, endAngle, ccw) > EPSILON) {
 			arcParts.push(new Arc(center, radius, startAngle, endAngle, ccw));
 		}

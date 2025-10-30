@@ -1,8 +1,7 @@
 import {compact} from 'es-toolkit';
 import {saveAs} from 'file-saver';
-import type {Layer} from '../../App.types.ts';
-import type {Entity, JsonEntity} from '../../entities/Entity';
 import {getEntities, getLayers} from '../../state';
+import type {JsonDrawingFileSerialized} from './json.types.ts';
 
 export async function exportEntitiesToJsonFile() {
 	const json = await exportEntitiesAndLayersToJsonString();
@@ -20,14 +19,4 @@ export async function exportEntitiesAndLayersToJsonString() {
 		layers: getLayers(),
 	};
 	return JSON.stringify(jsonDrawingFile, null, 2);
-}
-
-export interface JsonDrawingFileSerialized {
-	entities: JsonEntity[];
-	layers: Layer[];
-}
-
-export interface JsonDrawingFileDeserialized {
-	entities: Entity[];
-	layers: Layer[];
 }

@@ -3,6 +3,7 @@ import {type DiscoveryResult, DiscoveryResultType, PlanarFaceTree} from 'planar-
 import type {CycleTree} from 'planar-face-discovery/src/planar-face-tree.ts';
 import type {Edge} from '../App.types.ts';
 import {isEdgeEqual} from "./is-edge-equal.ts";
+import {isPointEqual} from "./is-point-equal.ts";
 import {orderEdgeBoundary} from "./order-edge-boundary.ts";
 
 /**
@@ -58,15 +59,15 @@ export function findLoopsInEdges(edges: Edge[]): Edge[][] {
 			[edge.start.x, edge.start.y],
 			[edge.end.x, edge.end.y],
 		]),
-		(point1, point2) => point1[0] === point2[0] && point1[1] === point2[1]
+		isPointEqual
 	);
 
 	/**
 	 * Edges are defined by [source id, target id]
 	 */
 	const planarSetEdges: Array<[number, number]> = edgesInPositiveSpace.map((edge: Edge) => [
-		planarSetNodes.findIndex((p) => p[0] === edge.start.x && p[1] === edge.start.y),
-		planarSetNodes.findIndex((p) => p[0] === edge.end.x && p[1] === edge.end.y),
+		planarSetNodes.findIndex((p) => isPointEqual(p, [edge.start.x, edge.start.y])),
+		planarSetNodes.findIndex((p) => isPointEqual(p, [edge.end.x, edge.end.y])),
 	]);
 
 	const result = solver.discover(planarSetNodes, planarSetEdges);
@@ -92,7 +93,6 @@ export function findLoopsInEdges(edges: Edge[]): Edge[][] {
 		}
 	}
 
-	console.log(JSON.stringify(nonEmptyLoops, null, 2));
 	return nonEmptyLoops;
 }
 
@@ -121,14 +121,8 @@ function convertCycleForestToEdgeLoops(
 			const edgeFromCycleNodes = edges.find((edge) => {
 				// Find edge that has same startpoint and endpoint or same endpoint and startpoint
 				return (
-					(edge.start.x === startCycleNode[0] &&
-						edge.start.y === startCycleNode[1] &&
-						edge.end.x === endCycleNode[0] &&
-						edge.end.y === endCycleNode[1]) ||
-					(edge.end.x === startCycleNode[0] &&
-						edge.end.y === startCycleNode[1] &&
-						edge.start.x === endCycleNode[0] &&
-						edge.start.y === endCycleNode[1])
+					(isPointEqual(edge.start, startCycleNode) && isPointEqual(edge.end, endCycleNode)) ||
+					(isPointEqual(edge.end, startCycleNode) && isPointEqual(edge.start, endCycleNode))
 				);
 			});
 			if (!edgeFromCycleNodes) {

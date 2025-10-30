@@ -343,7 +343,7 @@ describe('findEnclosingBoundary', () => {
 			lineLeft,
 		]);
 
-		validateClosedBoundary(boundary, 5);
+		validateClosedBoundary(boundary, 4);
 	});
 
 	/**
@@ -382,7 +382,7 @@ describe('findEnclosingBoundary', () => {
 			lineLeft2,
 		]);
 
-		validateClosedBoundary(boundary, 5);
+		validateClosedBoundary(boundary, 4);
 	});
 
 	describe('arcs', () => {

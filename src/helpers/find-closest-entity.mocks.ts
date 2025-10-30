@@ -1,5 +1,5 @@
 import {EntityName} from '../entities/Entity.ts';
-import type {JsonDrawingFileSerialized} from './import-export-handlers/export-entities-to-json.ts';
+import type {JsonDrawingFileSerialized} from './import-export-handlers/json.export.ts';
 
 export const arcAndLineEntitiesMock: JsonDrawingFileSerialized = {
 	entities: [

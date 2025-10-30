@@ -8,8 +8,8 @@ import {ScreenCanvasDrawController} from './drawControllers/screenCanvas.drawCon
 import {draw} from './helpers/draw';
 import {findClosestEntity} from './helpers/find-closest-entity';
 import {getNewLayer} from './helpers/get-new-layer.ts';
-import type {JsonDrawingFileDeserialized} from './helpers/import-export-handlers/export-entities-to-json.ts';
-import {getEntitiesAndLayersFromLocalStorage} from './helpers/import-export-handlers/import-entities-from-local-storage.ts';
+import type {JsonDrawingFileDeserialized} from './helpers/import-export-handlers/json.export.ts';
+import {getEntitiesAndLayersFromLocalStorage} from './helpers/import-export-handlers/local-storage.import.ts';
 import {trackHoveredSnapPoint} from './helpers/track-hovered-snap-points';
 import {InputController} from './inputController/input-controller.ts';
 import {

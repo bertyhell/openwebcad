@@ -65,10 +65,16 @@ export function findLoopsInEdges(edges: Edge[]): Edge[][] {
 	/**
 	 * Edges are defined by [source id, target id]
 	 */
-	const planarSetEdges: Array<[number, number]> = edgesInPositiveSpace.map((edge: Edge) => [
+	let planarSetEdges: [number, number][] = edgesInPositiveSpace.map((edge: Edge) => [
 		planarSetNodes.findIndex((p) => isPointEqual(p, [edge.start.x, edge.start.y])),
 		planarSetNodes.findIndex((p) => isPointEqual(p, [edge.end.x, edge.end.y])),
 	]);
+	planarSetEdges = uniqWith(
+		planarSetEdges,
+		(edge1Indexes, edge2Indexes) =>
+			(edge1Indexes[0] === edge2Indexes[0] && edge1Indexes[1] === edge2Indexes[1]) ||
+			(edge1Indexes[0] === edge2Indexes[1] && edge1Indexes[1] === edge2Indexes[0])
+	);
 
 	const result = solver.discover(planarSetNodes, planarSetEdges);
 

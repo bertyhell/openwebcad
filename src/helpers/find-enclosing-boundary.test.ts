@@ -343,7 +343,7 @@ describe('findEnclosingBoundary', () => {
 			lineLeft,
 		]);
 
-		validateClosedBoundary(boundary, 4);
+		validateClosedBoundary(boundary, 5);
 	});
 
 	/**
@@ -382,7 +382,7 @@ describe('findEnclosingBoundary', () => {
 			lineLeft2,
 		]);
 
-		validateClosedBoundary(boundary, 4);
+		validateClosedBoundary(boundary, 5);
 	});
 
 	describe('arcs', () => {
@@ -418,7 +418,7 @@ describe('findEnclosingBoundary', () => {
 			const closingSegment = new Segment(halfCircle.end, halfCircle.start);
 			const boundary = findEnclosingBoundary(new Point(0, 0.2), [halfCircle, closingSegment]);
 
-			validateClosedBoundary(boundary, 2);
+			validateClosedBoundary(boundary, 3);
 		});
 
 		/**

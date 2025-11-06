@@ -26,4 +26,28 @@ describe('orderBoundary()', () => {
 		expect(orderedBoundary).toHaveLength(3);
 		validateClosedBoundary(orderedBoundary, 3);
 	});
+
+	it('should order arcs and edges boundary 2', () => {
+		const boundary = [
+			new Segment(new Point(507, 845), new Point(587.9408656026364, 663.3765942574988)),
+			new Arc(new Point(541, 847), 189.52836199366033, 4.96266561537413, 5.622925461276857, true),
+			new Arc(new Point(541, 847), 189.52836199366047, 5.622925461276857, 6.283185307179585, true),
+			new Arc(new Point(541, 847), 189.5283619936605, 0, 0.5833498090667931, true),
+			new Arc(
+				new Point(541, 847),
+				189.52836199366035,
+				0.5833498090667931,
+				1.1666996181335865,
+				true
+			),
+			new Segment(
+				new Point(615.5203500905536, 1021.2633565107172),
+				new Point(507.00000000000006, 844.9999999999999)
+			),
+		];
+
+		const orderedBoundary = orderEdgeBoundary(boundary);
+		expect(orderedBoundary).toHaveLength(6);
+		validateClosedBoundary(orderedBoundary, 6);
+	});
 });

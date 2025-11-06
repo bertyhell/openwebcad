@@ -1,7 +1,5 @@
 import {type Arc, Point, type Vector} from '@flatten-js/core';
 import {CANVAS_BACKGROUND_COLOR, MOUSE_ZOOM_MULTIPLIER} from '../App.consts';
-import type {ArcEntity} from '../entities/ArcEntity.ts';
-import {EntityName} from '../entities/Entity.ts';
 import type {LineEntity} from '../entities/LineEntity.ts';
 import type {PolyLineEntity} from '../entities/PolyLineEntity.ts';
 import {containRectangle} from '../helpers/contain-rect.ts';
@@ -11,6 +9,9 @@ import {mapNumberRange} from '../helpers/map-number-range.ts';
 import {StateVariable} from '../helpers/undo-stack.ts';
 import {getEntities, getScreenCanvasDrawController, triggerReactUpdate} from '../state.ts';
 import {DEFAULT_TEXT_OPTIONS, type DrawController} from './DrawController';
+import {EntityName} from "../entities/Entity.ts";
+import type {ArcEntity} from "../entities/ArcEntity.ts";
+import {pointDistance} from "../helpers/distance-between-points.ts";
 
 /**
  * Screen coordinate system:
@@ -510,6 +511,7 @@ export class ScreenCanvasDrawController implements DrawController {
 			return;
 		}
 		const startScreen = this.worldToTarget(startWorld);
+		console.log(`context.moveTo(${startScreen.x}, ${this.canvasSize.y - startScreen.y})`);
 		this.context.moveTo(startScreen.x, this.canvasSize.y - startScreen.y);
 
 		//
@@ -522,6 +524,7 @@ export class ScreenCanvasDrawController implements DrawController {
 					const line = seg as LineEntity;
 					const endWorld = line.getEndPoint();
 					const endScreen = this.worldToTarget(endWorld);
+					console.log(`context.lineTo(${endScreen.x}, ${this.canvasSize.y - endScreen.y})`);
 					this.context.lineTo(endScreen.x, this.canvasSize.y - endScreen.y);
 					break;
 				}
@@ -531,25 +534,27 @@ export class ScreenCanvasDrawController implements DrawController {
 					const arcShape = arcEnt.getShape() as Arc;
 
 					// world-space center → screen
-					const cWorld = arcShape.center;
-					const cScreen = this.worldToTarget(cWorld);
+					const centerWorld = arcShape.center;
+					const centerScreen = this.worldToTarget(centerWorld);
 
 					// compute screen radius by transforming one point on the radius
-					const pEdge = new Point(cWorld.x + arcShape.r.valueOf(), cWorld.y);
-					const edgeScreen = this.worldToTarget(pEdge);
-					const rScreen = Math.hypot(edgeScreen.x - cScreen.x, edgeScreen.y - cScreen.y);
+					const startPointScreen = this.worldToTarget(arcShape.start);
+					const radiusScreen = pointDistance(startPointScreen, centerScreen);
 
 					// canvas y is flipped, so:
 					//   y_canvas = canvasHeight - y_screen
 					//   θ_canvas = -θ_world
 					//   anticlockwise_canvas = !anticlockwise_world
-					const cx = cScreen.x;
-					const cy = this.canvasSize.y - cScreen.y;
-					const startA = -arcShape.startAngle;
-					const endA = -arcShape.endAngle;
-					const ccw = !arcShape.counterClockwise;
+					const centerX = centerScreen.x;
+					const centerY = this.canvasSize.y - centerScreen.y;
+					const startAngle = -arcShape.startAngle;
+					const endAngle = -arcShape.endAngle;
+					const counterClockWise = arcShape.counterClockwise;
 
-					this.context.arc(cx, cy, rScreen, startA, endA, ccw);
+					console.log(
+						`context.arc(${centerX}, ${centerY}, ${radiusScreen}, ${startAngle}, ${endAngle}, ${counterClockWise});`
+					);
+					this.context.arc(centerX, centerY, radiusScreen, startAngle, endAngle, counterClockWise);
 					break;
 				}
 				default:

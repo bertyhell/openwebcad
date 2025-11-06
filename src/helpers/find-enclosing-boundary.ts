@@ -1,4 +1,5 @@
 import {Arc, Box, Circle, type Point, Polygon, Segment, type Shape} from '@flatten-js/core';
+import {minBy} from "es-toolkit";
 import {EPSILON} from '../App.consts.ts';
 import type {Edge} from '../App.types.ts';
 import {calculateSizeIndicator} from "./calculate-size-indicator.ts";
@@ -82,8 +83,11 @@ export function findEnclosingBoundary(point: Point, shapes: Shape[]): (Segment |
 
 	if (candidatesContainingPoint.length === 0) return null;
 
-	candidatesContainingPoint.sort((a, b) => a.sizeIndicator - b.sizeIndicator);
-	const boundary = candidatesContainingPoint[0].boundary;
+	const smallestBoundary = minBy(
+		candidatesContainingPoint,
+		(candidate) => candidate.sizeIndicator
+	) as { boundary: Edge[]; sizeIndicator: number };
 
-	return orderEdgeBoundary(boundary);
+	const orderedBoundary = orderEdgeBoundary(smallestBoundary.boundary);
+	return orderedBoundary;
 }

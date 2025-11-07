@@ -37,6 +37,10 @@ export class PolyLineEntity implements Entity {
 		parentSelected?: boolean
 	): void {
 		for (const entity of this.entities) {
+			entity.lineWidth = this.lineWidth;
+			entity.lineDash = this.lineDash;
+			entity.layerId = this.layerId;
+			entity.lineColor = this.lineColor;
 			entity.draw(
 				drawController,
 				parentHighlighted ?? isEntityHighlighted(this),

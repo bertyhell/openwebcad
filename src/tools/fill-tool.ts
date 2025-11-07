@@ -8,7 +8,7 @@ import {PolyLineEntity} from '../entities/PolyLineEntity.ts';
 import {findEnclosingBoundary} from '../helpers/find-enclosing-boundary.ts';
 import {addEntities, getEntities, setGhostHelperEntities, setShouldDrawHelpers,} from '../state';
 import {Tool} from '../tools';
-import type {MouseClickEvent, StateEvent, ToolContext} from './tool.types';
+import type {DrawEvent, MouseClickEvent, StateEvent, ToolContext} from './tool.types';
 
 export interface FillContext extends ToolContext {
 	startPoint: Point | null;
@@ -71,24 +71,24 @@ export const fillToolStateMachine = createMachine(
 			}),
 			[FillAction.DRAW_TEMP_BOUNDARY]: assign(({ context, event }) => {
 				// // Draw ticker dashed line for which boundary the fill would be executed if the user clicks
-				// const mouseLocation = (event as DrawEvent).drawController.getWorldMouseLocation();
-				// const boundary = findEnclosingBoundary(
-				// 	mouseLocation,
-				// 	compact(getEntities().flatMap((entity) => entity.getEdges()))
-				// );
-				// if (boundary) {
-				// 	const boundaryEntities = boundary.map((edge) => {
-				// 		if (edge instanceof Segment) {
-				// 			return new LineEntity(edge);
-				// 		}
-				// 		return new ArcEntity(edge);
-				// 	});
-				// 	const polylineEntity = new PolyLineEntity(boundaryEntities);
-				// 	polylineEntity.lineColor = '#FFF';
-				// 	polylineEntity.lineWidth = 2;
-				// 	polylineEntity.lineDash = [10, 10];
-				// 	setGhostHelperEntities([polylineEntity]);
-				// }
+				const mouseLocation = (event as DrawEvent).drawController.getWorldMouseLocation();
+				const boundary = findEnclosingBoundary(
+					mouseLocation,
+					compact(getEntities().flatMap((entity) => entity.getEdges()))
+				);
+				if (boundary) {
+					const boundaryEntities = boundary.map((edge) => {
+						if (edge instanceof Segment) {
+							return new LineEntity(edge);
+						}
+						return new ArcEntity(edge);
+					});
+					const polylineEntity = new PolyLineEntity(boundaryEntities);
+					polylineEntity.lineColor = '#FFF';
+					polylineEntity.lineWidth = 5;
+					polylineEntity.lineDash = undefined;
+					setGhostHelperEntities([polylineEntity]);
+				}
 
 				return context;
 			}),

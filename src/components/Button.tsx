@@ -55,11 +55,6 @@ export const Button: FC<ButtonProps> = ({
 				data-size={size}
 				data-type={type}
 				onClick={onClick || noop}
-				onKeyUp={(evt) => {
-					if (evt.key === 'Enter' || evt.key === ' ') {
-						onClick?.(evt as unknown as MouseEvent);
-					}
-				}}
 				title={title}
 				data-id={dataId}
 				type="button"

@@ -28,6 +28,7 @@ import {
 	setActiveToolActor,
 	setAngleStep,
 	setEntities,
+	setGhostHelperEntities,
 	setLayers,
 	undo,
 } from '../state';
@@ -520,6 +521,7 @@ export const Toolbar: FC = () => {
 				onClick={(evt) => {
 					evt.stopPropagation();
 					setEntities([]);
+					setGhostHelperEntities([]);
 				}}
 				label="New drawing"
 			/>

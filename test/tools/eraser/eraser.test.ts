@@ -46,5 +46,5 @@ test('Draw circle and line and erase part of circle', async () => {
 	);
 	expect(arcJson.shapeData.radius).toBeCloseTo(radius, 5);
 	expect(arcJson.shapeData.startAngle).toBeCloseTo(0.7338182524767606, 5);
-	expect(arcJson.shapeData.endAngle).toBeCloseTo(-0.7338182524767606, 5);
+	expect(arcJson.shapeData.endAngle).toBeCloseTo(Math.PI * 2 -0.7338182524767606, 5);
 });

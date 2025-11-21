@@ -45,7 +45,7 @@ describe('findEnclosingBoundary', () => {
 
 		const boundary = findEnclosingBoundary(query, edges);
 
-		validateClosedBoundary(boundary, edges.length);
+		validateClosedBoundary(boundary, edges.length, edges.length, 0);
 
 		// Must contain exactly those three edges, in any order
 		for (let i = 0; i < edges.length; i++) {
@@ -96,7 +96,7 @@ describe('findEnclosingBoundary', () => {
 
 		const query = new Point(0.2, 0.2); // clearly outside
 		const result = findEnclosingBoundary(query, [segAB, segBC, segCA, ARC]);
-		validateClosedBoundary(result, 3);
+		validateClosedBoundary(result, 3, 3, 0);
 
 		const arc = result?.find((edge) => edge instanceof Arc);
 		expect(arc).toBeUndefined();
@@ -132,7 +132,7 @@ describe('findEnclosingBoundary', () => {
 
 		const boundary = findEnclosingBoundary(query, edges);
 
-		validateClosedBoundary(boundary, 3);
+		validateClosedBoundary(boundary, 3, 3, 0);
 
 		// Must contain exactly the 3 center edges, in any order
 		for (let i = 0; i < 3; i++) {
@@ -164,7 +164,7 @@ describe('findEnclosingBoundary', () => {
 		const query = new Point(0.5, 0.5);
 
 		const boundary = findEnclosingBoundary(query, shuffled);
-		validateClosedBoundary(boundary, 4);
+		validateClosedBoundary(boundary, 4, 4, 0);
 	});
 
 	/**
@@ -197,12 +197,12 @@ describe('findEnclosingBoundary', () => {
 		const insideSquare = new Point(2.5, 2.5);
 
 		// Triangle query
-		const triagonalBoundary = findEnclosingBoundary(insideTriangle, all);
-		validateClosedBoundary(triagonalBoundary, 3);
+		const triangleBoundary = findEnclosingBoundary(insideTriangle, all);
+		validateClosedBoundary(triangleBoundary, 3, 3, 0);
 
 		// Square query
 		const squareBoundary = findEnclosingBoundary(insideSquare, all);
-		validateClosedBoundary(squareBoundary, 4);
+		validateClosedBoundary(squareBoundary, 4, 4,0);
 	});
 
 	/**
@@ -222,7 +222,7 @@ describe('findEnclosingBoundary', () => {
 		// Point exactly on AB
 		const onEdge = new Point(0.5, 0);
 		const boundary = findEnclosingBoundary(onEdge, [segAB, segBC, segCA]);
-		validateClosedBoundary(boundary, 3);
+		validateClosedBoundary(boundary, 3, 3, 0);
 	});
 
 	/**
@@ -277,7 +277,7 @@ describe('findEnclosingBoundary', () => {
 			lineLeft,
 			lineLeft2,
 		]);
-		validateClosedBoundary(boundary, 4);
+		validateClosedBoundary(boundary, 4, 4, 0);
 	});
 
 	/**
@@ -316,7 +316,7 @@ describe('findEnclosingBoundary', () => {
 			lineLeft2,
 		]);
 
-		validateClosedBoundary(boundary, 4);
+		validateClosedBoundary(boundary, 4, 4, 0);
 	});
 
 	/**
@@ -343,7 +343,7 @@ describe('findEnclosingBoundary', () => {
 			lineLeft,
 		]);
 
-		validateClosedBoundary(boundary, 5);
+		validateClosedBoundary(boundary, 4, 3, 1);
 	});
 
 	/**
@@ -382,7 +382,7 @@ describe('findEnclosingBoundary', () => {
 			lineLeft2,
 		]);
 
-		validateClosedBoundary(boundary, 5);
+		validateClosedBoundary(boundary, 4, 3, 1);
 	});
 
 	describe('arcs', () => {
@@ -418,14 +418,14 @@ describe('findEnclosingBoundary', () => {
 			const closingSegment = new Segment(halfCircle.end, halfCircle.start);
 			const boundary = findEnclosingBoundary(new Point(0, 0.2), [halfCircle, closingSegment]);
 
-			validateClosedBoundary(boundary, 3);
+			validateClosedBoundary(boundary, 2, 1, 1);
 		});
 
 		/**
 		 *      /¯¯¯¯¯¯¯¯¯¯¯¯\
 		 *   |¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯\¯¯|
 		 *  /|                  \ |
-		 * | |                    |
+		 * | |           x        |
 		 * | |                    |\
 		 * | |                    | |
 		 * | |                    |/
@@ -451,7 +451,36 @@ describe('findEnclosingBoundary', () => {
 				bottom,
 			]);
 
-			validateClosedBoundary(boundary, 12);
+			validateClosedBoundary(boundary, 8, 4, 4);
+		});
+
+		/**
+		 *                      |
+		 *                      |
+		 *        /¯¯¯¯¯¯¯¯¯¯¯¯\|
+		 *     /                |\
+		 *   /                  | \
+		 *  |                   |  |
+		 * |                    |   |
+		 * |                    | X |
+		 *  |                   |  |
+		 *   \                  | /
+		 *     \                /
+		 *        \__________/  |
+		 *                      |
+		 */
+		it('detects arc and segment boundary from the intersection of a line with a circle (right side)', () => {
+			// circle
+			const center = new Point(0, 0);
+			const circle = new Circle(center, 1);
+			// segments
+			const segment = new Segment(new Point(0.5, -2), new Point(0.5, 2));
+			const boundary = findEnclosingBoundary(new Point(0.6, 0), [
+				circle,
+				segment,
+			]);
+
+			validateClosedBoundary(boundary, 2, 1, 1);
 		});
 	});
 });

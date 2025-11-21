@@ -1,9 +1,9 @@
 import {Arc, type Point, Segment} from '@flatten-js/core';
 import {uniqWith} from 'es-toolkit';
 import {EPSILON} from '../App.consts.ts';
-import {isApproxEqual} from './is-approx-equal.ts';
 import {isPointEqual} from './is-point-equal.ts';
 import {sortAngles} from "./sort-angles.ts";
+import {TAU} from "./consts.ts";
 
 type SplitAtPointsReturn<T extends Segment | Arc> = T extends Segment
 	? Segment[]
@@ -34,10 +34,7 @@ export function splitEdgeAtPoints<T extends Segment | Arc>(
 export function splitArcAtPoints(arc: Arc, splitPoints: Point[]): Arc[] {
 	const center = arc.center;
 	const radius = arc.r.valueOf();
-	const startAngle = arc.startAngle;
-	const endAngle = arc.endAngle;
 	const ccw = arc.counterClockwise;
-	const TAU = Math.PI * 2;
 
 	const normalizeAngle = (angle: number) => {
 		return (angle + TAU) % TAU;
@@ -70,22 +67,15 @@ export function splitArcAtPoints(arc: Arc, splitPoints: Point[]): Arc[] {
 
 	// Collect and convert split points to angles
 	const cutAngles: number[] = [];
-	for (const splitPoint of [arc.start, ...splitPoints, arc.end]) {
+	const uniqSplitPoints = uniqWith([arc.start, ...splitPoints], isPointEqual);
+	for (const splitPoint of uniqSplitPoints) {
 		const angle = normalizeAngle(angleOfPoint(splitPoint));
-
-		// avoid duplicates vs. existing cut angles
-		let isDuplicate = false;
-		for (const cutAngle of cutAngles) {
-			if (isApproxEqual(cutAngle, angle)) {
-				isDuplicate = true;
-				break;
-			}
-		}
-		if (!isDuplicate) cutAngles.push(angle);
+		cutAngles.push(angle);
 	}
 
 	// Sort by travel distance along the arc direction from startAngle
-	const orderedAngles = sortAngles(cutAngles, arc.counterClockwise);
+	// Add arc.end after unique check, since start and end of arc could be the same point (circle)
+	const orderedAngles = [...sortAngles(cutAngles, arc.counterClockwise), arc.endAngle];
 
 	// Build segments between consecutive angles
 	const arcParts: Arc[] = [];

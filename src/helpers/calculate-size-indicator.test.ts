@@ -1,6 +1,6 @@
 import {Arc, Point, Segment} from "@flatten-js/core";
 import {describe, expect, it} from "vitest";
-import {calculateSizeIndicator} from "./calculate-size-indicator.ts";
+import {calculateArea} from "./calculate-area.ts";
 
 const circleEdges = (cx: number, cy: number, r: number) => {
 	const c = new Point(cx, cy);
@@ -52,8 +52,8 @@ describe('calculate size indicator', () => {
 		// Point inside triangle and square
 		const mousePoint = new Point(0.3, 0.3);
 
-		const sizeIndicatorTriangle = calculateSizeIndicator(smallTriangle, mousePoint);
-		const sizeIndicatorSquare = calculateSizeIndicator(largeSquare, mousePoint);
+		const sizeIndicatorTriangle = calculateArea(smallTriangle, mousePoint);
+		const sizeIndicatorSquare = calculateArea(largeSquare, mousePoint);
 
 		expect(sizeIndicatorTriangle).toBeLessThan(sizeIndicatorSquare);
 	});
@@ -71,8 +71,8 @@ describe('calculate size indicator', () => {
 
 		const mousePoint = new Point(0, 0);
 
-		const sizeCircle = calculateSizeIndicator(smallCircle, mousePoint);
-		const sizeSquare = calculateSizeIndicator(bigSquare, mousePoint);
+		const sizeCircle = calculateArea(smallCircle, mousePoint);
+		const sizeSquare = calculateArea(bigSquare, mousePoint);
 
 		expect(sizeCircle).toBeLessThan(sizeSquare);
 	});
@@ -91,8 +91,8 @@ describe('calculate size indicator', () => {
 
 		const mousePoint = new Point(0, 0);
 
-		const sizeCircle = calculateSizeIndicator(largeCircle, mousePoint);
-		const sizeSquare = calculateSizeIndicator(bigSquare, mousePoint);
+		const sizeCircle = calculateArea(largeCircle, mousePoint);
+		const sizeSquare = calculateArea(bigSquare, mousePoint);
 
 		expect(sizeCircle).toBeLessThan(sizeSquare);
 	});
@@ -126,8 +126,8 @@ describe('calculate size indicator', () => {
 
 		const mousePoint = new Point(0, 0);
 
-		const sizeSquareArc = calculateSizeIndicator(squareWithArc, mousePoint);
-		const sizeTriangleArc = calculateSizeIndicator(triangleWithArc, mousePoint);
+		const sizeSquareArc = calculateArea(squareWithArc, mousePoint);
+		const sizeTriangleArc = calculateArea(triangleWithArc, mousePoint);
 
 		expect(sizeSquareArc).toBeLessThan(sizeTriangleArc);
 	});
@@ -159,8 +159,8 @@ describe('calculate size indicator', () => {
 
 		const mousePoint = new Point(4, 4); // close to the big shape, far from the small one
 
-		const sizeA = calculateSizeIndicator(a, mousePoint);
-		const sizeB = calculateSizeIndicator(b, mousePoint);
+		const sizeA = calculateArea(a, mousePoint);
+		const sizeB = calculateArea(b, mousePoint);
 
 		expect(sizeB).toBeLessThan(sizeA);
 	});

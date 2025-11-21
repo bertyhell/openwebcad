@@ -2,7 +2,7 @@ import {Arc, Box, Circle, type Point, Polygon, Segment, type Shape} from '@flatt
 import {minBy} from "es-toolkit";
 import {EPSILON} from '../App.consts.ts';
 import type {Edge} from '../App.types.ts';
-import {calculateSizeIndicator} from "./calculate-size-indicator.ts";
+import {calculateArea} from "./calculate-area.ts";
 import {pointDistance} from './distance-between-points.ts';
 import {findLoopsInEdges} from './find-loops-in-edges.ts';
 import {getBoundingBoxOfMultipleEdges} from './get-bounding-box-of-multiple-entities.ts';
@@ -11,6 +11,7 @@ import {isPointInsideBox} from './is-point-inside-box.ts';
 import {orderEdgeBoundary} from './order-edge-boundary.ts';
 import {splitArcAtPoints} from "./split-edge-at-points.ts";
 import {splitEdgesAtIntersections} from './split-edges-at-intersections.ts';
+import {unionEdges} from "./union-edges.ts";
 
 /**
  * Generates a string identifier for a Point
@@ -18,14 +19,14 @@ import {splitEdgesAtIntersections} from './split-edges-at-intersections.ts';
  * @param shapes
  */
 export function findEnclosingBoundary(point: Point, shapes: Shape[]): (Segment | Arc)[] | null {
-	const candidates: { boundary: Edge[]; sizeIndicator: number }[] = [];
+	const wholeShapeLoops: Edge[][] = [];
 
 	const edges: Edge[] = [];
 	for (const shape of shapes) {
 		let loop: Edge[] | null = null;
 
 		if (shape instanceof Circle && shape.contains(point)) {
-			loop = [shape.toArc()];
+			loop = [new Arc(shape.center, shape.r, 0, 2 * Math.PI, true)];
 		} else if (shape instanceof Box && shape.contains(point)) {
 			loop = shape.toSegments();
 		} else if (shape instanceof Polygon && shape.contains(point)) {
@@ -52,7 +53,7 @@ export function findEnclosingBoundary(point: Point, shapes: Shape[]): (Segment |
 		}
 
 		if (loop) {
-			candidates.push({ boundary: loop, sizeIndicator: calculateSizeIndicator(loop, point) });
+			wholeShapeLoops.push(loop);
 			edges.push(...loop);
 		}
 	}
@@ -64,30 +65,34 @@ export function findEnclosingBoundary(point: Point, shapes: Shape[]): (Segment |
 	// Otherwise this is converted into 2 nodes that are connected with 2 edges. Which is not allowed by the graph solver
 	const edgeArcsHalved = edgeArcs.flatMap((arc) => splitArcAtPoints(arc, [arc.middle()]));
 
-	const loops = findLoopsInEdges([...edgeSegments, ...edgeArcsHalved]);
-	candidates.push(
-		...loops.map((loop): { boundary: Edge[]; sizeIndicator: number } => ({
-			boundary: loop,
-			sizeIndicator: calculateSizeIndicator(loop, point),
-		}))
+	const segmentAndArcLoops = findLoopsInEdges([...edgeSegments, ...edgeArcsHalved]);
+	const candidateLoops = [...wholeShapeLoops, ...segmentAndArcLoops];
+
+	// filter out boundaries where the bounding box of the boundary doesn't contain the point
+	const bbFiltered = candidateLoops.filter((loop) =>
+		isPointInsideBox(getBoundingBoxOfMultipleEdges(loop), point)
 	);
 
-	// ★ Actually use the BB filter result
-	const bbFiltered = candidates.filter((c) =>
-		isPointInsideBox(getBoundingBoxOfMultipleEdges(c.boundary), point)
-	);
-
-	const candidatesContainingPoint = bbFiltered.filter((c) =>
-		isPointInsideBoundary(c.boundary, point)
+	// now do the more expensive check if the boundary contains the point
+	const candidatesContainingPoint = bbFiltered.filter((loop) =>
+		isPointInsideBoundary(loop, point)
 	);
 
 	if (candidatesContainingPoint.length === 0) return null;
 
+	// Find the smallest boundary that contains the point
+	const loopsWithArea = candidatesContainingPoint.map(loop => {
+		return {
+			loop,
+			area: calculateArea(loop),
+		}
+	});
 	const smallestBoundary = minBy(
-		candidatesContainingPoint,
-		(candidate) => candidate.sizeIndicator
-	) as { boundary: Edge[]; sizeIndicator: number };
+		loopsWithArea,
+		(loop) => loop.area
+	) as { loop: Edge[]; area: number };
 
-	const orderedBoundary = orderEdgeBoundary(smallestBoundary.boundary);
-	return orderedBoundary;
+	const orderedBoundary = orderEdgeBoundary(smallestBoundary.loop);
+	const unionedEdgesBoundary = unionEdges(orderedBoundary);
+	return unionedEdgesBoundary;
 }

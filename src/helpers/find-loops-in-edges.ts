@@ -8,6 +8,7 @@ import {orderEdgeBoundary} from "./order-edge-boundary.ts";
 
 /**
  * Finds all simple loops (cycles) in an undirected edge network.
+ * - Edges cannot intersect. If they do, use splitEdgesAtIntersections function first
  * - Edges are treated as bidirectional.
  * - Loops are returned as arrays of EdgeWithId in loop order.
  * - Deduplicates the same loop discovered from different start points/orientations.
@@ -56,8 +57,8 @@ export function findLoopsInEdges(edges: Edge[]): Edge[][] {
 	 */
 	const planarSetNodes: [number, number][] = uniqWith(
 		edgesInPositiveSpace.flatMap((edge) => [
-			[edge.start.x, edge.start.y],
-			[edge.end.x, edge.end.y],
+			[Math.max(edge.start.x, 0), Math.max(edge.start.y, 0)],
+			[Math.max(edge.end.x, 0), Math.max(edge.end.y, 0)],
 		]),
 		isPointEqual
 	);

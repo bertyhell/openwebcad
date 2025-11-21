@@ -130,10 +130,11 @@ describe('splitEdgesAtIntersections (using constructors)', () => {
 		const sweeps = arcs.map((arc) => arc.sweep);
 		expectIsEqualNumberArray(
 			sweeps,
-			[
-				1.9360035480852633, 1.2055891055045298,
-				// biome-ignore lint/suspicious/noApproximativeNumericConstant: pi value is coincidence
-				3.141592653589793, 1.2055891055045294,
+				[
+					1.2055891055045294,
+					0.7304144425807344,
+					1.2055891055045294
+
 			]
 		);
 	});
@@ -150,7 +151,7 @@ describe('splitEdgesAtIntersections (using constructors)', () => {
 	 *   |--\-------------/--|
 	 *       \__________ /
 	 */
-	it('detects arc and segment boundary from the intersection of a square with a circle', () => {
+	it('detects arc and segment parts', () => {
 		// circle
 		const center = new Point(0, 0);
 		const circle = new Arc(center, 1, 0, Math.PI * 2, true);
@@ -176,4 +177,29 @@ describe('splitEdgesAtIntersections (using constructors)', () => {
 			]
 		);
 	});
+
+	/**
+	 *                      |
+	 *                      |
+	 *       ,-¯¯¯¯¯¯¯¯¯¯¯-,|
+	 *     /                |\
+	 *   /                  | \
+	 *  |                   |  |
+	 * |                    |   |
+	 * |                    | X |
+	 *  |                   |  |
+	 *   \                  | /
+	 *     \                /
+	 *       '-__________-' |
+	 *                      |
+	 */
+	it('Split circle arc and segment', () => {
+		const arc = new Arc(new Point(0, 0), 1, 0, Math.PI * 2, true);
+		const segment = new Segment(new Point(0.5, -2), new Point(0.5, 2));
+		const parts = splitEdgesAtIntersections([arc, segment]);
+
+		expect(parts).toHaveLength(6);
+		expect(parts.filter(part => part instanceof Arc)).toHaveLength(3);
+		expect(parts.filter(part => part instanceof Segment)).toHaveLength(3);
+	})
 });

@@ -130,13 +130,15 @@ describe('findLoopsInEdges', () => {
 	});
 
 	/**
-	 *        F
-	 *   x----------x
-	 *   |\B    E/ /
-	 * C |  \ /   / D
-	 *   | /  \  /
-	 *   x------x
-	 *       A
+	 *  2             H              3
+	 *   +--------------------------+
+	 *   |'\,               , / ' /
+	 * D |  B '\,    , /' F     /
+	 *   |        X 4         /  E
+	 *   |   G,/'  '\,      /
+	 *   | ,/'     C '\   /
+	 *   +--------------+
+	 *  0       A        1
 	 */
 	it('finds separate loops that share a single vertex (figure-eight)', () => {
 		// Two triangles sharing vertex p1
@@ -144,16 +146,27 @@ describe('findLoopsInEdges', () => {
 		const p1 = new Point(1, 0);
 		const p2 = new Point(0, 1);
 		const p3 = new Point(2, 1);
+		const p4 = new Point(0.5, 0.5)
 
-		const eA = new Segment(p0, p1);
-		const eB = new Segment(p1, p2);
-		const eC = new Segment(p2, p0);
+		const bottomEdgeA = new Segment(p0, p1);
+		const diagonalTopLeftEdgeB = new Segment(p4, p2);
+		const diagonalBottomRightEdgeC = new Segment(p1, p4);
+		const leftEdgeD = new Segment(p2, p0);
 
-		const eD = new Segment(p1, p3);
-		const eE = new Segment(p3, p0);
-		const eF = new Segment(p3, p2);
+		const rightEdgeE = new Segment(p1, p3);
+		const diagonalTopRightEdgeF = new Segment(p4, p3);
+		const diagonalBottomLeftEdgeG = new Segment(p4, p0);
+		const topEdgeH = new Segment(p3, p2);
 
-		const loops = findLoopsInEdges([eA, eB, eC, eD, eE, eF]);
+		const loops = findLoopsInEdges([
+			bottomEdgeA,
+			diagonalTopLeftEdgeB,
+			diagonalBottomRightEdgeC,
+			leftEdgeD,
+			rightEdgeE,
+			diagonalTopRightEdgeF,
+			diagonalBottomLeftEdgeG,
+			topEdgeH]);
 
 		// Implementation detail: If your loop finder treats parallel edges as separate,
 		// both triangles should be returned. If it collapses multi-edges, adjust this test.

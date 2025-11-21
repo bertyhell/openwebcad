@@ -13,7 +13,7 @@ describe('orderBoundary()', () => {
 		];
 		const orderedBoundary = orderEdgeBoundary(boundary);
 		expect(orderedBoundary).toHaveLength(4);
-		validateClosedBoundary(orderedBoundary, 4);
+		validateClosedBoundary(orderedBoundary, 4, 4, 0);
 	});
 
 	it('should order arcs and edges boundary', () => {
@@ -24,7 +24,7 @@ describe('orderBoundary()', () => {
 		];
 		const orderedBoundary = orderEdgeBoundary(boundary);
 		expect(orderedBoundary).toHaveLength(3);
-		validateClosedBoundary(orderedBoundary, 3);
+		validateClosedBoundary(orderedBoundary, 3, 2, 1);
 	});
 
 	it('should order arcs and edges boundary 2', () => {
@@ -48,6 +48,6 @@ describe('orderBoundary()', () => {
 
 		const orderedBoundary = orderEdgeBoundary(boundary);
 		expect(orderedBoundary).toHaveLength(6);
-		validateClosedBoundary(orderedBoundary, 6);
+		validateClosedBoundary(orderedBoundary, 6, 2, 4);
 	});
 });

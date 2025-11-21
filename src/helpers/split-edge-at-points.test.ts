@@ -1,7 +1,8 @@
 import {Arc, Point} from '@flatten-js/core';
-import {describe, it} from 'vitest';
+import {describe, expect, it} from 'vitest';
 import {splitArcAtPoints, splitEdgeAtPoints} from './split-edge-at-points.ts';
 import {expectIsEqualNumberArray} from "./tests/expect-is-equal-number-array.ts";
+import {sum} from "es-toolkit";
 
 describe('SplitEdgeAtPoints', () => {
 	it('Should split Arc edge into 4 parts', () => {
@@ -11,8 +12,11 @@ describe('SplitEdgeAtPoints', () => {
 		const arcSweeps = parts.map((arc) => (arc as Arc).sweep);
 		expectIsEqualNumberArray(
 			arcSweeps,
-			// biome-ignore lint/suspicious/noApproximativeNumericConstant: this is coincidence that the number is equal to pi
-			[1.9360035480852633, 1.2055891055045298, 3.141592653589793, 1.2055891055045294]
+			[
+				1.2055891055045294,
+				0.7304144425807344,
+				1.2055891055045294
+			]
 		);
 	});
 
@@ -40,11 +44,29 @@ describe('SplitEdgeAtPoints', () => {
 		);
 	});
 
+	/**
+	 *                    \
+	 *  --------------------X---------------
+	 *                        \
+	 *                         \
+	 *                          |
+	 *   x                      |
+	 *                          |
+	 *                         /
+	 *                        /
+	 *  --------------------X---------------
+	 *                    /
+	 */
 	it('Should split an Arc into 3 parts', () => {
 		const arc = new Arc(new Point(-70, 0), 140, -Math.PI / 2, Math.PI / 2, true);
-		const points = [new Point(60.76696830622021, 50), new Point(60.76696830622021, 50)];
+		const points = [new Point(60.76696830622021, 50), new Point(60.76696830622021, -50)];
 		const parts = splitArcAtPoints(arc, points);
 		const arcSweeps = parts.map((arc) => (arc as Arc).sweep);
-		expectIsEqualNumberArray(arcSweeps, [1.9360035480852633, 1.2055891055045298, Math.PI]);
+		expectIsEqualNumberArray(arcSweeps, [
+			1.2055891055045294,
+			0.7304144425807344,
+			1.2055891055045294,
+		]);
+		expect(sum(arcSweeps)).toEqual(expect.closeTo(Math.PI, 13));
 	});
 });

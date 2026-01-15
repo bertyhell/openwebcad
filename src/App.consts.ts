@@ -194,6 +194,14 @@ export const CANVAS_INPUT_FIELD_INSTRUCTION_TEXT_COLOR = '#999';
  */
 export const PDF_LINE_WIDTH_FACTOR = 0.25;
 
+/**
+ * Number of parts to split a circle into to test for boundary loops around other shapes
+ * lower number is faster
+ * higher number is more accurate
+ * minimum should be 4 (quadrants)
+ */
+export const ARC_SEGMENTS_FOR_LOOPS_CHECK = 36;
+
 export const COLOR_LIST = [
 	'#ffffff',
 	'#2f4f4f',

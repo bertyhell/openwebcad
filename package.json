@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "biome lint --write",
-    "lint-check": "biome lint",
+    "format": "biome format --write",
     "preview": "vite preview",
     "stats": "npx cloc ./src",
     "check-types": "tsc -p tsconfig.app.json --noEmit",

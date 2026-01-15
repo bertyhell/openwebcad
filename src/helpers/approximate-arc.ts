@@ -1,4 +1,4 @@
-import {Arc, Point, Segment} from "@flatten-js/core";
+import {type Arc, type Point, Segment} from "@flatten-js/core";
 
 export function approximateArc(arc: Arc, numberOfSegments: number = 10): Segment[] {
 	const segments: Segment[] = [];

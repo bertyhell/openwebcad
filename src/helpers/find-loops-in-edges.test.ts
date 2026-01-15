@@ -1,7 +1,8 @@
-import {describe, expect, it} from 'vitest';
-import type {Edge} from '../App.types';
-import {findLoopsInEdges} from './find-loops-in-edges';
-import {Arc, Point, Segment} from "@flatten-js/core";
+import { Arc, Point, Segment } from '@flatten-js/core';
+import { describe, expect, it } from 'vitest';
+import { findLoopsInEdges } from './find-loops-in-edges';
+import type { BoundaryWithHoles } from './find-loops-in-edges.types.ts';
+import { splitEdgesAtIntersections } from './split-edges-at-intersections.ts';
 
 describe('findLoopsInEdges', () => {
 	it('returns empty for no edges', () => {
@@ -19,7 +20,8 @@ describe('findLoopsInEdges', () => {
 
 		const loops = findLoopsInEdges([eA, eB, eC]);
 		expect(loops).toHaveLength(1);
-		expect(loops?.[0]).toHaveLength(3);
+		expect(loops?.[0].boundary).toHaveLength(3);
+		expect(loops?.[0].holes).toHaveLength(0);
 	});
 
 	it('finds a simple triangle with negative coordinates (single loop)', () => {
@@ -33,7 +35,8 @@ describe('findLoopsInEdges', () => {
 
 		const loops = findLoopsInEdges([eA, eB, eC]);
 		expect(loops).toHaveLength(1);
-		expect(loops?.[0]).toHaveLength(3);
+		expect(loops?.[0].boundary).toHaveLength(3);
+		expect(loops?.[0].holes).toHaveLength(0);
 	});
 
 	it('treats edges as bidirectional (reversing an edge doesn’t change loops)', () => {
@@ -47,6 +50,8 @@ describe('findLoopsInEdges', () => {
 
 		const loops = findLoopsInEdges([eA, eB, eC]);
 		expect(loops).toHaveLength(1);
+		expect(loops?.[0].boundary).toHaveLength(3);
+		expect(loops?.[0].holes).toHaveLength(0);
 	});
 
 	it('does not count 2-cycles when duplicate/reversed edges exist', () => {
@@ -62,7 +67,8 @@ describe('findLoopsInEdges', () => {
 		const loops = findLoopsInEdges([eA, eA_rev, eB, eC]);
 		// Still only the triangle; no fake 2-edge loop between p0<->p1
 		expect(loops).toHaveLength(1);
-		expect(loops?.[0]).toHaveLength(3);
+		expect(loops?.[0].boundary).toHaveLength(3);
+		expect(loops?.[0].holes).toHaveLength(0);
 	});
 
 	/**
@@ -87,11 +93,13 @@ describe('findLoopsInEdges', () => {
 		const e02 = new Segment(p0, p2); // diagonal
 
 		const edges = [e01, e12, e23, e30, e02];
-		const loops: Edge[][] = findLoopsInEdges(edges);
+		const loops: BoundaryWithHoles[] = findLoopsInEdges(edges);
 
 		expect(loops).toHaveLength(2);
-		expect(loops?.[0]).toHaveLength(3);
-		expect(loops?.[1]).toHaveLength(3);
+		expect(loops?.[0].boundary).toHaveLength(3);
+		expect(loops?.[0].holes).toHaveLength(0);
+		expect(loops?.[1].boundary).toHaveLength(3);
+		expect(loops?.[1].holes).toHaveLength(0);
 	});
 
 	it('does not report loops in a simple path (no cycle)', () => {
@@ -126,7 +134,8 @@ describe('findLoopsInEdges', () => {
 
 		const loops = findLoopsInEdges([aA, aB, aC, bD, bE]);
 		expect(loops).toHaveLength(1);
-		expect(loops[0]).toHaveLength(3);
+		expect(loops?.[0].boundary).toHaveLength(3);
+		expect(loops?.[0].holes).toHaveLength(0);
 	});
 
 	/**
@@ -146,7 +155,7 @@ describe('findLoopsInEdges', () => {
 		const p1 = new Point(1, 0);
 		const p2 = new Point(0, 1);
 		const p3 = new Point(2, 1);
-		const p4 = new Point(0.5, 0.5)
+		const p4 = new Point(0.5, 0.5);
 
 		const bottomEdgeA = new Segment(p0, p1);
 		const diagonalTopLeftEdgeB = new Segment(p4, p2);
@@ -166,15 +175,20 @@ describe('findLoopsInEdges', () => {
 			rightEdgeE,
 			diagonalTopRightEdgeF,
 			diagonalBottomLeftEdgeG,
-			topEdgeH]);
+			topEdgeH,
+		]);
 
 		// Implementation detail: If your loop finder treats parallel edges as separate,
 		// both triangles should be returned. If it collapses multi-edges, adjust this test.
 		expect(loops).toHaveLength(4);
-		expect(loops?.[0]).toHaveLength(3);
-		expect(loops?.[1]).toHaveLength(3);
-		expect(loops?.[2]).toHaveLength(3);
-		expect(loops?.[3]).toHaveLength(3);
+		expect(loops?.[0].boundary).toHaveLength(3);
+		expect(loops?.[0].holes).toHaveLength(0);
+		expect(loops?.[1].boundary).toHaveLength(3);
+		expect(loops?.[1].holes).toHaveLength(0);
+		expect(loops?.[2].boundary).toHaveLength(3);
+		expect(loops?.[2].holes).toHaveLength(0);
+		expect(loops?.[3].boundary).toHaveLength(3);
+		expect(loops?.[3].holes).toHaveLength(0);
 	});
 
 	it('is robust to arcs vs segments (type differences don’t affect topology)', () => {
@@ -189,6 +203,80 @@ describe('findLoopsInEdges', () => {
 
 		const loops = findLoopsInEdges([e1, e2, e3]);
 		expect(loops).toHaveLength(1);
-		expect(loops[0]).toHaveLength(3);
+		expect(loops[0]?.boundary).toHaveLength(3);
+		expect(loops[0]?.holes).toHaveLength(0);
+	});
+
+	/**
+	 *
+	 *
+	 *        /¯¯¯¯¯¯¯¯¯¯¯¯ \
+	 *     /      x            \
+	 *   /      /¯¯¯¯¯¯¯¯\       \
+	 *  |      /          \       |
+	 * |       |           |      |
+	 * |       |           |      |
+	 *  |       \         /      |
+	 *   \       \_______/      /
+	 *     \                  /
+	 *        \_____________/
+	 *
+	 */
+	it('detects arc boundary with hole', () => {
+		const center = new Point(0, 0);
+
+		// circle 1
+		const arc1 = new Arc(center, 1, 0, Math.PI, true);
+
+		// circle 2
+		const arc2 = new Arc(center, 0.5, 0, Math.PI, true);
+
+		const edges = splitEdgesAtIntersections([arc1, arc2]);
+		const loops = findLoopsInEdges(edges);
+
+		expect(loops).toHaveLength(2);
+		expect(loops[0]?.boundary).toHaveLength(1);
+		expect(loops[0]?.holes).toHaveLength(0);
+		expect(loops[1]?.boundary).toHaveLength(1);
+		expect(loops[1]?.holes).toHaveLength(1);
+	});
+
+	/**
+	 *                           /
+	 *                         /
+	 *        /¯¯¯¯¯¯¯¯¯¯¯¯\ /
+	 *     /      x        / \
+	 *   /    |\         /    \
+	 *  |     |  \     /       |
+	 * |      |    \ /          |
+	 * |      |    / \          |
+	 *  |     |  /    \        |
+	 *   \    |/        \     /
+	 *     \              \/
+	 *        \__________/  \
+	 *                        \
+	 */
+	it('detects arc and segment boundary with hole', () => {
+		// circle
+		const center = new Point(0, 0);
+		const arc = new Arc(center, 1, 0, Math.PI, true);
+		// segments
+		const topLeftToBottomRight = new Segment(new Point(-0.5, 0.5), new Point(2, -2));
+		const bottomLeftToTopRight = new Segment(new Point(-0.5, -0.5), new Point(2, 2));
+		const vertical = new Segment(new Point(-0.5, -0.5), new Point(-0.5, 0.5));
+
+		const loops = findLoopsInEdges([arc, topLeftToBottomRight, bottomLeftToTopRight, vertical]);
+
+		expect(loops).toHaveLength(2);
+
+		expect(loops[0]?.boundary).toHaveLength(3);
+		expect(loops[0]?.holes).toHaveLength(0);
+
+		expect(loops[1]?.boundary).toHaveLength(3);
+		expect(loops[1]?.holes).toHaveLength(1);
+		expect(loops[1]?.holes?.[0]).toHaveLength(3);
+
+		expect(loops[2]?.boundary).toHaveLength(3);
+		expect(loops[2]?.holes).toHaveLength(0);
 	});
 });

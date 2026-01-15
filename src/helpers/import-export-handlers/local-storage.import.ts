@@ -1,8 +1,8 @@
-import {LOCAL_STORAGE_KEY} from '../../App.types.ts';
-import {setActiveLayerId, setEntities, setLayers} from '../../state.ts';
-import {getNewLayer} from '../get-new-layer.ts';
-import type {JsonDrawingFileDeserialized} from './json.export.ts';
-import {getEntitiesAndLayersFromJsonString} from './json.import.ts';
+import { LOCAL_STORAGE_KEY } from '../../App.types.ts';
+import { setActiveLayerId, setEntities, setLayers } from '../../state.ts';
+import { getNewLayer } from '../get-new-layer.ts';
+import { getEntitiesAndLayersFromJsonString } from './json.import.ts';
+import type { JsonDrawingFileDeserialized } from './json.types.ts';
 
 export async function importEntitiesAndLayersFromLocalStorage(): Promise<void> {
 	const file = await getEntitiesAndLayersFromLocalStorage();

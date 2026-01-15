@@ -1,4 +1,4 @@
-import {Edge} from "../App.types.ts";
+import type {Edge} from "../App.types.ts";
 import {Arc, Segment} from "@flatten-js/core";
 import {isPointEqual} from "./is-point-equal.ts";
 import {isApproxEqual} from "./is-approx-equal.ts";

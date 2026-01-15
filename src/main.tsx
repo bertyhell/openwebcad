@@ -1,17 +1,17 @@
-import {Point} from '@flatten-js/core';
+import { Point } from '@flatten-js/core';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import {Actor, type MachineSnapshot} from 'xstate';
-import {HIGHLIGHT_ENTITY_DISTANCE, SNAP_POINT_DISTANCE, TOOLBAR_WIDTH} from './App.consts';
+import { Actor, type MachineSnapshot } from 'xstate';
+import { HIGHLIGHT_ENTITY_DISTANCE, SNAP_POINT_DISTANCE, TOOLBAR_WIDTH } from './App.consts';
 import App from './App.tsx';
-import {ScreenCanvasDrawController} from './drawControllers/screenCanvas.drawController';
-import {draw} from './helpers/draw';
-import {findClosestEntity} from './helpers/find-closest-entity';
-import {getNewLayer} from './helpers/get-new-layer.ts';
-import type {JsonDrawingFileDeserialized} from './helpers/import-export-handlers/json.export.ts';
-import {getEntitiesAndLayersFromLocalStorage} from './helpers/import-export-handlers/local-storage.import.ts';
-import {trackHoveredSnapPoint} from './helpers/track-hovered-snap-points';
-import {InputController} from './inputController/input-controller.ts';
+import { ScreenCanvasDrawController } from './drawControllers/screenCanvas.drawController';
+import { draw } from './helpers/draw';
+import { findClosestEntity } from './helpers/find-closest-entity';
+import { getNewLayer } from './helpers/get-new-layer.ts';
+import type { JsonDrawingFileDeserialized } from './helpers/import-export-handlers/json.types.ts';
+import { getEntitiesAndLayersFromLocalStorage } from './helpers/import-export-handlers/local-storage.import.ts';
+import { trackHoveredSnapPoint } from './helpers/track-hovered-snap-points';
+import { InputController } from './inputController/input-controller.ts';
 import {
 	getActiveToolActor,
 	getCanvas,
@@ -31,9 +31,9 @@ import {
 	setLayers,
 	setScreenCanvasDrawController,
 } from './state';
-import {Tool} from './tools';
-import {TOOL_STATE_MACHINES} from './tools/tool.consts';
-import {ActorEvent, type DrawEvent} from './tools/tool.types';
+import { Tool } from './tools';
+import { TOOL_STATE_MACHINES } from './tools/tool.consts';
+import { ActorEvent, type DrawEvent } from './tools/tool.types';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLDivElement).render(
 	<React.StrictMode>

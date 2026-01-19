@@ -19,4 +19,5 @@ export enum Tool {
 	ARRAY = 'ARRAY',
 	PEDIT = 'PEDIT',
 	FILL = 'FILL',
+	ZOOM = 'ZOOM',
 }

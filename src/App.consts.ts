@@ -202,6 +202,16 @@ export const PDF_LINE_WIDTH_FACTOR = 0.25;
  */
 export const ARC_SEGMENTS_FOR_LOOPS_CHECK = 36;
 
+/**
+ * Step to zoom in or out with the zoom tool
+ */
+export const ZOOM_STEP_MULTIPLIER = 1.2;
+
+/**
+ * Default margin in screen pixels to add around entities when zooming to bounds
+ */
+export const DEFAULT_ZOOM_MARGIN = 50;
+
 export const COLOR_LIST = [
 	'#ffffff',
 	'#2f4f4f',

@@ -12,6 +12,7 @@ import {PolyLineEntity, type PolyLineJsonData} from '../../entities/PolyLineEnti
 import {RectangleEntity, type RectangleJsonData} from '../../entities/RectangleEntity';
 import {TextEntity, type TextJsonData} from '../../entities/TextEntity.ts';
 import {setActiveLayerId, setEntities, setLayers} from '../../state';
+import {zoomToBounds} from '../../tools/zoom-tool.helpers.ts';
 import {getNewLayer} from '../get-new-layer.ts';
 import type {ArcRawJson, JsonDrawingFileDeserialized, JsonDrawingFileSerialized, SegmentRawJson,} from './json.types.ts';
 
@@ -32,6 +33,7 @@ export function importEntitiesFromJsonFile(file: File | null | undefined) {
 			setEntities(file.entities);
 			setLayers(file.layers);
 			setActiveLayerId(file.layers[0].id);
+			zoomToBounds();
 			resolve();
 		});
 		reader.readAsText(file, 'utf-8');

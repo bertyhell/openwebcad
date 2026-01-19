@@ -6,6 +6,7 @@ import {CircleEntity} from '../../entities/CircleEntity.ts';
 import type {Entity} from '../../entities/Entity.ts';
 import {LineEntity} from '../../entities/LineEntity.ts';
 import {getActiveLayerId, getActiveLineColor, getActiveLineWidth, getEntities, setEntities,} from '../../state';
+import {zoomToBounds} from '../../tools/zoom-tool.helpers.ts';
 import {toHex} from '../rgb-to-hex-color.ts';
 
 function getDxfLineColor(dxfColor: [number, number, number] | undefined): string {
@@ -97,6 +98,7 @@ export const importEntitiesFromDxfFile = async (file?: File): Promise<void> => {
 						`${JSON.stringify(entity.getShape())}|${entity.lineColor}|${entity.lineWidth}|${entity.lineDash}`
 				);
 				setEntities([...getEntities(), ...uniqueEntities]);
+				zoomToBounds();
 				toast.success(`${uniqueEntities.length} entities imported successfully from DXF!`);
 			} else {
 				toast.info('No supported entities found in the DXF file.');

@@ -4,6 +4,7 @@ import type {Entity} from '../../entities/Entity';
 import {LineEntity} from '../../entities/LineEntity';
 import {RectangleEntity} from '../../entities/RectangleEntity';
 import {getEntities, setEntities} from '../../state';
+import {zoomToBounds} from '../../tools/zoom-tool.helpers.ts';
 
 import {Point} from '@flatten-js/core';
 import {type Node, parse, type RootNode} from 'svg-parser';
@@ -126,6 +127,7 @@ export function importEntitiesFromSvgFile(file: File | null | undefined) {
 				}
 
 				setEntities([...getEntities(), ...svgEntities]);
+				zoomToBounds();
 				resolve();
 			} catch (error) {
 				toast.error('Failed to load SVG file');

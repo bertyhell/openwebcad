@@ -1,25 +1,26 @@
-import type {StateMachine} from 'xstate'; /* eslint-disable @typescript-eslint/no-explicit-any */
-import {Tool} from '../tools';
-import {alignBottomToolStateMachine} from './align-bottom-tool.ts';
-import {alignCenterHorizontalToolStateMachine} from './align-center-horizontal-tool.ts';
-import {alignLeftToolStateMachine} from './align-left-tool.ts';
-import {alignCenterVerticalToolStateMachine} from './align-middle-vertical-tool.ts';
-import {alignRightToolStateMachine} from './align-right-tool.ts';
-import {alignTopToolStateMachine} from './align-top-tool.ts';
-import {arrayToolStateMachine} from './array-tool.ts';
-import {circleToolStateMachine} from './circle-tool';
-import {copyToolStateMachine} from './copy-tool.ts';
-import {eraserToolStateMachine} from './eraser-tool';
-import {imageImportToolStateMachine} from './image-import-tool';
-import {lineToolStateMachine} from './line-tool';
-import {measurementToolStateMachine} from './measurement-tool';
-import {moveToolStateMachine} from './move-tool';
-import {peditToolStateMachine} from "./pedit-tool.ts";
-import {rectangleToolStateMachine} from './rectangle-tool';
-import {rotateToolStateMachine} from './rotate-tool';
-import {scaleToolStateMachine} from './scale-tool';
-import {selectToolStateMachine} from './select-tool';
-import {fillToolStateMachine} from "./fill-tool.ts";
+import type { StateMachine } from 'xstate'; /* eslint-disable @typescript-eslint/no-explicit-any */
+import { Tool } from '../tools';
+import { alignBottomToolStateMachine } from './align-bottom-tool.ts';
+import { alignCenterHorizontalToolStateMachine } from './align-center-horizontal-tool.ts';
+import { alignLeftToolStateMachine } from './align-left-tool.ts';
+import { alignCenterVerticalToolStateMachine } from './align-middle-vertical-tool.ts';
+import { alignRightToolStateMachine } from './align-right-tool.ts';
+import { alignTopToolStateMachine } from './align-top-tool.ts';
+import { arrayToolStateMachine } from './array-tool.ts';
+import { circleToolStateMachine } from './circle-tool';
+import { copyToolStateMachine } from './copy-tool.ts';
+import { eraserToolStateMachine } from './eraser-tool';
+import { fillToolStateMachine } from './fill-tool.ts';
+import { imageImportToolStateMachine } from './image-import-tool';
+import { lineToolStateMachine } from './line-tool';
+import { measurementToolStateMachine } from './measurement-tool';
+import { moveToolStateMachine } from './move-tool';
+import { peditToolStateMachine } from './pedit-tool.ts';
+import { rectangleToolStateMachine } from './rectangle-tool';
+import { rotateToolStateMachine } from './rotate-tool';
+import { scaleToolStateMachine } from './scale-tool';
+import { selectToolStateMachine } from './select-tool';
+import { zoomToolStateMachine } from './zoom-tool.ts';
 
 export const TOOL_STATE_MACHINES: Record<
 	Partial<Tool>,
@@ -74,4 +75,5 @@ export const TOOL_STATE_MACHINES: Record<
 	[Tool.ARRAY]: arrayToolStateMachine,
 	[Tool.PEDIT]: peditToolStateMachine,
 	[Tool.FILL]: fillToolStateMachine,
+	[Tool.ZOOM]: zoomToolStateMachine,
 };

@@ -10,9 +10,7 @@ export async function importEntitiesAndLayersFromLocalStorage(): Promise<void> {
 	setEntities(file.entities);
 	setLayers(file.layers);
 	setActiveLayerId(file.layers[0].id);
-	if (file.entities.length > 0) {
-		zoomToBounds();
-	}
+	zoomToBounds();
 }
 
 export async function getEntitiesAndLayersFromLocalStorage(): Promise<JsonDrawingFileDeserialized> {

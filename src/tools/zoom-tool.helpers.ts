@@ -47,6 +47,9 @@ export function zoomToScale(newScreenScale: number) {
 
 export function zoomToBounds() {
 	const entities = getEntities();
+	if (entities.length === 0) {
+		return;
+	}
 	const boundingBox = getBoundingBoxOfMultipleEntities(entities);
 	zoomRectangle(
 		new Point(boundingBox.minX, boundingBox.minY),

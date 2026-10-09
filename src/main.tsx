@@ -103,7 +103,9 @@ function startDrawLoop(
 }
 
 function handleWindowResize() {
-	getScreenCanvasDrawController().setCanvasSize(new Point(window.innerWidth, window.innerHeight));
+	getScreenCanvasDrawController().setCanvasSize(
+		new Point(window.innerWidth - TOOLBAR_WIDTH, window.innerHeight)
+	);
 	const canvas = getCanvas();
 	if (canvas) {
 		canvas.width = window.innerWidth - TOOLBAR_WIDTH;

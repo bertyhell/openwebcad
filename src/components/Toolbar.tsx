@@ -473,11 +473,11 @@ export const Toolbar: FC = () => {
 					/>
 				))}
 				<Button
-					key="zoom-level--fit"
-					title="Zoom fit screen"
-					dataId="zoom-level-fit-button"
-					label="Fit screen"
-					style={{ width: 'calc(60% - 2px)', padding: '8px' }}
+					key="zoom-level--bounds"
+					title="Zoom to the bounds of the drawing"
+					dataId="zoom-level-bounds-button"
+					label="bounds"
+					style={{ width: 'calc(30% - 2px)', padding: '8px' }}
 					onClick={(evt) => {
 						evt.stopPropagation();
 						getScreenCanvasDrawController().zoomToFitScreen();

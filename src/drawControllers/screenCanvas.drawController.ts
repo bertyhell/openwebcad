@@ -1,6 +1,5 @@
 import {Point, type Vector} from '@flatten-js/core';
 import {CANVAS_BACKGROUND_COLOR, MOUSE_ZOOM_MULTIPLIER} from '../App.consts';
-import {containRectangle} from '../helpers/contain-rect.ts';
 import {getAngleWithXAxis} from '../helpers/get-angle-with-x-axis.ts';
 import {getBoundingBoxOfMultipleEntities} from '../helpers/get-bounding-box-of-multiple-entities.ts';
 import {mapNumberRange} from '../helpers/map-number-range.ts';
@@ -118,22 +117,33 @@ export class ScreenCanvasDrawController implements DrawController {
 	}
 
 	public zoomToFitScreen() {
-		const boundingBox = getBoundingBoxOfMultipleEntities(getEntities());
+		const entities = getEntities();
+		if (!entities.length) return;
+		const boundingBox = getBoundingBoxOfMultipleEntities(entities);
 		const boundingWidth = boundingBox.maxX - boundingBox.minX;
-		const fittedRect = containRectangle(
-			boundingBox.minX,
-			boundingBox.minY,
-			boundingBox.maxX,
-			boundingBox.maxY,
-			0,
-			0,
-			getScreenCanvasDrawController().getCanvasSize().x,
-			getScreenCanvasDrawController().getCanvasSize().y
+		const boundingHeight = boundingBox.maxY - boundingBox.minY;
+		const margin = 0.9; // leave 5% padding on each side
+
+		// Scale so the bounding box fits inside the canvas, maintaining aspect ratio
+		const scale =
+			margin *
+			Math.min(
+				boundingWidth > 0 ? this.canvasSize.x / boundingWidth : Number.POSITIVE_INFINITY,
+				boundingHeight > 0 ? this.canvasSize.y / boundingHeight : Number.POSITIVE_INFINITY
+			);
+		const newScale = Number.isFinite(scale) ? scale : this.screenScale;
+		this.setScreenScale(newScale);
+
+		// screenOffset is the world coordinate at the top left of the screen
+		// Center the bounding box in the visible world area
+		const visibleWorldWidth = this.canvasSize.x / newScale;
+		const visibleWorldHeight = this.canvasSize.y / newScale;
+		this.setScreenOffset(
+			new Point(
+				boundingBox.minX - (visibleWorldWidth - boundingWidth) / 2,
+				boundingBox.minY - (visibleWorldHeight - boundingHeight) / 2
+			)
 		);
-		const fittedWidth = fittedRect.maxX - fittedRect.minX;
-		const zoomLevel = fittedWidth / boundingWidth;
-		getScreenCanvasDrawController().setScreenScale(zoomLevel);
-		getScreenCanvasDrawController().setScreenOffset(new Point(fittedRect.minX, fittedRect.minY));
 	}
 
 	/**

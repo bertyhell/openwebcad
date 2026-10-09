@@ -52,6 +52,7 @@ import {
 	type TextInputEvent,
 } from '../tools/tool.types.ts';
 import { zoomIn, zoomOut, zoomToBounds } from '../tools/zoom-tool.helpers.ts';
+import { isZoomOption } from '../tools/zoom-tool.ts';
 import { Tool } from '../tools.ts';
 import { getToolNamesFromPrefixText, parseCommandInput } from './command-parser.ts';
 
@@ -476,7 +477,8 @@ export class InputController {
 			return;
 		}
 
-		if (activeToolCanHandleTextInput) {
+		const isZoomToolActive = activeTool?.getSnapshot()?.context.type === Tool.ZOOM;
+		if (activeToolCanHandleTextInput && (!isZoomToolActive || isZoomOption(text))) {
 			// The active tool asks for text, eg: a zoom option or the label of a text entity
 			activeTool?.send({
 				type: ActorEvent.TEXT_INPUT,

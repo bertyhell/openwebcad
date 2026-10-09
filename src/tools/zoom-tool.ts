@@ -1,10 +1,12 @@
 import type { Point } from '@flatten-js/core';
 import { assign, createMachine } from 'xstate';
 import { setAngleGuideOriginPoint, setGhostHelperEntities, setShouldDrawHelpers } from '../state';
+import { Tool } from '../tools.ts';
 import type { StateEvent, TextInputEvent } from './tool.types';
 import { zoomIn, zoomOut, zoomRectangle, zoomToBounds, zoomToScale } from './zoom-tool.helpers.ts';
 
 type ZoomContext = {
+	type: Tool;
 	zoomMode: ZoomMode | null;
 
 	// Amount to zoom to
@@ -34,6 +36,19 @@ export enum ZoomAction {
 	EXECUTE_ZOOM = 'EXECUTE_ZOOM',
 }
 
+function isZoomAmount(text: string): boolean {
+	return /^[0-9]+(?:[.][0-9]+)?$/.test(text);
+}
+
+/**
+ * Whether the typed text is an option of the zoom tool, eg: A, I, O or a zoom percentage.
+ * Other text, eg: a tool name, is handled as a command
+ */
+export function isZoomOption(text: string): boolean {
+	const upperCaseText = text.trim().toUpperCase();
+	return ['A', 'I', 'O'].includes(upperCaseText) || isZoomAmount(upperCaseText);
+}
+
 /**
  * Zoom tool state machine
  * This state machine is responsible for zooming the screen to a certain zoom level
@@ -48,6 +63,7 @@ export const zoomToolStateMachine = createMachine(
 			events: StateEvent;
 		},
 		context: {
+			type: Tool.ZOOM,
 			zoomMode: null,
 			amount: '',
 			firstPoint: null,
@@ -97,11 +113,10 @@ export const zoomToolStateMachine = createMachine(
 									amount: '',
 								};
 							}
-							if (/[0-9.]/.test(inputValue)) {
-								// Number
+							if (isZoomAmount(inputValue)) {
 								return {
 									zoomMode: ZoomMode.ABSOLUTE,
-									amount: context.amount + inputValue,
+									amount: inputValue,
 								};
 							}
 							return context;
@@ -126,16 +141,25 @@ export const zoomToolStateMachine = createMachine(
 								};
 							}
 						}),
+						target: ZoomState.CHECK_INPUT,
 					},
 					ENTER: {
-						actions: ZoomAction.EXECUTE_ZOOM,
+						// Enter without an option zooms to the whole drawing
+						actions: [
+							assign(({ context }) => ({
+								zoomMode: context.zoomMode ?? ZoomMode.ALL,
+							})),
+							ZoomAction.EXECUTE_ZOOM,
+						],
 						target: ZoomState.INIT,
 					},
 					ESC: {
 						actions: assign(() => {
 							return {
-								ZoomMode: null,
+								zoomMode: null,
 								amount: '',
+								firstPoint: null,
+								lastPoint: null,
 							};
 						}),
 						target: ZoomState.INIT,

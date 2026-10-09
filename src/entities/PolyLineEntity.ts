@@ -11,6 +11,7 @@ import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.
 import {ArcEntity, type ArcJsonData} from './ArcEntity.ts';
 import {type Entity, EntityName, type JsonEntity} from './Entity';
 import {LineEntity, type LineJsonData} from './LineEntity.ts';
+import { copyEntityBaseProperties } from '../helpers/copy-entity-base-properties';
 
 export class PolyLineEntity implements Entity {
 	public id: string = crypto.randomUUID();
@@ -76,9 +77,7 @@ export class PolyLineEntity implements Entity {
 
 	public clone(): PolyLineEntity {
 		const clonedEntities = this.entities.map((entity) => entity.clone());
-		const polylineEntity = new PolyLineEntity(clonedEntities);
-		polylineEntity.layerId = this.layerId;
-		return polylineEntity;
+		return copyEntityBaseProperties(this, new PolyLineEntity(clonedEntities));
 	}
 
 	public intersectsWithBox(selectionBox: Box): boolean {

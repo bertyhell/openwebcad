@@ -8,11 +8,12 @@ This is a React-based canvas drawing application that allows users to draw vario
 
 ## Features
 
-- Fullscreen canvas with a black background
-- Drawing tools: Line, Rectangle, Circle, measurements
-- Zoom and pan
-- Eraser tool to delete segments
-- Undo and redo
+- Fullscreen canvas next to a collapsible tool sidebar (press `[` to toggle it)
+- Drawing tools: Line, Rectangle, Circle, Image, Measurement, Fill
+- Modify tools: Move, Copy, Scale, Rotate, Array copy (linear and radial), Join, Eraser, Align
+- Zoom and pan (mouse wheel, middle mouse button, arrow keys, zoom tool)
+- Undo and redo, including layer changes
+- Layers: show/hide, lock, select all on a layer, move the selection to a layer
 - Choose angle guides
 - Draw with snap points for
   - endpoints
@@ -22,66 +23,43 @@ This is a React-based canvas drawing application that allows users to draw vario
   - circle quadrants
 - Selection tool to highlight and modify shapes
   - Use CTRL to toggle selection
-  - Use shift to add to the current selection
+  - Use SHIFT to add to the current selection
   - drag left, to select by intersecting
   - drag right, to select by containing
-- Move
-- Rotate
-- Scale
-- Align shapes to each other
-- Array copy linear
-- Array copy radial
-- Import images into the drawing
-- Import SVG files
-- Export to PDF
-- Export drawing as an SVG file
-- Export drawing as an PNG file
-- Save and load drawings from/to json files
-- Select line color and thickness
-- Eraser tool to delete segments
+- Command line next to the cursor: type a tool shortcut (eg: `L`) or a value (eg: `100`, `10,20`, `@10,20`) and press ENTER
+- Import images, SVG, DXF and JSON files
+- Export to JSON, SVG, PNG and PDF
+- The drawing is saved automatically in the browser
+- Select line color, fill color and line thickness
 
 
 ### Possible future feature ideas (TODO) in order of likelihood
-- Eraser tool to delete segments
-  - Max distance to delete
-- Layers for drawing shapes in different layers that can be toggled on or off
-- Mirror
-- Offset
-- Add text
 - Ellipses
 - Regular polygons (pentagon, hexagon, etc)
-- Combine lines into a polygon
 - Explode polygons into lines
 - Polygon circumference
 - Polygon area
-- Chamfer, Round corners
 - Draw with snap points for
   - circle tangents
   - nearest point on line
   - prioritize certain snap points over others (eg: midpoint over nearest)
 - Edit existing lines and circles by dragging endpoints/middle points
-- Hatching and fill areas
+- Hatching
 - gradient fills
-- Import DXF files
 - Import DWG files
 - Export to DWG
-- Export to DXF
 - Export drawing to ASCII code
-
-### Maintenance
-
-- replace react with webcomponents (Lit)
+- Touch and pen input
+- Light theme
 
 
 ## Technologies Used
 
 - TypeScript
-- JavaScript
 - React
-- NPM
+- XState
 - HTML canvas
 - SVG
-- SCSS
 - Tailwind CSS
 
 
@@ -104,23 +82,30 @@ Visit https://bertyhell.github.io/openwebcad
 
 ## Usage
 Start the development server:
-    ```sh
-    npm dev
-    ```
+```sh
+npm run dev
+```
 
 Open your browser and navigate to http://localhost:5173
 
 
 ## Development
 Available Scripts
-* npm dev: Runs the app in development mode.
-* npm run build: Builds the app for production.
-* npm preview: Runs the production build in a local server.
+* `npm run dev`: Runs the app in development mode.
+* `npm run build`: Type checks and builds the app for production.
+* `npm run preview`: Runs the production build in a local server.
+* `npm test`: Runs the unit tests once (`npm run test:watch` to keep watching).
+* `npm run lint:ci`: Checks linting and formatting, like the CI pipeline does.
+* `npm run format`: Formats the code.
 
 
 ## Project Structure
 * src/: Contains the source code of the application.
-* docs/: Contains the github pages site.
+  * tools/: One XState state machine per tool.
+  * entities/: Lines, circles, arcs, ... that make up a drawing.
+  * helpers/import-export-handlers/: File import and export.
+  * components/sidebar/: The React sidebar.
+* test/: Tests that replay recorded mouse interactions.
 * public/: Contains assets that need to be accessible from the url. Like favicon.
 
 

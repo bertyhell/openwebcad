@@ -1,6 +1,5 @@
 import type {Box, Point, Polygon} from '@flatten-js/core';
-import {compact} from 'es-toolkit';
-import {toast} from 'react-toastify';
+import {uniq} from 'es-toolkit';
 import {
 	EPSILON,
 	HIGHLIGHT_ENTITY_DISTANCE,
@@ -11,7 +10,7 @@ import {
 } from '../App.consts';
 import {RectangleEntity} from '../entities/RectangleEntity';
 import {findClosestEntity} from '../helpers/find-closest-entity';
-import {getEntities, getLayers, getSelectedEntityIds, isEntitySelected, setGhostHelperEntities, setSelectedEntityIds,} from '../state';
+import {getEditableEntities, getSelectedEntityIds, isEntitySelected, setGhostHelperEntities, setSelectedEntityIds,} from '../state';
 import type {SelectContext} from './select-tool';
 import type {MouseClickEvent} from './tool.types';
 
@@ -19,7 +18,7 @@ export function handleFirstSelectionPoint(
 	context: SelectContext,
 	event: MouseClickEvent
 ): SelectContext {
-	const closestEntityInfo = findClosestEntity(event.worldMouseLocation, getEntities());
+	const closestEntityInfo = findClosestEntity(event.worldMouseLocation, getEditableEntities());
 
 	// Mouse is close to entity and is not dragging a rectangle
 	if (closestEntityInfo && closestEntityInfo.distance < HIGHLIGHT_ENTITY_DISTANCE) {
@@ -38,7 +37,7 @@ export function handleFirstSelectionPoint(
 			}
 		} else {
 			// shift => add to selection
-			setSelectedEntityIds([...getSelectedEntityIds(), closestEntity.id]);
+			setSelectedEntityIds(uniq([...getSelectedEntityIds(), closestEntity.id]));
 		}
 		return {
 			...context,
@@ -54,61 +53,54 @@ export function handleFirstSelectionPoint(
 	};
 }
 
+/**
+ * Combine the entities inside the selection rectangle with the current selection
+ * - no modifier: replace the selection
+ * - ctrl: toggle the selection of the entities inside the rectangle
+ * - shift: add the entities inside the rectangle to the selection
+ */
+export function combineSelection(
+	currentSelection: string[],
+	rectangleSelection: string[],
+	holdingCtrl: boolean,
+	holdingShift: boolean
+): string[] {
+	if (holdingCtrl) {
+		const toggledOff = new Set(rectangleSelection.filter((id) => currentSelection.includes(id)));
+		return [
+			...currentSelection.filter((id) => !toggledOff.has(id)),
+			...rectangleSelection.filter((id) => !toggledOff.has(id)),
+		];
+	}
+	if (holdingShift) {
+		return uniq([...currentSelection, ...rectangleSelection]);
+	}
+	return rectangleSelection;
+}
+
 export function selectEntitiesInsideRectangle(
 	startPoint: Point,
 	endPoint: Point,
-	holdingCtrl: boolean
-	// holdingShift: boolean, // TODO implement add to selection using shift
+	holdingCtrl: boolean,
+	holdingShift = false
 ): void {
 	// Finish the selection
 	const activeSelectionRectangle = new RectangleEntity(startPoint, endPoint);
 	const intersectionSelection = getIsIntersectionSelection(activeSelectionRectangle, startPoint);
-	const newSelectedEntityIds: string[] = compact(
-		getEntities().map((entity): string | null => {
-			const layer = getLayers().find((layer) => layer.id === entity.layerId);
-			if (!layer) {
-				toast.error(`Failed to find layer for entity: ${entity?.id}`);
-				console.error('Failed to find layer for entity', entity);
-				return null;
-			}
+	const selectionBox = activeSelectionRectangle.getBoundingBox() as Box;
+	const rectangleSelection = getEditableEntities()
+		.filter((entity) => {
 			if (intersectionSelection) {
 				// Select all entities that are inside the selection rectangle or intersect with the selection rectangle
-				if (
-					entity.intersectsWithBox(activeSelectionRectangle.getBoundingBox() as Box) ||
-					entity.isContainedInBox(activeSelectionRectangle.getBoundingBox() as Box)
-				) {
-					if (holdingCtrl) {
-						if (isEntitySelected(entity)) {
-							return null;
-						}
-						if (!layer.isLocked) {
-							return entity.id;
-						}
-					}
-					if (!layer.isLocked) {
-						return entity.id;
-					}
-				}
-			} else {
-				// Select only entities that are completely inside the selection rectangle
-				if (entity.isContainedInBox(activeSelectionRectangle.getBoundingBox() as Box)) {
-					if (holdingCtrl) {
-						if (isEntitySelected(entity)) {
-							return null;
-						}
-						if (!layer.isLocked) {
-							return entity.id;
-						}
-					}
-					if (!layer.isLocked) {
-						return entity.id;
-					}
-				}
+				return entity.intersectsWithBox(selectionBox) || entity.isContainedInBox(selectionBox);
 			}
-			return null;
+			// Select only entities that are completely inside the selection rectangle
+			return entity.isContainedInBox(selectionBox);
 		})
+		.map((entity) => entity.id);
+	setSelectedEntityIds(
+		combineSelection(getSelectedEntityIds(), rectangleSelection, holdingCtrl, holdingShift)
 	);
-	setSelectedEntityIds(newSelectedEntityIds);
 }
 
 export function drawTempSelectionRectangle(startPoint: Point, endPoint: Point) {

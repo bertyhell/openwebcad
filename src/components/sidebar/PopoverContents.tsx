@@ -1,4 +1,4 @@
-import { type ChangeEvent, type FC, useState } from 'react';
+import { type ChangeEvent, type FC, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import { COLOR_LIST } from '../../App.consts.ts';
 import { importEntitiesFromDxfFile } from '../../helpers/import-export-handlers/dxf.import.ts';
@@ -88,13 +88,46 @@ interface PopoverContentProps {
 	onClose: () => void;
 }
 
+/**
+ * Button that opens a file dialog through a hidden file input, so it can be reached with the keyboard
+ */
+const FileImportButton: FC<{
+	fileImport: FileImport;
+	onChange: (evt: ChangeEvent<HTMLInputElement>) => void;
+}> = ({ fileImport, onChange }) => {
+	const fileInputRef = useRef<HTMLInputElement>(null);
+	return (
+		<>
+			<button
+				type="button"
+				onClick={() => fileInputRef.current?.click()}
+				aria-label={`Import ${fileImport.label}`}
+				className={FILE_BUTTON_CLASSES}
+				data-id={fileImport.dataId}
+			>
+				{fileImport.label}
+			</button>
+			<input
+				ref={fileInputRef}
+				type="file"
+				accept={fileImport.accept}
+				onChange={onChange}
+				className="hidden"
+				tabIndex={-1}
+				aria-hidden="true"
+			/>
+		</>
+	);
+};
+
 export const FileMenu: FC<PopoverContentProps> = ({ onClose }) => {
 	const [isConfirmingNew, setIsConfirmingNew] = useState(false);
 
 	const handleSave = async () => {
 		onClose();
-		await localStorageExport();
-		toast.success('Saved');
+		if (await localStorageExport()) {
+			toast.success('Saved');
+		}
 	};
 
 	const handleImport = (fileImport: FileImport) => async (evt: ChangeEvent<HTMLInputElement>) => {
@@ -164,15 +197,11 @@ export const FileMenu: FC<PopoverContentProps> = ({ onClose }) => {
 			<PopoverLabel label="Import" className="mt-2.5 mx-2 mb-1.5" />
 			<div className="grid grid-cols-4 gap-1 px-1">
 				{FILE_IMPORTS.map((fileImport) => (
-					<label key={fileImport.label} className={FILE_BUTTON_CLASSES} data-id={fileImport.dataId}>
-						{fileImport.label}
-						<input
-							type="file"
-							accept={fileImport.accept}
-							onChange={handleImport(fileImport)}
-							className="hidden"
-						/>
-					</label>
+					<FileImportButton
+						key={fileImport.label}
+						fileImport={fileImport}
+						onChange={handleImport(fileImport)}
+					/>
 				))}
 			</div>
 			<PopoverLabel label="Export" className="mt-3 mx-2 mb-1.5" />
@@ -182,6 +211,7 @@ export const FileMenu: FC<PopoverContentProps> = ({ onClose }) => {
 						key={fileExport.label}
 						type="button"
 						onClick={handleExport(fileExport)}
+						aria-label={`Export ${fileExport.label}`}
 						className={FILE_BUTTON_CLASSES}
 						data-id={fileExport.dataId}
 					>
@@ -229,6 +259,8 @@ const ColorGrid: FC<{
 					key={color}
 					type="button"
 					title={color}
+					aria-label={color}
+					aria-pressed={isActive}
 					onClick={() => onSelect(color)}
 					className="aspect-square border-0 cursor-pointer"
 					style={{

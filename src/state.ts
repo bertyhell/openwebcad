@@ -143,7 +143,7 @@ let layers: Layer[] = [
 		id: crypto.randomUUID(),
 		isLocked: false,
 		isVisible: true,
-		name: 'Default',
+		name: 'Layer 1',
 	},
 ];
 
@@ -191,6 +191,54 @@ export const getSelectedEntities = (): Entity[] => {
 };
 export const getNotSelectedEntities = (): Entity[] => {
 	return entities.filter((e) => !selectedEntityIds.includes(e.id));
+};
+/**
+ * Filtered entity lists are cached as long as the entities and layers don't change,
+ * so callers can use the identity of the returned list to cache expensive calculations, eg: intersections
+ */
+function memoizeByEntitiesAndLayers(
+	compute: (entities: Entity[], layers: Layer[]) => Entity[]
+): () => Entity[] {
+	let cachedEntities: Entity[] | null = null;
+	let cachedLayers: Layer[] | null = null;
+	let cachedResult: Entity[] = [];
+	return () => {
+		if (cachedEntities !== entities || cachedLayers !== layers) {
+			cachedEntities = entities;
+			cachedLayers = layers;
+			cachedResult = compute(entities, layers);
+		}
+		return cachedResult;
+	};
+}
+
+/**
+ * Entities on visible layers. Hidden layers don't provide snap points, intersections or highlights
+ */
+export const getVisibleEntities = memoizeByEntitiesAndLayers((allEntities, allLayers) => {
+	const visibleLayerIds = new Set(
+		allLayers.filter((layer) => layer.isVisible).map((layer) => layer.id)
+	);
+	return allEntities.filter((entity) => visibleLayerIds.has(entity.layerId));
+});
+/**
+ * Entities on visible and unlocked layers, these are the entities that modify tools are allowed to change
+ */
+export const getEditableEntities = memoizeByEntitiesAndLayers((allEntities, allLayers) => {
+	const editableLayerIds = new Set(
+		allLayers.filter((layer) => layer.isVisible && !layer.isLocked).map((layer) => layer.id)
+	);
+	return allEntities.filter((entity) => editableLayerIds.has(entity.layerId));
+});
+export const isEntityEditable = (entity: Entity): boolean => {
+	const layer = layers.find((layer) => layer.id === entity.layerId);
+	return !!layer && layer.isVisible && !layer.isLocked;
+};
+/**
+ * Selected entities that are not on a hidden or locked layer
+ */
+export const getEditableSelectedEntities = (): Entity[] => {
+	return getSelectedEntities().filter(isEntityEditable);
 };
 export const isEntitySelected = (entity: Entity) => selectedEntityIds.includes(entity.id);
 export const isEntityHighlighted = (entity: Entity) => highlightedEntityIds.includes(entity.id);
@@ -261,10 +309,10 @@ export const setLastStateInstructions = (newInstructions: string | null) => {
 	triggerReactUpdate(StateVariable.instructions);
 };
 export const setEntities = (newEntities: Entity[], trackInUndoStack = false) => {
-	if (trackInUndoStack) {
-		trackUndoState(StateVariable.entities, newEntities);
-	}
 	entities = newEntities;
+	if (trackInUndoStack) {
+		commitUndoState();
+	}
 };
 export const setHighlightedEntityIds = (newEntityIds: string[]) => {
 	highlightedEntityIds = newEntityIds;
@@ -349,8 +397,11 @@ export const setActiveLineWidth = (newWidth: number, triggerReact = true) => {
 		triggerReactUpdate(StateVariable.activeLineWidth);
 	}
 };
-export const setLayers = (newLayers: Layer[], triggerReact = true) => {
+export const setLayers = (newLayers: Layer[], triggerReact = true, trackInUndoStack = false) => {
 	layers = newLayers;
+	if (trackInUndoStack) {
+		commitUndoState();
+	}
 
 	if (triggerReact) {
 		triggerReactUpdate(StateVariable.layers);
@@ -390,51 +441,75 @@ const reactStateVariables: StateVariable[] = [
 	StateVariable.instructions,
 ];
 
-const undoableStateVariables: StateVariable[] = [StateVariable.entities];
-
 const undoStack = createStack();
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-function trackUndoState(variable: StateVariable, value: any) {
-	if (!undoableStateVariables.includes(variable)) return;
-
-	const lastUndoState = undoStack.peek();
-	if (isEqual(value, lastUndoState?.value)) {
-		return; // Sometimes entities are updated because of highlighting, but not actually differ with the last list of entities
+/**
+ * Entities can be re-created with the same content, eg: by filtering a list without removing anything
+ * Only compare deeply when the cheap reference comparison doesn't already tell the lists are equal
+ */
+function isSameList<T>(listA: T[], listB: T[] | undefined): boolean {
+	if (!listB || listA.length !== listB.length) {
+		return false;
 	}
-
-	// Push the new undo state
-	undoStack.push({ variable: variable, value: value });
+	if (listA.every((item, index) => item === listB[index])) {
+		return true;
+	}
+	return isEqual(listA, listB);
 }
 
-function updateStates(undoState: UndoState) {
-	const variable = undoState.variable;
-	const value = undoState.value;
-
-	// Do not use the setters for setting these states, otherwise you trigger the undo stack again
-	switch (variable) {
-		case StateVariable.entities:
-			entities = value;
-			break;
+/**
+ * Push the current entities and layers as a new undo state, unless nothing changed since the last undo state
+ */
+export function commitUndoState() {
+	const lastUndoState = undoStack.peek();
+	if (isSameList(entities, lastUndoState?.entities) && isSameList(layers, lastUndoState?.layers)) {
+		return;
 	}
+	undoStack.push({ entities, layers });
+	notifyDrawingChanged();
+}
+
+/**
+ * Lets listeners like autosave know that the entities or layers changed
+ */
+function notifyDrawingChanged() {
+	if (typeof window === 'undefined' || isTestEnvironment()) {
+		return;
+	}
+	window.dispatchEvent(new CustomEvent(HtmlEvent.DRAWING_CHANGED));
+}
+
+function isTestEnvironment(): boolean {
+	return typeof process === 'object' && process?.env?.NODE_ENV === 'test';
+}
+
+function restoreUndoState(undoState: UndoState) {
+	// Do not use the setters for setting these states, otherwise you trigger the undo stack again
+	entities = undoState.entities;
+	layers = undoState.layers;
+	if (!layers.some((layer) => layer.id === activeLayerId)) {
+		activeLayerId = layers[0]?.id;
+	}
+	triggerReactUpdate(StateVariable.layers);
+	notifyDrawingChanged();
 }
 
 export function undo() {
 	const undoState = undoStack.undo();
 	if (!undoState) return;
 
-	updateStates(undoState);
+	restoreUndoState(undoState);
 }
 
 export function redo() {
 	const redoState = undoStack.redo();
 	if (!redoState) return;
 
-	updateStates(redoState);
+	restoreUndoState(redoState);
 }
 
 export function triggerReactUpdate(variable: StateVariable) {
-	if (typeof process === 'object' && process?.env?.NODE_ENV === 'test') {
+	if (isTestEnvironment()) {
 		return;
 	}
 

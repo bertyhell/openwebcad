@@ -5,17 +5,24 @@ import type {DrawController} from '../drawControllers/DrawController';
 import type {ScreenCanvasDrawController} from '../drawControllers/screenCanvas.drawController';
 import type {Entity} from '../entities/Entity';
 import {getLayers, isEntityHighlighted, isEntitySelected} from '../state';
-import {toast} from 'react-toastify';
+
+/**
+ * Entities without a layer are only reported once, instead of on every frame
+ */
+const reportedEntityIdsWithoutLayer = new Set<string>();
 
 export function drawEntities(drawController: DrawController, entities: Entity[]) {
+	const layerById = new Map(getLayers().map((layer) => [layer.id, layer]));
 	for (const entity of entities) {
-		const layer = getLayers().find((layer) => layer.id === entity.layerId);
+		const layer = layerById.get(entity.layerId);
 		if (!layer) {
-			toast.error(`Failed to find layer for entity: ${entity?.id}`);
-			console.error('Failed to find layer for entity: ', entity);
+			if (!reportedEntityIdsWithoutLayer.has(entity.id)) {
+				reportedEntityIdsWithoutLayer.add(entity.id);
+				console.warn('Failed to find layer for entity: ', entity);
+			}
 			continue;
 		}
-		if (!layer?.isVisible) {
+		if (!layer.isVisible) {
 			continue; // Layer not visible, skip drawing
 		}
 		drawController.setLineStyles(

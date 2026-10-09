@@ -7,7 +7,7 @@ import {LineEntity} from '../entities/LineEntity';
 import type {RectangleEntity} from '../entities/RectangleEntity';
 import {findClosestEntity} from '../helpers/find-closest-entity';
 import {polygonToSegments} from '../helpers/polygon-to-segments';
-import {addEntities, deleteEntities, getEntities, setEntities, setGhostHelperEntities, setShouldDrawHelpers,} from '../state';
+import {addEntities, deleteEntities, getEditableEntities, getEntities, getVisibleEntities, setEntities, setGhostHelperEntities, setShouldDrawHelpers,} from '../state';
 import {Tool} from '../tools';
 import {eraseArcSegment, eraseCircleSegment, eraseLineSegment, getAllIntersectionPoints,} from './eraser-tool.helpers';
 import type {MouseClickEvent, StateEvent, ToolContext} from './tool.types';
@@ -78,7 +78,7 @@ export const eraserToolStateMachine = createMachine(
 );
 
 export function handleMouseClick(worldMouseLocation: Point) {
-	const closestEntity = findClosestEntity(worldMouseLocation, getEntities());
+	const closestEntity = findClosestEntity(worldMouseLocation, getEditableEntities());
 	if (!closestEntity) {
 		return;
 	}
@@ -86,7 +86,7 @@ export function handleMouseClick(worldMouseLocation: Point) {
 	const clickedPointOnShape = closestEntity.segment.start;
 
 	// Find entities that intersect with the closest entity
-	const intersections = getAllIntersectionPoints(closestEntity.entity, getEntities());
+	const intersections = getAllIntersectionPoints(closestEntity.entity, getVisibleEntities());
 
 	const entityType = closestEntity.entity.getType();
 	switch (entityType) {
@@ -123,7 +123,7 @@ export function handleMouseClick(worldMouseLocation: Point) {
 			addEntities(segmentEntities, false);
 
 			// Remove (a segment) of the 4th line closest to the cursor
-			const lineIntersections = getAllIntersectionPoints(closestSegmentInfo.entity, getEntities());
+			const lineIntersections = getAllIntersectionPoints(closestSegmentInfo.entity, getVisibleEntities());
 			eraseLineSegment(
 				closestSegmentInfo.entity as LineEntity,
 				clickedPointOnShape,

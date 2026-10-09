@@ -159,7 +159,7 @@ export const selectToolStateMachine = createMachine(
           context.startPoint,
           (event as MouseClickEvent).worldMouseLocation,
           (event as MouseClickEvent).holdingCtrl,
-          // (event as MouseClickEvent).holdingShift,
+          (event as MouseClickEvent).holdingShift,
         );
         setGhostHelperEntities([]);
       },

@@ -37,6 +37,7 @@ export enum MouseButton {
 export enum HtmlEvent {
 	UPDATE_STATE = 'UPDATE_STATE',
 	TOGGLE_SIDEBAR = 'TOGGLE_SIDEBAR',
+	DRAWING_CHANGED = 'DRAWING_CHANGED',
 }
 
 export interface StateMetaData {
@@ -48,6 +49,10 @@ export interface Layer {
 	name: string;
 	isVisible: boolean;
 	isLocked: boolean;
+	/**
+	 * Line color for new entities drawn on this layer, when not set the active line color is used
+	 */
+	color?: string;
 }
 
 export enum LOCAL_STORAGE_KEY {

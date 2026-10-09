@@ -6,7 +6,7 @@ import {getAngleWithXAxis} from '../helpers/get-angle-with-x-axis.ts';
 import {getBoundingBoxOfMultipleEntities} from '../helpers/get-bounding-box-of-multiple-entities.ts';
 import {mapNumberRange} from '../helpers/map-number-range.ts';
 import {StateVariable} from '../helpers/undo-stack.ts';
-import {getEntities, triggerReactUpdate} from '../state.ts';
+import {getVisibleEntities, triggerReactUpdate} from '../state.ts';
 import {DEFAULT_TEXT_OPTIONS, type DrawController} from './DrawController';
 
 /**
@@ -119,7 +119,7 @@ export class ScreenCanvasDrawController implements DrawController {
 	}
 
 	public zoomToFitScreen() {
-		const entities = getEntities();
+		const entities = getVisibleEntities();
 		if (!entities.length) return;
 		const boundingBox = getBoundingBoxOfMultipleEntities(entities);
 		const boundingWidth = boundingBox.maxX - boundingBox.minX;
@@ -238,6 +238,11 @@ export class ScreenCanvasDrawController implements DrawController {
 		if (this.canvasSize === null) return;
 
 		if (!this.context) return;
+
+		// The canvas has more pixels than css pixels on HiDPI screens, so the drawing stays sharp
+		// Scale the context, so all drawing code can keep working in css pixels
+		const pixelRatio = globalThis.devicePixelRatio || 1;
+		this.context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
 
 		this.context.fillStyle = CANVAS_BACKGROUND_COLOR;
 		this.context.fillRect(0, 0, this.canvasSize?.x, this.canvasSize?.y);

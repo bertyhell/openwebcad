@@ -21,6 +21,7 @@ import {scalePoint} from '../helpers/scale-point';
 import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
 import {type Entity, EntityName, type JsonEntity} from './Entity';
 import type {LineEntity} from './LineEntity.ts';
+import { copyEntityBaseProperties } from '../helpers/copy-entity-base-properties';
 
 export class MeasurementEntity implements Entity {
 	public id: string = crypto.randomUUID();
@@ -298,10 +299,13 @@ export class MeasurementEntity implements Entity {
 	}
 
 	public clone(): MeasurementEntity {
-		return new MeasurementEntity(
-			this.startPoint.clone(),
-			this.endPoint.clone(),
-			this.offsetPoint.clone()
+		return copyEntityBaseProperties(
+			this,
+			new MeasurementEntity(
+				this.startPoint.clone(),
+				this.endPoint.clone(),
+				this.offsetPoint.clone()
+			)
 		);
 	}
 

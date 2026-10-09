@@ -1,10 +1,12 @@
 import { Actor } from 'xstate';
 import type { Layer } from '../../App.types.ts';
+import type { Entity } from '../../entities/Entity.ts';
 import { getNewLayer } from '../../helpers/get-new-layer.ts';
 import { imageImport } from '../../helpers/import-export-handlers/image.import.ts';
 import {
 	getActiveLayerId,
 	getActiveToolActor,
+	getEditableEntities,
 	getEntities,
 	getInputController,
 	getLayers,
@@ -69,7 +71,9 @@ function updateLayer(layerId: string, update: Partial<Layer>): Layer | undefined
 			}
 			updatedLayer = { ...layer, ...update };
 			return updatedLayer;
-		})
+		}),
+		true,
+		true
 	);
 	return updatedLayer;
 }
@@ -88,21 +92,51 @@ function ensureActiveLayerIsEditable(): void {
 	}
 }
 
+/**
+ * Entities on hidden or locked layers can't be modified, so remove them from the selection
+ */
+function deselectEntitiesOnLayer(layerId: string): void {
+	const layer = getLayers().find((layer) => layer.id === layerId);
+	if (layer?.isVisible && !layer.isLocked) {
+		return;
+	}
+	setSelectedEntityIds(
+		getSelectedEntities()
+			.filter((entity) => entity.layerId !== layerId)
+			.map((entity) => entity.id)
+	);
+}
+
 export function toggleLayerVisibility(layerId: string): void {
 	const layer = getLayers().find((layer) => layer.id === layerId);
 	updateLayer(layerId, { isVisible: !layer?.isVisible });
+	deselectEntitiesOnLayer(layerId);
 	ensureActiveLayerIsEditable();
 }
 
 export function toggleLayerLock(layerId: string): void {
 	const layer = getLayers().find((layer) => layer.id === layerId);
 	updateLayer(layerId, { isLocked: !layer?.isLocked });
+	deselectEntitiesOnLayer(layerId);
 	ensureActiveLayerIsEditable();
+}
+
+export function renameLayer(layerId: string, name: string): void {
+	const trimmedName = name.trim();
+	const layer = getLayers().find((layer) => layer.id === layerId);
+	if (!trimmedName || layer?.name === trimmedName) {
+		return;
+	}
+	updateLayer(layerId, { name: trimmedName });
+}
+
+export function setLayerColor(layerId: string, color: string): void {
+	updateLayer(layerId, { color });
 }
 
 export function createLayer(): void {
 	const newLayer: Layer = getNewLayer();
-	setLayers([...getLayers(), newLayer]);
+	setLayers([...getLayers(), newLayer], true, true);
 	setActiveLayerId(newLayer.id);
 }
 
@@ -111,26 +145,45 @@ export function deleteLayer(layerId: string): void {
 	if (!remainingLayers.length) {
 		return; // Always keep at least one layer
 	}
-	setEntities(
-		getEntities().filter((entity) => entity.layerId !== layerId),
-		true
+	setSelectedEntityIds(
+		getSelectedEntities()
+			.filter((entity) => entity.layerId !== layerId)
+			.map((entity) => entity.id)
 	);
-	setLayers(remainingLayers);
+	// Remove the layer and its entities in a single undo step, so undo brings both back together
+	setEntities(getEntities().filter((entity) => entity.layerId !== layerId));
+	setLayers(remainingLayers, true, true);
 	if (getActiveLayerId() === layerId) {
 		setActiveLayerId(remainingLayers[0].id);
 	}
 }
 
 export function selectEntitiesOnLayer(layerId: string): number {
-	const entitiesOnLayer = getEntities().filter((entity) => entity.layerId === layerId);
+	const entitiesOnLayer = getEditableEntities().filter((entity) => entity.layerId === layerId);
 	setSelectedEntityIds(entitiesOnLayer.map((entity) => entity.id));
 	return entitiesOnLayer.length;
 }
 
+/**
+ * Replace the selected entities with clones on the new layer, so the change can be undone
+ */
 export function moveSelectionToLayer(layerId: string): number {
 	const selectedEntities = getSelectedEntities();
-	for (const entity of selectedEntities) {
-		entity.layerId = layerId;
+	if (!selectedEntities.length) {
+		return 0;
 	}
+	const movedEntityById = new Map<string, Entity>(
+		selectedEntities.map((entity) => {
+			const movedEntity = entity.clone();
+			movedEntity.id = entity.id;
+			movedEntity.layerId = layerId;
+			return [entity.id, movedEntity];
+		})
+	);
+	setEntities(
+		getEntities().map((entity) => movedEntityById.get(entity.id) ?? entity),
+		true
+	);
+	deselectEntitiesOnLayer(layerId);
 	return selectedEntities.length;
 }

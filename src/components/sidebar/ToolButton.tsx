@@ -1,4 +1,11 @@
-import type { ChangeEvent, CSSProperties, FC, MouseEvent, ReactNode } from 'react';
+import {
+	type ChangeEvent,
+	type CSSProperties,
+	type FC,
+	type ReactNode,
+	type SyntheticEvent,
+	useRef,
+} from 'react';
 import { PathIcon } from '../PathIcon.tsx';
 import { activateTool, startImageImport } from './sidebar.actions.ts';
 import { NEUTRAL_TOOL_COLOR, TOOL_GROUPS, type ToolDefinition } from './sidebar.consts.ts';
@@ -21,60 +28,80 @@ function getToolButtonStyle(color: string, isActive: boolean): CSSProperties {
 	};
 }
 
+export type TooltipTriggerEvent = SyntheticEvent<HTMLElement>;
+
 interface ToolButtonShellProps {
 	toolDefinition: ToolDefinition;
 	className: string;
 	style: CSSProperties;
 	title?: string;
-	onMouseEnter?: (evt: MouseEvent<HTMLElement>) => void;
-	onMouseLeave?: () => void;
+	ariaLabel?: string;
+	isActive: boolean;
+	onShowTooltip?: (evt: TooltipTriggerEvent) => void;
+	onHideTooltip?: () => void;
 	children: ReactNode;
 }
 
 /**
- * Renders a button, or a label wrapping a hidden file input for tools that start from a file
+ * Renders a button, tools that start from a file open a file dialog through a hidden file input
  */
 const ToolButtonShell: FC<ToolButtonShellProps> = ({
 	toolDefinition,
 	className,
 	style,
 	title,
-	onMouseEnter,
-	onMouseLeave,
+	ariaLabel,
+	isActive,
+	onShowTooltip,
+	onHideTooltip,
 	children,
 }) => {
-	const sharedProps = {
-		className,
-		style,
-		title,
-		onMouseEnter,
-		onMouseLeave,
-		'data-id': toolDefinition.dataId,
+	const fileInputRef = useRef<HTMLInputElement>(null);
+
+	const handleFileChange = async (evt: ChangeEvent<HTMLInputElement>) => {
+		const file = evt.target.files?.[0];
+		evt.target.value = '';
+		await startImageImport(file);
 	};
 
-	if (toolDefinition.fileAccept) {
-		const handleFileChange = async (evt: ChangeEvent<HTMLInputElement>) => {
-			const file = evt.target.files?.[0];
-			evt.target.value = '';
-			await startImageImport(file);
-		};
-		return (
-			<label {...sharedProps}>
+	const handleClick = () => {
+		if (toolDefinition.fileAccept) {
+			fileInputRef.current?.click();
+			return;
+		}
+		activateTool(toolDefinition.tool);
+	};
+
+	return (
+		<>
+			<button
+				type="button"
+				className={className}
+				style={style}
+				title={title}
+				aria-label={ariaLabel}
+				aria-pressed={isActive}
+				onMouseEnter={onShowTooltip}
+				onMouseLeave={onHideTooltip}
+				onFocus={onShowTooltip}
+				onBlur={onHideTooltip}
+				onClick={handleClick}
+				data-id={toolDefinition.dataId}
+			>
 				{children}
+			</button>
+			{toolDefinition.fileAccept && (
 				<input
+					ref={fileInputRef}
 					type="file"
 					accept={toolDefinition.fileAccept}
 					onChange={handleFileChange}
 					className="hidden"
+					tabIndex={-1}
+					aria-hidden="true"
 				/>
-			</label>
-		);
-	}
-
-	return (
-		<button type="button" {...sharedProps} onClick={() => activateTool(toolDefinition.tool)}>
-			{children}
-		</button>
+			)}
+		</>
 	);
 };
 
@@ -92,6 +119,7 @@ export const ToolButton: FC<ToolButtonProps> = ({ toolDefinition, isActive }) =>
 		<ToolButtonShell
 			toolDefinition={toolDefinition}
 			title={toolDefinition.hint}
+			isActive={isActive}
 			className={`flex items-center gap-2 h-[38px] min-w-0 pl-2 pr-1.5 border rounded-[2px] text-left cursor-pointer hover:brightness-[1.18] ${
 				isActive ? 'text-hw-paper' : 'text-hw-stone-300'
 			}`}
@@ -111,8 +139,8 @@ export const ToolButton: FC<ToolButtonProps> = ({ toolDefinition, isActive }) =>
 };
 
 interface RailToolButtonProps extends ToolButtonProps {
-	onMouseEnter: (evt: MouseEvent<HTMLElement>) => void;
-	onMouseLeave: () => void;
+	onShowTooltip: (evt: TooltipTriggerEvent) => void;
+	onHideTooltip: () => void;
 }
 
 /**
@@ -121,8 +149,8 @@ interface RailToolButtonProps extends ToolButtonProps {
 export const RailToolButton: FC<RailToolButtonProps> = ({
 	toolDefinition,
 	isActive,
-	onMouseEnter,
-	onMouseLeave,
+	onShowTooltip,
+	onHideTooltip,
 }) => {
 	const color = getToolColor(toolDefinition);
 	return (
@@ -130,8 +158,10 @@ export const RailToolButton: FC<RailToolButtonProps> = ({
 			toolDefinition={toolDefinition}
 			className="grid place-items-center w-10 h-9 border rounded-[2px] cursor-pointer hover:brightness-125"
 			style={getToolButtonStyle(color, isActive)}
-			onMouseEnter={onMouseEnter}
-			onMouseLeave={onMouseLeave}
+			ariaLabel={toolDefinition.label}
+			isActive={isActive}
+			onShowTooltip={onShowTooltip}
+			onHideTooltip={onHideTooltip}
 		>
 			<PathIcon path={toolDefinition.iconPath} color={color} />
 		</ToolButtonShell>

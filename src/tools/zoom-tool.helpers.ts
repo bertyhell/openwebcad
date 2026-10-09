@@ -1,7 +1,7 @@
 import { Point } from '@flatten-js/core';
 import { DEFAULT_ZOOM_MARGIN, ZOOM_STEP_MULTIPLIER } from '../App.consts.ts';
 import { getBoundingBoxOfMultipleEntities } from '../helpers/get-bounding-box-of-multiple-entities.ts';
-import { getEntities, getScreenCanvasDrawController } from '../state.ts';
+import { getScreenCanvasDrawController, getVisibleEntities } from '../state.ts';
 
 /**
  * Zoom in by the default zoom step multiplier, keeping the center of the screen fixed
@@ -46,7 +46,7 @@ export function zoomToScale(newScreenScale: number) {
 }
 
 export function zoomToBounds() {
-	const entities = getEntities();
+	const entities = getVisibleEntities();
 	if (entities.length === 0) {
 		return;
 	}

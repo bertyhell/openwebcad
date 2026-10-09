@@ -246,3 +246,8 @@ export const TO_RADIANS = Math.PI / 180;
  * Number to multiply radians with to end up with the equivalent degrees
  */
 export const TO_DEGREES = 180 / Math.PI;
+
+/**
+ * Milliseconds to wait after the last change before saving the drawing to local storage
+ */
+export const AUTOSAVE_DELAY = 1000;

@@ -1,4 +1,4 @@
-import { type FC, type MouseEvent, type ReactNode, useEffect, useState } from 'react';
+import { type FC, type ReactNode, useEffect, useRef, useState } from 'react';
 import useLocalStorageState from 'use-local-storage-state';
 import { TOOLBAR_WIDTH, TOOLBAR_WIDTH_COLLAPSED } from '../../App.consts.ts';
 import { HtmlEvent, LOCAL_STORAGE_KEY } from '../../App.types.ts';
@@ -16,7 +16,7 @@ import {
 import { KeyBadge, SectionHeader } from './SectionHeader.tsx';
 import { redoAction, undoAction } from './sidebar.actions.ts';
 import { ALIGN_COLOR, ICON_PATHS, TOOL_GROUPS, TOOLS } from './sidebar.consts.ts';
-import { RailToolButton, ToolButton } from './ToolButton.tsx';
+import { RailToolButton, ToolButton, type TooltipTriggerEvent } from './ToolButton.tsx';
 import { type AppState, useAppState } from './use-app-state.ts';
 
 type SectionId = 'draw' | 'modify' | 'annotate' | 'align' | 'layers';
@@ -30,6 +30,16 @@ interface SidebarSettings {
 const DEFAULT_SIDEBAR_SETTINGS: SidebarSettings = {
 	isCollapsed: false,
 	openSections: { draw: true, modify: true, annotate: true, align: false, layers: true },
+};
+
+const POPOVER_LABELS: Record<PopoverId, string> = {
+	file: 'File',
+	color: 'Colour',
+	width: 'Line width',
+	snap: 'Snap angle step',
+	zoom: 'Zoom',
+	align: 'Align selection',
+	layers: 'Layers',
 };
 
 const POPOVER_WIDTHS: Record<PopoverId, number> = {
@@ -132,6 +142,8 @@ export const Sidebar: FC = () => {
 	});
 	const [popover, setPopover] = useState<PopoverPosition | null>(null);
 	const [tooltip, setTooltip] = useState<Tooltip | null>(null);
+	const popoverTriggerRef = useRef<HTMLElement | null>(null);
+	const popoverRef = useRef<HTMLDivElement>(null);
 
 	const isCollapsed = settings.isCollapsed;
 	const openSections = { ...DEFAULT_SIDEBAR_SETTINGS.openSections, ...settings.openSections };
@@ -159,11 +171,12 @@ export const Sidebar: FC = () => {
 		}));
 	};
 
-	const openPopover = (id: PopoverId) => (evt: MouseEvent<HTMLElement>) => {
+	const openPopover = (id: PopoverId) => (evt: TooltipTriggerEvent) => {
 		if (popover?.id === id) {
-			setPopover(null);
+			closePopover();
 			return;
 		}
+		popoverTriggerRef.current = evt.currentTarget;
 		const rect = evt.currentTarget.getBoundingClientRect();
 		const isInLowerHalf = rect.top > window.innerHeight / 2;
 		setTooltip(null);
@@ -173,15 +186,62 @@ export const Sidebar: FC = () => {
 			bottom: isInLowerHalf ? Math.max(12, window.innerHeight - rect.bottom) : null,
 		});
 	};
-	const closePopover = () => setPopover(null);
+	const closePopover = () => {
+		setPopover(null);
+		// Return the keyboard focus to the button that opened the popover
+		popoverTriggerRef.current?.focus();
+		popoverTriggerRef.current = null;
+	};
+
+	// Close the popover with escape, before the canvas handles escape to cancel the active tool
+	useEffect(() => {
+		if (!popover) return;
+		const handleKeyDown = (evt: KeyboardEvent) => {
+			if (evt.key !== 'Escape') return;
+			evt.preventDefault();
+			evt.stopPropagation();
+			closePopover();
+		};
+		window.addEventListener('keydown', handleKeyDown, { capture: true });
+		return () => window.removeEventListener('keydown', handleKeyDown, { capture: true });
+	});
+
+	// Move the keyboard focus into the popover when it opens
+	const popoverId = popover?.id;
+	useEffect(() => {
+		if (!popoverId) return;
+		popoverRef.current
+			?.querySelector<HTMLElement>('button:not([disabled]), input, select, a[href]')
+			?.focus({ preventScroll: true });
+	}, [popoverId]);
+
+	/**
+	 * Accessibility attributes for a button that opens a popover
+	 */
+	const popoverTriggerProps = (id: PopoverId) => ({
+		'aria-haspopup': 'dialog' as const,
+		'aria-expanded': popover?.id === id,
+		onClick: openPopover(id),
+	});
 
 	const showTooltip =
-		(label: string, shortcut?: string, hint?: string) => (evt: MouseEvent<HTMLElement>) => {
+		(label: string, shortcut?: string, hint?: string) => (evt: TooltipTriggerEvent) => {
 			if (!isCollapsed) return;
 			const rect = evt.currentTarget.getBoundingClientRect();
 			setTooltip({ label, shortcut, hint, top: rect.top + rect.height / 2 });
 		};
 	const hideTooltip = () => setTooltip(null);
+
+	/**
+	 * Icon only buttons in the collapsed sidebar need an accessible name and a tooltip on hover and keyboard focus
+	 */
+	const railButtonProps = (label: string, shortcut?: string, hint?: string) => ({
+		'aria-label': label,
+		onMouseEnter: showTooltip(label, shortcut, hint),
+		onMouseLeave: hideTooltip,
+		onFocus: showTooltip(label, shortcut, hint),
+		onBlur: hideTooltip,
+	});
 
 	const selectionLabel = appState.selectedCount
 		? `${appState.selectedCount} selected`
@@ -230,7 +290,7 @@ export const Sidebar: FC = () => {
 			<div className="flex items-center gap-1 p-3 border-b border-hw-ash">
 				<button
 					type="button"
-					onClick={openPopover('file')}
+					{...popoverTriggerProps('file')}
 					className={`flex items-center gap-2 h-9 pl-2 pr-2.5 border border-hw-line rounded-[2px] text-hw-paper cursor-pointer hover:bg-hw-ash ${
 						isPopoverOpen('file') ? 'bg-hw-ash' : 'bg-transparent'
 					}`}
@@ -250,6 +310,7 @@ export const Sidebar: FC = () => {
 					type="button"
 					onClick={undoAction}
 					title="Undo · Ctrl Z"
+					aria-label="Undo"
 					className={HEADER_ICON_BUTTON_CLASSES}
 					data-id="undo-button"
 				>
@@ -259,6 +320,7 @@ export const Sidebar: FC = () => {
 					type="button"
 					onClick={redoAction}
 					title="Redo · Ctrl Shift Z"
+					aria-label="Redo"
 					className={HEADER_ICON_BUTTON_CLASSES}
 					data-id="redo-button"
 				>
@@ -269,6 +331,7 @@ export const Sidebar: FC = () => {
 					type="button"
 					onClick={toggleCollapsed}
 					title="Collapse sidebar · ["
+					aria-label="Collapse sidebar"
 					className={HEADER_ICON_BUTTON_CLASSES}
 					data-id="collapse-sidebar-button"
 				>
@@ -336,7 +399,7 @@ export const Sidebar: FC = () => {
 					<button
 						key={propertyItem.id}
 						type="button"
-						onClick={openPopover(propertyItem.id)}
+						{...popoverTriggerProps(propertyItem.id)}
 						className={`flex flex-col items-start gap-1.5 py-2 px-2.5 border border-hw-ink rounded-[2px] text-hw-paper text-left cursor-pointer hover:border-hw-graphite ${
 							isPopoverOpen(propertyItem.id) ? 'bg-hw-ash' : 'bg-hw-ink'
 						}`}
@@ -361,8 +424,7 @@ export const Sidebar: FC = () => {
 				<button
 					type="button"
 					onClick={toggleCollapsed}
-					onMouseEnter={showTooltip('Expand sidebar', '[')}
-					onMouseLeave={hideTooltip}
+					{...railButtonProps('Expand sidebar', '[')}
 					className={`${RAIL_ICON_BUTTON_CLASSES} bg-transparent`}
 					data-id="expand-sidebar-button"
 				>
@@ -370,9 +432,8 @@ export const Sidebar: FC = () => {
 				</button>
 				<button
 					type="button"
-					onClick={openPopover('file')}
-					onMouseEnter={showTooltip('File', undefined, 'Save, new, import, export')}
-					onMouseLeave={hideTooltip}
+					{...popoverTriggerProps('file')}
+					{...railButtonProps('File', undefined, 'Save, new, import, export')}
 					className={`${RAIL_ICON_BUTTON_CLASSES} text-hw-paper ${isPopoverOpen('file') ? 'bg-hw-ash' : 'bg-transparent'}`}
 					data-id="file-menu-button"
 				>
@@ -381,8 +442,7 @@ export const Sidebar: FC = () => {
 				<button
 					type="button"
 					onClick={undoAction}
-					onMouseEnter={showTooltip('Undo', 'Ctrl Z')}
-					onMouseLeave={hideTooltip}
+					{...railButtonProps('Undo', 'Ctrl Z')}
 					className={`${RAIL_ICON_BUTTON_CLASSES} bg-transparent`}
 					data-id="undo-button"
 				>
@@ -391,8 +451,7 @@ export const Sidebar: FC = () => {
 				<button
 					type="button"
 					onClick={redoAction}
-					onMouseEnter={showTooltip('Redo', 'Ctrl ⇧ Z')}
-					onMouseLeave={hideTooltip}
+					{...railButtonProps('Redo', 'Ctrl ⇧ Z')}
 					className={`${RAIL_ICON_BUTTON_CLASSES} bg-transparent`}
 					data-id="redo-button"
 				>
@@ -413,12 +472,12 @@ export const Sidebar: FC = () => {
 									key={toolDefinition.tool}
 									toolDefinition={toolDefinition}
 									isActive={appState.activeTool === toolDefinition.tool}
-									onMouseEnter={showTooltip(
+									onShowTooltip={showTooltip(
 										toolDefinition.label,
 										toolDefinition.shortcut,
 										toolDefinition.hint
 									)}
-									onMouseLeave={hideTooltip}
+									onHideTooltip={hideTooltip}
 								/>
 							)
 						)}
@@ -427,9 +486,8 @@ export const Sidebar: FC = () => {
 				<div className="flex flex-col items-center gap-0.5 py-2">
 					<button
 						type="button"
-						onClick={openPopover('align')}
-						onMouseEnter={showTooltip('Align selection', undefined, selectionLabel)}
-						onMouseLeave={hideTooltip}
+						{...popoverTriggerProps('align')}
+						{...railButtonProps('Align selection', undefined, selectionLabel)}
 						className={`grid place-items-center w-10 h-9 border border-transparent rounded-[2px] cursor-pointer hover:bg-hw-ink ${
 							isPopoverOpen('align') ? 'bg-hw-ash' : 'bg-transparent'
 						}`}
@@ -439,9 +497,8 @@ export const Sidebar: FC = () => {
 					</button>
 					<button
 						type="button"
-						onClick={openPopover('layers')}
-						onMouseEnter={showTooltip('Layers', undefined, `Active: ${activeLayer?.name ?? '—'}`)}
-						onMouseLeave={hideTooltip}
+						{...popoverTriggerProps('layers')}
+						{...railButtonProps('Layers', undefined, `Active: ${activeLayer?.name ?? '—'}`)}
 						className={`grid place-items-center w-10 h-9 border border-transparent rounded-[2px] text-hw-stone-300 cursor-pointer hover:bg-hw-ink ${
 							isPopoverOpen('layers') ? 'bg-hw-ash' : 'bg-transparent'
 						}`}
@@ -457,9 +514,8 @@ export const Sidebar: FC = () => {
 					<button
 						key={propertyItem.id}
 						type="button"
-						onClick={openPopover(propertyItem.id)}
-						onMouseEnter={showTooltip(`${propertyItem.label} · ${propertyItem.value}`)}
-						onMouseLeave={hideTooltip}
+						{...popoverTriggerProps(propertyItem.id)}
+						{...railButtonProps(`${propertyItem.label} · ${propertyItem.value}`)}
 						className={`grid place-items-center w-10 h-9 border-0 rounded-[2px] text-hw-paper font-bold text-[11px] leading-none cursor-pointer hover:bg-hw-ink ${
 							isPopoverOpen(propertyItem.id) ? 'bg-hw-ash' : 'bg-transparent'
 						}`}
@@ -508,6 +564,9 @@ export const Sidebar: FC = () => {
 				<>
 					<div className="fixed inset-0 z-20" onClick={closePopover} aria-hidden="true" />
 					<div
+						ref={popoverRef}
+						role="dialog"
+						aria-label={POPOVER_LABELS[popover.id]}
 						className="controls fixed z-21 max-h-[calc(100%-24px)] overflow-auto p-3 bg-hw-ink border border-hw-line shadow-[0_16px_40px_rgba(0,0,0,.35)] text-hw-stone-100 hw-scrollbar"
 						style={{
 							left: sidebarWidth + 8,

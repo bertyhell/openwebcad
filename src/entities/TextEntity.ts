@@ -7,6 +7,7 @@ import {scalePoint} from '../helpers/scale-point.ts';
 import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
 import {type Entity, EntityName, type JsonEntity} from './Entity';
 import type {LineEntity} from './LineEntity.ts';
+import { copyEntityBaseProperties } from '../helpers/copy-entity-base-properties';
 
 export interface TextOptions {
 	textDirection: Vector;
@@ -74,7 +75,10 @@ export class TextEntity implements Entity {
 	}
 
 	public clone(): TextEntity {
-		return new TextEntity(this.label, this.basePoint.clone(), cloneDeep(this.options));
+		return copyEntityBaseProperties(
+			this,
+			new TextEntity(this.label, this.basePoint.clone(), cloneDeep(this.options))
+		);
 	}
 
 	public intersectsWithBox(box: Box): boolean {

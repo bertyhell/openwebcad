@@ -10,6 +10,7 @@ import {sortPointsOnArc} from '../helpers/sort-points-on-arc';
 import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
 import {type Entity, EntityName, type JsonEntity} from './Entity';
 import type {LineEntity} from './LineEntity.ts';
+import { copyEntityBaseProperties } from '../helpers/copy-entity-base-properties';
 
 export class ArcEntity implements Entity, StartAndEndpointEntity {
 	public id: string = crypto.randomUUID();
@@ -102,7 +103,10 @@ export class ArcEntity implements Entity, StartAndEndpointEntity {
 	public clone(): Entity {
 		if (this.arc) {
 			const { center, r, startAngle, endAngle, counterClockwise } = this.arc;
-			return new ArcEntity(center, r.valueOf(), startAngle, endAngle, counterClockwise);
+			return copyEntityBaseProperties(
+				this,
+				new ArcEntity(center, r.valueOf(), startAngle, endAngle, counterClockwise)
+			);
 		}
 		return this;
 	}

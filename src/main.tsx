@@ -1,21 +1,24 @@
 import { Point } from '@flatten-js/core';
+import { debounce } from 'es-toolkit';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { Actor, type MachineSnapshot } from 'xstate';
-import { HIGHLIGHT_ENTITY_DISTANCE, SNAP_POINT_DISTANCE } from './App.consts';
+import { AUTOSAVE_DELAY, HIGHLIGHT_ENTITY_DISTANCE, SNAP_POINT_DISTANCE } from './App.consts';
+import { HtmlEvent } from './App.types.ts';
 import App from './App.tsx';
 import { ScreenCanvasDrawController } from './drawControllers/screenCanvas.drawController';
 import { draw } from './helpers/draw';
 import { findClosestEntity } from './helpers/find-closest-entity';
 import { getNewLayer } from './helpers/get-new-layer.ts';
 import type { JsonDrawingFileDeserialized } from './helpers/import-export-handlers/json.types.ts';
+import { localStorageExport } from './helpers/import-export-handlers/local-storage.export.ts';
 import { getEntitiesAndLayersFromLocalStorage } from './helpers/import-export-handlers/local-storage.import.ts';
 import { trackHoveredSnapPoint } from './helpers/track-hovered-snap-points';
 import { InputController } from './inputController/input-controller.ts';
 import {
 	getActiveToolActor,
 	getCanvas,
-	getEntities,
+	getEditableEntities,
 	getHoveredSnapPoints,
 	getLastDrawTimestamp,
 	getScreenCanvasDrawController,
@@ -73,7 +76,7 @@ function startDrawLoop(
 		}
 		const { distance, entity: closestEntity } = findClosestEntity(
 			screenCanvasDrawController.getWorldMouseLocation(),
-			getEntities()
+			getEditableEntities()
 		);
 
 		if (distance < HIGHLIGHT_ENTITY_DISTANCE) {
@@ -112,8 +115,9 @@ function handleCanvasResize() {
 	if (!canvas) return;
 	const width = canvas.clientWidth;
 	const height = canvas.clientHeight;
-	canvas.width = width;
-	canvas.height = height;
+	const pixelRatio = window.devicePixelRatio || 1;
+	canvas.width = Math.round(width * pixelRatio);
+	canvas.height = Math.round(height * pixelRatio);
 	getScreenCanvasDrawController().setCanvasSize(new Point(width, height));
 
 	// Keep the drawing at the same place on the screen when the sidebar changes width
@@ -136,18 +140,24 @@ function initApplication() {
 
 		// Load the last drawing from local storage
 		getEntitiesAndLayersFromLocalStorage().then((file: JsonDrawingFileDeserialized) => {
-			setEntities(file.entities, true);
 			let layers = file.layers;
 			if (layers.length === 0) {
-				layers = [getNewLayer()];
+				layers = [getNewLayer([])];
 			}
-			setLayers(layers);
+			setEntities(file.entities);
+			setLayers(layers, true, true);
 			setActiveLayerId(layers[0].id);
+
+			// Save every change automatically, only after loading, so an empty drawing never overwrites the saved one
+			const autosave = debounce(() => localStorageExport(), AUTOSAVE_DELAY);
+			window.addEventListener(HtmlEvent.DRAWING_CHANGED, autosave);
 		});
 		const screenCanvasDrawController = new ScreenCanvasDrawController(context);
 		setScreenCanvasDrawController(screenCanvasDrawController);
 
 		new ResizeObserver(handleCanvasResize).observe(canvas);
+		// The device pixel ratio changes when moving the window to another screen
+		window.addEventListener('resize', handleCanvasResize);
 		const inputController = new InputController();
 		setInputController(inputController);
 

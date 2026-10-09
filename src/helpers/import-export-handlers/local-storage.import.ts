@@ -8,7 +8,7 @@ import type { JsonDrawingFileDeserialized } from './json.types.ts';
 export async function importEntitiesAndLayersFromLocalStorage(): Promise<void> {
 	const file = await getEntitiesAndLayersFromLocalStorage();
 	setEntities(file.entities);
-	setLayers(file.layers);
+	setLayers(file.layers, true, true);
 	setActiveLayerId(file.layers[0].id);
 	zoomToBounds();
 }
@@ -18,7 +18,7 @@ export async function getEntitiesAndLayersFromLocalStorage(): Promise<JsonDrawin
 	if (!json) {
 		return {
 			entities: [],
-			layers: [getNewLayer()],
+			layers: [getNewLayer([])],
 		};
 	}
 

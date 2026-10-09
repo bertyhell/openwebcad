@@ -7,6 +7,7 @@ import {scalePoint} from '../helpers/scale-point';
 import {getActiveLayerId} from '../state.ts';
 import {type Entity, EntityName, type JsonEntity} from './Entity';
 import type {LineEntity} from './LineEntity.ts';
+import { copyEntityBaseProperties } from '../helpers/copy-entity-base-properties';
 
 export class ArrowHeadEntity implements Entity {
 	public id: string = crypto.randomUUID();
@@ -70,9 +71,10 @@ export class ArrowHeadEntity implements Entity {
 	}
 
 	public clone(): ArrowHeadEntity {
-		const clone = new ArrowHeadEntity(this.p1.clone(), this.p2.clone(), this.p3.clone());
-		clone.layerId = this.layerId;
-		return clone;
+		return copyEntityBaseProperties(
+			this,
+			new ArrowHeadEntity(this.p1.clone(), this.p2.clone(), this.p3.clone())
+		);
 	}
 
 	public intersectsWithBox(box: Box): boolean {

@@ -11,6 +11,7 @@ import {scalePoint} from '../helpers/scale-point';
 import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
 import {type Entity, EntityName, type JsonEntity} from './Entity';
 import type {LineEntity} from './LineEntity.ts';
+import { copyEntityBaseProperties } from '../helpers/copy-entity-base-properties';
 
 export class ImageEntity implements Entity {
 	public id: string = crypto.randomUUID();
@@ -104,7 +105,7 @@ export class ImageEntity implements Entity {
 	public clone(): ImageEntity {
 		const clonedImage = document.createElement('img');
 		clonedImage.src = this.imageElement.src;
-		return new ImageEntity(clonedImage, this.polygon.clone());
+		return copyEntityBaseProperties(this, new ImageEntity(clonedImage, this.polygon.clone()));
 	}
 
 	// TODO add destroy method to cleanup this.imageElement.src

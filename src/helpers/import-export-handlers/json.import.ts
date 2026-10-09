@@ -32,7 +32,7 @@ export function importEntitiesFromJsonFile(file: File | null | undefined) {
 			const json = reader.result as string;
 			const file = await getEntitiesAndLayersFromJsonString(json);
 			setEntities(file.entities);
-			setLayers(file.layers);
+			setLayers(file.layers, true, true);
 			setActiveLayerId(file.layers[0].id);
 			zoomToBounds();
 			resolve();
@@ -49,7 +49,7 @@ export async function getEntitiesAndLayersFromJsonObject(
 	if (Array.isArray(data)) {
 		// raw flatten js json array of segments and arcs
 		// Useful when debugging segments and arcs that were copied out of the dev tools
-		layers = [getNewLayer()];
+		layers = [getNewLayer([])];
 		entities = compact(
 			data.map((entityRawJson) => {
 				switch (entityRawJson.name) {
@@ -124,7 +124,7 @@ export async function getEntitiesAndLayersFromJsonObject(
 		entities = compact(await Promise.all(entityPromises));
 		layers = data.layers;
 		if (data.layers.length === 0) {
-			layers = [getNewLayer()];
+			layers = [getNewLayer([])];
 		}
 	}
 

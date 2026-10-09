@@ -39,4 +39,5 @@ export const TOOL_SHORTCUTS: Partial<Record<Tool, string>> = {
 	[Tool.MEASUREMENT]: 'N',
 	[Tool.FILL]: 'B',
 	[Tool.ERASER]: 'E',
+	[Tool.ZOOM]: 'Z',
 };

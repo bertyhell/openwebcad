@@ -18,6 +18,7 @@ import {
 	getActiveFillColor,
 	getActiveLineColor,
 	getEntities,
+	getVisibleEntities,
 	getLayers,
 	setEntities,
 	setGhostHelperEntities,
@@ -118,7 +119,7 @@ function resetFillToolCache() {
 }
 
 function getCandidateLoops(): CandidateLoop[] {
-	const entities = getEntities();
+	const entities = getVisibleEntities();
 	if (loopsCache?.entities !== entities) {
 		loopsCache = {
 			entities,
@@ -167,7 +168,7 @@ function edgesToPolyline(edges: Edge[]): PolyLineEntity {
  * Highlight the boundary (and holes) that will be filled if the user clicks
  */
 function drawBoundaryPreview(worldMouseLocation: Point) {
-	const entities = getEntities();
+	const entities = getVisibleEntities();
 	if (
 		previewCache?.entities === entities &&
 		isPointEqual(previewCache.mouseLocation, worldMouseLocation)

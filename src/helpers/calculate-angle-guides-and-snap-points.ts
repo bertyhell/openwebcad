@@ -1,7 +1,7 @@
 import {
   getAngleGuideOriginPoint,
   getAngleStep,
-  getEntities,
+  getVisibleEntities,
   getHoveredSnapPoints,
   getScreenCanvasDrawController,
   getShouldDrawHelpers,
@@ -19,7 +19,7 @@ import { compact } from 'es-toolkit';
 export function calculateAngleGuidesAndSnapPoints() {
   const angleStep = getAngleStep();
   const screenCanvasDrawController = getScreenCanvasDrawController();
-  const entities = getEntities();
+  const entities = getVisibleEntities();
   const screenScale = screenCanvasDrawController.getScreenScale();
   const worldMouseLocation = screenCanvasDrawController.getWorldMouseLocation();
   const hoveredSnapPoints = getHoveredSnapPoints();

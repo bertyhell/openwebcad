@@ -126,7 +126,7 @@ export function importEntitiesFromSvgFile(file: File | null | undefined) {
 					svgEntity.mirror(mirrorAxis);
 				}
 
-				setEntities([...getEntities(), ...svgEntities]);
+				setEntities([...getEntities(), ...svgEntities], true);
 				zoomToBounds();
 				resolve();
 			} catch (error) {

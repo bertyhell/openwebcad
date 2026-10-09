@@ -56,6 +56,15 @@ export const TOOLS: ToolDefinition[] = [
 		neutral: true,
 	},
 	{
+		tool: Tool.ZOOM,
+		group: ToolGroupId.DRAW,
+		label: 'Zoom',
+		hint: 'Zoom to a window, a scale or all entities (A)',
+		iconPath: 'M10 4a6 6 0 1 0 0 12a6 6 0 1 0 0-12zM14.5 14.5L20 20M7 10h6M10 7v6',
+		dataId: 'zoom-button',
+		neutral: true,
+	},
+	{
 		tool: Tool.LINE,
 		group: ToolGroupId.DRAW,
 		label: 'Line',
@@ -156,7 +165,7 @@ export const TOOLS: ToolDefinition[] = [
 	{
 		tool: Tool.ERASER,
 		group: ToolGroupId.ANNOTATE,
-		label: 'Trim',
+		label: 'Eraser',
 		hint: 'Erase parts of an entity between intersections',
 		iconPath: 'M6 2v16h16M2 6h16v16',
 		dataId: 'delete-segment-button',

@@ -8,6 +8,7 @@ import {scalePoint} from '../helpers/scale-point';
 import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
 import {type Entity, EntityName, type JsonEntity} from './Entity';
 import type {LineEntity} from './LineEntity.ts';
+import { copyEntityBaseProperties } from '../helpers/copy-entity-base-properties';
 
 export class PointEntity implements Entity {
 	public id: string = crypto.randomUUID();
@@ -61,7 +62,7 @@ export class PointEntity implements Entity {
 	}
 
 	public clone(): PointEntity {
-		return new PointEntity(this.point.clone());
+		return copyEntityBaseProperties(this, new PointEntity(this.point.clone()));
 	}
 
 	public intersectsWithBox(): boolean {

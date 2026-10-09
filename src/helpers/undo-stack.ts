@@ -1,8 +1,13 @@
-export interface UndoState {
-	variable: StateVariable;
+import type { Layer } from '../App.types';
+import type { Entity } from '../entities/Entity';
 
-	// biome-ignore lint/suspicious/noExplicitAny: TODO list all undo state types
-	value: any;
+/**
+ * Snapshot of the drawing. Layers are stored together with the entities,
+ * so undoing a layer deletion also brings back the layer of its entities
+ */
+export interface UndoState {
+	entities: Entity[];
+	layers: Layer[];
 }
 
 export enum StateVariable {
@@ -33,14 +38,19 @@ export enum StateVariable {
 }
 
 /**
+ * Maximum number of undo steps that are kept in memory
+ */
+export const MAX_UNDO_STATES = 200;
+
+/**
  * Based on https://github.com/wobsoriano/undo-stacker
  */
-export function createStack() {
-	let stack: UndoState[] = [];
+export function createStack(maxStates = MAX_UNDO_STATES) {
+	const stack: UndoState[] = [];
 
 	let index = stack.length;
 
-	function peek() {
+	function peek(): UndoState | undefined {
 		return stack[index - 1];
 	}
 
@@ -49,13 +59,12 @@ export function createStack() {
 			stack.length = index;
 			stack[index++] = value;
 
-			// console.log('stack push', JSON.stringify(stack, null, 2));
-			return peek();
-		},
-		replace: (value: UndoState) => {
-			stack[index - 1] = value;
-
-			// console.log('stack replace', JSON.stringify(stack, null, 2));
+			// Forget the oldest states, so memory usage stays bounded
+			const overflow = stack.length - maxStates;
+			if (overflow > 0) {
+				stack.splice(0, overflow);
+				index -= overflow;
+			}
 			return peek();
 		},
 		peek: () => {
@@ -63,22 +72,12 @@ export function createStack() {
 		},
 		undo: () => {
 			if (index > 1) index -= 1;
-
-			// console.log('stack undo', JSON.stringify(stack, null, 2));
 			return peek();
 		},
 		redo: () => {
 			if (index < stack.length) index += 1;
-
-			// console.log('stack redo', JSON.stringify(stack, null, 2));
 			return peek();
 		},
-		// Clear certain states from the undo stack
-		clear: (variable: StateVariable) => {
-			// Update the index be reducing it by the number of states that are removed to the left of the index
-			index = index - stack.slice(0, index).filter((state) => state.variable === variable).length;
-
-			stack = stack.filter((state) => state.variable !== variable);
-		},
+		size: () => stack.length,
 	};
 }

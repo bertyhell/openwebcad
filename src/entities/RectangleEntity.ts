@@ -10,6 +10,7 @@ import {scalePoint} from '../helpers/scale-point';
 import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
 import {type Entity, EntityName, type JsonEntity} from './Entity';
 import type {LineEntity} from './LineEntity.ts';
+import { copyEntityBaseProperties } from '../helpers/copy-entity-base-properties';
 
 export class RectangleEntity implements Entity {
 	public id: string = crypto.randomUUID();
@@ -70,7 +71,7 @@ export class RectangleEntity implements Entity {
 	}
 
 	public clone(): RectangleEntity {
-		return new RectangleEntity(this.polygon.clone());
+		return copyEntityBaseProperties(this, new RectangleEntity(this.polygon.clone()));
 	}
 
 	public intersectsWithBox(selectionBox: Box): boolean {

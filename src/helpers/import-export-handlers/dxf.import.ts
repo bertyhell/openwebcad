@@ -97,7 +97,7 @@ export const importEntitiesFromDxfFile = async (file?: File): Promise<void> => {
 					(entity) =>
 						`${JSON.stringify(entity.getShape())}|${entity.lineColor}|${entity.lineWidth}|${entity.lineDash}`
 				);
-				setEntities([...getEntities(), ...uniqueEntities]);
+				setEntities([...getEntities(), ...uniqueEntities], true);
 				zoomToBounds();
 				toast.success(`${uniqueEntities.length} entities imported successfully from DXF!`);
 			} else {

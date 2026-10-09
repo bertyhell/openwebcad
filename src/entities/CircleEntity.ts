@@ -7,6 +7,7 @@ import {scalePoint} from '../helpers/scale-point';
 import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
 import {type Entity, EntityName, type JsonEntity} from './Entity';
 import type {LineEntity} from './LineEntity.ts';
+import { copyEntityBaseProperties } from '../helpers/copy-entity-base-properties';
 
 export class CircleEntity implements Entity {
 	public id: string = crypto.randomUUID();
@@ -64,7 +65,7 @@ export class CircleEntity implements Entity {
 
 	public clone(): Entity {
 		if (this.circle) {
-			return new CircleEntity(this.circle.clone());
+			return copyEntityBaseProperties(this, new CircleEntity(this.circle.clone()));
 		}
 		return this;
 	}

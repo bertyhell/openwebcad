@@ -10,6 +10,7 @@ import {mirrorPointOverAxis} from '../helpers/mirror-point-over-axis.ts';
 import {scalePoint} from '../helpers/scale-point';
 import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
 import {type Entity, EntityName, type JsonEntity} from './Entity';
+import { copyEntityBaseProperties } from '../helpers/copy-entity-base-properties';
 
 export class LineEntity implements Entity, StartAndEndpointEntity {
 	public id: string = crypto.randomUUID();
@@ -67,7 +68,7 @@ export class LineEntity implements Entity, StartAndEndpointEntity {
 	}
 
 	public clone(): LineEntity {
-		return new LineEntity(this.segment.clone());
+		return copyEntityBaseProperties(this, new LineEntity(this.segment.clone()));
 	}
 
 	public intersectsWithBox(box: Box): boolean {

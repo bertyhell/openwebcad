@@ -22,7 +22,7 @@ import { localStorageExport } from '../helpers/import-export-handlers/local-stor
 import {
 	getActiveToolActor,
 	getCanvas,
-	getEntities,
+	getEditableEntities,
 	getLastStateInstructions,
 	getPanStartLocation,
 	getScreenCanvasDrawController,
@@ -59,6 +59,24 @@ const RELATIVE_POINT_REGEXP = /^@([0-9]+([.][0-9]+)?)\s*,\s*([0-9]+([.][0-9]+)?)
  */
 function getCanvasOffsetLeft(): number {
 	return getCanvas()?.getBoundingClientRect().left ?? TOOLBAR_WIDTH;
+}
+
+/**
+ * Keys typed into form fields, or used to activate a keyboard focused button, belong to that element instead of the canvas
+ */
+function shouldLetElementHandleKey(evt: KeyboardEvent): boolean {
+	const target = evt.target as HTMLElement | null;
+	if (!target?.closest) {
+		return false;
+	}
+	if (target.closest('input, textarea, select, [contenteditable="true"]')) {
+		return true;
+	}
+	const isActivationKey = evt.key === 'Enter' || evt.key === ' ';
+	if (isActivationKey && target.closest('button, a') && target.matches(':focus-visible')) {
+		return true;
+	}
+	return evt.key === 'Escape' && !!target.closest('[role="dialog"]');
 }
 
 export class InputController {
@@ -168,7 +186,7 @@ export class InputController {
 				type: ActorEvent.MOUSE_CLICK,
 				worldMouseLocation,
 				screenMouseLocation: screenCanvasDrawController.worldToTarget(worldMouseLocation),
-				holdingCtrl: evt.ctrlKey,
+				holdingCtrl: evt.ctrlKey || evt.metaKey,
 				holdingShift: evt.shiftKey,
 			} as MouseClickEvent);
 		}
@@ -204,7 +222,7 @@ export class InputController {
 		if (getActiveToolActor()?.getSnapshot()?.context.type === Tool.SELECT) {
 			const closestEntityInfo = findClosestEntity(
 				screenCanvasDrawController.targetToWorld(newScreenMouseLocation),
-				getEntities()
+				getEditableEntities()
 			);
 			if (closestEntityInfo.distance < HIGHLIGHT_ENTITY_DISTANCE) {
 				setHighlightedEntityIds([closestEntityInfo.entity.id]);
@@ -271,7 +289,9 @@ export class InputController {
 	}
 
 	public handleKeyStroke(evt: KeyboardEvent) {
-		console.log(`key pressed: ${evt.key}`);
+		if (shouldLetElementHandleKey(evt)) {
+			return;
+		}
 		if (evt.key === 'F12') {
 			// F12 => open developer tools
 			return;
@@ -290,26 +310,29 @@ export class InputController {
 		}
 		evt.preventDefault();
 		evt.stopPropagation();
-		if (evt.ctrlKey && evt.key === 'v') {
+		// Cmd on macOS behaves like Ctrl on other platforms
+		const isCtrl = evt.ctrlKey || evt.metaKey;
+		const key = evt.key.toLowerCase();
+		if (isCtrl && key === 'v') {
 			// User wants to paste the clipboard
-		} else if (evt.ctrlKey && evt.key === 's') {
+		} else if (isCtrl && key === 's') {
 			// User wants to save the drawing to local storage
-			localStorageExport().then(() => toast.success('Saved'));
+			localStorageExport().then((isSaved) => isSaved && toast.success('Saved'));
 		} else if (evt.key === '[' && this.text === '') {
 			// User wants to collapse or expand the sidebar
 			window.dispatchEvent(new CustomEvent(HtmlEvent.TOGGLE_SIDEBAR));
-		} else if (evt.ctrlKey && !evt.shiftKey && evt.key === 'z') {
+		} else if (isCtrl && !evt.shiftKey && key === 'z') {
 			// User wants to undo the last action
 			this.handleUndo(evt);
-		} else if (evt.ctrlKey && evt.shiftKey && evt.key === 'z') {
+		} else if (isCtrl && evt.shiftKey && key === 'z') {
 			// User wants to redo the last action
 			this.handleRedo(evt);
-		} else if (evt.ctrlKey && evt.key === 'y') {
+		} else if (isCtrl && key === 'y') {
 			// User wants to redo the last action
 			this.handleRedo(evt);
-		} else if (evt.ctrlKey && evt.key === 'a') {
+		} else if (isCtrl && key === 'a') {
 			// User wants to select everything
-			setSelectedEntityIds(getEntities().map((entity) => entity.id));
+			setSelectedEntityIds(getEditableEntities().map((entity) => entity.id));
 		} else if (evt.key === 'Backspace') {
 			// Remove the last character from the input field
 			evt.preventDefault();

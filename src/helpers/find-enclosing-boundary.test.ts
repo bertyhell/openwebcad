@@ -554,8 +554,126 @@ describe('findEnclosingBoundary', () => {
 				vertical,
 			]);
 
-			validateClosedBoundary(boundary?.boundary, 6, 5, 1);
+			// The triangle on the left only touches the boundary in a single point, so it is a hole in the boundary
+			validateClosedBoundary(boundary?.boundary, 3, 2, 1);
 			expect(boundary?.holes).toHaveLength(1);
+			validateClosedBoundary(boundary?.holes?.[0], 3, 3, 0);
+		});
+	});
+
+	describe('holes', () => {
+		function square(minX: number, minY: number, size: number): Segment[] {
+			const p1 = new Point(minX, minY);
+			const p2 = new Point(minX + size, minY);
+			const p3 = new Point(minX + size, minY + size);
+			const p4 = new Point(minX, minY + size);
+			return [new Segment(p1, p2), new Segment(p2, p3), new Segment(p3, p4), new Segment(p4, p1)];
+		}
+
+		/**
+		 *  A
+		 *  |--------------------|
+		 *  |  x                 |
+		 *  |    B               |
+		 *  |    |-----------|   |
+		 *  |    |   C       |   |
+		 *  |    |   |----|  |   |
+		 *  |    |   |----|  |   |
+		 *  |    |-----------|   |
+		 *  |--------------------|
+		 */
+		it('only uses the outermost loops inside the boundary as holes', () => {
+			const shapes = [...square(0, 0, 10), ...square(2, 2, 6), ...square(4, 4, 2)];
+
+			const boundary = findEnclosingBoundary(new Point(1, 1), shapes);
+
+			validateClosedBoundary(boundary?.boundary, 4, 4, 0);
+			expect(boundary?.area).toBeCloseTo(100);
+			expect(boundary?.holes).toHaveLength(1);
+			validateClosedBoundary(boundary?.holes[0], 4, 4, 0);
+			expect(boundary?.holes[0].every((edge) => edge.start.x >= 2 && edge.start.x <= 8)).toBe(true);
+			expect(boundary?.holes[0].some((edge) => edge.start.x === 2)).toBe(true);
+		});
+
+		it('detects the hole inside a nested boundary', () => {
+			const shapes = [...square(0, 0, 10), ...square(2, 2, 6), ...square(4, 4, 2)];
+
+			const boundary = findEnclosingBoundary(new Point(3, 3), shapes);
+
+			validateClosedBoundary(boundary?.boundary, 4, 4, 0);
+			expect(boundary?.area).toBeCloseTo(36);
+			expect(boundary?.holes).toHaveLength(1);
+			expect(boundary?.holes[0].some((edge) => edge.start.x === 4)).toBe(true);
+		});
+
+		it('does not return holes for the innermost boundary', () => {
+			const shapes = [...square(0, 0, 10), ...square(2, 2, 6), ...square(4, 4, 2)];
+
+			const boundary = findEnclosingBoundary(new Point(5, 5), shapes);
+
+			expect(boundary?.area).toBeCloseTo(4);
+			expect(boundary?.holes).toHaveLength(0);
+		});
+
+		/**
+		 *  |--------------------|
+		 *  |  x                 |
+		 *  |    |-----|-----|   |
+		 *  |    |     |     |   |
+		 *  |    |-----|-----|   |
+		 *  |--------------------|
+		 */
+		it('uses all faces of a split island as holes', () => {
+			const shapes = [
+				...square(0, 0, 10),
+				...square(2, 2, 6),
+				new Segment(new Point(5, 2), new Point(5, 8)),
+			];
+
+			const boundary = findEnclosingBoundary(new Point(1, 1), shapes);
+
+			expect(boundary?.area).toBeCloseTo(100);
+			expect(boundary?.holes).toHaveLength(2);
+		});
+
+		it('does not use loops next to the boundary as holes', () => {
+			const shapes = [...square(0, 0, 10), new Segment(new Point(5, 0), new Point(5, 10))];
+
+			const boundary = findEnclosingBoundary(new Point(1, 1), shapes);
+
+			expect(boundary?.area).toBeCloseTo(50);
+			expect(boundary?.holes).toHaveLength(0);
+		});
+
+		it('detects holes in negative coordinate space', () => {
+			const shapes = [...square(-20, -20, 10), ...square(-18, -18, 6)];
+
+			const boundary = findEnclosingBoundary(new Point(-19, -19), shapes);
+
+			expect(boundary?.area).toBeCloseTo(100);
+			expect(boundary?.holes).toHaveLength(1);
+		});
+
+		/**
+		 *  |------(  A  )------|
+		 *  |      ( (B) )      |
+		 *  |       -----       |
+		 *  |  x                |
+		 *  |-------------------|
+		 * Circle A crosses the top edge of the square, circle B intersects circle A
+		 * Circle B is part of the boundary, so it should not be a hole
+		 */
+		it('does not use a full circle that intersects the boundary as a hole', () => {
+			const shapes = [
+				...square(0, 0, 10),
+				new Arc(new Point(5, 9), 2, 0, 2 * Math.PI, true),
+				new Arc(new Point(5, 6.5), 1.5, 0, 2 * Math.PI, true),
+			];
+
+			const boundary = findEnclosingBoundary(new Point(1, 1), shapes);
+
+			expect(boundary?.holes).toHaveLength(0);
+			expect(boundary?.area).toBeLessThan(100 - Math.PI * 1.5 * 1.5);
 		});
 	});
 });

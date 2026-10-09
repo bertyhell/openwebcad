@@ -3,6 +3,7 @@ import {compact} from 'es-toolkit';
 import type {Layer} from '../../App.types.ts';
 import {ArcEntity, type ArcJsonData} from '../../entities/ArcEntity';
 import {CircleEntity, type CircleJsonData} from '../../entities/CircleEntity';
+import {FillEntity, type FillJsonData} from '../../entities/FillEntity.ts';
 import {type Entity, EntityName, type JsonEntity} from '../../entities/Entity';
 import {ImageEntity, type ImageJsonData} from '../../entities/ImageEntity.ts';
 import {LineEntity, type LineJsonData} from '../../entities/LineEntity';
@@ -111,6 +112,8 @@ export async function getEntitiesAndLayersFromJsonObject(
 						return ImageEntity.fromJson(entity as JsonEntity<ImageJsonData>);
 					case EntityName.PolyLine:
 						return PolyLineEntity.fromJson(entity as JsonEntity<PolyLineJsonData>);
+					case EntityName.Fill:
+						return FillEntity.fromJson(entity as JsonEntity<FillJsonData>);
 
 					default:
 						throw new Error(`Invalid entity type: ${entity.type}`);

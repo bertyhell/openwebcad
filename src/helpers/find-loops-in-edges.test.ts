@@ -226,19 +226,20 @@ describe('findLoopsInEdges', () => {
 		const center = new Point(0, 0);
 
 		// circle 1
-		const arc1 = new Arc(center, 1, 0, Math.PI, true);
+		const arc1 = new Arc(center, 1, 0, 2 * Math.PI, true);
 
 		// circle 2
-		const arc2 = new Arc(center, 0.5, 0, Math.PI, true);
+		const arc2 = new Arc(center, 0.5, 0, 2 * Math.PI, true);
 
 		const edges = splitEdgesAtIntersections([arc1, arc2]);
 		const loops = findLoopsInEdges(edges);
 
+		// Loops that are not connected are not nested, findEnclosingBoundary detects these holes
 		expect(loops).toHaveLength(2);
 		expect(loops[0]?.boundary).toHaveLength(1);
 		expect(loops[0]?.holes).toHaveLength(0);
 		expect(loops[1]?.boundary).toHaveLength(1);
-		expect(loops[1]?.holes).toHaveLength(1);
+		expect(loops[1]?.holes).toHaveLength(0);
 	});
 
 	/**
@@ -259,24 +260,33 @@ describe('findLoopsInEdges', () => {
 	it('detects arc and segment boundary with hole', () => {
 		// circle
 		const center = new Point(0, 0);
-		const arc = new Arc(center, 1, 0, Math.PI, true);
+		const arc = new Arc(center, 1, 0, 2 * Math.PI, true);
 		// segments
 		const topLeftToBottomRight = new Segment(new Point(-0.5, 0.5), new Point(2, -2));
 		const bottomLeftToTopRight = new Segment(new Point(-0.5, -0.5), new Point(2, 2));
 		const vertical = new Segment(new Point(-0.5, -0.5), new Point(-0.5, 0.5));
 
-		const loops = findLoopsInEdges([arc, topLeftToBottomRight, bottomLeftToTopRight, vertical]);
+		const edges = splitEdgesAtIntersections([
+			arc,
+			topLeftToBottomRight,
+			bottomLeftToTopRight,
+			vertical,
+		]);
+		const loops = findLoopsInEdges(edges);
 
-		expect(loops).toHaveLength(2);
+		expect(loops).toHaveLength(3);
 
+		// Triangle on the left
 		expect(loops[0]?.boundary).toHaveLength(3);
 		expect(loops[0]?.holes).toHaveLength(0);
 
+		// Wedge on the right
 		expect(loops[1]?.boundary).toHaveLength(3);
-		expect(loops[1]?.holes).toHaveLength(1);
-		expect(loops[1]?.holes?.[0]).toHaveLength(3);
+		expect(loops[1]?.holes).toHaveLength(0);
 
+		// Rest of the circle with the triangle as a hole
 		expect(loops[2]?.boundary).toHaveLength(3);
-		expect(loops[2]?.holes).toHaveLength(0);
+		expect(loops[2]?.holes).toHaveLength(1);
+		expect(loops[2]?.holes?.[0]).toHaveLength(3);
 	});
 });

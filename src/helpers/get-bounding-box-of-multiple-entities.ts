@@ -4,8 +4,8 @@ import type {Entity} from '../entities/Entity.ts';
 export function getBoundingBoxOfMultipleEntities(entities: Entity[]): BoundingBox {
 	let minX = Number.MAX_VALUE;
 	let minY = Number.MAX_VALUE;
-	let maxX = Number.MIN_VALUE;
-	let maxY = Number.MIN_VALUE;
+	let maxX = -Number.MAX_VALUE;
+	let maxY = -Number.MAX_VALUE;
 
 	for (const entity of entities) {
 		const boundingBox = entity.getBoundingBox();
@@ -28,8 +28,8 @@ export function getBoundingBoxOfMultipleEntities(entities: Entity[]): BoundingBo
 export function getBoundingBoxOfMultipleEdges(edges: Edge[]): BoundingBox {
 	let minX = Number.MAX_VALUE;
 	let minY = Number.MAX_VALUE;
-	let maxX = Number.MIN_VALUE;
-	let maxY = Number.MIN_VALUE;
+	let maxX = -Number.MAX_VALUE;
+	let maxY = -Number.MAX_VALUE;
 
 	for (const shape of edges) {
 		const boundingBox = shape.box;

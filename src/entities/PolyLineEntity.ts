@@ -6,6 +6,7 @@ import {minBy} from 'es-toolkit/compat';
 import type {Edge, Shape, SnapPoint, StartAndEndpointEntity} from '../App.types';
 import type {DrawController} from '../drawControllers/DrawController';
 import {checkClosedPolygon} from '../helpers/check-closed-polygon.ts';
+import {orderEdgeBoundary} from '../helpers/order-edge-boundary.ts';
 import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
 import {ArcEntity, type ArcJsonData} from './ArcEntity.ts';
 import {type Entity, EntityName, type JsonEntity} from './Entity';
@@ -113,6 +114,20 @@ export class PolyLineEntity implements Entity {
 		return this.entities.flatMap((entity) => {
 			return entity.getEdges();
 		});
+	}
+
+	/**
+	 * Returns the edges of the polyline in order, where every edge starts where the previous edge ended
+	 * This is useful for drawing the polyline as a single path
+	 */
+	public getOrderedEdges(): Edge[] {
+		const edges = this.getEdges();
+		try {
+			return orderEdgeBoundary(edges);
+		} catch {
+			// Polyline isn't closed, return the edges in their original order
+			return edges;
+		}
 	}
 
 	public getSnapPoints(): SnapPoint[] {

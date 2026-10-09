@@ -139,7 +139,7 @@ export class PdfDrawController implements DrawController {
 		this.svgDrawController.fillPolygon(...points);
 	}
 
-	public fillPolyline(fillBorder: PolyLineEntity) {
-		this.svgDrawController.fillPolyline(fillBorder);
+	public fillPolyline(fillBorder: PolyLineEntity, holes: PolyLineEntity[] = []) {
+		this.svgDrawController.fillPolyline(fillBorder, holes);
 	}
 }

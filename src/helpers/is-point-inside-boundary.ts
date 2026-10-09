@@ -17,20 +17,26 @@ function getRandomDirectionRayFromPoint(point: Point): Ray {
  * Check if a point is inside a closed boundary composed of segments and arcs.
  */
 export function isPointInsideBoundary(boundary: Edge[], point: Point): boolean {
+	// A point on the boundary counts as inside
+	// This also avoids an endless loop below when the point is one of the corners of the boundary
+	if (boundary.some((edge) => edge.contains(point))) {
+		return true;
+	}
+
 	let hasCornerOnRay = true;
 	let ray: Ray | null = null;
 	while (hasCornerOnRay) {
-		// Create a horizontal ray to the right of the point
-		ray = getRandomDirectionRayFromPoint(point); // Long rightward segment
+		// Create a ray in a random direction from the point
+		ray = getRandomDirectionRayFromPoint(point);
 
-		// Check no corner points of the boundary are intersecting the ray
+		// Check no corner points of the boundary are intersecting the ray, otherwise intersections get counted twice
+		hasCornerOnRay = false;
 		for (const edge of boundary) {
 			if (ray.intersect(edge.start).length || ray.intersect(edge.end).length) {
 				hasCornerOnRay = true;
 				break;
 			}
 		}
-		hasCornerOnRay = false;
 	}
 	ray = ray as Ray;
 
@@ -38,11 +44,6 @@ export function isPointInsideBoundary(boundary: Edge[], point: Point): boolean {
 	for (const edge of boundary) {
 		const intersectionPoints = ray.intersect(edge);
 		intersections += intersectionPoints.length;
-
-		// You may optionally handle the case where the point lies exactly on an edge
-		if (edge.contains(point)) {
-			return true; // On the boundary
-		}
 	}
 
 	return intersections % 2 === 1; // Inside if odd number of intersections

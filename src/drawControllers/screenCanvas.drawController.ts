@@ -1,6 +1,6 @@
-import {type Arc, Point, type Vector} from '@flatten-js/core';
+import {Arc, Point, type Vector} from '@flatten-js/core';
 import {CANVAS_BACKGROUND_COLOR, MOUSE_ZOOM_MULTIPLIER} from '../App.consts';
-import type {LineEntity} from '../entities/LineEntity.ts';
+import type {Edge} from '../App.types.ts';
 import type {PolyLineEntity} from '../entities/PolyLineEntity.ts';
 import {containRectangle} from '../helpers/contain-rect.ts';
 import {getAngleWithXAxis} from '../helpers/get-angle-with-x-axis.ts';
@@ -9,9 +9,6 @@ import {mapNumberRange} from '../helpers/map-number-range.ts';
 import {StateVariable} from '../helpers/undo-stack.ts';
 import {getEntities, getScreenCanvasDrawController, triggerReactUpdate} from '../state.ts';
 import {DEFAULT_TEXT_OPTIONS, type DrawController} from './DrawController';
-import {EntityName} from "../entities/Entity.ts";
-import type {ArcEntity} from "../entities/ArcEntity.ts";
-import {pointDistance} from "../helpers/distance-between-points.ts";
 
 /**
  * Screen coordinate system:
@@ -491,82 +488,50 @@ export class ScreenCanvasDrawController implements DrawController {
 	}
 
 	/**
-	 * Fill a polyline consisting of straight lines and arcs with color
+	 * Fill a closed polyline consisting of straight lines and arcs with color
+	 * The holes are cut out of the filled area
 	 * @param fillBorder
+	 * @param holes
 	 */
-	public fillPolyline(fillBorder: PolyLineEntity) {
-		const segments = fillBorder.entities;
-		if (!segments || segments.length === 0) {
-			return;
-		}
-
+	public fillPolyline(fillBorder: PolyLineEntity, holes: PolyLineEntity[] = []) {
 		this.context.beginPath();
+		for (const polyline of [fillBorder, ...holes]) {
+			this.addClosedPath(polyline.getOrderedEdges());
+		}
+		// Even-odd makes sure the holes are not filled, regardless of the direction of their edges
+		this.context.fill('evenodd');
+	}
 
-		//
-		// 1) Move to the start of the very first segment
-		//
-		const first = segments[0];
-		const startWorld = first.getStartPoint();
-		if (!startWorld) {
+	/**
+	 * Adds a closed path to the current canvas path
+	 * @param edges segments and arcs in order, where every edge starts where the previous edge ended
+	 */
+	private addClosedPath(edges: Edge[]) {
+		if (edges.length === 0) {
 			return;
 		}
-		const startScreen = this.worldToTarget(startWorld);
-		console.log(`context.moveTo(${startScreen.x}, ${this.canvasSize.y - startScreen.y})`);
+
+		const startScreen = this.worldToTarget(edges[0].start);
 		this.context.moveTo(startScreen.x, this.canvasSize.y - startScreen.y);
 
-		//
-		// 2) Walk each segment in turn
-		//
-		for (const seg of segments) {
-			switch (seg.getType()) {
-				case EntityName.Line: {
-					// a straight line → lineTo its end
-					const line = seg as LineEntity;
-					const endWorld = line.getEndPoint();
-					const endScreen = this.worldToTarget(endWorld);
-					console.log(`context.lineTo(${endScreen.x}, ${this.canvasSize.y - endScreen.y})`);
-					this.context.lineTo(endScreen.x, this.canvasSize.y - endScreen.y);
-					break;
-				}
-				case EntityName.Arc: {
-					// an arc → canvas.arc with flipped Y and negated angles
-					const arcEnt = seg as ArcEntity;
-					const arcShape = arcEnt.getShape() as Arc;
-
-					// world-space center → screen
-					const centerWorld = arcShape.center;
-					const centerScreen = this.worldToTarget(centerWorld);
-
-					// compute screen radius by transforming one point on the radius
-					const startPointScreen = this.worldToTarget(arcShape.start);
-					const radiusScreen = pointDistance(startPointScreen, centerScreen);
-
-					// canvas y is flipped, so:
-					//   y_canvas = canvasHeight - y_screen
-					//   θ_canvas = -θ_world
-					//   anticlockwise_canvas = !anticlockwise_world
-					const centerX = centerScreen.x;
-					const centerY = this.canvasSize.y - centerScreen.y;
-					const startAngle = -arcShape.startAngle;
-					const endAngle = -arcShape.endAngle;
-					const counterClockWise = arcShape.counterClockwise;
-
-					console.log(
-						`context.arc(${centerX}, ${centerY}, ${radiusScreen}, ${startAngle}, ${endAngle}, ${counterClockWise});`
-					);
-					this.context.arc(centerX, centerY, radiusScreen, startAngle, endAngle, counterClockWise);
-					break;
-				}
-				default:
-					// if you ever add other segment types, handle them here
-					break;
+		for (const edge of edges) {
+			if (edge instanceof Arc) {
+				const centerScreen = this.worldToTarget(edge.center);
+				// Flip angles over the x-axis, because we go from world to screen coordinates which flips the y-axis direction
+				this.context.arc(
+					centerScreen.x,
+					this.canvasSize.y - centerScreen.y,
+					edge.r.valueOf() * this.screenScale,
+					-edge.startAngle,
+					-edge.endAngle,
+					edge.counterClockwise
+				);
+			} else {
+				const endScreen = this.worldToTarget(edge.end);
+				this.context.lineTo(endScreen.x, this.canvasSize.y - endScreen.y);
 			}
 		}
 
-		//
-		// 3) close & fill
-		//
 		this.context.closePath();
-		this.context.fill();
 	}
 }

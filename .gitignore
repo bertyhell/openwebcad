@@ -23,3 +23,5 @@ data
 *.njsproj
 *.sln
 *.sw?
+
+ai-files/

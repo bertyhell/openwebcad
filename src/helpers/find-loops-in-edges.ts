@@ -23,7 +23,7 @@ import { unionEdges } from './union-edges.ts';
  * - Vertices (Points) are keyed by quantized coordinates to be resilient to tiny FP noise.
  * - A loop must contain at least 3 distinct edges (a triangle or larger).
  *
- * @returns loops with holes in order of smallest boundary per island, so you can find the smallest boundary that includes a point
+ * @returns loops, holes are only included if they touch the boundary
  * eg:
  *  A                            D                    F
  *  |--------------------|       |-------------|      |----|
@@ -41,11 +41,9 @@ import { unionEdges } from './union-edges.ts';
  *  |                    |
  *  |--------------------|
  *
- *  This function will guarantee
- *   * that C B A are outputted in this order
- *   * that E and D are outputted in this order
- *
- *  The order of the islands (A, D, F) is indeterminate
+ *  Loops that are not connected to each other (like A, B and C) are returned as separate loops without holes.
+ *  The order of these loops is indeterminate.
+ *  Use findEnclosingBoundary to find the holes inside a boundary.
  */
 export function findLoopsInEdges(edges: Edge[]): BoundaryWithHoles[] {
 	if (edges.length === 0) {
@@ -136,15 +134,15 @@ export function findLoopsInEdges(edges: Edge[]): BoundaryWithHoles[] {
 	const nonEmptyLoops = loops.filter((loop) => loop.boundary.length > 0);
 
 	// Reverse negative coordinate space translation
-	for (const loop of nonEmptyLoops) {
-		for (let i = 0; i < loop.boundary.length; i++) {
+	if (offsetX !== 0 || offsetY !== 0) {
+		for (const loop of nonEmptyLoops) {
 			// Translate coordinates of the boundary
-			loop.boundary[i] = loop.boundary[i].translate(-offsetX, -offsetY);
+			loop.boundary = loop.boundary.map((edge) => edge.translate(-offsetX, -offsetY));
 
 			// Translate coordinates of the holes
-			for (const childLoop of loop.holes) {
-				childLoop[i] = childLoop[i].translate(-offsetX, -offsetY);
-			}
+			loop.holes = loop.holes.map((hole) =>
+				hole.map((edge) => edge.translate(-offsetX, -offsetY))
+			);
 		}
 	}
 

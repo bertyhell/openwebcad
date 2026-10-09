@@ -50,8 +50,8 @@ export interface DrawController {
 	): void;
 	// Fill a polygon consisting of straight lines
 	fillPolygon(...points: Point[]): void;
-	// Fill a polyline consisting of straight lines and arcs
-	fillPolyline(fillBorder: PolyLineEntity): void;
+	// Fill a closed polyline consisting of straight lines and arcs, excluding the holes
+	fillPolyline(fillBorder: PolyLineEntity, holes?: PolyLineEntity[]): void;
 }
 
 export const DEFAULT_TEXT_OPTIONS = {

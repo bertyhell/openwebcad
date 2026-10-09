@@ -302,9 +302,14 @@ export function createTransformToolStateMachine(config: TransformToolConfig) {
 					};
 				}),
 				[TransformAction.CAPTURE_SELECTION]: assign(() => {
+					const originalEntities = getEditableSelectedEntities();
+					// Show the captured entities faded instead of selected,
+					// so ESC goes straight to the tool instead of only clearing the selection
+					setSelectedEntityIds([]);
+					setDimmedEntityIds(originalEntities.map((entity) => entity.id));
 					return {
 						points: [],
-						originalEntities: getEditableSelectedEntities(),
+						originalEntities,
 					};
 				}),
 				[TransformAction.DESELECT_ENTITIES]: () => {

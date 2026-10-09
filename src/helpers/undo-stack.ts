@@ -80,5 +80,9 @@ export function createStack(maxStates = MAX_UNDO_STATES) {
 			return peek();
 		},
 		size: () => stack.length,
+		clear: () => {
+			stack.length = 0;
+			index = 0;
+		},
 	};
 }

@@ -14,6 +14,7 @@ import { LineEntity } from '../entities/LineEntity';
 import { PolyLineEntity } from '../entities/PolyLineEntity';
 import { RectangleEntity } from '../entities/RectangleEntity';
 import { copyEntityBaseProperties } from './copy-entity-base-properties';
+import { chainSegments } from './order-edge-boundary';
 
 /**
  * Which side of the directed line from start to end the point is on: 1 for left, -1 for right, 0 on the line
@@ -137,10 +138,15 @@ function getPolyLinePoints(
 	if (polyLine.entities.some((entity) => entity.getType() !== EntityName.Line)) {
 		return null;
 	}
-	const points = [
-		polyLine.entities[0].getStartPoint(),
-		...polyLine.entities.map((entity) => entity.getEndPoint()),
-	];
+	const segments = chainSegments(polyLine.entities);
+	const isConnected = segments.every(
+		(segment, index) =>
+			index === 0 || segments[index - 1].getEndPoint().equalTo(segment.getStartPoint())
+	);
+	if (!isConnected) {
+		return null;
+	}
+	const points = [segments[0].getStartPoint(), ...segments.map((entity) => entity.getEndPoint())];
 	const isClosed = points.length > 2 && points[0].equalTo(points[points.length - 1]);
 	if (isClosed) {
 		points.pop();

@@ -6,6 +6,7 @@ import { type Entity, EntityName } from '../../entities/Entity.ts';
 import type { PolyLineEntity } from '../../entities/PolyLineEntity.ts';
 import type { TextEntity } from '../../entities/TextEntity.ts';
 import { getLayers, getVisibleEntities } from '../../state.ts';
+import { chainSegments } from '../order-edge-boundary.ts';
 import { fromHex } from '../rgb-to-hex-color.ts';
 
 const TO_DEGREES = 180 / Math.PI;
@@ -70,7 +71,7 @@ function getPolyLineVertices(polyLine: PolyLineEntity): {
 } {
 	const vertices: PolylineVertex[] = [];
 	let currentPoint: Point | null = null;
-	for (const segment of polyLine.entities) {
+	for (const segment of chainSegments(polyLine.entities)) {
 		const start = segment.getStartPoint();
 		const end = segment.getEndPoint();
 		// Segments can be stored in the opposite direction of the polyline
@@ -210,10 +211,28 @@ function entityPairs(entity: Entity, commonPairs: DxfPairs): DxfPairs | null {
 }
 
 /**
- * Dxf layer names can't contain some characters
+ * R12 layer names may only contain letters, digits, $, - and _
  */
 export function toDxfLayerName(name: string): string {
-	return name.replace(/[<>/\\":;?*|=`]/g, '_').trim() || '0';
+	return name.trim().replace(/[^A-Za-z0-9$_-]/g, '_') || '0';
+}
+
+/**
+ * Valid and unique dxf layer names, layers whose names become the same get a number appended
+ */
+function getDxfLayerNames(layers: Layer[]): Map<string, string> {
+	const usedNames = new Set<string>();
+	const nameById = new Map<string, string>();
+	for (const layer of layers) {
+		const baseName = toDxfLayerName(layer.name);
+		let name = baseName;
+		for (let suffix = 2; usedNames.has(name.toUpperCase()); suffix++) {
+			name = `${baseName}_${suffix}`;
+		}
+		usedNames.add(name.toUpperCase());
+		nameById.set(layer.id, name);
+	}
+	return nameById;
 }
 
 export interface DxfExportResult {
@@ -230,8 +249,34 @@ export function convertEntitiesToDxf(
 	layers: Layer[],
 	aciColors: number[][]
 ): DxfExportResult {
-	const layerNameById = new Map(layers.map((layer) => [layer.id, toDxfLayerName(layer.name)]));
+	const layerNameById = getDxfLayerNames(layers);
 	const skippedTypes = new Set<string>();
+
+	// The layers refer to the CONTINUOUS line type, so it has to be defined
+	const lineTypeTable: DxfPairs = [
+		0,
+		'TABLE',
+		2,
+		'LTYPE',
+		70,
+		1,
+		0,
+		'LTYPE',
+		2,
+		'CONTINUOUS',
+		70,
+		0,
+		3,
+		'Solid line',
+		72,
+		65,
+		73,
+		0,
+		40,
+		0,
+		0,
+		'ENDTAB',
+	];
 
 	const layerTable: DxfPairs = [
 		0,
@@ -244,7 +289,7 @@ export function convertEntitiesToDxf(
 			0,
 			'LAYER',
 			2,
-			toDxfLayerName(layer.name),
+			layerNameById.get(layer.id) ?? '0',
 			70,
 			layer.isLocked ? 4 : 0,
 			// A negative color hides the layer
@@ -287,6 +332,7 @@ export function convertEntitiesToDxf(
 		'SECTION',
 		2,
 		'TABLES',
+		...lineTypeTable,
 		...layerTable,
 		0,
 		'ENDSEC',

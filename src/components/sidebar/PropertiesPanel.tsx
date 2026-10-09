@@ -1,5 +1,5 @@
 import { round } from 'es-toolkit';
-import { type FC, type KeyboardEvent, useEffect, useState } from 'react';
+import { type FC, type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { COLOR_LIST } from '../../App.consts.ts';
 import type { Layer } from '../../App.types.ts';
 import { type Entity, EntityName } from '../../entities/Entity.ts';
@@ -58,7 +58,15 @@ const formatNumber = (value: number) => String(round(value, 4));
 
 const NumberField: FC<FieldProps<number>> = ({ label, value, onCommit, dataId }) => {
 	const [draft, setDraft] = useDraftValue(value, formatNumber);
+	const isCancelling = useRef(false);
 	const commit = () => {
+		if (isCancelling.current) {
+			isCancelling.current = false;
+			return;
+		}
+		if (draft === formatNumber(value)) {
+			return; // Untouched, don't replace the exact value with its rounded version
+		}
 		const parsedValue = Number.parseFloat(draft);
 		if (Number.isFinite(parsedValue) && parsedValue !== value) {
 			onCommit(parsedValue);
@@ -70,6 +78,8 @@ const NumberField: FC<FieldProps<number>> = ({ label, value, onCommit, dataId })
 		if (evt.key === 'Enter') {
 			commit();
 		} else if (evt.key === 'Escape') {
+			// Blurring commits, so skip that commit to restore the current value
+			isCancelling.current = true;
 			setDraft(formatNumber(value));
 			evt.currentTarget.blur();
 		}

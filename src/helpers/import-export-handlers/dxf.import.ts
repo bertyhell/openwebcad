@@ -288,10 +288,11 @@ export function convertDxfToEntities(
 	}
 
 	return {
-		entities: uniqBy(
-			entities,
-			(entity) => `${JSON.stringify(entity.getShape())}|${entity.layerId}|${entity.lineColor}`
-		),
+		// Some dxf files contain the same entity twice, entities without a shape (polylines, texts) are always kept
+		entities: uniqBy(entities, (entity) => {
+			const shape = entity.getShape();
+			return shape ? `${JSON.stringify(shape)}|${entity.layerId}|${entity.lineColor}` : entity.id;
+		}),
 		newLayers,
 		unsupportedTypes: [...unsupportedTypes],
 	};

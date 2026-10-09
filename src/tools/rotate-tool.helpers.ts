@@ -14,6 +14,9 @@ export function rotateEntities(
 	startAnglePoint: Point,
 	endAnglePoint: Point
 ) {
+	if (rotateOrigin.equalTo(startAnglePoint) || rotateOrigin.equalTo(endAnglePoint)) {
+		return; // There is no angle when a point is on top of the origin
+	}
 	const rotationAngle =
 		new Line(rotateOrigin, endAnglePoint).slope - new Line(rotateOrigin, startAnglePoint).slope;
 	for (const entity of entities) {

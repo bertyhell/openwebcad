@@ -24,6 +24,7 @@ import {
 	getScreenCanvasDrawController,
 	getSnapPoint,
 	requestRedraw,
+	resetUndoHistory,
 	setActiveLayerId,
 	setActiveToolActor,
 	setCanvas,
@@ -137,8 +138,6 @@ function initApplication() {
 		const context = canvas.getContext('2d');
 		if (!context) return;
 
-		setEntities([], true); // Creates the first undo entry
-
 		// Load the last drawing from local storage
 		getEntitiesAndLayersFromLocalStorage().then((file: JsonDrawingFileDeserialized) => {
 			let layers = file.layers;
@@ -146,8 +145,9 @@ function initApplication() {
 				layers = [getNewLayer([])];
 			}
 			setEntities(file.entities);
-			setLayers(layers, true, true);
+			setLayers(layers);
 			setActiveLayerId(layers[0].id);
+			resetUndoHistory();
 
 			// Save every change automatically, only after loading, so an empty drawing never overwrites the saved one
 			const autosave = debounce(() => localStorageExport(), AUTOSAVE_DELAY);

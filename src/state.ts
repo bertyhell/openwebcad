@@ -315,6 +315,10 @@ export const setActiveToolActor = (
 	requestRedraw();
 	const oldToolActor = getActiveToolActor();
 	oldToolActor?.stop();
+	// Clear the previews of the previous tool
+	setGhostHelperEntities([]);
+	setDimmedEntityIds([]);
+	setHighlightedEntityIds([]);
 
 	activeToolActor = newToolActor;
 	activeToolActor.subscribe({
@@ -551,6 +555,15 @@ function notifyDrawingChanged() {
 
 function isTestEnvironment(): boolean {
 	return typeof process === 'object' && process?.env?.NODE_ENV === 'test';
+}
+
+/**
+ * Makes the current drawing the start of the undo history, eg: after loading a drawing
+ * so undo can't go back to the empty drawing from before it was loaded
+ */
+export function resetUndoHistory() {
+	undoStack.clear();
+	undoStack.push({ entities, layers });
 }
 
 function restoreUndoState(undoState: UndoState) {

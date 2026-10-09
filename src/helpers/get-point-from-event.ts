@@ -32,7 +32,8 @@ export function getPointFromEvent(startPoint: Point | null, event: PointInputEve
 			event.worldMouseLocation.x - startPoint.x,
 			event.worldMouseLocation.y - startPoint.y
 		);
-		const unitDirection = direction.normalize();
+		// Without a direction (the mouse is on the start point), the distance is measured along the x axis
+		const unitDirection = direction.length === 0 ? new Vector(1, 0) : direction.normalize();
 		return startPoint.translate(unitDirection.multiply(distance));
 	}
 	if (event.type === ActorEvent.ABSOLUTE_POINT_INPUT) {

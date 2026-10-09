@@ -1,4 +1,4 @@
-import { Arc, Segment } from '@flatten-js/core';
+import { Arc, type Point, Segment } from '@flatten-js/core';
 import { compact } from 'es-toolkit';
 import type { Edge, StartAndEndpointEntity } from '../App.types.ts';
 import { ArcEntity } from '../entities/ArcEntity.ts';
@@ -115,4 +115,50 @@ function flipEntity(entity: StartAndEndpointEntity): StartAndEndpointEntity {
 		arc.startAngle,
 		!arc.counterClockwise
 	);
+}
+
+/**
+ * Orders and orients connected lines and arcs, so every segment starts where the previous one ends
+ * An open chain starts at one of its free ends. Segments that don't connect are appended at the end
+ */
+export function chainSegments(segments: StartAndEndpointEntity[]): StartAndEndpointEntity[] {
+	if (segments.length <= 1) {
+		return segments;
+	}
+	const connectionCount = (point: Point) =>
+		segments.filter(
+			(segment) =>
+				isPointEqual(segment.getStartPoint(), point) || isPointEqual(segment.getEndPoint(), point)
+		).length;
+
+	// Start at a free end, so an open chain isn't split in two
+	const remaining = [...segments];
+	const firstIndex = Math.max(
+		0,
+		remaining.findIndex(
+			(segment) =>
+				connectionCount(segment.getStartPoint()) === 1 ||
+				connectionCount(segment.getEndPoint()) === 1
+		)
+	);
+	let first = remaining.splice(firstIndex, 1)[0];
+	if (connectionCount(first.getStartPoint()) !== 1 && connectionCount(first.getEndPoint()) === 1) {
+		first = flipEntity(first);
+	}
+	const chain = [first];
+
+	while (remaining.length) {
+		const currentEnd = chain[chain.length - 1].getEndPoint();
+		const nextIndex = remaining.findIndex(
+			(segment) =>
+				isPointEqual(segment.getStartPoint(), currentEnd) ||
+				isPointEqual(segment.getEndPoint(), currentEnd)
+		);
+		if (nextIndex === -1) {
+			break;
+		}
+		const next = remaining.splice(nextIndex, 1)[0];
+		chain.push(isPointEqual(next.getStartPoint(), currentEnd) ? next : flipEntity(next));
+	}
+	return [...chain, ...remaining];
 }

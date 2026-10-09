@@ -69,8 +69,8 @@ export class ArcEntity implements Entity, StartAndEndpointEntity {
 		drawController.drawArc(
 			this.arc.center,
 			this.arc.r.valueOf(),
-			this.arc?.startAngle || 0,
-			this.arc?.endAngle || 2 * Math.PI,
+			this.arc.startAngle,
+			this.arc.endAngle,
 			this.arc.counterClockwise
 		);
 	}

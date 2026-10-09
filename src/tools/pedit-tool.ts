@@ -1,6 +1,9 @@
 import { toast } from 'react-toastify';
 import { assign, createMachine, sendTo } from 'xstate';
+import type { StartAndEndpointEntity } from '../App.types';
+import { EntityName } from '../entities/Entity';
 import { PolyLineEntity } from '../entities/PolyLineEntity.ts';
+import { chainSegments } from '../helpers/order-edge-boundary';
 import {
 	getNotSelectedEntities,
 	getSelectedEntities,
@@ -124,7 +127,11 @@ export const peditToolStateMachine = createMachine(
 				return {};
 			}),
 			[PeditAction.CONVERT_SELECTION_TO_POLYLINE]: assign(() => {
-				const newPolyLine = new PolyLineEntity(getSelectedEntities());
+				// Lines and arcs can be selected in any order and direction, connect them into one chain
+				const segments = getSelectedEntities().filter((entity) =>
+					[EntityName.Line, EntityName.Arc].includes(entity.getType())
+				) as StartAndEndpointEntity[];
+				const newPolyLine = new PolyLineEntity(chainSegments(segments));
 				const newEntities = [...getNotSelectedEntities(), newPolyLine];
 				setEntities(newEntities, true);
 				setSelectedEntityIds([]);

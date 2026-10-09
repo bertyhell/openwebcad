@@ -8,6 +8,7 @@ import {
 	getDimmedEntityIds,
 	getEntities,
 	getGhostHelperEntities,
+	getGridSettings,
 	getHoveredSnapPoints,
 	getInputController,
 	getShouldDrawCursor,
@@ -22,6 +23,7 @@ import {
 	drawSnapPoint,
 } from './draw-functions';
 import { getClosestSnapPoint } from './get-closest-snap-point';
+import { drawGrid } from './grid';
 import { isPointEqual } from './is-point-equal';
 
 /**
@@ -51,6 +53,10 @@ function drawEntitiesWithDimming(
 
 export function draw(drawController: ScreenCanvasDrawController) {
 	drawController.clear();
+
+	if (getGridSettings().isVisible) {
+		drawGrid(drawController);
+	}
 
 	drawHelpers(drawController, getAngleGuideEntities());
 	drawEntities(drawController, getGhostHelperEntities());

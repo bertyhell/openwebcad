@@ -96,12 +96,13 @@ export class ArcEntity implements Entity, StartAndEndpointEntity {
 
 	public mirror(mirrorAxis: LineEntity) {
 		const mirroredCenter = mirrorPointOverAxis(this.arc.center, mirrorAxis);
-		mirrorAxis.getAngle();
+		// Mirroring over an axis with angle θ maps an angle α to 2θ - α and reverses the direction of the arc
+		const doubleAxisAngle = 2 * mirrorAxis.getAngle();
 		this.arc = new Arc(
 			mirroredCenter,
 			this.arc.r.valueOf(),
-			-this.arc.startAngle,
-			-this.arc.endAngle,
+			doubleAxisAngle - this.arc.startAngle,
+			doubleAxisAngle - this.arc.endAngle,
 			!this.arc.counterClockwise
 		);
 	}

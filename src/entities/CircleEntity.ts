@@ -59,7 +59,6 @@ export class CircleEntity implements Entity {
 
 	public mirror(mirrorAxis: LineEntity) {
 		const mirroredCenter = mirrorPointOverAxis(this.circle.center, mirrorAxis);
-		mirrorAxis.getAngle();
 		this.circle = new Circle(mirroredCenter, this.circle.r.valueOf());
 	}
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { HtmlEvent, type Layer } from '../../App.types.ts';
+import { type GridSettings, HtmlEvent, type Layer } from '../../App.types.ts';
+import type { Entity } from '../../entities/Entity.ts';
 import {
 	getActiveFillColor,
 	getActiveLayerId,
@@ -7,9 +8,11 @@ import {
 	getActiveLineWidth,
 	getActiveToolActor,
 	getAngleStep,
+	getGridSettings,
 	getLastStateInstructions,
 	getLayers,
 	getScreenCanvasDrawController,
+	getSelectedEntities,
 	getSelectedEntityIds,
 } from '../../state.ts';
 import type { Tool } from '../../tools.ts';
@@ -25,6 +28,8 @@ export interface AppState {
 	layers: Layer[];
 	activeLayerId: string;
 	selectedCount: number;
+	selectedEntities: Entity[];
+	gridSettings: GridSettings;
 }
 
 function getScreenZoom(): number {
@@ -47,6 +52,8 @@ function readAppState(): AppState {
 		layers: getLayers(),
 		activeLayerId: getActiveLayerId(),
 		selectedCount: getSelectedEntityIds().length,
+		selectedEntities: getSelectedEntities(),
+		gridSettings: getGridSettings(),
 	};
 }
 

@@ -1,119 +1,331 @@
-import { Point } from '@flatten-js/core';
-import type { Entities as DxfEntities, Helper } from 'dxf';
-import { isNil, uniqBy } from 'es-toolkit';
+import { Point, Vector } from '@flatten-js/core';
+import type { Entities as DxfEntities } from 'dxf';
+import { uniqBy } from 'es-toolkit';
 import { toast } from 'react-toastify';
+import type { Layer } from '../../App.types.ts';
+import { ArcEntity } from '../../entities/ArcEntity.ts';
 import { CircleEntity } from '../../entities/CircleEntity.ts';
 import type { Entity } from '../../entities/Entity.ts';
 import { LineEntity } from '../../entities/LineEntity.ts';
+import { PolyLineEntity } from '../../entities/PolyLineEntity.ts';
+import { TextEntity } from '../../entities/TextEntity.ts';
 import {
-	getActiveLayerId,
 	getActiveLineColor,
 	getActiveLineWidth,
 	getEntities,
+	getLayers,
 	setEntities,
+	setLayers,
 } from '../../state';
 import { zoomToBounds } from '../../tools/zoom-tool.helpers.ts';
+import { getNewLayer } from '../get-new-layer.ts';
 import { toHex } from '../rgb-to-hex-color.ts';
 
-function getDxfLineColor(dxfColor: [number, number, number] | undefined): string {
-	if (isNil(dxfColor)) {
-		return getActiveLineColor();
-	}
-	return toHex(dxfColor[0], dxfColor[1], dxfColor[2], 1);
+/**
+ * Subset of the dxf library that is needed to convert a file, so it can be loaded lazily
+ */
+export interface DxfLibrary {
+	Helper: new (
+		contents: string
+	) => {
+		parsed: unknown;
+		denormalised: DxfEntities.Entity[] | null;
+	};
+	colors: number[][];
+}
+
+interface DxfLayerTable {
+	name: string;
+	colorNumber?: number;
+}
+
+interface DxfVertex {
+	x: number;
+	y: number;
+	bulge?: number;
 }
 
 /**
- * Imports entities from a DXF file.
- * @param file - The DXF file to import.
+ * Loosely typed dxf entity, the typings of the dxf library don't cover every property it returns
+ */
+interface DxfEntity {
+	type: string;
+	layer?: string;
+	colorNumber?: number;
+	visible?: boolean;
+	paperSpace?: number;
+	[key: string]: unknown;
+}
+
+const BY_BLOCK_COLOR = 0;
+const BY_LAYER_COLOR = 256;
+const WHITE_COLOR = 7;
+
+export interface DxfConversionResult {
+	entities: Entity[];
+	/**
+	 * Layers of the dxf file that don't exist in the drawing yet
+	 */
+	newLayers: Layer[];
+	unsupportedTypes: string[];
+}
+
+function aciToHex(colors: number[][], colorNumber: number | undefined): string | null {
+	if (colorNumber === undefined || colorNumber <= 0 || colorNumber >= BY_LAYER_COLOR) {
+		return null;
+	}
+	if (colorNumber === WHITE_COLOR) {
+		// Color 7 is black on a white background and white on a dark background, like this app
+		return '#ffffff';
+	}
+	const rgb = colors[colorNumber];
+	return rgb ? toHex(rgb[0], rgb[1], rgb[2]) : null;
+}
+
+function getLayerTables(parsed: unknown): DxfLayerTable[] {
+	const layers = (parsed as { tables?: { layers?: unknown } } | null)?.tables?.layers;
+	if (!layers) {
+		return [];
+	}
+	return (Array.isArray(layers) ? layers : Object.values(layers)) as DxfLayerTable[];
+}
+
+/**
+ * Arc between two polyline vertices, described by the bulge of the first vertex
+ * The bulge is the tangent of a quarter of the arc angle, positive for counterclockwise arcs
+ */
+export function createArcFromBulge(start: Point, end: Point, bulge: number): ArcEntity {
+	const sweep = 4 * Math.atan(bulge);
+	const chord = start.distanceTo(end)[0];
+	const radius = chord / (2 * Math.sin(Math.abs(sweep) / 2));
+	const chordMiddle = new Point((start.x + end.x) / 2, (start.y + end.y) / 2);
+	// Distance from the middle of the chord to the center, the center lies to the left for counterclockwise arcs
+	const sagittaDistance = radius * Math.cos(sweep / 2);
+	const chordDirection = new Vector(start, end).normalize();
+	const towardsCenter = chordDirection.rotate90CCW().multiply(Math.sign(bulge) * sagittaDistance);
+	const center = chordMiddle.translate(towardsCenter);
+	return new ArcEntity(
+		center,
+		radius,
+		Math.atan2(start.y - center.y, start.x - center.x),
+		Math.atan2(end.y - center.y, end.x - center.x),
+		bulge > 0
+	);
+}
+
+function convertVertices(vertices: DxfVertex[], closed: boolean): Entity | null {
+	if (vertices.length < 2) {
+		return null;
+	}
+	const segments: Entity[] = [];
+	const segmentCount = closed ? vertices.length : vertices.length - 1;
+	for (let index = 0; index < segmentCount; index++) {
+		const vertex = vertices[index];
+		const nextVertex = vertices[(index + 1) % vertices.length];
+		const start = new Point(vertex.x, vertex.y);
+		const end = new Point(nextVertex.x, nextVertex.y);
+		if (start.equalTo(end)) {
+			continue;
+		}
+		segments.push(
+			vertex.bulge ? createArcFromBulge(start, end, vertex.bulge) : new LineEntity(start, end)
+		);
+	}
+	if (!segments.length) {
+		return null;
+	}
+	return segments.length === 1 ? segments[0] : new PolyLineEntity(segments);
+}
+
+/**
+ * Removes MTEXT formatting codes, eg: {\fArial;Hello}\PWorld => Hello World
+ */
+export function stripMTextFormatting(text: string): string {
+	return text
+		.replace(/\\P/g, ' ')
+		.replace(/\\[A-Za-z][^;\\{}]*;/g, '')
+		.replace(/\\[~]/g, ' ')
+		.replace(/[{}]/g, '')
+		.trim();
+}
+
+function createText(
+	label: string,
+	basePoint: Point,
+	height: number,
+	rotationRadians: number,
+	textAlign: 'left' | 'center' | 'right'
+): TextEntity | null {
+	if (!label || !(height > 0)) {
+		return null;
+	}
+	return new TextEntity(label, basePoint, {
+		fontSize: height,
+		textAlign,
+		textDirection: new Vector(Math.cos(rotationRadians), Math.sin(rotationRadians)),
+	});
+}
+
+const TEXT_ALIGNMENTS: ('left' | 'center' | 'right')[] = ['left', 'center', 'right'];
+
+function convertEntity(dxfEntity: DxfEntity): Entity | null {
+	const number = (key: string): number => Number(dxfEntity[key] ?? 0);
+	switch (dxfEntity.type) {
+		case 'LINE': {
+			const start = dxfEntity.start as DxfVertex | undefined;
+			const end = dxfEntity.end as DxfVertex | undefined;
+			if (!start || !end) return null;
+			return new LineEntity(new Point(start.x, start.y), new Point(end.x, end.y));
+		}
+		case 'CIRCLE':
+			return number('r') > 0
+				? new CircleEntity(new Point(number('x'), number('y')), number('r'))
+				: null;
+		case 'ARC':
+			// Dxf arcs always go counterclockwise from the start angle to the end angle
+			return number('r') > 0
+				? new ArcEntity(
+						new Point(number('x'), number('y')),
+						number('r'),
+						number('startAngle'),
+						number('endAngle'),
+						true
+					)
+				: null;
+		case 'LWPOLYLINE':
+		case 'POLYLINE':
+			return convertVertices(
+				(dxfEntity.vertices as DxfVertex[] | undefined) ?? [],
+				!!dxfEntity.closed
+			);
+		case 'TEXT': {
+			const hAlign = number('hAlign');
+			// Aligned texts are positioned at their second alignment point
+			const useAlignmentPoint = hAlign > 0 && dxfEntity.x2 !== undefined;
+			return createText(
+				String(dxfEntity.string ?? ''),
+				new Point(
+					useAlignmentPoint ? number('x2') : number('x'),
+					useAlignmentPoint ? number('y2') : number('y')
+				),
+				number('textHeight'),
+				(number('rotation') * Math.PI) / 180,
+				TEXT_ALIGNMENTS[hAlign] ?? 'left'
+			);
+		}
+		case 'MTEXT': {
+			const attachmentPoint = number('attachmentPoint') || 1;
+			const rotation =
+				dxfEntity.xAxisX !== undefined ? Math.atan2(number('xAxisY'), number('xAxisX')) : 0;
+			return createText(
+				stripMTextFormatting(String(dxfEntity.string ?? '')),
+				new Point(number('x'), number('y')),
+				number('nominalTextHeight'),
+				rotation,
+				TEXT_ALIGNMENTS[(attachmentPoint - 1) % 3]
+			);
+		}
+		default:
+			return null;
+	}
+}
+
+/**
+ * Converts the contents of a dxf file into entities and layers
+ * Dxf layers become layers in the drawing, layers with the same name are reused
+ */
+export function convertDxfToEntities(
+	contents: string,
+	dxfLibrary: DxfLibrary,
+	existingLayers: Layer[]
+): DxfConversionResult {
+	const helper = new dxfLibrary.Helper(contents);
+	const dxfEntities = (helper.denormalised ?? []) as unknown as DxfEntity[];
+	const layerTables = getLayerTables(helper.parsed);
+
+	const layers = [...existingLayers];
+	const newLayers: Layer[] = [];
+	const layerIdByName = new Map(existingLayers.map((layer) => [layer.name, layer.id]));
+	const getLayerId = (layerName: string): string => {
+		const existingLayerId = layerIdByName.get(layerName);
+		if (existingLayerId) {
+			return existingLayerId;
+		}
+		const layerTable = layerTables.find((table) => table.name === layerName);
+		const newLayer: Layer = {
+			...getNewLayer(layers),
+			name: layerName,
+			color: aciToHex(dxfLibrary.colors, Math.abs(layerTable?.colorNumber ?? 0)) ?? undefined,
+		};
+		layers.push(newLayer);
+		newLayers.push(newLayer);
+		layerIdByName.set(layerName, newLayer.id);
+		return newLayer.id;
+	};
+
+	const entities: Entity[] = [];
+	const unsupportedTypes = new Set<string>();
+	for (const dxfEntity of dxfEntities) {
+		if (dxfEntity.paperSpace || dxfEntity.visible === false) {
+			continue; // Only import what is visible in model space
+		}
+		const entity = convertEntity(dxfEntity);
+		if (!entity) {
+			unsupportedTypes.add(dxfEntity.type);
+			continue;
+		}
+		const layerName = dxfEntity.layer ?? '0';
+		entity.layerId = getLayerId(layerName);
+		const layerColorNumber = layerTables.find((table) => table.name === layerName)?.colorNumber;
+		entity.lineColor =
+			(dxfEntity.colorNumber !== BY_LAYER_COLOR && dxfEntity.colorNumber !== BY_BLOCK_COLOR
+				? aciToHex(dxfLibrary.colors, dxfEntity.colorNumber)
+				: null) ??
+			aciToHex(dxfLibrary.colors, Math.abs(layerColorNumber ?? 0)) ??
+			getActiveLineColor();
+		entity.lineWidth = getActiveLineWidth();
+		entities.push(entity);
+	}
+
+	return {
+		entities: uniqBy(
+			entities,
+			(entity) => `${JSON.stringify(entity.getShape())}|${entity.layerId}|${entity.lineColor}`
+		),
+		newLayers,
+		unsupportedTypes: [...unsupportedTypes],
+	};
+}
+
+/**
+ * Imports the entities and layers of a dxf file into the drawing
  */
 export const importEntitiesFromDxfFile = async (file?: File): Promise<void> => {
 	if (!file) {
-		toast.warn('No DXF file selected.');
 		return;
 	}
-	const reader = new FileReader();
+	try {
+		const [contents, dxfLibrary] = await Promise.all([file.text(), import('dxf')]);
+		const { entities, newLayers, unsupportedTypes } = convertDxfToEntities(
+			contents,
+			dxfLibrary as unknown as DxfLibrary,
+			getLayers()
+		);
 
-	reader.onload = async (event) => {
-		if (!event.target?.result) {
-			toast.error('Failed to read DXF file content.');
-			console.error('FileReader event.target.result is null or undefined.');
+		if (!entities.length) {
+			toast.info('No supported entities found in the DXF file.');
 			return;
 		}
-
-		const fileContent = event.target.result as string;
-
-		try {
-			// Dynamically import the dxf library
-			const dxf = await import('dxf');
-			const parsedDxf = new dxf.Helper(fileContent) as Helper;
-
-			if (!parsedDxf || !parsedDxf.denormalised) {
-				toast.error('Failed to parse DXF file. No entities found or invalid format.');
-				console.error('Parsed DXF data is invalid or contains no entities:', parsedDxf);
-				return;
-			}
-			const newEntities: Entity[] = [];
-			const currentLayerId = getActiveLayerId();
-			const defaultWidth = getActiveLineWidth();
-
-			for (const entity of parsedDxf.denormalised) {
-				// TODO: Coordinate transformation for Y-axis (DXF Y is usually up, canvas Y is down)
-				// For now, we assume positive Y is down for simplicity matching canvas.
-				// If DXF typically has Y up, then Y coordinates from DXF might need to be negated or subtracted from canvas height.
-				if (entity.type === 'LINE') {
-					const dxfLine = entity as DxfEntities.Line;
-					if (dxfLine.start && dxfLine.end) {
-						const startPoint: Point = new Point(dxfLine.start.x, dxfLine.start.y);
-						const endPoint: Point = new Point(dxfLine.end.x, dxfLine.end.y);
-						const line = new LineEntity(startPoint, endPoint);
-						line.layerId = currentLayerId;
-						line.lineColor = getDxfLineColor(dxfLine.colorNumber);
-						line.lineWidth = dxfLine.thickness || defaultWidth;
-						line.lineDash = undefined;
-						newEntities.push(line);
-					} else {
-						console.warn('Skipping DXF LINE due to missing or insufficient vertices:', dxfLine);
-					}
-				} else if (entity.type === 'CIRCLE') {
-					const dxfCircle = entity as DxfEntities.Circle;
-					if (dxfCircle.x && dxfCircle.y && dxfCircle.r) {
-						const centerPoint = new Point(dxfCircle.x, dxfCircle.y);
-						const circle = new CircleEntity(centerPoint, dxfCircle.r);
-						circle.layerId = currentLayerId;
-						circle.lineColor = getDxfLineColor(dxfCircle.colorNumber);
-						circle.lineWidth = defaultWidth;
-						circle.lineDash = undefined;
-						newEntities.push(circle);
-					} else {
-						console.warn('Skipping DXF CIRCLE due to missing center or radius:', dxfCircle);
-					}
-				} else {
-					console.log(`Unsupported DXF type: ${entity.type}. Skipping.`);
-				}
-			}
-
-			if (newEntities.length > 0) {
-				const uniqueEntities = uniqBy(
-					newEntities,
-					(entity) =>
-						`${JSON.stringify(entity.getShape())}|${entity.lineColor}|${entity.lineWidth}|${entity.lineDash}`
-				);
-				setEntities([...getEntities(), ...uniqueEntities], true);
-				zoomToBounds();
-				toast.success(`${uniqueEntities.length} entities imported successfully from DXF!`);
-			} else {
-				toast.info('No supported entities found in the DXF file.');
-			}
-		} catch (error) {
-			console.error('Error parsing DXF file:', error);
-			toast.error('An error occurred while parsing the DXF file. See console for details.');
+		// Add the layers and entities as one undo step
+		setLayers([...getLayers(), ...newLayers]);
+		setEntities([...getEntities(), ...entities], true);
+		zoomToBounds();
+		toast.success(`Imported ${entities.length} entities from ${file.name}`);
+		if (unsupportedTypes.length) {
+			toast.info(`Skipped unsupported DXF entities: ${unsupportedTypes.join(', ')}`);
 		}
-	};
-
-	reader.onerror = () => {
-		console.error('FileReader error:', reader.error);
-		toast.error('Failed to read the DXF file.');
-	};
-
-	reader.readAsText(file);
+	} catch (error) {
+		console.error('Error parsing DXF file:', error);
+		toast.error('An error occurred while reading the DXF file. See console for details.');
+	}
 };

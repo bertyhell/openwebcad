@@ -9,10 +9,19 @@ import {
 	LineWidthPicker,
 	ZoomPicker,
 } from './PopoverContents.tsx';
+import { PropertiesPanel } from './PropertiesPanel.tsx';
 import { KeyBadge } from './SectionHeader.tsx';
 import type { AppState } from './use-app-state.ts';
 
-export type PopoverId = 'file' | 'color' | 'width' | 'snap' | 'zoom' | 'align' | 'layers';
+export type PopoverId =
+	| 'file'
+	| 'color'
+	| 'width'
+	| 'snap'
+	| 'zoom'
+	| 'align'
+	| 'layers'
+	| 'properties';
 
 export const POPOVER_LABELS: Record<PopoverId, string> = {
 	file: 'File',
@@ -22,6 +31,7 @@ export const POPOVER_LABELS: Record<PopoverId, string> = {
 	zoom: 'Zoom',
 	align: 'Align selection',
 	layers: 'Layers',
+	properties: 'Properties',
 };
 
 export const POPOVER_WIDTHS: Record<PopoverId, number> = {
@@ -32,6 +42,7 @@ export const POPOVER_WIDTHS: Record<PopoverId, number> = {
 	zoom: 264,
 	align: 256,
 	layers: 288,
+	properties: 288,
 };
 
 export interface Tooltip {
@@ -91,7 +102,7 @@ export function getPropertyItems(appState: AppState): PropertyItem[] {
 		{
 			id: 'snap',
 			label: 'Snap',
-			value: `${appState.angleStep}°`,
+			value: `${appState.angleStep}°${appState.gridSettings.isSnapEnabled ? ' · Grid' : ''}`,
 			preview: null,
 			shortPreview: <span>{appState.angleStep}°</span>,
 		},
@@ -129,7 +140,9 @@ export const PopoverContent: FC<PopoverContentProps> = ({
 		case 'width':
 			return <LineWidthPicker lineWidth={appState.lineWidth} />;
 		case 'snap':
-			return <AngleStepPicker angleStep={appState.angleStep} />;
+			return (
+				<AngleStepPicker angleStep={appState.angleStep} gridSettings={appState.gridSettings} />
+			);
 		case 'zoom':
 			return <ZoomPicker screenZoom={appState.screenZoom} />;
 		case 'align':
@@ -139,6 +152,15 @@ export const PopoverContent: FC<PopoverContentProps> = ({
 						Align selection · {selectionLabel}
 					</div>
 					<AlignGrid activeTool={appState.activeTool} variant="popover" />
+				</>
+			);
+		case 'properties':
+			return (
+				<>
+					<div className="mb-2 font-bold text-[10px] leading-none tracking-[0.16em] uppercase text-hw-stone-500">
+						Properties · {selectionLabel}
+					</div>
+					<PropertiesPanel selectedEntities={appState.selectedEntities} layers={appState.layers} />
 				</>
 			);
 		case 'layers':

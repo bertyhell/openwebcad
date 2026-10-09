@@ -23,7 +23,7 @@ export interface ToolDefinition {
 	iconPath: string;
 	dataId: string;
 	/**
-	 * Single letter command alias, type it and press ENTER
+	 * Short command alias, type it and press ENTER
 	 */
 	shortcut?: string;
 	/**
@@ -89,6 +89,22 @@ export const TOOLS: ToolDefinition[] = [
 		dataId: 'circle-button',
 	},
 	{
+		tool: Tool.ARC,
+		group: ToolGroupId.DRAW,
+		label: 'Arc',
+		hint: 'Draw an arc through a start point, a point on the arc and an end point',
+		iconPath: 'M4 20A16 16 0 0 1 20 4',
+		dataId: 'arc-button',
+	},
+	{
+		tool: Tool.POLYLINE,
+		group: ToolGroupId.DRAW,
+		label: 'Polyline',
+		hint: 'Draw connected segments, ENTER to finish, click the first point to close',
+		iconPath: 'M3 18l5-9 6 6 7-10',
+		dataId: 'polyline-button',
+	},
+	{
 		tool: Tool.IMAGE_IMPORT,
 		group: ToolGroupId.DRAW,
 		label: 'Image',
@@ -130,6 +146,22 @@ export const TOOLS: ToolDefinition[] = [
 		dataId: 'rotate-button',
 	},
 	{
+		tool: Tool.MIRROR,
+		group: ToolGroupId.MODIFY,
+		label: 'Mirror',
+		hint: 'Add a mirrored copy of the selection over an axis',
+		iconPath: 'M12 3v18M9 7L4 17h5zM15 7l5 10h-5z',
+		dataId: 'mirror-button',
+	},
+	{
+		tool: Tool.OFFSET,
+		group: ToolGroupId.MODIFY,
+		label: 'Offset',
+		hint: 'Add a parallel copy of a line, circle, arc, rectangle or polyline',
+		iconPath: 'M4 16L16 4M8 20L20 8',
+		dataId: 'offset-button',
+	},
+	{
 		tool: Tool.ARRAY,
 		group: ToolGroupId.MODIFY,
 		label: 'Array copy',
@@ -146,12 +178,44 @@ export const TOOLS: ToolDefinition[] = [
 		dataId: 'pedit-button',
 	},
 	{
+		tool: Tool.FILLET,
+		group: ToolGroupId.MODIFY,
+		label: 'Fillet',
+		hint: 'Round the corner between two lines with a radius',
+		iconPath: 'M4 4v8a8 8 0 0 0 8 8h8',
+		dataId: 'fillet-button',
+	},
+	{
+		tool: Tool.CHAMFER,
+		group: ToolGroupId.MODIFY,
+		label: 'Chamfer',
+		hint: 'Cut off the corner between two lines',
+		iconPath: 'M4 4v8l8 8h8',
+		dataId: 'chamfer-button',
+	},
+	{
+		tool: Tool.EXTEND,
+		group: ToolGroupId.MODIFY,
+		label: 'Extend',
+		hint: 'Extend a line or arc up to the nearest entity',
+		iconPath: 'M3 12h14M14 9l3 3-3 3M20 5v14',
+		dataId: 'extend-button',
+	},
+	{
 		tool: Tool.MEASUREMENT,
 		group: ToolGroupId.ANNOTATE,
 		label: 'Measure',
 		hint: 'Add a dimension between two points',
 		iconPath: 'M4 7v10M20 7v10M4 12h16M7 9l-3 3 3 3M17 9l3 3-3 3',
 		dataId: 'measurement-button',
+	},
+	{
+		tool: Tool.TEXT,
+		group: ToolGroupId.ANNOTATE,
+		label: 'Text',
+		hint: 'Place a text, type a number first to change the text height',
+		iconPath: 'M5 5h14M12 5v14M9 19h6',
+		dataId: 'text-button',
 	},
 	{
 		tool: Tool.FILL,
@@ -242,6 +306,7 @@ export const ICON_PATHS = {
 	moveToLayer: 'M12 4v11M7 10l5 5 5-5M4 20h16',
 	trash: 'M4 7h16M10 7V4h4v3M6 7l1 13h10l1-13',
 	plus: 'M12 5v14M5 12h14',
+	properties: 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0M14 4v4M8 10v4M16 16v4',
 };
 
 export const LINE_WIDTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9];

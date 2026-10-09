@@ -13,7 +13,7 @@ import {
 	SNAP_POINT_DISTANCE,
 	TOOLBAR_WIDTH,
 } from '../App.consts.ts';
-import { HtmlEvent, MouseButton } from '../App.types.ts';
+import { HtmlEvent, MouseButton, SnapPointType } from '../App.types.ts';
 import type { ScreenCanvasDrawController } from '../drawControllers/screenCanvas.drawController.ts';
 import { calculateAngleGuidesAndSnapPoints } from '../helpers/calculate-angle-guides-and-snap-points.ts';
 import { findClosestEntity } from '../helpers/find-closest-entity.ts';
@@ -23,6 +23,7 @@ import {
 	getActiveToolActor,
 	getCanvas,
 	getEditableEntities,
+	getGridSettings,
 	getLastStateInstructions,
 	getPanStartLocation,
 	getScreenCanvasDrawController,
@@ -34,6 +35,7 @@ import {
 	requestRedraw,
 	setActiveToolActor,
 	setGhostHelperEntities,
+	setGridSettings,
 	setHighlightedEntityIds,
 	setPanStartLocation,
 	setSelectedEntityIds,
@@ -79,8 +81,29 @@ function shouldLetElementHandleKey(evt: KeyboardEvent): boolean {
 	return evt.key === 'Escape' && !!target.closest('[role="dialog"]');
 }
 
+/**
+ * Whether the active tool is asking for text, eg: the label of a text or a zoom option
+ */
+function activeToolAcceptsTextInput(): boolean {
+	const activeToolSnapshot = getActiveToolActor()?.getSnapshot();
+	const activeToolState = activeToolSnapshot?.value;
+	return !!activeToolSnapshot?.machine?.states?.[activeToolState]?.config?.on?.TEXT_INPUT;
+}
+
 export class InputController {
 	private text = '';
+
+	/**
+	 * Holding space lets the user pan with the left mouse button
+	 */
+	private isSpaceHeld = false;
+
+	/**
+	 * Text the user is typing in the input field next to the cursor
+	 */
+	public getText(): string {
+		return this.text;
+	}
 
 	constructor() {
 		if (typeof process === 'object' && process?.env?.NODE_ENV === 'test') {
@@ -90,6 +113,13 @@ export class InputController {
 		document.addEventListener('keydown', (evt) => {
 			this.handleKeyStroke(evt);
 		});
+		document.addEventListener('keyup', (evt) => {
+			if (evt.key === ' ') {
+				this.setSpaceHeld(false);
+			}
+		});
+		// Forget the space key when the window loses focus, since the keyup won't arrive
+		window.addEventListener('blur', () => this.setSpaceHeld(false));
 		// Listen for right mouse button click => perform the same action as ENTER
 		const canvas = getCanvas();
 		canvas?.addEventListener('mousedown', (evt: MouseEvent) => this.handleMouseDown(evt));
@@ -162,16 +192,25 @@ export class InputController {
 			return;
 		}
 
-		if (evt.button === MouseButton.Middle) {
+		if (
+			evt.button === MouseButton.Middle ||
+			(evt.button === MouseButton.Left && getPanStartLocation())
+		) {
+			// Stop panning, a left click while panning with space is not a click on the drawing
 			setPanStartLocation(null);
+			return;
 		}
 		if (evt.button === MouseButton.Left) {
 			const screenCanvasDrawController = getScreenCanvasDrawController();
-			const closestSnapPoint = getClosestSnapPointWithinRadius(
-				compact([getSnapPoint(), getSnapPointOnAngleGuide()]),
-				screenCanvasDrawController.getWorldMouseLocation(),
-				SNAP_POINT_DISTANCE / screenCanvasDrawController.getScreenScale()
-			);
+			// A grid snap point is always used, it can be further away than the snap distance when zoomed out
+			const gridSnapPoint = getSnapPoint()?.type === SnapPointType.Grid ? getSnapPoint() : null;
+			const closestSnapPoint =
+				gridSnapPoint ??
+				getClosestSnapPointWithinRadius(
+					compact([getSnapPoint(), getSnapPointOnAngleGuide()]),
+					screenCanvasDrawController.getWorldMouseLocation(),
+					SNAP_POINT_DISTANCE / screenCanvasDrawController.getScreenScale()
+				);
 
 			const worldMouseLocationTemp = getScreenCanvasDrawController().targetToWorld(
 				new Point(
@@ -249,7 +288,10 @@ export class InputController {
 	}
 
 	public handleMouseDown(evt: MouseEvent) {
-		if (evt.button !== MouseButton.Middle) return;
+		// Pan with the middle mouse button, or with the left mouse button while holding space
+		const isPanButton =
+			evt.button === MouseButton.Middle || (evt.button === MouseButton.Left && this.isSpaceHeld);
+		if (!isPanButton) return;
 
 		setPanStartLocation(
 			new Point(
@@ -288,8 +330,22 @@ export class InputController {
 		}
 	}
 
+	private setSpaceHeld(isSpaceHeld: boolean) {
+		this.isSpaceHeld = isSpaceHeld;
+		const canvas = getCanvas();
+		if (canvas) {
+			canvas.style.cursor = isSpaceHeld ? 'grab' : '';
+		}
+	}
+
 	public handleKeyStroke(evt: KeyboardEvent) {
 		if (shouldLetElementHandleKey(evt)) {
+			return;
+		}
+		if (evt.key === ' ' && this.text === '' && !activeToolAcceptsTextInput()) {
+			// Space without typed text starts panning with the left mouse button, instead of typing a space
+			evt.preventDefault();
+			this.setSpaceHeld(true);
 			return;
 		}
 		// The typed text is drawn next to the cursor
@@ -363,13 +419,24 @@ export class InputController {
 		} else if (evt.key === 'ArrowRight') {
 			// Move the screen right
 			getScreenCanvasDrawController().setScreenOffset(this.getScreenPanStep('right', evt.shiftKey));
-		} else if (evt.key === '+' && this.text === '') {
+		} else if (evt.key === '+' && this.text === '' && !activeToolAcceptsTextInput()) {
 			// Zoom in around the center of the screen
 			zoomIn();
-		} else if (evt.key === '-' && this.text === '' && !getShouldDrawHelpers()) {
+		} else if (
+			evt.key === '-' &&
+			this.text === '' &&
+			!getShouldDrawHelpers() &&
+			!activeToolAcceptsTextInput()
+		) {
 			// Zoom out around the center of the screen
 			// While picking points, minus starts a negative number instead
 			zoomOut();
+		} else if (evt.key === 'F7') {
+			// Show or hide the grid
+			setGridSettings({ ...getGridSettings(), isVisible: !getGridSettings().isVisible });
+		} else if (evt.key === 'F9') {
+			// Snap to the grid
+			setGridSettings({ ...getGridSettings(), isSnapEnabled: !getGridSettings().isSnapEnabled });
 		} else if (evt.key === 'Home') {
 			// Zoom to show the whole drawing
 			zoomToBounds();
@@ -397,10 +464,7 @@ export class InputController {
 	public handleEnterKey() {
 		// submit the text as input to the active tool and clear the input field
 		const activeTool = getActiveToolActor();
-		const activeToolSnapshot = activeTool?.getSnapshot();
-		const activeToolState = activeToolSnapshot?.value;
-		const activeToolCanHandleTextInput =
-			!!activeToolSnapshot?.machine?.states?.[activeToolState]?.config?.on?.TEXT_INPUT;
+		const activeToolCanHandleTextInput = activeToolAcceptsTextInput();
 		const text = this.text;
 		this.text = '';
 

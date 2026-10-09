@@ -1,6 +1,8 @@
 import { type ChangeEvent, type FC, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import { COLOR_LIST } from '../../App.consts.ts';
+import type { GridSettings } from '../../App.types.ts';
+import { exportEntitiesToDxfFile } from '../../helpers/import-export-handlers/dxf.export.ts';
 import { importEntitiesFromDxfFile } from '../../helpers/import-export-handlers/dxf.import.ts';
 import { exportEntitiesToJsonFile } from '../../helpers/import-export-handlers/json.export.ts';
 import { importEntitiesFromJsonFile } from '../../helpers/import-export-handlers/json.import.ts';
@@ -14,9 +16,11 @@ import {
 	setActiveLineColor,
 	setActiveLineWidth,
 	setAngleStep,
+	setGridSettings,
 } from '../../state.ts';
 import type { Tool } from '../../tools.ts';
 import { PathIcon } from '../PathIcon.tsx';
+import { toFullHexColor } from './color.helpers.ts';
 import { PopoverLabel } from './SectionHeader.tsx';
 import {
 	activateTool,
@@ -79,6 +83,7 @@ interface FileExport {
 
 const FILE_EXPORTS: FileExport[] = [
 	{ label: 'JSON', dataId: 'json-save-button', handler: exportEntitiesToJsonFile },
+	{ label: 'DXF', dataId: 'dxf-export-button', handler: exportEntitiesToDxfFile },
 	{ label: 'SVG', dataId: 'svg-export-button', handler: exportEntitiesToSvgFile },
 	{ label: 'PNG', dataId: 'png-export-button', handler: exportEntitiesToPngFile },
 	{ label: 'PDF', dataId: 'pdf-export-button', handler: exportEntitiesToPdfFile },
@@ -205,7 +210,7 @@ export const FileMenu: FC<PopoverContentProps> = ({ onClose }) => {
 				))}
 			</div>
 			<PopoverLabel label="Export" className="mt-3 mx-2 mb-1.5" />
-			<div className="grid grid-cols-4 gap-1 px-1">
+			<div className="grid grid-cols-5 gap-1 px-1">
 				{FILE_EXPORTS.map((fileExport) => (
 					<button
 						key={fileExport.label}
@@ -235,17 +240,6 @@ export const FileMenu: FC<PopoverContentProps> = ({ onClose }) => {
 	);
 };
 
-/**
- * Expands short hex colors, so #fff and #FFFFFF are considered equal
- */
-function normalizeHexColor(color: string): string {
-	const lowerCaseColor = color.toLowerCase();
-	if (/^#[0-9a-f]{3}$/.test(lowerCaseColor)) {
-		return `#${[...lowerCaseColor.slice(1)].map((char) => char + char).join('')}`;
-	}
-	return lowerCaseColor;
-}
-
 const ColorGrid: FC<{
 	activeColor: string;
 	onSelect: (color: string) => void;
@@ -253,7 +247,7 @@ const ColorGrid: FC<{
 }> = ({ activeColor, onSelect, dataIdPrefix }) => (
 	<div className="grid grid-cols-8 gap-1.5">
 		{COLOR_LIST.map((color) => {
-			const isActive = normalizeHexColor(color) === normalizeHexColor(activeColor);
+			const isActive = toFullHexColor(color) === toFullHexColor(activeColor);
 			return (
 				<button
 					key={color}
@@ -309,7 +303,30 @@ export const LineWidthPicker: FC<{ lineWidth: number }> = ({ lineWidth }) => (
 	</div>
 );
 
-export const AngleStepPicker: FC<{ angleStep: number }> = ({ angleStep }) => (
+const GridToggle: FC<{
+	label: string;
+	shortcut: string;
+	isChecked: boolean;
+	onToggle: () => void;
+	dataId: string;
+}> = ({ label, shortcut, isChecked, onToggle, dataId }) => (
+	<label className="flex items-center gap-2 h-8 px-1 text-hw-paper font-semibold text-xs cursor-pointer">
+		<input
+			type="checkbox"
+			checked={isChecked}
+			onChange={onToggle}
+			className="size-4 accent-hw-stone-100"
+			data-id={dataId}
+		/>
+		<span className="flex-1">{label}</span>
+		<span className="text-[11px] text-hw-stone-500">{shortcut}</span>
+	</label>
+);
+
+export const AngleStepPicker: FC<{ angleStep: number; gridSettings: GridSettings }> = ({
+	angleStep,
+	gridSettings,
+}) => (
 	<div>
 		<PopoverLabel label="Snap angle step" />
 		<div className="grid grid-cols-5 gap-1">
@@ -330,6 +347,23 @@ export const AngleStepPicker: FC<{ angleStep: number }> = ({ angleStep }) => (
 				</button>
 			))}
 		</div>
+		<PopoverLabel label="Grid" className="mt-4" />
+		<GridToggle
+			label="Show grid"
+			shortcut="F7"
+			isChecked={gridSettings.isVisible}
+			onToggle={() => setGridSettings({ ...gridSettings, isVisible: !gridSettings.isVisible })}
+			dataId="grid-visible-checkbox"
+		/>
+		<GridToggle
+			label="Snap to grid"
+			shortcut="F9"
+			isChecked={gridSettings.isSnapEnabled}
+			onToggle={() =>
+				setGridSettings({ ...gridSettings, isSnapEnabled: !gridSettings.isSnapEnabled })
+			}
+			dataId="grid-snap-checkbox"
+		/>
 	</div>
 );
 

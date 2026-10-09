@@ -84,10 +84,8 @@ export class ImageEntity implements Entity {
 	}
 
 	public scale(scaleOrigin: Point, scaleFactor: number) {
-		const center = this.polygon.box.center;
-		const newCenter = scalePoint(center, scaleOrigin, scaleFactor);
-		this.polygon = this.polygon.translate(
-			new Vector(newCenter.x - center.x, newCenter.y - center.y)
+		this.polygon = new Polygon(
+			this.polygon.vertices.map((vertex) => scalePoint(vertex, scaleOrigin, scaleFactor))
 		);
 	}
 

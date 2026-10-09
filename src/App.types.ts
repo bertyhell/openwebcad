@@ -12,6 +12,7 @@ export enum SnapPointType {
 	CircleTangent = 'CircleTangent',
 	LineMidPoint = 'LineMidPoint',
 	Point = 'Point',
+	Grid = 'Grid',
 }
 
 export interface SnapPoint {
@@ -40,6 +41,11 @@ export enum HtmlEvent {
 	DRAWING_CHANGED = 'DRAWING_CHANGED',
 }
 
+export interface GridSettings {
+	isVisible: boolean;
+	isSnapEnabled: boolean;
+}
+
 export interface StateMetaData {
 	instructions: string;
 }
@@ -58,6 +64,7 @@ export interface Layer {
 export enum LOCAL_STORAGE_KEY {
 	DRAWING = 'OPEN_WEB_CAD__DRAWING',
 	SIDEBAR = 'OPEN_WEB_CAD__SIDEBAR',
+	GRID = 'OPEN_WEB_CAD__GRID',
 }
 
 export interface StartAndEndpointEntity extends Entity {

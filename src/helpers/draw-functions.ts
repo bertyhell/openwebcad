@@ -172,6 +172,18 @@ export function drawSnapPoint(
 			);
 			break;
 
+		case SnapPointType.Grid:
+			// Grid point is shown with a small plus
+			drawController.drawLineScreen(
+				new Point(screenSnapPoint.x - SNAP_POINT_SIZE / 3, screenSnapPoint.y),
+				new Point(screenSnapPoint.x + SNAP_POINT_SIZE / 3, screenSnapPoint.y)
+			);
+			drawController.drawLineScreen(
+				new Point(screenSnapPoint.x, screenSnapPoint.y - SNAP_POINT_SIZE / 3),
+				new Point(screenSnapPoint.x, screenSnapPoint.y + SNAP_POINT_SIZE / 3)
+			);
+			break;
+
 		case SnapPointType.CircleCenter:
 			// Circle center is shown with a circle
 			drawController.drawArcScreen(screenSnapPoint, SNAP_POINT_SIZE / 2, 0, 2 * Math.PI, true);

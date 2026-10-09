@@ -20,10 +20,18 @@ export enum Tool {
 	PEDIT = 'PEDIT',
 	FILL = 'FILL',
 	ZOOM = 'ZOOM',
+	MIRROR = 'MIRROR',
+	OFFSET = 'OFFSET',
+	FILLET = 'FILLET',
+	CHAMFER = 'CHAMFER',
+	EXTEND = 'EXTEND',
+	ARC = 'ARC',
+	POLYLINE = 'POLYLINE',
+	TEXT = 'TEXT',
 }
 
 /**
- * Single letter command aliases: type the letter and press ENTER to activate the tool
+ * Short command aliases: type the letters and press ENTER to activate the tool
  */
 export const TOOL_SHORTCUTS: Partial<Record<Tool, string>> = {
 	[Tool.SELECT]: 'S',
@@ -40,4 +48,12 @@ export const TOOL_SHORTCUTS: Partial<Record<Tool, string>> = {
 	[Tool.FILL]: 'B',
 	[Tool.ERASER]: 'E',
 	[Tool.ZOOM]: 'Z',
+	[Tool.MIRROR]: 'MI',
+	[Tool.OFFSET]: 'OF',
+	[Tool.FILLET]: 'F',
+	[Tool.CHAMFER]: 'CHA',
+	[Tool.EXTEND]: 'EX',
+	[Tool.ARC]: 'A',
+	[Tool.POLYLINE]: 'PL',
+	[Tool.TEXT]: 'T',
 };

@@ -35,6 +35,7 @@ export enum StateVariable {
 	layers = 'layers',
 	selectedEntityIds = 'selectedEntityIds',
 	instructions = 'instructions',
+	gridSettings = 'gridSettings',
 }
 
 /**

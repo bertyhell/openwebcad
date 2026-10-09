@@ -3,9 +3,11 @@ import { isEqual } from 'es-toolkit';
 import { toast } from 'react-toastify';
 import type { Actor, MachineSnapshot } from 'xstate';
 import {
+	type GridSettings,
 	type HoverPoint,
 	HtmlEvent,
 	type Layer,
+	LOCAL_STORAGE_KEY,
 	type SnapPoint,
 	type StateMetaData,
 } from './App.types';
@@ -147,6 +149,21 @@ let activeLineWidth = 1;
 let isRedrawRequested = true;
 
 /**
+ * Grid drawn behind the drawing, and whether points snap to it
+ */
+let gridSettings: GridSettings = loadGridSettings();
+
+function loadGridSettings(): GridSettings {
+	const defaultSettings: GridSettings = { isVisible: false, isSnapEnabled: false };
+	try {
+		const storedSettings = globalThis.localStorage?.getItem(LOCAL_STORAGE_KEY.GRID);
+		return storedSettings ? { ...defaultSettings, ...JSON.parse(storedSettings) } : defaultSettings;
+	} catch {
+		return defaultSettings;
+	}
+}
+
+/**
  * Layers that can contain entities
  */
 let layers: Layer[] = [
@@ -185,6 +202,7 @@ export const getLastDrawTimestamp = () => lastDrawTimestamp;
 export const getActiveLineColor = () => activeLineColor;
 export const getActiveFillColor = () => activeFillColor;
 export const getActiveLineWidth = () => activeLineWidth;
+export const getGridSettings = () => gridSettings;
 export const getScreenCanvasDrawController = (): ScreenCanvasDrawController => {
 	if (!screenCanvasDrawController) {
 		throw new Error('getScreenCanvasDrawController() returned null');
@@ -326,6 +344,8 @@ export const setLastStateInstructions = (newInstructions: string | null) => {
 export const setEntities = (newEntities: Entity[], trackInUndoStack = false) => {
 	requestRedraw();
 	entities = newEntities;
+	// The properties of the selected entities are shown in the sidebar
+	triggerReactUpdate(StateVariable.entities);
 	if (trackInUndoStack) {
 		commitUndoState();
 	}
@@ -427,6 +447,16 @@ export const setActiveLineWidth = (newWidth: number, triggerReact = true) => {
 		triggerReactUpdate(StateVariable.activeLineWidth);
 	}
 };
+export const setGridSettings = (newGridSettings: GridSettings) => {
+	requestRedraw();
+	gridSettings = newGridSettings;
+	try {
+		localStorage.setItem(LOCAL_STORAGE_KEY.GRID, JSON.stringify(newGridSettings));
+	} catch {
+		// The grid settings are a convenience, they don't need to be stored
+	}
+	triggerReactUpdate(StateVariable.gridSettings);
+};
 export const setLayers = (newLayers: Layer[], triggerReact = true, trackInUndoStack = false) => {
 	requestRedraw();
 	layers = newLayers;
@@ -441,6 +471,12 @@ export const setLayers = (newLayers: Layer[], triggerReact = true, trackInUndoSt
 export const setActiveLayerId = (newActiveLayerId: string, triggerReact = true) => {
 	requestRedraw();
 	activeLayerId = newActiveLayerId;
+	// New entities on a layer with a color get that color
+	const layerColor = layers.find((layer) => layer.id === newActiveLayerId)?.color;
+	if (layerColor) {
+		activeLineColor = layerColor;
+		triggerReactUpdate(StateVariable.activeLineColor);
+	}
 
 	if (triggerReact) {
 		triggerReactUpdate(StateVariable.layers);
@@ -471,6 +507,8 @@ const reactStateVariables: StateVariable[] = [
 	StateVariable.layers,
 	StateVariable.selectedEntityIds,
 	StateVariable.instructions,
+	StateVariable.entities,
+	StateVariable.gridSettings,
 ];
 
 const undoStack = createStack();
@@ -524,6 +562,7 @@ function restoreUndoState(undoState: UndoState) {
 	}
 	requestRedraw();
 	triggerReactUpdate(StateVariable.layers);
+	triggerReactUpdate(StateVariable.entities);
 	notifyDrawingChanged();
 }
 

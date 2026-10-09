@@ -2,7 +2,7 @@ import { saveAs } from 'file-saver';
 import { SVG_MARGIN } from '../../App.consts.ts';
 import { PdfDrawController } from '../../drawControllers/pdf.drawController.ts';
 import type { Entity } from '../../entities/Entity';
-import { getEntities } from '../../state';
+import { getVisibleEntities } from '../../state';
 import { getBoundingBoxOfMultipleEntities } from '../get-bounding-box-of-multiple-entities.ts';
 
 export async function convertEntitiesToPdfString(entities: Entity[]): Promise<Blob> {
@@ -23,7 +23,7 @@ export async function convertEntitiesToPdfString(entities: Entity[]): Promise<Bl
 }
 
 export async function exportEntitiesToPdfFile() {
-	const entities = getEntities();
+	const entities = getVisibleEntities();
 
 	const pdfBlob = await convertEntitiesToPdfString(entities);
 

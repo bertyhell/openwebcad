@@ -6,6 +6,7 @@ import { PathIcon } from '../PathIcon.tsx';
 import { CanvasOverlay } from './CanvasOverlay.tsx';
 import { LayerList } from './LayerList.tsx';
 import { AlignGrid } from './PopoverContents.tsx';
+import { PropertiesPanel } from './PropertiesPanel.tsx';
 import { SectionHeader } from './SectionHeader.tsx';
 import {
 	getPropertyItems,
@@ -21,7 +22,7 @@ import { ALIGN_COLOR, ICON_PATHS, TOOL_GROUPS, TOOLS } from './sidebar.consts.ts
 import { RailToolButton, ToolButton, type TooltipTriggerEvent } from './ToolButton.tsx';
 import { useAppState } from './use-app-state.ts';
 
-type SectionId = 'draw' | 'modify' | 'annotate' | 'align' | 'layers';
+type SectionId = 'draw' | 'modify' | 'annotate' | 'properties' | 'align' | 'layers';
 
 interface SidebarSettings {
 	isCollapsed: boolean;
@@ -30,7 +31,14 @@ interface SidebarSettings {
 
 const DEFAULT_SIDEBAR_SETTINGS: SidebarSettings = {
 	isCollapsed: false,
-	openSections: { draw: true, modify: true, annotate: true, align: false, layers: true },
+	openSections: {
+		draw: true,
+		modify: true,
+		annotate: true,
+		properties: true,
+		align: false,
+		layers: true,
+	},
 };
 
 interface PopoverPosition {
@@ -244,6 +252,23 @@ export const Sidebar: FC = () => {
 
 				<div className="px-3 pt-1 pb-2">
 					<SectionHeader
+						label="Properties"
+						color="var(--color-hw-stone-100)"
+						count={selectionLabel}
+						isOpen={openSections.properties}
+						onToggle={toggleSection('properties')}
+						dataId="properties-section"
+					/>
+					{openSections.properties && (
+						<PropertiesPanel
+							selectedEntities={appState.selectedEntities}
+							layers={appState.layers}
+						/>
+					)}
+				</div>
+
+				<div className="px-3 pt-1 pb-2">
+					<SectionHeader
 						label="Align selection"
 						color={ALIGN_COLOR}
 						count={selectionLabel}
@@ -380,6 +405,17 @@ export const Sidebar: FC = () => {
 						data-id="layers"
 					>
 						<PathIcon path={ICON_PATHS.layers} />
+					</button>
+					<button
+						type="button"
+						{...popoverTriggerProps('properties')}
+						{...railButtonProps('Properties', undefined, selectionLabel)}
+						className={`grid place-items-center w-10 h-9 border border-transparent rounded-[2px] text-hw-stone-300 cursor-pointer hover:bg-hw-ink ${
+							isPopoverOpen('properties') ? 'bg-hw-ash' : 'bg-transparent'
+						}`}
+						data-id="properties-button"
+					>
+						<PathIcon path={ICON_PATHS.properties} />
 					</button>
 				</div>
 			</div>

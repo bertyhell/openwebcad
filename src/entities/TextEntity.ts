@@ -1,6 +1,6 @@
-import { Box, Point, type Segment, Vector } from '@flatten-js/core';
+import { Box, Point, Polygon, Segment, Vector } from '@flatten-js/core';
 import { cloneDeep } from 'es-toolkit/compat';
-import type { Edge, Shape, SnapPoint } from '../App.types';
+import { type Edge, type Shape, type SnapPoint, SnapPointType } from '../App.types';
 import { DEFAULT_TEXT_OPTIONS, type DrawController } from '../drawControllers/DrawController';
 import { copyEntityBaseProperties } from '../helpers/copy-entity-base-properties';
 import { mirrorPointOverAxis } from '../helpers/mirror-point-over-axis.ts';
@@ -8,6 +8,11 @@ import { scalePoint } from '../helpers/scale-point.ts';
 import { getActiveLayerId, isEntityHighlighted, isEntitySelected } from '../state.ts';
 import { type Entity, EntityName, type JsonEntity } from './Entity';
 import type { LineEntity } from './LineEntity.ts';
+
+/**
+ * Average width of a character relative to the font size, used to estimate the size of a text
+ */
+const AVERAGE_CHARACTER_WIDTH = 0.55;
 
 export interface TextOptions {
 	textDirection: Vector;
@@ -49,7 +54,11 @@ export class TextEntity implements Entity {
 			this.lineWidth,
 			this.lineDash
 		);
-		drawController.drawText(this.label, this.basePoint, this.options);
+		// The text uses the line color, so it can be changed like the color of any other entity
+		drawController.drawText(this.label, this.basePoint, {
+			...this.options,
+			textColor: this.lineColor,
+		});
 	}
 
 	public move(x: number, y: number) {
@@ -82,20 +91,47 @@ export class TextEntity implements Entity {
 	}
 
 	public intersectsWithBox(box: Box): boolean {
-		return box.contains(this.basePoint);
+		return box.intersect(this.getBoundingBox());
 	}
 
 	public isContainedInBox(box: Box): boolean {
-		return box.contains(this.basePoint);
+		return box.contains(this.getBoundingBox());
 	}
 
+	public getLabel(): string {
+		return this.label;
+	}
+
+	public getBasePoint(): Point {
+		return this.basePoint;
+	}
+
+	public getFontSize(): number {
+		return this.options.fontSize;
+	}
+
+	public getOptions(): TextOptions {
+		return cloneDeep(this.options);
+	}
+
+	/**
+	 * Approximate bounds of the text, without measuring the font
+	 * The text is vertically centered on the base point, like it is drawn
+	 */
 	public getBoundingBox(): Box {
-		// TODO find better way of determining the text bounding box
+		const width = this.options.fontSize * AVERAGE_CHARACTER_WIDTH * this.label.length;
+		const halfHeight = this.options.fontSize / 2;
+		let minX = this.basePoint.x;
+		if (this.options.textAlign === 'center') {
+			minX -= width / 2;
+		} else if (this.options.textAlign === 'right') {
+			minX -= width;
+		}
 		return new Box(
-			this.basePoint.x,
-			this.basePoint.y,
-			this.basePoint.x + this.options.fontSize * this.label.length,
-			this.basePoint.y + this.options.fontSize
+			minX,
+			this.basePoint.y - halfHeight,
+			minX + width,
+			this.basePoint.y + halfHeight
 		);
 	}
 
@@ -108,7 +144,7 @@ export class TextEntity implements Entity {
 	}
 
 	public getSnapPoints(): SnapPoint[] {
-		return [];
+		return [{ point: this.basePoint, type: SnapPointType.Point }];
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -121,7 +157,11 @@ export class TextEntity implements Entity {
 	}
 
 	public distanceTo(shape: Shape): [number, Segment] | null {
-		return this.basePoint.distanceTo(shape);
+		const boundingBox = this.getBoundingBox();
+		if (shape instanceof Point && boundingBox.contains(shape)) {
+			return [0, new Segment(shape, shape)];
+		}
+		return new Polygon(boundingBox).distanceTo(shape);
 	}
 
 	public getSvgString(): string | null {
@@ -153,7 +193,7 @@ export class TextEntity implements Entity {
 						y: this.options.textDirection.y,
 					},
 					textAlign: this.options.textAlign,
-					textColor: this.options.textColor,
+					textColor: this.lineColor,
 					fontSize: this.options.fontSize,
 					fontFamily: this.options.fontFamily,
 				},

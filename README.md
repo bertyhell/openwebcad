@@ -9,11 +9,15 @@ This is a React-based canvas drawing application that allows users to draw vario
 ## Features
 
 - Fullscreen canvas next to a collapsible tool sidebar (press `[` to toggle it)
-- Drawing tools: Line, Rectangle, Circle, Image, Measurement, Fill
-- Modify tools: Move, Copy, Scale, Rotate, Array copy (linear and radial), Join, Eraser, Align
-- Zoom and pan (mouse wheel, middle mouse button, arrow keys, zoom tool)
+- Draw: Line, Rectangle, Circle, Arc (3 points), Polyline, Text, Image, Measurement, Fill
+- Modify: Move, Copy, Scale, Rotate, Mirror, Offset, Array copy (linear and radial), Join, Fillet, Chamfer, Extend, Eraser, Align
+- Properties panel: change the color, line width, layer and coordinates of the selection
+- Zoom and pan
+  - mouse wheel, `+` / `-`, `Home` to show the whole drawing, zoom tool
+  - middle mouse button, or hold `Space` and drag, arrow keys
 - Undo and redo, including layer changes
-- Layers: show/hide, lock, select all on a layer, move the selection to a layer
+- Layers: show/hide, lock, rename (double click), color for new entities, select all on a layer, move the selection to a layer
+- Grid (`F7`) and snap to grid (`F9`)
 - Choose angle guides
 - Draw with snap points for
   - endpoints
@@ -26,9 +30,9 @@ This is a React-based canvas drawing application that allows users to draw vario
   - Use SHIFT to add to the current selection
   - drag left, to select by intersecting
   - drag right, to select by containing
-- Command line next to the cursor: type a tool shortcut (eg: `L`) or a value (eg: `100`, `10,20`, `@10,20`) and press ENTER
-- Import images, SVG, DXF and JSON files
-- Export to JSON, SVG, PNG and PDF
+- Command line next to the cursor: type a tool shortcut (eg: `L`, `PL`, `OF`) or a value (eg: `100`, `10,20`, `@10,-20`) and press ENTER
+- Import images, SVG, DXF (lines, circles, arcs, polylines, text and layers) and JSON files
+- Export to JSON, DXF, SVG, PNG and PDF
 - The drawing is saved automatically in the browser
 - Select line color, fill color and line thickness
 
@@ -39,6 +43,7 @@ This is a React-based canvas drawing application that allows users to draw vario
 - Explode polygons into lines
 - Polygon circumference
 - Polygon area
+- Angular, radial and diameter dimensions
 - Draw with snap points for
   - circle tangents
   - nearest point on line

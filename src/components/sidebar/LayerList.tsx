@@ -1,13 +1,16 @@
-import type { FC } from 'react';
+import { type FC, useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import type { Layer } from '../../App.types.ts';
 import { setActiveLayerId } from '../../state.ts';
 import { PathIcon } from '../PathIcon.tsx';
+import { toFullHexColor } from './color.helpers.ts';
 import {
 	createLayer,
 	deleteLayer,
 	moveSelectionToLayer,
+	renameLayer,
 	selectEntitiesOnLayer,
+	setLayerColor,
 	toggleLayerLock,
 	toggleLayerVisibility,
 } from './sidebar.actions.ts';
@@ -21,8 +24,39 @@ interface LayerListProps {
 const LAYER_ICON_BUTTON_CLASSES =
 	'grid place-items-center flex-none h-7 bg-transparent border-0 cursor-pointer hover:text-hw-paper';
 
+/**
+ * Native color picker, the layer is only updated once the user picked a color
+ * instead of on every change while dragging in the picker, so it results in one undo step
+ */
+const LayerColorInput: FC<{ layer: Layer }> = ({ layer }) => {
+	const inputRef = useRef<HTMLInputElement>(null);
+	useEffect(() => {
+		const input = inputRef.current;
+		if (!input) return;
+		const handleChange = () => setLayerColor(layer.id, input.value);
+		input.addEventListener('change', handleChange);
+		return () => input.removeEventListener('change', handleChange);
+	}, [layer.id]);
+	return (
+		<input
+			ref={inputRef}
+			type="color"
+			defaultValue={toFullHexColor(layer.color ?? '#ffffff')}
+			aria-label={`Colour of layer ${layer.name}`}
+			className="absolute inset-0 opacity-0 cursor-pointer"
+			data-id={`layer-color-${layer.id}`}
+		/>
+	);
+};
+
 export const LayerList: FC<LayerListProps> = ({ layers, activeLayerId }) => {
 	const canDeleteLayers = layers.length > 1;
+	const [renamingLayerId, setRenamingLayerId] = useState<string | null>(null);
+
+	const finishRename = (layerId: string, name: string) => {
+		renameLayer(layerId, name);
+		setRenamingLayerId(null);
+	};
 
 	return (
 		<div className="flex flex-col gap-0.5 mt-1" data-id="layer-list">
@@ -44,6 +78,8 @@ export const LayerList: FC<LayerListProps> = ({ layers, activeLayerId }) => {
 						<button
 							type="button"
 							title={layer.isVisible ? 'Hide layer' : 'Show layer'}
+							aria-label={`${layer.isVisible ? 'Hide' : 'Show'} layer ${layer.name}`}
+							aria-pressed={!layer.isVisible}
 							onClick={() => toggleLayerVisibility(layer.id)}
 							className={`${LAYER_ICON_BUTTON_CLASSES} w-7 ${
 								layer.isVisible ? 'text-hw-stone-300' : 'text-hw-stone-700'
@@ -58,6 +94,8 @@ export const LayerList: FC<LayerListProps> = ({ layers, activeLayerId }) => {
 						<button
 							type="button"
 							title={layer.isLocked ? 'Unlock layer' : 'Lock layer'}
+							aria-label={`${layer.isLocked ? 'Unlock' : 'Lock'} layer ${layer.name}`}
+							aria-pressed={layer.isLocked}
 							onClick={() => toggleLayerLock(layer.id)}
 							className={`${LAYER_ICON_BUTTON_CLASSES} w-7 ${
 								layer.isLocked ? 'text-hw-modify' : 'text-hw-stone-700'
@@ -69,17 +107,57 @@ export const LayerList: FC<LayerListProps> = ({ layers, activeLayerId }) => {
 								strokeWidth={1.75}
 							/>
 						</button>
-						<button
-							type="button"
-							title="Make active layer"
-							onClick={() => setActiveLayerId(layer.id)}
-							className={`flex-1 min-w-0 h-7 px-1.5 bg-transparent border-0 text-left text-[13px] leading-none whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer ${nameColorClass}`}
+						<div
+							title="Layer colour for new entities"
+							className="relative grid place-items-center flex-none w-6 h-7 cursor-pointer"
 						>
-							{layer.name}
-						</button>
+							<span
+								className="block size-3 border border-hw-stone-700"
+								style={{ background: layer.color ?? 'transparent' }}
+							/>
+							<LayerColorInput layer={layer} />
+						</div>
+						{renamingLayerId === layer.id ? (
+							<input
+								// biome-ignore lint/a11y/noAutofocus: the input replaces the name the user wants to edit
+								autoFocus
+								type="text"
+								defaultValue={layer.name}
+								aria-label="Layer name"
+								onBlur={(evt) => finishRename(layer.id, evt.target.value)}
+								onKeyDown={(evt) => {
+									if (evt.key === 'Enter') {
+										finishRename(layer.id, evt.currentTarget.value);
+									} else if (evt.key === 'Escape') {
+										setRenamingLayerId(null);
+									}
+								}}
+								className="flex-1 min-w-0 h-7 px-1.5 bg-hw-night border border-hw-stone-500 rounded-[2px] text-hw-paper text-[13px] outline-none"
+								data-id={`layer-name-input-${layer.id}`}
+							/>
+						) : (
+							<button
+								type="button"
+								title="Make active layer, double click or F2 to rename"
+								onClick={() => setActiveLayerId(layer.id)}
+								onDoubleClick={() => setRenamingLayerId(layer.id)}
+								onKeyDown={(evt) => {
+									if (evt.key === 'F2') {
+										evt.preventDefault();
+										setRenamingLayerId(layer.id);
+									}
+								}}
+								aria-current={isActive ? 'true' : undefined}
+								className={`flex-1 min-w-0 h-7 px-1.5 bg-transparent border-0 text-left text-[13px] leading-none whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer ${nameColorClass}`}
+								data-id={`layer-name-${layer.id}`}
+							>
+								{layer.name}
+							</button>
+						)}
 						<button
 							type="button"
 							title="Select all on layer"
+							aria-label={`Select all on layer ${layer.name}`}
 							onClick={() => {
 								const count = selectEntitiesOnLayer(layer.id);
 								toast.info(`Selected ${count} entities on ${layer.name}`);
@@ -91,6 +169,7 @@ export const LayerList: FC<LayerListProps> = ({ layers, activeLayerId }) => {
 						<button
 							type="button"
 							title="Move selection to layer"
+							aria-label={`Move selection to layer ${layer.name}`}
 							onClick={() => {
 								const count = moveSelectionToLayer(layer.id);
 								if (count) {
@@ -108,6 +187,7 @@ export const LayerList: FC<LayerListProps> = ({ layers, activeLayerId }) => {
 							title={
 								canDeleteLayers ? 'Delete layer and contents' : 'The last layer cannot be deleted'
 							}
+							aria-label={`Delete layer ${layer.name}`}
 							disabled={!canDeleteLayers}
 							onClick={() => deleteLayer(layer.id)}
 							className={`${LAYER_ICON_BUTTON_CLASSES} w-[26px] text-hw-stone-700 hover:text-hw-danger-soft disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-hw-stone-700`}

@@ -1,17 +1,21 @@
 import { Actor } from 'xstate';
 import type { Layer } from '../../App.types.ts';
-import type { Entity } from '../../entities/Entity.ts';
+import { type Entity, EntityName } from '../../entities/Entity.ts';
+import type { FillEntity } from '../../entities/FillEntity.ts';
+import { type EntityGeometry, withEntityGeometry } from '../../helpers/entity-geometry.ts';
 import { getNewLayer } from '../../helpers/get-new-layer.ts';
 import { imageImport } from '../../helpers/import-export-handlers/image.import.ts';
 import {
 	getActiveLayerId,
 	getActiveToolActor,
 	getEditableEntities,
+	getEditableSelectedEntities,
 	getEntities,
 	getInputController,
 	getLayers,
 	getSelectedEntities,
 	setActiveLayerId,
+	setActiveLineColor,
 	setActiveToolActor,
 	setEntities,
 	setGhostHelperEntities,
@@ -130,8 +134,14 @@ export function renameLayer(layerId: string, name: string): void {
 	updateLayer(layerId, { name: trimmedName });
 }
 
+/**
+ * New entities on the layer get this color, it becomes the active color right away when the layer is active
+ */
 export function setLayerColor(layerId: string, color: string): void {
 	updateLayer(layerId, { color });
+	if (getActiveLayerId() === layerId) {
+		setActiveLineColor(color);
+	}
 }
 
 export function createLayer(): void {
@@ -186,4 +196,58 @@ export function moveSelectionToLayer(layerId: string): number {
 	);
 	deselectEntitiesOnLayer(layerId);
 	return selectedEntities.length;
+}
+
+/**
+ * Replaces the editable selected entities with an updated copy, as one undo step
+ * The copies keep the ids, so the selection stays the same
+ */
+export function updateSelectedEntities(update: (entity: Entity) => Entity | null): void {
+	const selectedEntities = getEditableSelectedEntities();
+	const updatedEntityById = new Map<string, Entity>();
+	for (const entity of selectedEntities) {
+		const updatedEntity = update(entity);
+		if (updatedEntity) {
+			updatedEntity.id = entity.id;
+			updatedEntityById.set(entity.id, updatedEntity);
+		}
+	}
+	if (!updatedEntityById.size) {
+		return;
+	}
+	setEntities(
+		getEntities().map((entity) => updatedEntityById.get(entity.id) ?? entity),
+		true
+	);
+}
+
+export function setSelectionLineColor(color: string): void {
+	updateSelectedEntities((entity) => {
+		const updatedEntity = entity.clone();
+		updatedEntity.lineColor = color;
+		return updatedEntity;
+	});
+}
+
+export function setSelectionLineWidth(lineWidth: number): void {
+	updateSelectedEntities((entity) => {
+		const updatedEntity = entity.clone();
+		updatedEntity.lineWidth = lineWidth;
+		return updatedEntity;
+	});
+}
+
+export function setSelectionGeometry(geometry: EntityGeometry): void {
+	updateSelectedEntities((entity) => withEntityGeometry(entity, geometry));
+}
+
+export function setSelectionFillColor(fillColor: string): void {
+	updateSelectedEntities((entity) => {
+		if (entity.getType() !== EntityName.Fill) {
+			return null;
+		}
+		const updatedEntity = entity.clone() as FillEntity;
+		updatedEntity.fillColor = fillColor;
+		return updatedEntity;
+	});
 }

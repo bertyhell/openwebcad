@@ -1,6 +1,6 @@
-import {toast} from 'react-toastify';
-import {assign, createMachine, sendTo} from 'xstate';
-import {PolyLineEntity} from '../entities/PolyLineEntity.ts';
+import { toast } from 'react-toastify';
+import { assign, createMachine, sendTo } from 'xstate';
+import { PolyLineEntity } from '../entities/PolyLineEntity.ts';
 import {
 	getNotSelectedEntities,
 	getSelectedEntities,
@@ -11,9 +11,9 @@ import {
 	setSelectedEntityIds,
 	setShouldDrawHelpers,
 } from '../state';
-import {Tool} from '../tools';
-import {selectToolStateMachine} from './select-tool';
-import type {StateEvent, ToolContext} from './tool.types';
+import { Tool } from '../tools';
+import { selectToolStateMachine } from './select-tool';
+import type { StateEvent, ToolContext } from './tool.types';
 
 export interface PeditContext extends ToolContext {}
 

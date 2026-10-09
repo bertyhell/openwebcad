@@ -1,6 +1,7 @@
 import type { FC } from 'react';
 import { toast } from 'react-toastify';
 import type { Layer } from '../../App.types.ts';
+import { setActiveLayerId } from '../../state.ts';
 import { PathIcon } from '../PathIcon.tsx';
 import {
 	createLayer,
@@ -11,7 +12,6 @@ import {
 	toggleLayerVisibility,
 } from './sidebar.actions.ts';
 import { ICON_PATHS } from './sidebar.consts.ts';
-import { setActiveLayerId } from '../../state.ts';
 
 interface LayerListProps {
 	layers: Layer[];

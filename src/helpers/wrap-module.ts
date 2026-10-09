@@ -7,5 +7,5 @@
 // 3 => 0
 // 4 => 1
 export function wrapModule(index: number, length: number) {
-  return (index + length) % length;
+	return (index + length) % length;
 }

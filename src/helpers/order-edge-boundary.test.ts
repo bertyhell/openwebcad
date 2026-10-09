@@ -1,7 +1,7 @@
-import {Arc, Point, Segment} from "@flatten-js/core";
-import {describe, expect, it} from "vitest";
-import {orderEdgeBoundary} from "./order-edge-boundary.ts";
-import {validateClosedBoundary} from "./tests/validate-closed-boundary.ts";
+import { Arc, Point, Segment } from '@flatten-js/core';
+import { describe, expect, it } from 'vitest';
+import { orderEdgeBoundary } from './order-edge-boundary.ts';
+import { validateClosedBoundary } from './tests/validate-closed-boundary.ts';
 
 describe('orderBoundary()', () => {
 	it('should order square boundary', () => {

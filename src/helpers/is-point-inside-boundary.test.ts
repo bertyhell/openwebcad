@@ -1,6 +1,6 @@
-import {Arc, Circle, Point, Ray, Segment, Vector} from '@flatten-js/core';
-import {describe, expect, test} from 'vitest';
-import {isPointInsideBoundary} from './is-point-inside-boundary';
+import { Arc, Circle, Point, Ray, Segment, Vector } from '@flatten-js/core';
+import { describe, expect, test } from 'vitest';
+import { isPointInsideBoundary } from './is-point-inside-boundary';
 
 describe('isPointInsideBoundary', () => {
 	/*

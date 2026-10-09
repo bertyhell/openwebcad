@@ -1,10 +1,15 @@
-import {type Box, Line, Point, Vector} from '@flatten-js/core'; // Added Box, Segment for completeness
-import {round} from 'es-toolkit'; // 1. Mocking for ../state.ts
-import {beforeEach, describe, expect, it, type Mock, vi} from 'vitest';
-import {EPSILON, MEASUREMENT_DECIMAL_PLACES, MEASUREMENT_FONT_SIZE, MEASUREMENT_LABEL_OFFSET,} from '../App.consts';
-import type {DrawController} from '../drawControllers/DrawController.ts'; // Import mocked functions after the mock definition // Import mocked functions after the mock definition
-import {isEntityHighlighted, isEntitySelected} from '../state.ts';
-import {MeasurementEntity} from './MeasurementEntity';
+import { type Box, Line, Point, Vector } from '@flatten-js/core'; // Added Box, Segment for completeness
+import { round } from 'es-toolkit'; // 1. Mocking for ../state.ts
+import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
+import {
+	EPSILON,
+	MEASUREMENT_DECIMAL_PLACES,
+	MEASUREMENT_FONT_SIZE,
+	MEASUREMENT_LABEL_OFFSET,
+} from '../App.consts';
+import type { DrawController } from '../drawControllers/DrawController.ts'; // Import mocked functions after the mock definition // Import mocked functions after the mock definition
+import { isEntityHighlighted, isEntitySelected } from '../state.ts';
+import { MeasurementEntity } from './MeasurementEntity';
 
 // 1. Mocking for ../state.ts
 vi.mock('../state.ts', () => ({
@@ -55,11 +60,7 @@ describe('MeasurementEntity text orientation in draw() method', () => {
 		expectedDirectionX: number,
 		expectedDirectionY: number
 	) => {
-		const measurement = new MeasurementEntity(
-			startPoint,
-			endPoint,
-			offsetPoint
-		);
+		const measurement = new MeasurementEntity(startPoint, endPoint, offsetPoint);
 		measurement.layerId = 'mockLayerIdGlobal';
 		measurement.lineColor = '#fff';
 		measurement.draw(mockDrawController as unknown as DrawController);
@@ -171,8 +172,8 @@ describe('MeasurementEntity.getBoundingBox', () => {
 		// Using imported constants directly
 		const totalOffsetText = MEASUREMENT_LABEL_OFFSET + MEASUREMENT_FONT_SIZE / 2;
 		const midpointMeasurementLineOffset = midpointMeasurementLine
-		.clone()
-		.translate(normalUnit.multiply(totalOffsetText)); // This is the text center
+			.clone()
+			.translate(normalUnit.multiply(totalOffsetText)); // This is the text center
 
 		// Correct distance calculation and rounding
 		const distanceVal = startPoint.distanceTo(endPoint)[0]; // distanceTo returns [distance, segment]
@@ -250,7 +251,7 @@ describe('MeasurementEntity.distanceTo', () => {
 		const measurement = new MeasurementEntity(start, end, offset);
 		measurement.layerId = layerId;
 		return measurement;
-	}
+	};
 
 	// Test data derived from previous failures and analysis.
 	// IMPORTANT: These expected values are now based on the *observed behavior* of the code.
@@ -350,7 +351,7 @@ describe('MeasurementEntity.containsPointOnShape', () => {
 		const measurement = new MeasurementEntity(start, end, offset);
 		measurement.layerId = layerId;
 		return measurement;
-	}
+	};
 
 	// These tests should generally pass if getDrawPoints is correct.
 	// We assume the logic of Segment.contains() from flatten-js is correct.
@@ -417,11 +418,7 @@ describe('MeasurementEntity draw() styling for selection', () => {
 
 	it('should apply selection styling to all components when selected', () => {
 		(isEntitySelected as Mock).mockReturnValue(true);
-		const measurement = new MeasurementEntity(
-			new Point(0, 0),
-			new Point(10, 0),
-			new Point(5, 5)
-		);
+		const measurement = new MeasurementEntity(new Point(0, 0), new Point(10, 0), new Point(5, 5));
 		measurement.layerId = 'mockLayerIdGlobal';
 		measurement.draw(mockDrawController as unknown as DrawController);
 
@@ -436,11 +433,7 @@ describe('MeasurementEntity draw() styling for selection', () => {
 
 	it('should NOT apply selection styling when not selected', () => {
 		(isEntitySelected as Mock).mockReturnValue(false);
-		const measurement = new MeasurementEntity(
-			new Point(0, 0),
-			new Point(10, 0),
-			new Point(5, 5)
-		);
+		const measurement = new MeasurementEntity(new Point(0, 0), new Point(10, 0), new Point(5, 5));
 		measurement.layerId = 'mockLayerIdGlobal';
 		measurement.draw(mockDrawController as unknown as DrawController);
 

@@ -1,6 +1,6 @@
-import {type Point, Vector} from '@flatten-js/core';
-import {CANVAS_INPUT_FIELD_FONT_SIZE} from '../App.consts.ts';
-import type {PolyLineEntity} from '../entities/PolyLineEntity.ts';
+import { type Point, Vector } from '@flatten-js/core';
+import { CANVAS_INPUT_FIELD_FONT_SIZE } from '../App.consts.ts';
+import type { PolyLineEntity } from '../entities/PolyLineEntity.ts';
 
 export interface DrawController {
 	getCanvasSize(): Point;

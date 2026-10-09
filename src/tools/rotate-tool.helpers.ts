@@ -1,5 +1,5 @@
-import {Line, type Point} from '@flatten-js/core';
-import type {Entity} from '../entities/Entity';
+import { Line, type Point } from '@flatten-js/core';
+import type { Entity } from '../entities/Entity';
 
 /**
  * Rotate entities round a base point by a certain angle

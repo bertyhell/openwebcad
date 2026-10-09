@@ -1,9 +1,9 @@
-import {saveAs} from 'file-saver';
-import {SVG_MARGIN} from '../../App.consts';
-import {SvgDrawController} from '../../drawControllers/svg.drawController.ts';
-import type {Entity} from '../../entities/Entity';
-import {getEntities} from '../../state';
-import {getBoundingBoxOfMultipleEntities} from '../get-bounding-box-of-multiple-entities.ts';
+import { saveAs } from 'file-saver';
+import { SVG_MARGIN } from '../../App.consts';
+import { SvgDrawController } from '../../drawControllers/svg.drawController.ts';
+import type { Entity } from '../../entities/Entity';
+import { getEntities } from '../../state';
+import { getBoundingBoxOfMultipleEntities } from '../get-bounding-box-of-multiple-entities.ts';
 
 export function convertEntitiesToSvgString(entities: Entity[]): {
 	svgLines: string[];

@@ -140,9 +140,7 @@ export function findLoopsInEdges(edges: Edge[]): BoundaryWithHoles[] {
 			loop.boundary = loop.boundary.map((edge) => edge.translate(-offsetX, -offsetY));
 
 			// Translate coordinates of the holes
-			loop.holes = loop.holes.map((hole) =>
-				hole.map((edge) => edge.translate(-offsetX, -offsetY))
-			);
+			loop.holes = loop.holes.map((hole) => hole.map((edge) => edge.translate(-offsetX, -offsetY)));
 		}
 	}
 

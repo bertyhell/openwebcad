@@ -1,8 +1,8 @@
-import {Arc, Point} from '@flatten-js/core';
-import {describe, expect, it} from 'vitest';
-import {splitArcAtPoints, splitEdgeAtPoints} from './split-edge-at-points.ts';
-import {expectIsEqualNumberArray} from "./tests/expect-is-equal-number-array.ts";
-import {sum} from "es-toolkit";
+import { Arc, Point } from '@flatten-js/core';
+import { sum } from 'es-toolkit';
+import { describe, expect, it } from 'vitest';
+import { splitArcAtPoints, splitEdgeAtPoints } from './split-edge-at-points.ts';
+import { expectIsEqualNumberArray } from './tests/expect-is-equal-number-array.ts';
 
 describe('SplitEdgeAtPoints', () => {
 	it('Should split Arc edge into 4 parts', () => {
@@ -12,11 +12,7 @@ describe('SplitEdgeAtPoints', () => {
 		const arcSweeps = parts.map((arc) => (arc as Arc).sweep);
 		expectIsEqualNumberArray(
 			arcSweeps,
-			[
-				1.2055891055045294,
-				0.7304144425807344,
-				1.2055891055045294
-			]
+			[1.2055891055045294, 0.7304144425807344, 1.2055891055045294]
 		);
 	});
 
@@ -62,11 +58,10 @@ describe('SplitEdgeAtPoints', () => {
 		const points = [new Point(60.76696830622021, 50), new Point(60.76696830622021, -50)];
 		const parts = splitArcAtPoints(arc, points);
 		const arcSweeps = parts.map((arc) => (arc as Arc).sweep);
-		expectIsEqualNumberArray(arcSweeps, [
-			1.2055891055045294,
-			0.7304144425807344,
-			1.2055891055045294,
-		]);
+		expectIsEqualNumberArray(
+			arcSweeps,
+			[1.2055891055045294, 0.7304144425807344, 1.2055891055045294]
+		);
 		expect(sum(arcSweeps)).toEqual(expect.closeTo(Math.PI, 13));
 	});
 });

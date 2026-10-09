@@ -1,6 +1,6 @@
-import {describe, it} from "vitest";
-import {sortAngles} from "./sort-angles.ts";
-import {expectIsEqualNumberArray} from "./tests/expect-is-equal-number-array.ts";
+import { describe, it } from 'vitest';
+import { sortAngles } from './sort-angles.ts';
+import { expectIsEqualNumberArray } from './tests/expect-is-equal-number-array.ts';
 
 describe('sortAngles()', () => {
 	it('should order angles 1', () => {

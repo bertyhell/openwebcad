@@ -1,5 +1,5 @@
-import type {BoundingBox, Edge} from '../App.types.ts';
-import type {Entity} from '../entities/Entity.ts';
+import type { BoundingBox, Edge } from '../App.types.ts';
+import type { Entity } from '../entities/Entity.ts';
 
 export function getBoundingBoxOfMultipleEntities(entities: Entity[]): BoundingBox {
 	let minX = Number.MAX_VALUE;

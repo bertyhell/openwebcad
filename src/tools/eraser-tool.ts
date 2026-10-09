@@ -1,16 +1,30 @@
-import type {Point, Polygon} from '@flatten-js/core';
-import {assign, createMachine} from 'xstate';
-import type {ArcEntity} from '../entities/ArcEntity';
-import type {CircleEntity} from '../entities/CircleEntity';
-import {EntityName} from '../entities/Entity';
-import {LineEntity} from '../entities/LineEntity';
-import type {RectangleEntity} from '../entities/RectangleEntity';
-import {findClosestEntity} from '../helpers/find-closest-entity';
-import {polygonToSegments} from '../helpers/polygon-to-segments';
-import {addEntities, deleteEntities, getEditableEntities, getEntities, getVisibleEntities, setEntities, setGhostHelperEntities, setShouldDrawHelpers,} from '../state';
-import {Tool} from '../tools';
-import {eraseArcSegment, eraseCircleSegment, eraseLineSegment, getAllIntersectionPoints,} from './eraser-tool.helpers';
-import type {MouseClickEvent, StateEvent, ToolContext} from './tool.types';
+import type { Point, Polygon } from '@flatten-js/core';
+import { assign, createMachine } from 'xstate';
+import type { ArcEntity } from '../entities/ArcEntity';
+import type { CircleEntity } from '../entities/CircleEntity';
+import { EntityName } from '../entities/Entity';
+import { LineEntity } from '../entities/LineEntity';
+import type { RectangleEntity } from '../entities/RectangleEntity';
+import { findClosestEntity } from '../helpers/find-closest-entity';
+import { polygonToSegments } from '../helpers/polygon-to-segments';
+import {
+	addEntities,
+	deleteEntities,
+	getEditableEntities,
+	getEntities,
+	getVisibleEntities,
+	setEntities,
+	setGhostHelperEntities,
+	setShouldDrawHelpers,
+} from '../state';
+import { Tool } from '../tools';
+import {
+	eraseArcSegment,
+	eraseCircleSegment,
+	eraseLineSegment,
+	getAllIntersectionPoints,
+} from './eraser-tool.helpers';
+import type { MouseClickEvent, StateEvent, ToolContext } from './tool.types';
 
 export interface EraserContext extends ToolContext {
 	startPoint: Point | null;
@@ -123,7 +137,10 @@ export function handleMouseClick(worldMouseLocation: Point) {
 			addEntities(segmentEntities, false);
 
 			// Remove (a segment) of the 4th line closest to the cursor
-			const lineIntersections = getAllIntersectionPoints(closestSegmentInfo.entity, getVisibleEntities());
+			const lineIntersections = getAllIntersectionPoints(
+				closestSegmentInfo.entity,
+				getVisibleEntities()
+			);
 			eraseLineSegment(
 				closestSegmentInfo.entity as LineEntity,
 				clickedPointOnShape,

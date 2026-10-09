@@ -1,7 +1,7 @@
-import {assign, type MachineContext, sendTo} from 'xstate';
-import type {BoundingBox} from '../App.types.ts';
-import type {Entity} from '../entities/Entity.ts';
-import {getBoundingBoxOfMultipleEntities} from '../helpers/get-bounding-box-of-multiple-entities.ts';
+import { assign, type MachineContext, sendTo } from 'xstate';
+import type { BoundingBox } from '../App.types.ts';
+import type { Entity } from '../entities/Entity.ts';
+import { getBoundingBoxOfMultipleEntities } from '../helpers/get-bounding-box-of-multiple-entities.ts';
 import {
 	getSelectedEntities,
 	getSelectedEntityIds,
@@ -10,9 +10,15 @@ import {
 	setSelectedEntityIds,
 	setShouldDrawHelpers,
 } from '../state.ts';
-import type {Tool} from '../tools.ts';
-import {selectToolStateMachine} from './select-tool.ts';
-import type {DrawEvent, KeyboardEnterEvent, MouseClickEvent, StateEvent, ToolContext,} from './tool.types.ts';
+import type { Tool } from '../tools.ts';
+import { selectToolStateMachine } from './select-tool.ts';
+import type {
+	DrawEvent,
+	KeyboardEnterEvent,
+	MouseClickEvent,
+	StateEvent,
+	ToolContext,
+} from './tool.types.ts';
 
 export interface AlignContext extends ToolContext {}
 

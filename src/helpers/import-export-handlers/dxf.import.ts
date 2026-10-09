@@ -1,13 +1,19 @@
-import {Point} from '@flatten-js/core';
-import type {Entities as DxfEntities, Helper} from 'dxf';
-import {isNil, uniqBy} from 'es-toolkit';
-import {toast} from 'react-toastify';
-import {CircleEntity} from '../../entities/CircleEntity.ts';
-import type {Entity} from '../../entities/Entity.ts';
-import {LineEntity} from '../../entities/LineEntity.ts';
-import {getActiveLayerId, getActiveLineColor, getActiveLineWidth, getEntities, setEntities,} from '../../state';
-import {zoomToBounds} from '../../tools/zoom-tool.helpers.ts';
-import {toHex} from '../rgb-to-hex-color.ts';
+import { Point } from '@flatten-js/core';
+import type { Entities as DxfEntities, Helper } from 'dxf';
+import { isNil, uniqBy } from 'es-toolkit';
+import { toast } from 'react-toastify';
+import { CircleEntity } from '../../entities/CircleEntity.ts';
+import type { Entity } from '../../entities/Entity.ts';
+import { LineEntity } from '../../entities/LineEntity.ts';
+import {
+	getActiveLayerId,
+	getActiveLineColor,
+	getActiveLineWidth,
+	getEntities,
+	setEntities,
+} from '../../state';
+import { zoomToBounds } from '../../tools/zoom-tool.helpers.ts';
+import { toHex } from '../rgb-to-hex-color.ts';
 
 function getDxfLineColor(dxfColor: [number, number, number] | undefined): string {
 	if (isNil(dxfColor)) {

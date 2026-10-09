@@ -1,7 +1,7 @@
-import {Point} from '@flatten-js/core';
-import {describe, expect, it} from 'vitest';
-import {TO_DEGREES} from '../App.consts.ts';
-import {getAngleWithXAxis} from './get-angle-with-x-axis.ts';
+import { Point } from '@flatten-js/core';
+import { describe, expect, it } from 'vitest';
+import { TO_DEGREES } from '../App.consts.ts';
+import { getAngleWithXAxis } from './get-angle-with-x-axis.ts';
 
 describe('getAngleWithXAxis', () => {
 	it('should return 90 degrees in radians', () => {

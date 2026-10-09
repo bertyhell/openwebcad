@@ -1,20 +1,20 @@
-import {type Point, Vector} from '@flatten-js/core';
-import {assign, createMachine} from 'xstate';
-import {MEASUREMENT_DEFAULT_OFFSET, TO_RADIANS} from '../App.consts';
-import {MeasurementEntity} from '../entities/MeasurementEntity';
-import {getPointFromEvent} from '../helpers/get-point-from-event.ts';
-import {isPointEqual} from '../helpers/is-point-equal.ts';
+import { type Point, Vector } from '@flatten-js/core';
+import { assign, createMachine } from 'xstate';
+import { MEASUREMENT_DEFAULT_OFFSET, TO_RADIANS } from '../App.consts';
+import { MeasurementEntity } from '../entities/MeasurementEntity';
+import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
+import { isPointEqual } from '../helpers/is-point-equal.ts';
 import {
-  addEntities,
-  getActiveLineColor,
-  getActiveLineWidth,
-  setAngleGuideOriginPoint,
-  setGhostHelperEntities,
-  setSelectedEntityIds,
-  setShouldDrawHelpers,
+	addEntities,
+	getActiveLineColor,
+	getActiveLineWidth,
+	setAngleGuideOriginPoint,
+	setGhostHelperEntities,
+	setSelectedEntityIds,
+	setShouldDrawHelpers,
 } from '../state';
-import {Tool} from '../tools';
-import type {DrawEvent, PointInputEvent, StateEvent, ToolContext,} from './tool.types';
+import { Tool } from '../tools';
+import type { DrawEvent, PointInputEvent, StateEvent, ToolContext } from './tool.types';
 
 export interface MeasurementContext extends ToolContext {
 	startPoint: Point | null;

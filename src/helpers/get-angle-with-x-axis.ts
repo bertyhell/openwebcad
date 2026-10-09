@@ -1,4 +1,4 @@
-import type {Point} from '@flatten-js/core';
+import type { Point } from '@flatten-js/core';
 
 /**
  * Calculates the angle between the segment and the x axis in Radians

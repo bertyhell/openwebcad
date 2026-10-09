@@ -1,4 +1,4 @@
-import {type Arc, type Point, Segment} from "@flatten-js/core";
+import { type Arc, type Point, Segment } from '@flatten-js/core';
 
 export function approximateArc(arc: Arc, numberOfSegments: number = 10): Segment[] {
 	const segments: Segment[] = [];
@@ -6,7 +6,7 @@ export function approximateArc(arc: Arc, numberOfSegments: number = 10): Segment
 	let lastPoint = arc.start;
 	for (let i = 1; i < numberOfSegments; i += 1) {
 		const startPoint = lastPoint;
-		const endPoint = arc.pointAtLength(totalArcLength/numberOfSegments*i) as Point;
+		const endPoint = arc.pointAtLength((totalArcLength / numberOfSegments) * i) as Point;
 		segments.push(new Segment(startPoint, endPoint));
 		lastPoint = endPoint;
 	}

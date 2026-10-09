@@ -1,13 +1,13 @@
-import {Point} from '@flatten-js/core'; /* eslint-disable @typescript-eslint/no-explicit-any */
-import {expect, test} from 'vitest';
-import type {ArcJsonData} from '../../../src/entities/ArcEntity';
-import {EntityName, type JsonEntity} from '../../../src/entities/Entity';
-import type {LineJsonData} from '../../../src/entities/LineEntity';
-import {pointDistance} from '../../../src/helpers/distance-between-points';
-import {getEntities} from '../../../src/state';
-import {initApplication} from '../../helpers/init-application';
-import {replayRecording} from '../../helpers/replay-recording';
-import {CANVAS_HEIGHT} from "../../helpers/tests.consts";
+import { Point } from '@flatten-js/core'; /* eslint-disable @typescript-eslint/no-explicit-any */
+import { expect, test } from 'vitest';
+import type { ArcJsonData } from '../../../src/entities/ArcEntity';
+import { EntityName, type JsonEntity } from '../../../src/entities/Entity';
+import type { LineJsonData } from '../../../src/entities/LineEntity';
+import { pointDistance } from '../../../src/helpers/distance-between-points';
+import { getEntities } from '../../../src/state';
+import { initApplication } from '../../helpers/init-application';
+import { replayRecording } from '../../helpers/replay-recording';
+import { CANVAS_HEIGHT } from '../../helpers/tests.consts';
 import eraserRecording from './eraser.recording.json';
 
 test('Draw circle and line and erase part of circle', async () => {
@@ -46,5 +46,5 @@ test('Draw circle and line and erase part of circle', async () => {
 	);
 	expect(arcJson.shapeData.radius).toBeCloseTo(radius, 5);
 	expect(arcJson.shapeData.startAngle).toBeCloseTo(0.7338182524767606, 5);
-	expect(arcJson.shapeData.endAngle).toBeCloseTo(Math.PI * 2 -0.7338182524767606, 5);
+	expect(arcJson.shapeData.endAngle).toBeCloseTo(Math.PI * 2 - 0.7338182524767606, 5);
 });

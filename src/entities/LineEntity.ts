@@ -1,16 +1,22 @@
-import {type Box, Point, Segment} from '@flatten-js/core';
-import {sortBy, uniqWith} from 'es-toolkit';
-import {type Edge, type Shape, type SnapPoint, SnapPointType, type StartAndEndpointEntity,} from '../App.types';
-import type {DrawController} from '../drawControllers/DrawController';
-import {pointDistance} from '../helpers/distance-between-points';
-import {getAngleWithXAxis} from '../helpers/get-angle-with-x-axis.ts';
-import {getExportColor} from '../helpers/get-export-color';
-import {isPointEqual} from '../helpers/is-point-equal';
-import {mirrorPointOverAxis} from '../helpers/mirror-point-over-axis.ts';
-import {scalePoint} from '../helpers/scale-point';
-import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
-import {type Entity, EntityName, type JsonEntity} from './Entity';
+import { type Box, Point, Segment } from '@flatten-js/core';
+import { sortBy, uniqWith } from 'es-toolkit';
+import {
+	type Edge,
+	type Shape,
+	type SnapPoint,
+	SnapPointType,
+	type StartAndEndpointEntity,
+} from '../App.types';
+import type { DrawController } from '../drawControllers/DrawController';
 import { copyEntityBaseProperties } from '../helpers/copy-entity-base-properties';
+import { pointDistance } from '../helpers/distance-between-points';
+import { getAngleWithXAxis } from '../helpers/get-angle-with-x-axis.ts';
+import { getExportColor } from '../helpers/get-export-color';
+import { isPointEqual } from '../helpers/is-point-equal';
+import { mirrorPointOverAxis } from '../helpers/mirror-point-over-axis.ts';
+import { scalePoint } from '../helpers/scale-point';
+import { getActiveLayerId, isEntityHighlighted, isEntitySelected } from '../state.ts';
+import { type Entity, EntityName, type JsonEntity } from './Entity';
 
 export class LineEntity implements Entity, StartAndEndpointEntity {
 	public id: string = crypto.randomUUID();

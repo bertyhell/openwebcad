@@ -1,5 +1,5 @@
-import type {Box, Point, Polygon} from '@flatten-js/core';
-import {uniq} from 'es-toolkit';
+import type { Box, Point, Polygon } from '@flatten-js/core';
+import { uniq } from 'es-toolkit';
 import {
 	EPSILON,
 	HIGHLIGHT_ENTITY_DISTANCE,
@@ -8,11 +8,17 @@ import {
 	SELECTION_RECTANGLE_STYLE,
 	SELECTION_RECTANGLE_WIDTH,
 } from '../App.consts';
-import {RectangleEntity} from '../entities/RectangleEntity';
-import {findClosestEntity} from '../helpers/find-closest-entity';
-import {getEditableEntities, getSelectedEntityIds, isEntitySelected, setGhostHelperEntities, setSelectedEntityIds,} from '../state';
-import type {SelectContext} from './select-tool';
-import type {MouseClickEvent} from './tool.types';
+import { RectangleEntity } from '../entities/RectangleEntity';
+import { findClosestEntity } from '../helpers/find-closest-entity';
+import {
+	getEditableEntities,
+	getSelectedEntityIds,
+	isEntitySelected,
+	setGhostHelperEntities,
+	setSelectedEntityIds,
+} from '../state';
+import type { SelectContext } from './select-tool';
+import type { MouseClickEvent } from './tool.types';
 
 export function handleFirstSelectionPoint(
 	context: SelectContext,

@@ -1,17 +1,17 @@
 import type * as Flatten from '@flatten-js/core';
-import {Box, type Point, type Segment} from '@flatten-js/core';
-import {mapLimit} from 'blend-promise-utils';
-import {compact, maxBy} from 'es-toolkit';
-import {minBy} from 'es-toolkit/compat';
-import type {Edge, Shape, SnapPoint, StartAndEndpointEntity} from '../App.types';
-import type {DrawController} from '../drawControllers/DrawController';
-import {checkClosedPolygon} from '../helpers/check-closed-polygon.ts';
-import {orderEdgeBoundary} from '../helpers/order-edge-boundary.ts';
-import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
-import {ArcEntity, type ArcJsonData} from './ArcEntity.ts';
-import {type Entity, EntityName, type JsonEntity} from './Entity';
-import {LineEntity, type LineJsonData} from './LineEntity.ts';
+import { Box, type Point, type Segment } from '@flatten-js/core';
+import { mapLimit } from 'blend-promise-utils';
+import { compact, maxBy } from 'es-toolkit';
+import { minBy } from 'es-toolkit/compat';
+import type { Edge, Shape, SnapPoint, StartAndEndpointEntity } from '../App.types';
+import type { DrawController } from '../drawControllers/DrawController';
+import { checkClosedPolygon } from '../helpers/check-closed-polygon.ts';
 import { copyEntityBaseProperties } from '../helpers/copy-entity-base-properties';
+import { orderEdgeBoundary } from '../helpers/order-edge-boundary.ts';
+import { getActiveLayerId, isEntityHighlighted, isEntitySelected } from '../state.ts';
+import { ArcEntity, type ArcJsonData } from './ArcEntity.ts';
+import { type Entity, EntityName, type JsonEntity } from './Entity';
+import { LineEntity, type LineJsonData } from './LineEntity.ts';
 
 export class PolyLineEntity implements Entity {
 	public id: string = crypto.randomUUID();

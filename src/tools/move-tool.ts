@@ -1,23 +1,23 @@
-import type {Point} from '@flatten-js/core';
-import {compact} from 'es-toolkit';
-import {assign, createMachine, sendTo} from 'xstate';
-import {GUIDE_LINE_COLOR, GUIDE_LINE_STYLE, GUIDE_LINE_WIDTH} from '../App.consts';
-import type {Entity} from '../entities/Entity';
-import {LineEntity} from '../entities/LineEntity';
+import type { Point } from '@flatten-js/core';
+import { compact } from 'es-toolkit';
+import { assign, createMachine, sendTo } from 'xstate';
+import { GUIDE_LINE_COLOR, GUIDE_LINE_STYLE, GUIDE_LINE_WIDTH } from '../App.consts';
+import type { Entity } from '../entities/Entity';
+import { LineEntity } from '../entities/LineEntity';
 import {
-  addEntities,
-  deleteEntities,
-  getSelectedEntities,
-  getSelectedEntityIds,
-  setAngleGuideOriginPoint,
-  setGhostHelperEntities,
-  setSelectedEntityIds,
-  setShouldDrawHelpers,
+	addEntities,
+	deleteEntities,
+	getSelectedEntities,
+	getSelectedEntityIds,
+	setAngleGuideOriginPoint,
+	setGhostHelperEntities,
+	setSelectedEntityIds,
+	setShouldDrawHelpers,
 } from '../state';
-import {Tool} from '../tools';
-import {moveEntities} from './move-tool.helpers';
-import {selectToolStateMachine} from './select-tool';
-import type {DrawEvent, MouseClickEvent, StateEvent, ToolContext} from './tool.types';
+import { Tool } from '../tools';
+import { moveEntities } from './move-tool.helpers';
+import { selectToolStateMachine } from './select-tool';
+import type { DrawEvent, MouseClickEvent, StateEvent, ToolContext } from './tool.types';
 
 export interface MoveContext extends ToolContext {
 	startPoint: Point | null;

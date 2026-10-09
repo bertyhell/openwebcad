@@ -1,5 +1,5 @@
-import {Polygon} from '@flatten-js/core';
-import type {Edge} from '../App.types.ts';
+import { Polygon } from '@flatten-js/core';
+import type { Edge } from '../App.types.ts';
 
 /**
  * Calculates the area of the boundary

@@ -1,6 +1,6 @@
-import {Box, Line, Point, Segment, Vector} from '@flatten-js/core';
-import {minBy, round} from 'es-toolkit';
-import {max, min} from 'es-toolkit/compat';
+import { Box, Line, Point, Segment, Vector } from '@flatten-js/core';
+import { minBy, round } from 'es-toolkit';
+import { max, min } from 'es-toolkit/compat';
 import {
 	ARROW_HEAD_LENGTH,
 	ARROW_HEAD_WIDTH,
@@ -12,16 +12,16 @@ import {
 	MEASUREMENT_ORIGIN_MARGIN,
 	TO_RADIANS,
 } from '../App.consts';
-import type {Edge, Shape, SnapPoint} from '../App.types';
-import type {DrawController} from '../drawControllers/DrawController';
-import {pointDistance} from '../helpers/distance-between-points';
-import {isPointEqual} from '../helpers/is-point-equal';
-import {mirrorPointOverAxis} from '../helpers/mirror-point-over-axis.ts';
-import {scalePoint} from '../helpers/scale-point';
-import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
-import {type Entity, EntityName, type JsonEntity} from './Entity';
-import type {LineEntity} from './LineEntity.ts';
+import type { Edge, Shape, SnapPoint } from '../App.types';
+import type { DrawController } from '../drawControllers/DrawController';
 import { copyEntityBaseProperties } from '../helpers/copy-entity-base-properties';
+import { pointDistance } from '../helpers/distance-between-points';
+import { isPointEqual } from '../helpers/is-point-equal';
+import { mirrorPointOverAxis } from '../helpers/mirror-point-over-axis.ts';
+import { scalePoint } from '../helpers/scale-point';
+import { getActiveLayerId, isEntityHighlighted, isEntitySelected } from '../state.ts';
+import { type Entity, EntityName, type JsonEntity } from './Entity';
+import type { LineEntity } from './LineEntity.ts';
 
 export class MeasurementEntity implements Entity {
 	public id: string = crypto.randomUUID();

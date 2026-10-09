@@ -1,7 +1,7 @@
-import {Point} from '@flatten-js/core';
-import {describe, expect, it} from 'vitest';
-import type {StartAndEndpointEntity} from '../App.types.ts';
-import {checkClosedPolygon} from './check-closed-polygon.ts';
+import { Point } from '@flatten-js/core';
+import { describe, expect, it } from 'vitest';
+import type { StartAndEndpointEntity } from '../App.types.ts';
+import { checkClosedPolygon } from './check-closed-polygon.ts';
 
 function getMockSegment(start: Point, end: Point): StartAndEndpointEntity {
 	return {

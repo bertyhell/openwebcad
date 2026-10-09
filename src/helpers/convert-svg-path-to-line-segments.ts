@@ -1,4 +1,4 @@
-import {toast} from 'react-toastify';
+import { toast } from 'react-toastify';
 
 // A small type alias for clarity.
 type Point = { x: number; y: number };

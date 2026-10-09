@@ -1,7 +1,7 @@
-import {Point} from '@flatten-js/core';
-import {describe, expect, it} from 'vitest';
-import {TO_DEGREES} from '../App.consts.ts';
-import {LineEntity} from './LineEntity.ts';
+import { Point } from '@flatten-js/core';
+import { describe, expect, it } from 'vitest';
+import { TO_DEGREES } from '../App.consts.ts';
+import { LineEntity } from './LineEntity.ts';
 
 describe('getAngle', () => {
 	it('should return 0 for a horizontal line', () => {

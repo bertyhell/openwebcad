@@ -1,6 +1,6 @@
-import {type Arc, PlanarSet, type Point, type Segment} from '@flatten-js/core';
-import {splitEdgeAtPoints} from "./split-edge-at-points.ts";
-import {isEqual} from "es-toolkit";
+import { type Arc, PlanarSet, type Point, type Segment } from '@flatten-js/core';
+import { isEqual } from 'es-toolkit';
+import { splitEdgeAtPoints } from './split-edge-at-points.ts';
 
 type Edge = Segment | Arc;
 

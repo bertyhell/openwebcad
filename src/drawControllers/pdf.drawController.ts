@@ -1,10 +1,10 @@
-import type {Point} from '@flatten-js/core';
-import {jsPDF} from 'jspdf';
-import type {TextOptions} from '../entities/TextEntity.ts';
-import type {DrawController} from './DrawController';
-import {SvgDrawController} from './svg.drawController.ts';
+import type { Point } from '@flatten-js/core';
+import { jsPDF } from 'jspdf';
+import type { TextOptions } from '../entities/TextEntity.ts';
+import type { DrawController } from './DrawController';
+import { SvgDrawController } from './svg.drawController.ts';
 import 'svg2pdf.js';
-import type {PolyLineEntity} from '../entities/PolyLineEntity.ts';
+import type { PolyLineEntity } from '../entities/PolyLineEntity.ts';
 
 export class PdfDrawController implements DrawController {
 	private svgDrawController: SvgDrawController;

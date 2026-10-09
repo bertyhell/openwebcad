@@ -1,21 +1,17 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { svgPathToSegments } from './convert-svg-path-to-line-segments';
 
 describe('svgPathToSegments', () => {
 	it('should handle simple move and line commands', () => {
 		const path = 'M 10 10 L 20 20';
 		const segments = svgPathToSegments(path);
-		expect(segments).toEqual([
-			{ x1: 10, y1: 10, x2: 20, y2: 20 },
-		]);
+		expect(segments).toEqual([{ x1: 10, y1: 10, x2: 20, y2: 20 }]);
 	});
 
 	it('should handle relative line commands', () => {
 		const path = 'M 10 10 l 10 10';
 		const segments = svgPathToSegments(path);
-		expect(segments).toEqual([
-			{ x1: 10, y1: 10, x2: 20, y2: 20 },
-		]);
+		expect(segments).toEqual([{ x1: 10, y1: 10, x2: 20, y2: 20 }]);
 	});
 
 	it('should handle horizontal and vertical lines', () => {

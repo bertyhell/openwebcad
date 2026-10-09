@@ -14,7 +14,13 @@
     "indentStyle": "tab",
     "lineWidth": 100
   },
-  "assist": { "actions": { "source": { "organizeImports": "on" } } },
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
   "linter": {
     "enabled": true,
     "rules": {
@@ -37,6 +43,11 @@
   "json": {
     "formatter": {
       "indentStyle": "space"
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
     }
   }
 }

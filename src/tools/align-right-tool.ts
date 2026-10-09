@@ -1,8 +1,8 @@
-import {createMachine} from 'xstate';
-import type {BoundingBox} from '../App.types.ts';
-import type {Entity} from '../entities/Entity.ts';
-import {Tool} from '../tools';
-import {GET_ALIGN_ACTION, GET_ALIGN_TOOL_STATE} from './align-tool.helpers.ts';
+import { createMachine } from 'xstate';
+import type { BoundingBox } from '../App.types.ts';
+import type { Entity } from '../entities/Entity.ts';
+import { Tool } from '../tools';
+import { GET_ALIGN_ACTION, GET_ALIGN_TOOL_STATE } from './align-tool.helpers.ts';
 
 /**
  * AlignRight tool state machine

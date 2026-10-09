@@ -1,5 +1,5 @@
-import {type Point, Ray, Vector} from '@flatten-js/core';
-import type {Edge} from '../App.types.ts';
+import { type Point, Ray, Vector } from '@flatten-js/core';
+import type { Edge } from '../App.types.ts';
 
 function getRandomDirectionRayFromPoint(point: Point): Ray {
 	// Generate a random angle in radians between 0 and 2π

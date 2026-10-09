@@ -1,4 +1,4 @@
-import {Box, type Point} from '@flatten-js/core';
+import { Box, type Point } from '@flatten-js/core';
 
 export function getContainRectangleInsideRectangle(
 	imageWidth: number,

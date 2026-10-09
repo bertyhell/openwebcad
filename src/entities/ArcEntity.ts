@@ -1,16 +1,22 @@
-import {Arc, type Box, Line, Point, type Segment} from '@flatten-js/core';
-import {uniqWith} from 'es-toolkit';
-import {type Edge, type Shape, type SnapPoint, SnapPointType, type StartAndEndpointEntity,} from '../App.types';
-import type {DrawController} from '../drawControllers/DrawController.ts';
-import {getExportColor} from '../helpers/get-export-color';
-import {isPointEqual} from '../helpers/is-point-equal';
-import {mirrorPointOverAxis} from '../helpers/mirror-point-over-axis.ts';
-import {scalePoint} from '../helpers/scale-point';
-import {sortPointsOnArc} from '../helpers/sort-points-on-arc';
-import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
-import {type Entity, EntityName, type JsonEntity} from './Entity';
-import type {LineEntity} from './LineEntity.ts';
+import { Arc, type Box, Line, Point, type Segment } from '@flatten-js/core';
+import { uniqWith } from 'es-toolkit';
+import {
+	type Edge,
+	type Shape,
+	type SnapPoint,
+	SnapPointType,
+	type StartAndEndpointEntity,
+} from '../App.types';
+import type { DrawController } from '../drawControllers/DrawController.ts';
 import { copyEntityBaseProperties } from '../helpers/copy-entity-base-properties';
+import { getExportColor } from '../helpers/get-export-color';
+import { isPointEqual } from '../helpers/is-point-equal';
+import { mirrorPointOverAxis } from '../helpers/mirror-point-over-axis.ts';
+import { scalePoint } from '../helpers/scale-point';
+import { sortPointsOnArc } from '../helpers/sort-points-on-arc';
+import { getActiveLayerId, isEntityHighlighted, isEntitySelected } from '../state.ts';
+import { type Entity, EntityName, type JsonEntity } from './Entity';
+import type { LineEntity } from './LineEntity.ts';
 
 export class ArcEntity implements Entity, StartAndEndpointEntity {
 	public id: string = crypto.randomUUID();

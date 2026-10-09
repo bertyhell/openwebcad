@@ -1,7 +1,7 @@
-import type {Edge} from "../App.types.ts";
-import {Arc, Segment} from "@flatten-js/core";
-import {isPointEqual} from "./is-point-equal.ts";
-import {isApproxEqual} from "./is-approx-equal.ts";
+import { Arc, Segment } from '@flatten-js/core';
+import type { Edge } from '../App.types.ts';
+import { isApproxEqual } from './is-approx-equal.ts';
+import { isPointEqual } from './is-point-equal.ts';
 
 /**
  * Joins arcs that have the same center point, and share one start/endpoint
@@ -68,10 +68,7 @@ function tryMerge(edge1: Edge, edge2: Edge): Edge | null {
 		}
 	} else if (edge1 instanceof Segment && edge2 instanceof Segment) {
 		// Merge segments if these are equal: slope and end with start
-		if (
-			isPointEqual(edge1.end, edge2.start) &&
-			isApproxEqual(edge1.slope, edge2.slope)
-		) {
+		if (isPointEqual(edge1.end, edge2.start) && isApproxEqual(edge1.slope, edge2.slope)) {
 			return new Segment(edge1.start, edge2.end);
 		}
 	}

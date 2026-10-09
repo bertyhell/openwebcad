@@ -1,4 +1,4 @@
-import {type Point, Vector} from '@flatten-js/core';
+import { type Point, Vector } from '@flatten-js/core';
 import {
 	type AbsolutePointInputEvent,
 	ActorEvent,

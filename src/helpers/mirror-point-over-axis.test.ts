@@ -1,7 +1,7 @@
-import {describe, expect, it} from "vitest";
-import {Point} from "@flatten-js/core";
-import {mirrorPointOverAxis} from './mirror-point-over-axis';
-import {LineEntity} from "../entities/LineEntity.ts";
+import { Point } from '@flatten-js/core';
+import { describe, expect, it } from 'vitest';
+import { LineEntity } from '../entities/LineEntity.ts';
+import { mirrorPointOverAxis } from './mirror-point-over-axis';
 
 describe('mirrorPointOverAxis', () => {
 	it('should mirror if the axis is horizontal', () => {

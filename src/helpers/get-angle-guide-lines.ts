@@ -1,7 +1,7 @@
-import {Point} from '@flatten-js/core';
-import {ANGLE_GUIDES_COLOR, ANGLE_GUIDES_DASH} from '../App.consts.ts';
-import {LineEntity} from '../entities/LineEntity';
-import {times} from './times';
+import { Point } from '@flatten-js/core';
+import { ANGLE_GUIDES_COLOR, ANGLE_GUIDES_DASH } from '../App.consts.ts';
+import { LineEntity } from '../entities/LineEntity';
+import { times } from './times';
 
 export function getAngleGuideLines(firstPoint: Point, angleStep: number): LineEntity[] {
 	// Only for 180 degrees since we draw lines that are infinite in both directions,

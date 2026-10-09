@@ -19,10 +19,10 @@ import {
 	setLayers,
 	setSelectedEntityIds,
 } from '../../state.ts';
-import type { Tool } from '../../tools.ts';
 import { imageImportToolStateMachine } from '../../tools/image-import-tool.ts';
 import { TOOL_STATE_MACHINES } from '../../tools/tool.consts.ts';
 import { ActorEvent } from '../../tools/tool.types.ts';
+import type { Tool } from '../../tools.ts';
 
 export function activateTool(tool: Tool): void {
 	getActiveToolActor()?.stop();

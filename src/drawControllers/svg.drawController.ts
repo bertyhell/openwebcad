@@ -1,14 +1,14 @@
-import {Arc, Point, Vector} from '@flatten-js/core';
-import {compact} from 'es-toolkit';
-import {toast} from 'react-toastify';
-import {SVG_MARGIN, TO_DEGREES} from '../App.consts.ts';
-import type {Edge} from '../App.types.ts';
-import type {PolyLineEntity} from "../entities/PolyLineEntity.ts";
-import type {TextOptions} from '../entities/TextEntity.ts';
-import {isLengthEqual} from '../helpers/is-length-equal.ts';
-import {StateVariable} from '../helpers/undo-stack.ts';
-import {triggerReactUpdate} from '../state.ts';
-import {DEFAULT_TEXT_OPTIONS, type DrawController} from './DrawController';
+import { Arc, Point, Vector } from '@flatten-js/core';
+import { compact } from 'es-toolkit';
+import { toast } from 'react-toastify';
+import { SVG_MARGIN, TO_DEGREES } from '../App.consts.ts';
+import type { Edge } from '../App.types.ts';
+import type { PolyLineEntity } from '../entities/PolyLineEntity.ts';
+import type { TextOptions } from '../entities/TextEntity.ts';
+import { isLengthEqual } from '../helpers/is-length-equal.ts';
+import { StateVariable } from '../helpers/undo-stack.ts';
+import { triggerReactUpdate } from '../state.ts';
+import { DEFAULT_TEXT_OPTIONS, type DrawController } from './DrawController';
 
 export class SvgDrawController implements DrawController {
 	private lineColor = '#000';

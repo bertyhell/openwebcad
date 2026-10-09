@@ -12,9 +12,7 @@ export function sortAngles(angles: number[], counterClockWise: boolean): number[
 
 	// Compute wrapped angular distance from `start` in the desired direction.
 	const dist = (a: number) => {
-		const d = counterClockWise
-			? a - start
-			: start - a;
+		const d = counterClockWise ? a - start : start - a;
 		// Wrap to [0, 2π)
 		const wrapped = d % TWO_PI;
 		return wrapped < 0 ? wrapped + TWO_PI : wrapped;

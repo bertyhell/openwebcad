@@ -1,5 +1,5 @@
-import type {Arc, Circle, Point, Polygon, Segment} from '@flatten-js/core';
-import type {Entity} from './entities/Entity.ts';
+import type { Arc, Circle, Point, Polygon, Segment } from '@flatten-js/core';
+import type { Entity } from './entities/Entity.ts';
 
 export type Shape = Polygon | Segment | Point | Circle | Arc;
 

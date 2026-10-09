@@ -1,16 +1,15 @@
-import {toast} from 'react-toastify';
-import {CircleEntity} from '../../entities/CircleEntity';
-import type {Entity} from '../../entities/Entity';
-import {LineEntity} from '../../entities/LineEntity';
-import {RectangleEntity} from '../../entities/RectangleEntity';
-import {getEntities, setEntities} from '../../state';
-import {zoomToBounds} from '../../tools/zoom-tool.helpers.ts';
-
-import {Point} from '@flatten-js/core';
-import {type Node, parse, type RootNode} from 'svg-parser';
-import {svgPathToSegments} from '../convert-svg-path-to-line-segments.ts';
-import {getBoundingBoxOfMultipleEntities} from '../get-bounding-box-of-multiple-entities.ts';
-import {middle} from '../middle.ts';
+import { Point } from '@flatten-js/core';
+import { toast } from 'react-toastify';
+import { type Node, parse, type RootNode } from 'svg-parser';
+import { CircleEntity } from '../../entities/CircleEntity';
+import type { Entity } from '../../entities/Entity';
+import { LineEntity } from '../../entities/LineEntity';
+import { RectangleEntity } from '../../entities/RectangleEntity';
+import { getEntities, setEntities } from '../../state';
+import { zoomToBounds } from '../../tools/zoom-tool.helpers.ts';
+import { svgPathToSegments } from '../convert-svg-path-to-line-segments.ts';
+import { getBoundingBoxOfMultipleEntities } from '../get-bounding-box-of-multiple-entities.ts';
+import { middle } from '../middle.ts';
 
 function svgChildrenToEntities(root: RootNode): Entity[] {
 	if (!root.children || !root.children?.[0]) {

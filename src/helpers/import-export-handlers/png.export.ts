@@ -1,6 +1,6 @@
-import {saveAs} from 'file-saver';
-import {getEntities} from '../../state';
-import {convertEntitiesToSvgString} from './svg.export.ts';
+import { saveAs } from 'file-saver';
+import { getEntities } from '../../state';
+import { convertEntitiesToSvgString } from './svg.export.ts';
 
 /**
  * Takes an svg string and converts it to a png data uri

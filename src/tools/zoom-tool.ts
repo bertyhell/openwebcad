@@ -1,10 +1,6 @@
 import type { Point } from '@flatten-js/core';
 import { assign, createMachine } from 'xstate';
-import {
-	setAngleGuideOriginPoint,
-	setGhostHelperEntities,
-	setShouldDrawHelpers,
-} from '../state';
+import { setAngleGuideOriginPoint, setGhostHelperEntities, setShouldDrawHelpers } from '../state';
 import type { StateEvent, TextInputEvent } from './tool.types';
 import { zoomIn, zoomOut, zoomRectangle, zoomToBounds, zoomToScale } from './zoom-tool.helpers.ts';
 

@@ -1,9 +1,9 @@
-import {type Point, Vector} from '@flatten-js/core';
-import {assign, createMachine, sendTo} from 'xstate';
-import {GUIDE_LINE_COLOR, GUIDE_LINE_STYLE, GUIDE_LINE_WIDTH, TO_RADIANS} from '../App.consts.ts';
-import type {Entity} from '../entities/Entity';
-import {LineEntity} from '../entities/LineEntity.ts';
-import {getPointFromEvent} from '../helpers/get-point-from-event.ts';
+import { type Point, Vector } from '@flatten-js/core';
+import { assign, createMachine, sendTo } from 'xstate';
+import { GUIDE_LINE_COLOR, GUIDE_LINE_STYLE, GUIDE_LINE_WIDTH, TO_RADIANS } from '../App.consts.ts';
+import type { Entity } from '../entities/Entity';
+import { LineEntity } from '../entities/LineEntity.ts';
+import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
 import {
 	addEntities,
 	getSelectedEntities,
@@ -13,9 +13,9 @@ import {
 	setSelectedEntityIds,
 	setShouldDrawHelpers,
 } from '../state';
-import {Tool} from '../tools';
-import {CopyAction} from './copy-tool.ts';
-import {selectToolStateMachine} from './select-tool.ts';
+import { Tool } from '../tools';
+import { CopyAction } from './copy-tool.ts';
+import { selectToolStateMachine } from './select-tool.ts';
 import type {
 	AbsolutePointInputEvent,
 	DrawEvent,

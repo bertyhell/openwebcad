@@ -1,9 +1,9 @@
-import {saveAs} from 'file-saver';
-import type {Entity} from '../../entities/Entity';
-import {getEntities} from '../../state';
-import {PdfDrawController} from '../../drawControllers/pdf.drawController.ts';
-import {getBoundingBoxOfMultipleEntities} from "../get-bounding-box-of-multiple-entities.ts";
-import {SVG_MARGIN} from "../../App.consts.ts";
+import { saveAs } from 'file-saver';
+import { SVG_MARGIN } from '../../App.consts.ts';
+import { PdfDrawController } from '../../drawControllers/pdf.drawController.ts';
+import type { Entity } from '../../entities/Entity';
+import { getEntities } from '../../state';
+import { getBoundingBoxOfMultipleEntities } from '../get-bounding-box-of-multiple-entities.ts';
 
 export async function convertEntitiesToPdfString(entities: Entity[]): Promise<Blob> {
 	const boundingBox = getBoundingBoxOfMultipleEntities(entities);

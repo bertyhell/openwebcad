@@ -1,9 +1,9 @@
-import {Arc, Segment} from '@flatten-js/core';
-import type {Edge, StartAndEndpointEntity} from '../App.types.ts';
-import {ArcEntity} from '../entities/ArcEntity.ts';
-import {LineEntity} from '../entities/LineEntity.ts';
-import {isPointEqual} from './is-point-equal.ts';
-import {compact} from "es-toolkit";
+import { Arc, Segment } from '@flatten-js/core';
+import { compact } from 'es-toolkit';
+import type { Edge, StartAndEndpointEntity } from '../App.types.ts';
+import { ArcEntity } from '../entities/ArcEntity.ts';
+import { LineEntity } from '../entities/LineEntity.ts';
+import { isPointEqual } from './is-point-equal.ts';
 
 /**
  * Orders the start and endpoints of a list of edges

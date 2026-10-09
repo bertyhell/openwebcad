@@ -1,15 +1,15 @@
-import {type Circle, Point, type Segment} from '@flatten-js/core';
-import {compact} from 'es-toolkit';
-import {ArcEntity} from '../entities/ArcEntity';
-import type {CircleEntity} from '../entities/CircleEntity';
-import type {Entity} from '../entities/Entity';
-import type {LineEntity} from '../entities/LineEntity';
-import {findNeighboringPointsOnArc} from '../helpers/find-neighboring-points-on-arc';
-import {findNeighboringPointsOnCircle} from '../helpers/find-neighboring-points-on-circle';
-import {findNeighboringPointsOnLine} from '../helpers/find-neighboring-points-on-line';
-import {getAngleWithXAxis} from '../helpers/get-angle-with-x-axis.ts';
-import {isPointEqual} from '../helpers/is-point-equal';
-import {addEntities, deleteEntities} from '../state';
+import { type Circle, Point, type Segment } from '@flatten-js/core';
+import { compact } from 'es-toolkit';
+import { ArcEntity } from '../entities/ArcEntity';
+import type { CircleEntity } from '../entities/CircleEntity';
+import type { Entity } from '../entities/Entity';
+import type { LineEntity } from '../entities/LineEntity';
+import { findNeighboringPointsOnArc } from '../helpers/find-neighboring-points-on-arc';
+import { findNeighboringPointsOnCircle } from '../helpers/find-neighboring-points-on-circle';
+import { findNeighboringPointsOnLine } from '../helpers/find-neighboring-points-on-line';
+import { getAngleWithXAxis } from '../helpers/get-angle-with-x-axis.ts';
+import { isPointEqual } from '../helpers/is-point-equal';
+import { addEntities, deleteEntities } from '../state';
 
 export function getAllIntersectionPoints(entity: Entity, entities: Entity[]): Point[] {
 	// TODO see if we need to make this list unique

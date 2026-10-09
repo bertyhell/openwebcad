@@ -1,5 +1,5 @@
-import type {Point} from '@flatten-js/core';
-import {EPSILON} from '../App.consts';
+import type { Point } from '@flatten-js/core';
+import { EPSILON } from '../App.consts';
 
 export function isPointEqual(
 	point1: Point | [number, number],

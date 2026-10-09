@@ -1,7 +1,7 @@
-import type {Point} from '@flatten-js/core';
-import type {StartAndEndpointEntity} from '../App.types.ts';
-import {isPointEqual} from './is-point-equal.ts';
-import {orderEntityBoundary} from './order-edge-boundary.ts';
+import type { Point } from '@flatten-js/core';
+import type { StartAndEndpointEntity } from '../App.types.ts';
+import { isPointEqual } from './is-point-equal.ts';
+import { orderEntityBoundary } from './order-edge-boundary.ts';
 
 /**
  * If entities form a closed loop, returns a new array

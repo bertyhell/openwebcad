@@ -1,13 +1,13 @@
-import {Arc, Point, type Vector} from '@flatten-js/core';
-import {CANVAS_BACKGROUND_COLOR, MOUSE_ZOOM_MULTIPLIER} from '../App.consts';
-import type {Edge} from '../App.types.ts';
-import type {PolyLineEntity} from '../entities/PolyLineEntity.ts';
-import {getAngleWithXAxis} from '../helpers/get-angle-with-x-axis.ts';
-import {getBoundingBoxOfMultipleEntities} from '../helpers/get-bounding-box-of-multiple-entities.ts';
-import {mapNumberRange} from '../helpers/map-number-range.ts';
-import {StateVariable} from '../helpers/undo-stack.ts';
-import {getVisibleEntities, triggerReactUpdate} from '../state.ts';
-import {DEFAULT_TEXT_OPTIONS, type DrawController} from './DrawController';
+import { Arc, Point, type Vector } from '@flatten-js/core';
+import { CANVAS_BACKGROUND_COLOR, MOUSE_ZOOM_MULTIPLIER } from '../App.consts';
+import type { Edge } from '../App.types.ts';
+import type { PolyLineEntity } from '../entities/PolyLineEntity.ts';
+import { getAngleWithXAxis } from '../helpers/get-angle-with-x-axis.ts';
+import { getBoundingBoxOfMultipleEntities } from '../helpers/get-bounding-box-of-multiple-entities.ts';
+import { mapNumberRange } from '../helpers/map-number-range.ts';
+import { StateVariable } from '../helpers/undo-stack.ts';
+import { getVisibleEntities, triggerReactUpdate } from '../state.ts';
+import { DEFAULT_TEXT_OPTIONS, type DrawController } from './DrawController';
 
 /**
  * Screen coordinate system:

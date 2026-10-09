@@ -1,6 +1,6 @@
-import type {Point} from '@flatten-js/core';
-import {type SnapPoint, SnapPointType} from '../App.types';
-import {pointDistance} from './distance-between-points';
+import type { Point } from '@flatten-js/core';
+import { type SnapPoint, SnapPointType } from '../App.types';
+import { pointDistance } from './distance-between-points';
 
 // /**
 //  * Some points need to take priority over others when snapping to them. This multiplier is used to give a higher score to the points that should take priority

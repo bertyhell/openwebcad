@@ -1,7 +1,7 @@
-import {type Arc, Point} from '@flatten-js/core';
-import {describe, expect, it} from 'vitest';
-import {EPSILON} from "../App.consts.ts";
-import {ArcEntity} from './ArcEntity.ts';
+import { type Arc, Point } from '@flatten-js/core';
+import { describe, expect, it } from 'vitest';
+import { EPSILON } from '../App.consts.ts';
+import { ArcEntity } from './ArcEntity.ts';
 
 describe('ArcEntity.distanceTo', () => {
 	/**

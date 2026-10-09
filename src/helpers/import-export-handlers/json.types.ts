@@ -1,5 +1,5 @@
-import type {Layer} from '../../App.types.ts';
-import type {Entity, JsonEntity} from '../../entities/Entity.ts';
+import type { Layer } from '../../App.types.ts';
+import type { Entity, JsonEntity } from '../../entities/Entity.ts';
 
 export interface JsonDrawingFileOpenWebCadSerialized {
 	entities: JsonEntity[];

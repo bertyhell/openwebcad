@@ -1,30 +1,30 @@
-import type {Point} from '@flatten-js/core';
-import {Actor, assign, createMachine} from 'xstate';
-import {ImageEntity} from '../entities/ImageEntity';
-import {RectangleEntity} from '../entities/RectangleEntity';
-import {boxToPolygon, twoPointBoxToPolygon} from '../helpers/box-to-polygon';
-import {getPointFromEvent} from '../helpers/get-point-from-event.ts';
-import {isPointEqual} from '../helpers/is-point-equal.ts';
+import type { Point } from '@flatten-js/core';
+import { Actor, assign, createMachine } from 'xstate';
+import { ImageEntity } from '../entities/ImageEntity';
+import { RectangleEntity } from '../entities/RectangleEntity';
+import { boxToPolygon, twoPointBoxToPolygon } from '../helpers/box-to-polygon';
+import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
+import { isPointEqual } from '../helpers/is-point-equal.ts';
 import {
-  addEntities,
-  setActiveToolActor,
-  setAngleGuideEntities,
-  setAngleGuideOriginPoint,
-  setGhostHelperEntities,
-  setSelectedEntityIds,
-  setShouldDrawHelpers,
+	addEntities,
+	setActiveToolActor,
+	setAngleGuideEntities,
+	setAngleGuideOriginPoint,
+	setGhostHelperEntities,
+	setSelectedEntityIds,
+	setShouldDrawHelpers,
 } from '../state';
-import {Tool} from '../tools';
-import {getContainRectangleInsideRectangle} from './image-import-tool.helpers';
-import {selectToolStateMachine} from './select-tool';
+import { Tool } from '../tools';
+import { getContainRectangleInsideRectangle } from './image-import-tool.helpers';
+import { selectToolStateMachine } from './select-tool';
 import {
-  ActorEvent,
-  type DrawEvent,
-  type FileSelectedEvent,
-  type MouseClickEvent,
-  type PointInputEvent,
-  type StateEvent,
-  type ToolContext,
+	ActorEvent,
+	type DrawEvent,
+	type FileSelectedEvent,
+	type MouseClickEvent,
+	type PointInputEvent,
+	type StateEvent,
+	type ToolContext,
 } from './tool.types';
 
 export interface ImageImportContext extends ToolContext {

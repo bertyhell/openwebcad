@@ -1,4 +1,4 @@
-import type {Entity} from '../entities/Entity';
+import type { Entity } from '../entities/Entity';
 
 /**
  * Move entities by the difference between the start and end points

@@ -1,4 +1,4 @@
-import type {Polygon, Segment} from '@flatten-js/core';
+import type { Polygon, Segment } from '@flatten-js/core';
 
 export function polygonToSegments(polygon: Polygon): Segment[] {
 	const segments: Segment[] = [];

@@ -1,4 +1,4 @@
-import {type Arc, Point, Segment} from '@flatten-js/core';
+import { type Arc, Point, Segment } from '@flatten-js/core';
 
 type Edge = Segment | Arc;
 

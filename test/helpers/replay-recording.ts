@@ -1,8 +1,8 @@
-import type {InputController} from '../../src/inputController/input-controller';
-import {Tool} from '../../src/tools';
-import {click} from './click';
-import type {Recording, Step} from './replay-recording.types';
-import {setActiveTool} from './set-active-tool';
+import type { InputController } from '../../src/inputController/input-controller';
+import { Tool } from '../../src/tools';
+import { click } from './click';
+import type { Recording, Step } from './replay-recording.types';
+import { setActiveTool } from './set-active-tool';
 
 const DATA_ID_TO_TOOL_NAME: Record<string, Tool | null> = {
 	'select-button': Tool.SELECT,

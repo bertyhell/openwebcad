@@ -1,13 +1,13 @@
-import {type Arc, Point} from '@flatten-js/core';
-import {describe, expect, it} from 'vitest';
-import {TO_DEGREES, TO_RADIANS} from '../App.consts.ts';
-import type {ArcEntity} from '../entities/ArcEntity.ts';
-import {CircleEntity} from '../entities/CircleEntity.ts';
-import {EntityName} from '../entities/Entity.ts';
-import {RectangleEntity} from '../entities/RectangleEntity.ts';
-import {getEntities, setEntities} from '../state.ts';
-import {eraseCircleSegment, getAllIntersectionPoints,} from './eraser-tool.helpers.ts';
-import {handleMouseClick} from './eraser-tool.ts';
+import { type Arc, Point } from '@flatten-js/core';
+import { describe, expect, it } from 'vitest';
+import { TO_DEGREES, TO_RADIANS } from '../App.consts.ts';
+import type { ArcEntity } from '../entities/ArcEntity.ts';
+import { CircleEntity } from '../entities/CircleEntity.ts';
+import { EntityName } from '../entities/Entity.ts';
+import { RectangleEntity } from '../entities/RectangleEntity.ts';
+import { getEntities, setEntities } from '../state.ts';
+import { eraseCircleSegment, getAllIntersectionPoints } from './eraser-tool.helpers.ts';
+import { handleMouseClick } from './eraser-tool.ts';
 
 describe('erase-tool', () => {
 	/**

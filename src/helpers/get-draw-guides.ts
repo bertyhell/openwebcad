@@ -1,13 +1,13 @@
-import type {Point} from '@flatten-js/core';
-import {compact} from 'es-toolkit';
-import {SNAP_ANGLE_DISTANCE} from '../App.consts';
-import {type SnapPoint, SnapPointType} from '../App.types';
-import type {Entity} from '../entities/Entity';
-import type {LineEntity} from '../entities/LineEntity';
-import {findClosestEntity} from './find-closest-entity';
-import {getAngleGuideLines} from './get-angle-guide-lines';
-import {getClosestSnapPointWithinRadius} from './get-closest-snap-point';
-import {getIntersectionPoints} from './get-intersection-points';
+import type { Point } from '@flatten-js/core';
+import { compact } from 'es-toolkit';
+import { SNAP_ANGLE_DISTANCE } from '../App.consts';
+import { type SnapPoint, SnapPointType } from '../App.types';
+import type { Entity } from '../entities/Entity';
+import type { LineEntity } from '../entities/LineEntity';
+import { findClosestEntity } from './find-closest-entity';
+import { getAngleGuideLines } from './get-angle-guide-lines';
+import { getClosestSnapPointWithinRadius } from './get-closest-snap-point';
+import { getIntersectionPoints } from './get-intersection-points';
 
 /**
  * Gets the angle guides from the angle point to the mouse if the mouse is close to one of the angle steps and also returns the closest snap point

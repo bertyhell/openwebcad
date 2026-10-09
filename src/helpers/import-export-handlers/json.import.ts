@@ -1,21 +1,26 @@
-import {Arc, Point, Segment} from '@flatten-js/core';
-import {compact} from 'es-toolkit';
-import type {Layer} from '../../App.types.ts';
-import {ArcEntity, type ArcJsonData} from '../../entities/ArcEntity';
-import {CircleEntity, type CircleJsonData} from '../../entities/CircleEntity';
-import {FillEntity, type FillJsonData} from '../../entities/FillEntity.ts';
-import {type Entity, EntityName, type JsonEntity} from '../../entities/Entity';
-import {ImageEntity, type ImageJsonData} from '../../entities/ImageEntity.ts';
-import {LineEntity, type LineJsonData} from '../../entities/LineEntity';
-import {MeasurementEntity, type MeasurementJsonData} from '../../entities/MeasurementEntity.ts';
-import {PointEntity, type PointJsonData} from '../../entities/PointEntity';
-import {PolyLineEntity, type PolyLineJsonData} from '../../entities/PolyLineEntity.ts';
-import {RectangleEntity, type RectangleJsonData} from '../../entities/RectangleEntity';
-import {TextEntity, type TextJsonData} from '../../entities/TextEntity.ts';
-import {setActiveLayerId, setEntities, setLayers} from '../../state';
-import {zoomToBounds} from '../../tools/zoom-tool.helpers.ts';
-import {getNewLayer} from '../get-new-layer.ts';
-import type {ArcRawJson, JsonDrawingFileDeserialized, JsonDrawingFileSerialized, SegmentRawJson,} from './json.types.ts';
+import { Arc, Point, Segment } from '@flatten-js/core';
+import { compact } from 'es-toolkit';
+import type { Layer } from '../../App.types.ts';
+import { ArcEntity, type ArcJsonData } from '../../entities/ArcEntity';
+import { CircleEntity, type CircleJsonData } from '../../entities/CircleEntity';
+import { type Entity, EntityName, type JsonEntity } from '../../entities/Entity';
+import { FillEntity, type FillJsonData } from '../../entities/FillEntity.ts';
+import { ImageEntity, type ImageJsonData } from '../../entities/ImageEntity.ts';
+import { LineEntity, type LineJsonData } from '../../entities/LineEntity';
+import { MeasurementEntity, type MeasurementJsonData } from '../../entities/MeasurementEntity.ts';
+import { PointEntity, type PointJsonData } from '../../entities/PointEntity';
+import { PolyLineEntity, type PolyLineJsonData } from '../../entities/PolyLineEntity.ts';
+import { RectangleEntity, type RectangleJsonData } from '../../entities/RectangleEntity';
+import { TextEntity, type TextJsonData } from '../../entities/TextEntity.ts';
+import { setActiveLayerId, setEntities, setLayers } from '../../state';
+import { zoomToBounds } from '../../tools/zoom-tool.helpers.ts';
+import { getNewLayer } from '../get-new-layer.ts';
+import type {
+	ArcRawJson,
+	JsonDrawingFileDeserialized,
+	JsonDrawingFileSerialized,
+	SegmentRawJson,
+} from './json.types.ts';
 
 /**
  * Open a file selection dialog to select *.json files

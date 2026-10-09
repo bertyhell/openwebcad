@@ -1,9 +1,9 @@
-import {Arc, type Point, Segment} from '@flatten-js/core';
-import {uniqWith} from 'es-toolkit';
-import {EPSILON} from '../App.consts.ts';
-import {isPointEqual} from './is-point-equal.ts';
-import {sortAngles} from "./sort-angles.ts";
-import {TAU} from "./consts.ts";
+import { Arc, type Point, Segment } from '@flatten-js/core';
+import { uniqWith } from 'es-toolkit';
+import { EPSILON } from '../App.consts.ts';
+import { TAU } from './consts.ts';
+import { isPointEqual } from './is-point-equal.ts';
+import { sortAngles } from './sort-angles.ts';
 
 type SplitAtPointsReturn<T extends Segment | Arc> = T extends Segment
 	? Segment[]

@@ -1,20 +1,20 @@
-import type {Point} from '@flatten-js/core';
-import {LineEntity} from '../entities/LineEntity';
+import type { Point } from '@flatten-js/core';
+import { Actor, assign, createMachine } from 'xstate';
+import { LineEntity } from '../entities/LineEntity';
+import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
 import {
-  addEntities,
-  getActiveLineColor,
-  getActiveLineWidth,
-  setActiveToolActor,
-  setAngleGuideOriginPoint,
-  setGhostHelperEntities,
-  setSelectedEntityIds,
-  setShouldDrawHelpers,
+	addEntities,
+	getActiveLineColor,
+	getActiveLineWidth,
+	setActiveToolActor,
+	setAngleGuideOriginPoint,
+	setGhostHelperEntities,
+	setSelectedEntityIds,
+	setShouldDrawHelpers,
 } from '../state';
-import {Tool} from '../tools';
-import {Actor, assign, createMachine} from 'xstate';
-import type {DrawEvent, PointInputEvent, StateEvent, ToolContext,} from './tool.types';
-import {selectToolStateMachine} from './select-tool.ts';
-import {getPointFromEvent} from '../helpers/get-point-from-event.ts';
+import { Tool } from '../tools';
+import { selectToolStateMachine } from './select-tool.ts';
+import type { DrawEvent, PointInputEvent, StateEvent, ToolContext } from './tool.types';
 
 export interface LineContext extends ToolContext {
 	startPoint: Point | null;

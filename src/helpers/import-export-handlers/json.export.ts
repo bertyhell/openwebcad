@@ -1,7 +1,7 @@
-import {compact} from 'es-toolkit';
-import {saveAs} from 'file-saver';
-import {getEntities, getLayers} from '../../state';
-import type {JsonDrawingFileSerialized} from './json.types.ts';
+import { compact } from 'es-toolkit';
+import { saveAs } from 'file-saver';
+import { getEntities, getLayers } from '../../state';
+import type { JsonDrawingFileSerialized } from './json.types.ts';
 
 export async function exportEntitiesToJsonFile() {
 	const json = await exportEntitiesAndLayersToJsonString();

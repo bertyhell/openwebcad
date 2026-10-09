@@ -1,10 +1,17 @@
-import {Point} from '@flatten-js/core';
-import {CURSOR_SIZE, GUIDE_LINE_COLOR, GUIDE_LINE_STYLE, GUIDE_LINE_WIDTH, SNAP_POINT_COLOR, SNAP_POINT_SIZE,} from '../App.consts';
-import {type SnapPoint, SnapPointType} from '../App.types';
-import type {DrawController} from '../drawControllers/DrawController';
-import type {ScreenCanvasDrawController} from '../drawControllers/screenCanvas.drawController';
-import type {Entity} from '../entities/Entity';
-import {getLayers, isEntityHighlighted, isEntitySelected} from '../state';
+import { Point } from '@flatten-js/core';
+import {
+	CURSOR_SIZE,
+	GUIDE_LINE_COLOR,
+	GUIDE_LINE_STYLE,
+	GUIDE_LINE_WIDTH,
+	SNAP_POINT_COLOR,
+	SNAP_POINT_SIZE,
+} from '../App.consts';
+import { type SnapPoint, SnapPointType } from '../App.types';
+import type { DrawController } from '../drawControllers/DrawController';
+import type { ScreenCanvasDrawController } from '../drawControllers/screenCanvas.drawController';
+import type { Entity } from '../entities/Entity';
+import { getLayers, isEntityHighlighted, isEntitySelected } from '../state';
 
 /**
  * Entities without a layer are only reported once, instead of on every frame

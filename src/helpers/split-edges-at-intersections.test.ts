@@ -1,7 +1,7 @@
-import {Arc, Point, Segment} from '@flatten-js/core';
-import {describe, expect, it} from 'vitest';
-import {splitEdgesAtIntersections} from './split-edges-at-intersections.ts';
-import {expectIsEqualNumberArray} from "./tests/expect-is-equal-number-array.ts";
+import { Arc, Point, Segment } from '@flatten-js/core';
+import { describe, expect, it } from 'vitest';
+import { splitEdgesAtIntersections } from './split-edges-at-intersections.ts';
+import { expectIsEqualNumberArray } from './tests/expect-is-equal-number-array.ts';
 
 describe('splitEdgesAtIntersections (using constructors)', () => {
 	it('returns empty array when given no edges', () => {
@@ -128,15 +128,7 @@ describe('splitEdgesAtIntersections (using constructors)', () => {
 		expect(segments).toHaveLength(9);
 		const arcs = edges?.filter((edge) => edge instanceof Arc);
 		const sweeps = arcs.map((arc) => arc.sweep);
-		expectIsEqualNumberArray(
-			sweeps,
-				[
-					1.2055891055045294,
-					0.7304144425807344,
-					1.2055891055045294
-
-			]
-		);
+		expectIsEqualNumberArray(sweeps, [1.2055891055045294, 0.7304144425807344, 1.2055891055045294]);
 	});
 
 	/**
@@ -199,7 +191,7 @@ describe('splitEdgesAtIntersections (using constructors)', () => {
 		const parts = splitEdgesAtIntersections([arc, segment]);
 
 		expect(parts).toHaveLength(6);
-		expect(parts.filter(part => part instanceof Arc)).toHaveLength(3);
-		expect(parts.filter(part => part instanceof Segment)).toHaveLength(3);
-	})
+		expect(parts.filter((part) => part instanceof Arc)).toHaveLength(3);
+		expect(parts.filter((part) => part instanceof Segment)).toHaveLength(3);
+	});
 });

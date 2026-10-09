@@ -1,6 +1,6 @@
-import {TOOLBAR_WIDTH} from '../../src/App.consts';
-import {MouseButton} from '../../src/App.types';
-import type {InputController} from '../../src/inputController/input-controller';
+import { TOOLBAR_WIDTH } from '../../src/App.consts';
+import { MouseButton } from '../../src/App.types';
+import type { InputController } from '../../src/inputController/input-controller';
 
 /**
  * Trigger a click event on the canvas

@@ -1,13 +1,13 @@
-import {Box, Point, Segment} from '@flatten-js/core';
-import {max, min} from 'es-toolkit/compat';
-import type {Edge, Shape, SnapPoint} from '../App.types';
-import type {DrawController} from '../drawControllers/DrawController';
-import {mirrorPointOverAxis} from '../helpers/mirror-point-over-axis.ts';
-import {scalePoint} from '../helpers/scale-point';
-import {getActiveLayerId} from '../state.ts';
-import {type Entity, EntityName, type JsonEntity} from './Entity';
-import type {LineEntity} from './LineEntity.ts';
+import { Box, Point, Segment } from '@flatten-js/core';
+import { max, min } from 'es-toolkit/compat';
+import type { Edge, Shape, SnapPoint } from '../App.types';
+import type { DrawController } from '../drawControllers/DrawController';
 import { copyEntityBaseProperties } from '../helpers/copy-entity-base-properties';
+import { mirrorPointOverAxis } from '../helpers/mirror-point-over-axis.ts';
+import { scalePoint } from '../helpers/scale-point';
+import { getActiveLayerId } from '../state.ts';
+import { type Entity, EntityName, type JsonEntity } from './Entity';
+import type { LineEntity } from './LineEntity.ts';
 
 export class ArrowHeadEntity implements Entity {
 	public id: string = crypto.randomUUID();

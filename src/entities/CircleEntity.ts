@@ -1,13 +1,13 @@
-import {Arc, type Box, Circle, Point, type Segment} from '@flatten-js/core';
-import {type Edge, type Shape, type SnapPoint, SnapPointType} from '../App.types';
-import type {DrawController} from '../drawControllers/DrawController';
-import {getExportColor} from '../helpers/get-export-color';
-import {mirrorPointOverAxis} from '../helpers/mirror-point-over-axis.ts';
-import {scalePoint} from '../helpers/scale-point';
-import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
-import {type Entity, EntityName, type JsonEntity} from './Entity';
-import type {LineEntity} from './LineEntity.ts';
+import { Arc, type Box, Circle, Point, type Segment } from '@flatten-js/core';
+import { type Edge, type Shape, type SnapPoint, SnapPointType } from '../App.types';
+import type { DrawController } from '../drawControllers/DrawController';
 import { copyEntityBaseProperties } from '../helpers/copy-entity-base-properties';
+import { getExportColor } from '../helpers/get-export-color';
+import { mirrorPointOverAxis } from '../helpers/mirror-point-over-axis.ts';
+import { scalePoint } from '../helpers/scale-point';
+import { getActiveLayerId, isEntityHighlighted, isEntitySelected } from '../state.ts';
+import { type Entity, EntityName, type JsonEntity } from './Entity';
+import type { LineEntity } from './LineEntity.ts';
 
 export class CircleEntity implements Entity {
 	public id: string = crypto.randomUUID();

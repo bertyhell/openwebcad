@@ -1,20 +1,20 @@
-import type {Point} from '@flatten-js/core';
-import {assign, createMachine} from 'xstate';
-import {CircleEntity} from '../entities/CircleEntity';
-import {pointDistance} from '../helpers/distance-between-points';
-import {getPointFromEvent} from '../helpers/get-point-from-event.ts';
+import type { Point } from '@flatten-js/core';
+import { assign, createMachine } from 'xstate';
+import { CircleEntity } from '../entities/CircleEntity';
+import { pointDistance } from '../helpers/distance-between-points';
+import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
 import {
-  addEntities,
-  getActiveLineColor,
-  getActiveLineWidth,
-  setAngleGuideOriginPoint,
-  setGhostHelperEntities,
-  setSelectedEntityIds,
-  setShouldDrawHelpers,
+	addEntities,
+	getActiveLineColor,
+	getActiveLineWidth,
+	setAngleGuideOriginPoint,
+	setGhostHelperEntities,
+	setSelectedEntityIds,
+	setShouldDrawHelpers,
 } from '../state';
-import {Tool} from '../tools';
-import {LineState} from './line-tool.ts';
-import type {DrawEvent, PointInputEvent, StateEvent, ToolContext} from './tool.types';
+import { Tool } from '../tools';
+import { LineState } from './line-tool.ts';
+import type { DrawEvent, PointInputEvent, StateEvent, ToolContext } from './tool.types';
 
 export interface CircleContext extends ToolContext {
 	centerPoint: Point | null;

@@ -91,6 +91,24 @@ function activeToolAcceptsTextInput(): boolean {
 	return !!activeToolSnapshot?.machine?.states?.[activeToolState]?.config?.on?.TEXT_INPUT;
 }
 
+/**
+ * Single key options of the active tool's current state that are applied instantly, eg: [I]nvert in the arc tool
+ */
+function getActiveToolInstantOptions(): string[] {
+	const activeToolSnapshot = getActiveToolActor()?.getSnapshot();
+	const activeToolState = activeToolSnapshot?.value;
+	return activeToolSnapshot?.machine?.states?.[activeToolState]?.config?.meta?.instantOptions ?? [];
+}
+
+/**
+ * Whether the active tool also accepts a number in its current state, eg: the arc angle next to the [I]nvert option
+ */
+function activeToolAcceptsNumberInput(): boolean {
+	const activeToolSnapshot = getActiveToolActor()?.getSnapshot();
+	const activeToolState = activeToolSnapshot?.value;
+	return !!activeToolSnapshot?.machine?.states?.[activeToolState]?.config?.on?.NUMBER_INPUT;
+}
+
 export class InputController {
 	private text = '';
 
@@ -441,6 +459,16 @@ export class InputController {
 		} else if (evt.key === 'Home') {
 			// Zoom to show the whole drawing
 			zoomToBounds();
+		} else if (
+			evt.key?.length === 1 &&
+			this.text === '' &&
+			getActiveToolInstantOptions().includes(evt.key.toUpperCase())
+		) {
+			// The active tool has a single key option, apply it instantly instead of typing it
+			getActiveToolActor()?.send({
+				type: ActorEvent.TEXT_INPUT,
+				value: evt.key.toUpperCase(),
+			} as TextInputEvent);
 		} else if (evt.key?.length === 1) {
 			// User entered a single character => add to input field text
 			this.text += evt.key;
@@ -478,7 +506,13 @@ export class InputController {
 		}
 
 		const isZoomToolActive = activeTool?.getSnapshot()?.context.type === Tool.ZOOM;
-		if (activeToolCanHandleTextInput && (!isZoomToolActive || isZoomOption(text))) {
+		const isNumberForTool =
+			activeToolAcceptsNumberInput() && parseCommandInput(text).type === 'number';
+		if (
+			activeToolCanHandleTextInput &&
+			!isNumberForTool &&
+			(!isZoomToolActive || isZoomOption(text))
+		) {
 			// The active tool asks for text, eg: a zoom option or the label of a text entity
 			activeTool?.send({
 				type: ActorEvent.TEXT_INPUT,

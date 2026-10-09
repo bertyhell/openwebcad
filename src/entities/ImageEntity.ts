@@ -103,12 +103,12 @@ export class ImageEntity implements Entity {
 	}
 
 	public clone(): ImageEntity {
-		const clonedImage = document.createElement('img');
-		clonedImage.src = this.imageElement.src;
-		return copyEntityBaseProperties(this, new ImageEntity(clonedImage, this.polygon.clone()));
+		// The image element is never modified, so clones can share it
+		return copyEntityBaseProperties(
+			this,
+			new ImageEntity(this.imageElement, this.polygon.clone(), this.angle)
+		);
 	}
-
-	// TODO add destroy method to cleanup this.imageElement.src
 
 	public intersectsWithBox(selectionBox: Box): boolean {
 		return Relations.relate(this.polygon, selectionBox).B2B.length > 0;
@@ -223,7 +223,7 @@ export class ImageEntity implements Entity {
 					x: vertex.x,
 					y: vertex.y,
 				})),
-				imageData: this.imageElement.currentSrc,
+				imageData: this.imageElement.src,
 			},
 		};
 	}

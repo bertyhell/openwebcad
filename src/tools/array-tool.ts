@@ -14,7 +14,6 @@ import {
 	setShouldDrawHelpers,
 } from '../state';
 import { Tool } from '../tools';
-import { CopyAction } from './copy-tool.ts';
 import { selectToolStateMachine } from './select-tool.ts';
 import type {
 	AbsolutePointInputEvent,
@@ -149,7 +148,9 @@ export const arrayToolStateMachine = createMachine(
 						actions: assign(({ event }) => {
 							return {
 								copyMode:
-									(event as TextInputEvent).value === 'R' ? CopyMode.RADIAL : CopyMode.LINEAR,
+									(event as TextInputEvent).value.toUpperCase() === 'R'
+										? CopyMode.RADIAL
+										: CopyMode.LINEAR,
 							};
 						}),
 						target: ArrayState.ASK_NUMBER_OF_COPIES,
@@ -353,7 +354,7 @@ export const arrayToolStateMachine = createMachine(
 				setGhostHelperEntities([]);
 				setSelectedEntityIds([]);
 			},
-			[CopyAction.DESELECT_ENTITIES]: assign(() => {
+			[ArrayAction.DESELECT_ENTITIES]: assign(() => {
 				setGhostHelperEntities([]);
 				setSelectedEntityIds([]);
 				return initialArrayContext;

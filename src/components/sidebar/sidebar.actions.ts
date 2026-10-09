@@ -10,7 +10,6 @@ import {
 	getEntities,
 	getInputController,
 	getLayers,
-	getScreenCanvasDrawController,
 	getSelectedEntities,
 	setActiveLayerId,
 	setActiveToolActor,
@@ -22,6 +21,7 @@ import {
 import { imageImportToolStateMachine } from '../../tools/image-import-tool.ts';
 import { TOOL_STATE_MACHINES } from '../../tools/tool.consts.ts';
 import { ActorEvent } from '../../tools/tool.types.ts';
+import { zoomToBounds, zoomToScale } from '../../tools/zoom-tool.helpers.ts';
 import type { Tool } from '../../tools.ts';
 
 export function activateTool(tool: Tool): void {
@@ -55,11 +55,11 @@ export function newDrawing(): void {
 }
 
 export function setZoomLevel(zoomPercentage: number): void {
-	getScreenCanvasDrawController().setScreenScale(zoomPercentage / 100);
+	zoomToScale(zoomPercentage / 100);
 }
 
 export function zoomToFit(): void {
-	getScreenCanvasDrawController().zoomToFitScreen();
+	zoomToBounds();
 }
 
 function updateLayer(layerId: string, update: Partial<Layer>): Layer | undefined {

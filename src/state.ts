@@ -23,7 +23,7 @@ let canvas: HTMLCanvasElement | null = null;
 /**
  * Active tool xstate actor
  */
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: every tool has its own context and event types
 let activeToolActor: Actor<any> | null = null;
 
 /**
@@ -40,6 +40,11 @@ let entities: Entity[] = [];
  * Entities that are highlighted: when the mouse is close to an entity
  */
 let highlightedEntityIds: string[] = [];
+
+/**
+ * Entities that are drawn faded, eg: the original entities while previewing a move or rotate operation
+ */
+let dimmedEntityIds: string[] = [];
 
 /**
  * Entities that are selected by the user by clicking on them with the select tool or by selecting them with a selection rectangle
@@ -158,6 +163,7 @@ export const getActiveToolActor = () => activeToolActor;
 export const getLastStateInstructions = () => lastStateInstructions;
 export const getEntities = (): Entity[] => entities;
 export const getSelectedEntityIds = () => selectedEntityIds;
+export const getDimmedEntityIds = () => dimmedEntityIds;
 export const getShouldDrawCursor = () => shouldDrawCursor;
 export const getAngleGuideEntities = () => angleGuideEntities;
 export const getGhostHelperEntities = () => ghostHelperEntities;
@@ -267,7 +273,7 @@ const updateInstructionsFromSnapshot = (
 	setLastStateInstructions(stateInstructions || null);
 };
 export const setActiveToolActor = (
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+	// biome-ignore lint/suspicious/noExplicitAny: every tool has its own context and event types
 	newToolActor: Actor<any>,
 	triggerReact = true
 ) => {
@@ -282,23 +288,13 @@ export const setActiveToolActor = (
 			updateInstructionsFromSnapshot(state);
 		},
 		error: (err) => {
-			toast.error(
-				`Error in tool actor: ${
-					// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-					(err as any)?.message || 'unknown error'
-				}`
-			);
+			toast.error(`Error in tool actor: ${(err as Error | undefined)?.message || 'unknown error'}`);
 			console.error('Error in tool actor', { err, newToolActor });
 		},
 	});
 	activeToolActor.start();
 	// Subscribers only receive later snapshots, so read the instructions of the initial state here
 	updateInstructionsFromSnapshot(activeToolActor.getSnapshot());
-
-	console.log('User clicked on tool: ', {
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		activeTool: (activeToolActor.src as any).config.context.type,
-	});
 
 	if (triggerReact) {
 		triggerReactUpdate(StateVariable.activeTool);
@@ -324,6 +320,9 @@ export const setSelectedEntityIds = (newEntityIds: string[]) => {
 	if (selectionChanged) {
 		triggerReactUpdate(StateVariable.selectedEntityIds);
 	}
+};
+export const setDimmedEntityIds = (newEntityIds: string[]) => {
+	dimmedEntityIds = newEntityIds;
 };
 export const setShouldDrawCursor = (newValue: boolean) => {
 	shouldDrawCursor = newValue;

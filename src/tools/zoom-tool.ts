@@ -78,7 +78,7 @@ export const zoomToolStateMachine = createMachine(
 				on: {
 					TEXT_INPUT: {
 						actions: assign(({ event, context }) => {
-							const inputValue = (event as TextInputEvent).value;
+							const inputValue = (event as TextInputEvent).value.toUpperCase();
 							if (inputValue === 'A') {
 								return {
 									zoomMode: ZoomMode.ALL,

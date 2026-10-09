@@ -31,8 +31,6 @@ export const importEntitiesFromDxfFile = async (file?: File): Promise<void> => {
 		toast.warn('No DXF file selected.');
 		return;
 	}
-
-	console.log(`Attempting to import DXF file: ${file.name}`);
 	const reader = new FileReader();
 
 	reader.onload = async (event) => {
@@ -45,7 +43,6 @@ export const importEntitiesFromDxfFile = async (file?: File): Promise<void> => {
 		const fileContent = event.target.result as string;
 
 		try {
-			console.log('DXF file content loaded, attempting to parse...');
 			// Dynamically import the dxf library
 			const dxf = await import('dxf');
 			const parsedDxf = new dxf.Helper(fileContent) as Helper;
@@ -55,8 +52,6 @@ export const importEntitiesFromDxfFile = async (file?: File): Promise<void> => {
 				console.error('Parsed DXF data is invalid or contains no entities:', parsedDxf);
 				return;
 			}
-
-			console.log(`Successfully parsed DXF. Found ${parsedDxf.denormalised.length} entities.`);
 			const newEntities: Entity[] = [];
 			const currentLayerId = getActiveLayerId();
 			const defaultWidth = getActiveLineWidth();

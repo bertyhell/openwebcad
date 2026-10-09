@@ -27,6 +27,7 @@ import {
 	getPanStartLocation,
 	getScreenCanvasDrawController,
 	getSelectedEntities,
+	getShouldDrawHelpers,
 	getSnapPoint,
 	getSnapPointOnAngleGuide,
 	redo,
@@ -47,11 +48,9 @@ import {
 	type RelativePointInputEvent,
 	type TextInputEvent,
 } from '../tools/tool.types.ts';
-import { TOOL_SHORTCUTS, Tool } from '../tools.ts';
-
-const NUMBER_REGEXP = /^[0-9]+([.][0-9]+)?$/;
-const ABSOLUTE_POINT_REGEXP = /^([0-9]+([.][0-9]+)?)\s*,\s*([0-9]+([.][0-9]+)?)$/;
-const RELATIVE_POINT_REGEXP = /^@([0-9]+([.][0-9]+)?)\s*,\s*([0-9]+([.][0-9]+)?)$/;
+import { zoomIn, zoomOut, zoomToBounds } from '../tools/zoom-tool.helpers.ts';
+import { Tool } from '../tools.ts';
+import { getToolNamesFromPrefixText, parseCommandInput } from './command-parser.ts';
 
 /**
  * Distance between the left of the window and the left of the canvas
@@ -131,7 +130,7 @@ export class InputController {
 			);
 		}
 
-		const matchingToolNames = this.getToolNamesFromPrefixText();
+		const matchingToolNames = getToolNamesFromPrefixText(this.text);
 		const toolInstruction = getLastStateInstructions();
 		const texts: string[] = [];
 		if (toolInstruction) {
@@ -361,21 +360,19 @@ export class InputController {
 		} else if (evt.key === 'ArrowRight') {
 			// Move the screen right
 			getScreenCanvasDrawController().setScreenOffset(this.getScreenPanStep('right', evt.shiftKey));
-		} else if (evt.key === '+') {
-			// Zoom in
-			// TODO keep the center of the screen centered during zoom
-			getScreenCanvasDrawController().setScreenScale(
-				getScreenCanvasDrawController().getScreenScale() * 1.1
-			);
-		} else if (evt.key === '-') {
-			// Zoom in
-			// TODO keep the center of the screen centered during zoom
-			getScreenCanvasDrawController().setScreenScale(
-				getScreenCanvasDrawController().getScreenScale() * 0.9
-			);
+		} else if (evt.key === '+' && this.text === '') {
+			// Zoom in around the center of the screen
+			zoomIn();
+		} else if (evt.key === '-' && this.text === '' && !getShouldDrawHelpers()) {
+			// Zoom out around the center of the screen
+			// While picking points, minus starts a negative number instead
+			zoomOut();
+		} else if (evt.key === 'Home') {
+			// Zoom to show the whole drawing
+			zoomToBounds();
 		} else if (evt.key?.length === 1) {
 			// User entered a single character => add to input field text
-			this.text += evt.key.toUpperCase();
+			this.text += evt.key;
 		}
 	}
 
@@ -394,25 +391,6 @@ export class InputController {
 		}
 	}
 
-	private getToolNamesFromPrefixText(): Tool[] {
-		if (this.text === '') {
-			return [];
-		}
-		const text = this.text.toUpperCase();
-		const toolNames = Object.keys(TOOL_STATE_MACHINES).filter((cmd) =>
-			cmd.startsWith(text)
-		) as Tool[];
-
-		// Single letter shortcuts take precedence over tools that start with that letter. eg: D => COPY
-		const shortcutTool = (Object.keys(TOOL_SHORTCUTS) as Tool[]).find(
-			(tool) => TOOL_SHORTCUTS[tool] === text
-		);
-		if (!shortcutTool) {
-			return toolNames;
-		}
-		return [shortcutTool, ...toolNames.filter((toolName) => toolName !== shortcutTool)];
-	}
-
 	public handleEnterKey() {
 		// submit the text as input to the active tool and clear the input field
 		const activeTool = getActiveToolActor();
@@ -420,103 +398,68 @@ export class InputController {
 		const activeToolState = activeToolSnapshot?.value;
 		const activeToolCanHandleTextInput =
 			!!activeToolSnapshot?.machine?.states?.[activeToolState]?.config?.on?.TEXT_INPUT;
+		const text = this.text;
+		this.text = '';
 
-		if (this.text === '') {
-			console.log('ENTER: ', {
-				text: this.text,
-				activeTool: getActiveToolActor(),
-			});
+		if (text === '') {
 			// Send the ENTER event to the active tool
-			getActiveToolActor()?.send({
+			activeTool?.send({
 				type: ActorEvent.ENTER,
 			});
-		} else if (activeToolCanHandleTextInput) {
-			console.log('TEXT_INPUT: ', {
-				text: this.text,
-				activeTool: getActiveToolActor(),
-			});
-			// Send the text to the active tool
-			getActiveToolActor()?.send({
+			return;
+		}
+
+		if (activeToolCanHandleTextInput) {
+			// The active tool asks for text, eg: a zoom option or the label of a text entity
+			activeTool?.send({
 				type: ActorEvent.TEXT_INPUT,
-				value: this.text,
+				value: text,
 			} as TextInputEvent);
-			this.text = '';
-		} else if (this.getToolNamesFromPrefixText()[0]) {
-			// User entered a command. eg: L or LINE
-			const toolName = this.getToolNamesFromPrefixText()[0];
+			return;
+		}
 
-			getActiveToolActor()?.stop();
+		const command = parseCommandInput(text);
+		switch (command.type) {
+			case 'tool':
+				// User entered a command. eg: L or LINE
+				activeTool?.stop();
+				setActiveToolActor(new Actor(TOOL_STATE_MACHINES[command.tool]));
+				break;
 
-			const newToolActor = new Actor(TOOL_STATE_MACHINES[toolName]);
-			setActiveToolActor(newToolActor);
+			case 'number':
+				// User entered a number. eg: 100
+				activeTool?.send({
+					type: ActorEvent.NUMBER_INPUT,
+					value: command.value,
+					worldMouseLocation:
+						getSnapPointOnAngleGuide()?.point ||
+						getSnapPoint()?.point ||
+						getScreenCanvasDrawController().getWorldMouseLocation(),
+				} as NumberInputEvent);
+				break;
 
-			console.log('SWITCH TO TOOL: ', {
-				toolName,
-				// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-				activeTool: (getActiveToolActor()?.src as any).config.context.type,
-			});
+			case 'absolutePoint':
+				// User entered coordinates to an absolute point on the canvas. eg: 100, 200
+				activeTool?.send({
+					type: ActorEvent.ABSOLUTE_POINT_INPUT,
+					value: new Point(command.x, command.y),
+				} as AbsolutePointInputEvent);
+				break;
 
-			this.text = '';
-		} else if (NUMBER_REGEXP.test(this.text)) {
-			console.log(' NUMBER_INPUT: ', {
-				text: this.text,
-				activeTool: getActiveToolActor(),
-			});
-			// User entered a number. eg: 100
-			getActiveToolActor()?.send({
-				type: ActorEvent.NUMBER_INPUT,
-				value: Number.parseFloat(this.text),
-				worldMouseLocation:
-					getSnapPointOnAngleGuide()?.point ||
-					getSnapPoint()?.point ||
-					getScreenCanvasDrawController().getWorldMouseLocation(),
-			} as NumberInputEvent);
-			this.text = '';
-		} else if (ABSOLUTE_POINT_REGEXP.test(this.text)) {
-			console.log('ABSOLUTE_POINT_INPUT: ', {
-				text: this.text,
-				activeTool: getActiveToolActor(),
-			});
-			// User entered coordinates to an absolute point on the canvas. eg: 100, 200
-			const match = ABSOLUTE_POINT_REGEXP.exec(this.text);
-			if (!match) {
-				return;
-			}
-			const x = Number.parseFloat(match[1]);
-			const y = Number.parseFloat(match[3]);
-			getActiveToolActor()?.send({
-				type: ActorEvent.ABSOLUTE_POINT_INPUT,
-				value: new Point(x, y),
-			} as AbsolutePointInputEvent);
-			this.text = '';
-		} else if (RELATIVE_POINT_REGEXP.test(this.text)) {
-			console.log('RELATIVE_POINT_INPUT: ', {
-				text: this.text,
-				activeTool: getActiveToolActor(),
-			});
-			// User entered coordinates to a relative point on the canvas. eg: @100, 200
-			const match = RELATIVE_POINT_REGEXP.exec(this.text);
-			if (!match) {
-				return;
-			}
-			const x = Number.parseFloat(match[1]);
-			const y = Number.parseFloat(match[3]);
-			getActiveToolActor()?.send({
-				type: ActorEvent.RELATIVE_POINT_INPUT,
-				value: new Point(x, y),
-			} as RelativePointInputEvent);
-			this.text = '';
-		} else {
-			console.log('TEXT_INPUT: ', {
-				text: this.text,
-				activeTool: getActiveToolActor(),
-			});
-			// Send the text to the active tool
-			getActiveToolActor()?.send({
-				type: ActorEvent.TEXT_INPUT,
-				value: this.text,
-			} as TextInputEvent);
-			this.text = '';
+			case 'relativePoint':
+				// User entered coordinates relative to the last point. eg: @100, 200
+				activeTool?.send({
+					type: ActorEvent.RELATIVE_POINT_INPUT,
+					value: new Point(command.x, command.y),
+				} as RelativePointInputEvent);
+				break;
+
+			case 'text':
+				activeTool?.send({
+					type: ActorEvent.TEXT_INPUT,
+					value: command.value,
+				} as TextInputEvent);
+				break;
 		}
 	}
 

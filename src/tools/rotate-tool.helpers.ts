@@ -20,3 +20,15 @@ export function rotateEntities(
 		entity.rotate(rotateOrigin, rotationAngle);
 	}
 }
+
+/**
+ * Point that makes the given angle with the start angle point, around the rotation origin
+ * @param angleInDegrees counterclockwise angle
+ */
+export function getPointAtAngle(
+	rotateOrigin: Point,
+	startAnglePoint: Point,
+	angleInDegrees: number
+): Point {
+	return startAnglePoint.rotate((angleInDegrees * Math.PI) / 180, rotateOrigin);
+}

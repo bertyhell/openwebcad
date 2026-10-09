@@ -53,7 +53,7 @@ function startDrawLoop(
 	const elapsedTime = timestamp - lastDrawTimestamp;
 	setLastDrawTimestamp(timestamp);
 
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+	// biome-ignore lint/suspicious/noExplicitAny: snapshot of whichever tool is active
 	const activeToolSnapshot: MachineSnapshot<any, any, any, any, any, any, any, any> | undefined =
 		getActiveToolActor()?.getSnapshot();
 	if (

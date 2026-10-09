@@ -198,6 +198,10 @@ export class CircleEntity implements Entity {
 	public getRadius(): number {
 		return this.circle?.r ?? 0;
 	}
+
+	public getCenter(): Point {
+		return this.circle?.center ?? new Point(0, 0);
+	}
 }
 
 export interface CircleJsonData {

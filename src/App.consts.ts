@@ -251,3 +251,8 @@ export const TO_DEGREES = 180 / Math.PI;
  * Milliseconds to wait after the last change before saving the drawing to local storage
  */
 export const AUTOSAVE_DELAY = 1000;
+
+/**
+ * Opacity of entities that are drawn faded, eg: the originals while previewing a move
+ */
+export const DIMMED_ENTITY_ALPHA = 0.35;

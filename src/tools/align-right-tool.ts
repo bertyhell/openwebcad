@@ -1,8 +1,8 @@
-import {Tool} from '../tools';
 import {createMachine} from 'xstate';
-import type {BoundingBox} from "../helpers/get-bounding-box-of-multiple-entities.ts";
-import {GET_ALIGN_ACTION, GET_ALIGN_TOOL_STATE} from "./align-tool.helpers.ts";
-import type {Entity} from "../entities/Entity.ts";
+import type {BoundingBox} from '../App.types.ts';
+import type {Entity} from '../entities/Entity.ts';
+import {Tool} from '../tools';
+import {GET_ALIGN_ACTION, GET_ALIGN_TOOL_STATE} from './align-tool.helpers.ts';
 
 /**
  * AlignRight tool state machine
@@ -11,8 +11,8 @@ import type {Entity} from "../entities/Entity.ts";
  * When the user presses enter, the selected entities are right aligned
  */
 export const alignRightToolStateMachine = createMachine(
-    GET_ALIGN_TOOL_STATE(Tool.ALIGN_RIGHT),
-    GET_ALIGN_ACTION((entity: Entity, boundingBox: BoundingBox) => {
-      entity.move(boundingBox.maxX - entity.getBoundingBox().xmax, 0);
-    })
+	GET_ALIGN_TOOL_STATE(Tool.ALIGN_RIGHT),
+	GET_ALIGN_ACTION((entity: Entity, boundingBox: BoundingBox) => {
+		entity.move(boundingBox.maxX - entity.getBoundingBox().xmax, 0);
+	})
 );

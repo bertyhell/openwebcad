@@ -3,15 +3,15 @@ import {toast} from 'react-toastify';
 import {Actor} from 'xstate';
 import {COLOR_LIST} from '../App.consts';
 import {HtmlEvent, type Layer} from '../App.types';
-import {exportEntitiesToJsonFile} from '../helpers/import-export-handlers/export-entities-to-json';
-import {exportEntitiesToLocalStorage} from '../helpers/import-export-handlers/export-entities-to-local-storage.ts';
-import {exportEntitiesToPdfFile} from '../helpers/import-export-handlers/export-entities-to-pdf.ts';
-import {exportEntitiesToPngFile} from '../helpers/import-export-handlers/export-entities-to-png';
-import {exportEntitiesToSvgFile} from '../helpers/import-export-handlers/export-entities-to-svg';
-import {importEntitiesFromDxfFile} from '../helpers/import-export-handlers/import-entities-from-dxf';
-import {importEntitiesFromJsonFile} from '../helpers/import-export-handlers/import-entities-from-json';
-import {importEntitiesFromSvgFile} from '../helpers/import-export-handlers/import-entities-from-svg.ts';
-import {importImageFromFile} from '../helpers/import-export-handlers/import-image-from-file';
+import {importEntitiesFromDxfFile} from '../helpers/import-export-handlers/dxf.import.ts';
+import {imageImport} from '../helpers/import-export-handlers/image.import.ts';
+import {exportEntitiesToJsonFile} from '../helpers/import-export-handlers/json.export.ts';
+import {importEntitiesFromJsonFile} from '../helpers/import-export-handlers/json.import.ts';
+import {localStorageExport} from '../helpers/import-export-handlers/local-storage.export.ts';
+import {exportEntitiesToPdfFile} from '../helpers/import-export-handlers/pdf.export.ts';
+import {exportEntitiesToPngFile} from '../helpers/import-export-handlers/png.export.ts';
+import {exportEntitiesToSvgFile} from '../helpers/import-export-handlers/svg.export.ts';
+import {importEntitiesFromSvgFile} from '../helpers/import-export-handlers/svg.import.ts';
 import {times} from '../helpers/times';
 import {
 	getActiveLayerId,
@@ -28,6 +28,7 @@ import {
 	setActiveToolActor,
 	setAngleStep,
 	setEntities,
+	setGhostHelperEntities,
 	setLayers,
 	undo,
 } from '../state';
@@ -244,6 +245,18 @@ export const Toolbar: FC = () => {
 					}}
 					active={activeToolLocal === Tool.MEASUREMENT}
 					label="Measurement"
+				/>
+				<Button
+					className="mt-2 w-full"
+					title="Fill area with color"
+					dataId="fill-button"
+					iconName={IconName.PaintBucket}
+					onClick={(evt) => {
+						evt.stopPropagation();
+						handleToolClick(Tool.FILL);
+					}}
+					active={activeToolLocal === Tool.FILL}
+					label="Fill"
 				/>
 				<Button
 					className="mt-2 w-full"
@@ -494,7 +507,7 @@ export const Toolbar: FC = () => {
 				iconName={IconName.Save}
 				onClick={async (evt) => {
 					evt.stopPropagation();
-					await exportEntitiesToLocalStorage();
+					await localStorageExport();
 					toast.success('Saved');
 				}}
 				label="Save drawing"
@@ -508,6 +521,7 @@ export const Toolbar: FC = () => {
 				onClick={(evt) => {
 					evt.stopPropagation();
 					setEntities([]);
+					setGhostHelperEntities([]);
 				}}
 				label="New drawing"
 			/>
@@ -531,7 +545,7 @@ export const Toolbar: FC = () => {
 						type="file"
 						accept="*.jpg,*.jpeg,*.png"
 						onChange={async (evt) => {
-							const image: HTMLImageElement = await importImageFromFile(evt.target.files?.[0]);
+							const image: HTMLImageElement = await imageImport(evt.target.files?.[0]);
 							const imageImportActor = new Actor(imageImportToolStateMachine);
 							imageImportActor.start();
 							imageImportActor.send({

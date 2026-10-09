@@ -1,6 +1,6 @@
 import './App.css';
-import {ToastContainer} from 'react-toastify';
-import {Toolbar} from './components/Toolbar.tsx';
+import { ToastContainer } from 'react-toastify';
+import { Toolbar } from './components/Toolbar.tsx';
 
 function App() {
 	return (

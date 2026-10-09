@@ -6,6 +6,7 @@ import {CircleEntity} from '../../entities/CircleEntity.ts';
 import type {Entity} from '../../entities/Entity.ts';
 import {LineEntity} from '../../entities/LineEntity.ts';
 import {getActiveLayerId, getActiveLineColor, getActiveLineWidth, getEntities, setEntities,} from '../../state';
+import {zoomToBounds} from '../../tools/zoom-tool.helpers.ts';
 import {toHex} from '../rgb-to-hex-color.ts';
 
 function getDxfLineColor(dxfColor: [number, number, number] | undefined): string {
@@ -63,7 +64,8 @@ export const importEntitiesFromDxfFile = async (file?: File): Promise<void> => {
 					if (dxfLine.start && dxfLine.end) {
 						const startPoint: Point = new Point(dxfLine.start.x, dxfLine.start.y);
 						const endPoint: Point = new Point(dxfLine.end.x, dxfLine.end.y);
-						const line = new LineEntity(currentLayerId, startPoint, endPoint);
+						const line = new LineEntity(startPoint, endPoint);
+						line.layerId = currentLayerId;
 						line.lineColor = getDxfLineColor(dxfLine.colorNumber);
 						line.lineWidth = dxfLine.thickness || defaultWidth;
 						line.lineDash = undefined;
@@ -75,7 +77,8 @@ export const importEntitiesFromDxfFile = async (file?: File): Promise<void> => {
 					const dxfCircle = entity as DxfEntities.Circle;
 					if (dxfCircle.x && dxfCircle.y && dxfCircle.r) {
 						const centerPoint = new Point(dxfCircle.x, dxfCircle.y);
-						const circle = new CircleEntity(currentLayerId, centerPoint, dxfCircle.r);
+						const circle = new CircleEntity(centerPoint, dxfCircle.r);
+						circle.layerId = currentLayerId;
 						circle.lineColor = getDxfLineColor(dxfCircle.colorNumber);
 						circle.lineWidth = defaultWidth;
 						circle.lineDash = undefined;
@@ -95,6 +98,7 @@ export const importEntitiesFromDxfFile = async (file?: File): Promise<void> => {
 						`${JSON.stringify(entity.getShape())}|${entity.lineColor}|${entity.lineWidth}|${entity.lineDash}`
 				);
 				setEntities([...getEntities(), ...uniqueEntities]);
+				zoomToBounds();
 				toast.success(`${uniqueEntities.length} entities imported successfully from DXF!`);
 			} else {
 				toast.info('No supported entities found in the DXF file.');

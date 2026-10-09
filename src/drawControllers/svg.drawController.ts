@@ -1,6 +1,9 @@
-import {Point, Vector} from '@flatten-js/core';
+import {Arc, Point, Vector} from '@flatten-js/core';
+import {compact} from 'es-toolkit';
 import {toast} from 'react-toastify';
 import {SVG_MARGIN, TO_DEGREES} from '../App.consts.ts';
+import type {Edge} from '../App.types.ts';
+import type {PolyLineEntity} from "../entities/PolyLineEntity.ts";
 import type {TextOptions} from '../entities/TextEntity.ts';
 import {isLengthEqual} from '../helpers/is-length-equal.ts';
 import {StateVariable} from '../helpers/undo-stack.ts';
@@ -290,5 +293,47 @@ export class SvgDrawController implements DrawController {
 
 		const pointsString = canvasPoints.map((p) => `${p.x},${p.y}`).join(' ');
 		this.svgStrings.push(`<polygon points="${pointsString}" fill="${this.fillColor}" />`);
+	}
+
+	public fillPolyline(fillBorder: PolyLineEntity, holes: PolyLineEntity[] = []) {
+		const pathData = [fillBorder, ...holes]
+			.map((polyline) => this.getClosedPathData(polyline.getOrderedEdges()))
+			.join(' ');
+		if (!pathData) return;
+		// Even-odd makes sure the holes are not filled, regardless of the direction of their edges
+		this.svgStrings.push(
+			`<path d="${pathData}" fill="${this.fillColor}" fill-rule="evenodd" stroke="none" />`
+		);
+	}
+
+	/**
+	 * Converts the edges to svg path data for a closed path
+	 * @param edges segments and arcs in order, where every edge starts where the previous edge ended
+	 */
+	private getClosedPathData(edges: Edge[]): string {
+		if (edges.length === 0) {
+			return '';
+		}
+
+		const start = this.worldToTarget(edges[0].start);
+		const commands = [`M${start.x},${start.y}`];
+		for (const edge of edges) {
+			if (edge instanceof Arc) {
+				// An svg arc command can't draw a full circle, since start and end point are the same, so we split it in 2 halves
+				const arcParts = edge.sweep > Math.PI ? edge.split(edge.middle()) : [edge];
+				for (const arcPart of compact(arcParts) as Arc[]) {
+					const end = this.worldToTarget(arcPart.end);
+					const radius = arcPart.r.valueOf() * this.screenScale;
+					const largeArcFlag = arcPart.sweep > Math.PI ? '1' : '0';
+					const sweepFlag = arcPart.counterClockwise ? '0' : '1'; // SVG: 0 = CCW, 1 = CW
+					commands.push(`A${radius},${radius} 0 ${largeArcFlag},${sweepFlag} ${end.x},${end.y}`);
+				}
+			} else {
+				const end = this.worldToTarget(edge.end);
+				commands.push(`L${end.x},${end.y}`);
+			}
+		}
+		commands.push('Z');
+		return commands.join(' ');
 	}
 }

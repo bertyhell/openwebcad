@@ -1,6 +1,6 @@
-import {Point} from '@flatten-js/core';
-import {compact, round} from 'es-toolkit';
-import {Actor} from 'xstate';
+import { Point } from '@flatten-js/core';
+import { compact, round } from 'es-toolkit';
+import { Actor } from 'xstate';
 import {
 	CANVAS_INPUT_FIELD_BACKGROUND_COLOR,
 	CANVAS_INPUT_FIELD_HEIGHT,
@@ -12,11 +12,11 @@ import {
 	SNAP_POINT_DISTANCE,
 	TOOLBAR_WIDTH,
 } from '../App.consts.ts';
-import {MouseButton} from '../App.types.ts';
-import type {ScreenCanvasDrawController} from '../drawControllers/screenCanvas.drawController.ts';
-import {calculateAngleGuidesAndSnapPoints} from '../helpers/calculate-angle-guides-and-snap-points.ts';
-import {findClosestEntity} from '../helpers/find-closest-entity.ts';
-import {getClosestSnapPointWithinRadius} from '../helpers/get-closest-snap-point.ts';
+import { MouseButton } from '../App.types.ts';
+import type { ScreenCanvasDrawController } from '../drawControllers/screenCanvas.drawController.ts';
+import { calculateAngleGuidesAndSnapPoints } from '../helpers/calculate-angle-guides-and-snap-points.ts';
+import { findClosestEntity } from '../helpers/find-closest-entity.ts';
+import { getClosestSnapPointWithinRadius } from '../helpers/get-closest-snap-point.ts';
 import {
 	getActiveToolActor,
 	getCanvas,
@@ -36,8 +36,7 @@ import {
 	setShouldDrawCursor,
 	undo,
 } from '../state.ts';
-import {Tool} from '../tools.ts';
-import {TOOL_STATE_MACHINES} from '../tools/tool.consts.ts';
+import { TOOL_STATE_MACHINES } from '../tools/tool.consts.ts';
 import {
 	type AbsolutePointInputEvent,
 	ActorEvent,
@@ -46,6 +45,7 @@ import {
 	type RelativePointInputEvent,
 	type TextInputEvent,
 } from '../tools/tool.types.ts';
+import { Tool } from '../tools.ts';
 
 const NUMBER_REGEXP = /^[0-9]+([.][0-9]+)?$/;
 const ABSOLUTE_POINT_REGEXP = /^([0-9]+([.][0-9]+)?)\s*,\s*([0-9]+([.][0-9]+)?)$/;
@@ -247,7 +247,7 @@ export class InputController {
 		if (shiftPressed) {
 			step = 100;
 		}
-		step *= screenZoom;
+		step /= screenZoom;
 		switch (direction) {
 			case 'up':
 				return new Point(screenOffset.x, screenOffset.y - step);

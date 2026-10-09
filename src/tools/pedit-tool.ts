@@ -2,7 +2,6 @@ import {toast} from 'react-toastify';
 import {assign, createMachine, sendTo} from 'xstate';
 import {PolyLineEntity} from '../entities/PolyLineEntity.ts';
 import {
-	getActiveLayerId,
 	getNotSelectedEntities,
 	getSelectedEntities,
 	getSelectedEntityIds,
@@ -125,7 +124,7 @@ export const peditToolStateMachine = createMachine(
 				return {};
 			}),
 			[PeditAction.CONVERT_SELECTION_TO_POLYLINE]: assign(() => {
-				const newPolyLine = new PolyLineEntity(getActiveLayerId(), getSelectedEntities());
+				const newPolyLine = new PolyLineEntity(getSelectedEntities());
 				const newEntities = [...getNotSelectedEntities(), newPolyLine];
 				setEntities(newEntities, true);
 				setSelectedEntityIds([]);

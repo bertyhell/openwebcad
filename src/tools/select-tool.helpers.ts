@@ -1,5 +1,6 @@
 import type {Box, Point, Polygon} from '@flatten-js/core';
 import {compact} from 'es-toolkit';
+import {toast} from 'react-toastify';
 import {
 	EPSILON,
 	HIGHLIGHT_ENTITY_DISTANCE,
@@ -9,17 +10,8 @@ import {
 	SELECTION_RECTANGLE_WIDTH,
 } from '../App.consts';
 import {RectangleEntity} from '../entities/RectangleEntity';
-import {toast} from 'react-toastify';
 import {findClosestEntity} from '../helpers/find-closest-entity';
-import {
-	getActiveLayerId,
-	getEntities,
-	getLayers,
-	getSelectedEntityIds,
-	isEntitySelected,
-	setGhostHelperEntities,
-	setSelectedEntityIds,
-} from '../state';
+import {getEntities, getLayers, getSelectedEntityIds, isEntitySelected, setGhostHelperEntities, setSelectedEntityIds,} from '../state';
 import type {SelectContext} from './select-tool';
 import type {MouseClickEvent} from './tool.types';
 
@@ -69,7 +61,7 @@ export function selectEntitiesInsideRectangle(
 	// holdingShift: boolean, // TODO implement add to selection using shift
 ): void {
 	// Finish the selection
-	const activeSelectionRectangle = new RectangleEntity(getActiveLayerId(), startPoint, endPoint);
+	const activeSelectionRectangle = new RectangleEntity(startPoint, endPoint);
 	const intersectionSelection = getIsIntersectionSelection(activeSelectionRectangle, startPoint);
 	const newSelectedEntityIds: string[] = compact(
 		getEntities().map((entity): string | null => {
@@ -120,7 +112,7 @@ export function selectEntitiesInsideRectangle(
 }
 
 export function drawTempSelectionRectangle(startPoint: Point, endPoint: Point) {
-	const activeSelectionRectangle = new RectangleEntity(getActiveLayerId(), startPoint, endPoint);
+	const activeSelectionRectangle = new RectangleEntity(startPoint, endPoint);
 	const isIntersectionSelection: boolean = getIsIntersectionSelection(
 		activeSelectionRectangle,
 		startPoint

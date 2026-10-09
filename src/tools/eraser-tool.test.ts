@@ -26,8 +26,8 @@ describe('erase-tool', () => {
 	 */
 	it('should delete part of circle to form an arc', () => {
 		const entities = [
-			new RectangleEntity('layer1', new Point(0, 0), new Point(20, -20)),
-			new CircleEntity('layer1', new Point(0, 0), 10),
+			new RectangleEntity(new Point(0, 0), new Point(20, -20)),
+			new CircleEntity(new Point(0, 0), 10),
 		];
 		setEntities(entities);
 		handleMouseClick(new Point(8, -8));
@@ -56,8 +56,8 @@ describe('erase-tool', () => {
 	 */
 	it('should delete part of circle to form an arc using inner functions', () => {
 		const entities = [
-			new RectangleEntity('layer1', new Point(0, 0), new Point(20, -20)),
-			new CircleEntity('layer1', new Point(0, 0), 10),
+			new RectangleEntity(new Point(0, 0), new Point(20, -20)),
+			new CircleEntity(new Point(0, 0), 10),
 		];
 		setEntities(entities);
 

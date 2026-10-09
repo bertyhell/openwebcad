@@ -3,8 +3,10 @@ import {Box, type Point, type Segment} from '@flatten-js/core';
 import {mapLimit} from 'blend-promise-utils';
 import {compact, maxBy} from 'es-toolkit';
 import {minBy} from 'es-toolkit/compat';
-import type {Shape, SnapPoint} from '../App.types';
+import type {Edge, Shape, SnapPoint, StartAndEndpointEntity} from '../App.types';
 import type {DrawController} from '../drawControllers/DrawController';
+import {checkClosedPolygon} from '../helpers/check-closed-polygon.ts';
+import {orderEdgeBoundary} from '../helpers/order-edge-boundary.ts';
 import {getActiveLayerId, isEntityHighlighted, isEntitySelected} from '../state.ts';
 import {ArcEntity, type ArcJsonData} from './ArcEntity.ts';
 import {type Entity, EntityName, type JsonEntity} from './Entity';
@@ -17,13 +19,13 @@ export class PolyLineEntity implements Entity {
 	public lineDash: number[] | undefined = undefined;
 	public layerId: string;
 
-	private readonly entities: Entity[];
+	public readonly entities: (Entity & StartAndEndpointEntity)[];
 
-	constructor(layerId: string, entities: Entity[]) {
-		this.layerId = layerId;
+	constructor(entities: Entity[]) {
+		this.layerId = getActiveLayerId();
 		this.entities = entities.filter((entity) =>
 			[EntityName.Line, EntityName.Arc].includes(entity.getType())
-		);
+		) as StartAndEndpointEntity[];
 	}
 
 	public numberOfSegments(): number {
@@ -36,6 +38,10 @@ export class PolyLineEntity implements Entity {
 		parentSelected?: boolean
 	): void {
 		for (const entity of this.entities) {
+			entity.lineWidth = this.lineWidth;
+			entity.lineDash = this.lineDash;
+			entity.layerId = this.layerId;
+			entity.lineColor = this.lineColor;
 			entity.draw(
 				drawController,
 				parentHighlighted ?? isEntityHighlighted(this),
@@ -70,7 +76,9 @@ export class PolyLineEntity implements Entity {
 
 	public clone(): PolyLineEntity {
 		const clonedEntities = this.entities.map((entity) => entity.clone());
-		return new PolyLineEntity(this.layerId, clonedEntities);
+		const polylineEntity = new PolyLineEntity(clonedEntities);
+		polylineEntity.layerId = this.layerId;
+		return polylineEntity;
 	}
 
 	public intersectsWithBox(selectionBox: Box): boolean {
@@ -86,20 +94,40 @@ export class PolyLineEntity implements Entity {
 		if (distanceInfos.every((distanceInfo) => distanceInfo === null)) {
 			return null;
 		}
-		return minBy(compact(distanceInfos), (distanceInfo) => distanceInfo?.[0]);
+		return minBy(compact(distanceInfos), (distanceInfo) => distanceInfo[0]) || null;
 	}
 
 	public getBoundingBox(): Box {
 		const boundingBoxes = this.entities.map((entity) => entity.getBoundingBox());
-		const xmin = minBy(boundingBoxes, (boundingBox) => boundingBox.xmin).xmin;
-		const ymin = minBy(boundingBoxes, (boundingBox) => boundingBox.ymin).ymin;
-		const xmax = maxBy(boundingBoxes, (boundingBox) => boundingBox.xmax).xmax;
-		const ymax = maxBy(boundingBoxes, (boundingBox) => boundingBox.ymax).ymax;
+		const xmin = minBy(boundingBoxes, (boundingBox) => boundingBox.xmin)?.xmin;
+		const ymin = minBy(boundingBoxes, (boundingBox) => boundingBox.ymin)?.ymin;
+		const xmax = maxBy(boundingBoxes, (boundingBox) => boundingBox.xmax)?.xmax;
+		const ymax = maxBy(boundingBoxes, (boundingBox) => boundingBox.ymax)?.ymax;
 		return new Box(xmin, ymin, xmax, ymax);
 	}
 
 	public getShape(): Shape | null {
 		return null;
+	}
+
+	public getEdges(): Edge[] {
+		return this.entities.flatMap((entity) => {
+			return entity.getEdges();
+		});
+	}
+
+	/**
+	 * Returns the edges of the polyline in order, where every edge starts where the previous edge ended
+	 * This is useful for drawing the polyline as a single path
+	 */
+	public getOrderedEdges(): Edge[] {
+		const edges = this.getEdges();
+		try {
+			return orderEdgeBoundary(edges);
+		} catch {
+			// Polyline isn't closed, return the edges in their original order
+			return edges;
+		}
 	}
 
 	public getSnapPoints(): SnapPoint[] {
@@ -139,7 +167,9 @@ export class PolyLineEntity implements Entity {
 		};
 	}
 
-	public static async fromJson(jsonEntity: JsonEntity<PolyLineJsonData>): Promise<PolyLineEntity> {
+	public static async fromJson(
+		jsonEntity: JsonEntity<PolyLineJsonData>
+	): Promise<PolyLineEntity | null> {
 		const entities: (ArcEntity | LineEntity | null)[] = await mapLimit(
 			jsonEntity.children || [],
 			20,
@@ -171,10 +201,12 @@ export class PolyLineEntity implements Entity {
 			}
 		);
 
-		const polyLineEntity = new PolyLineEntity(
-			jsonEntity.layerId || getActiveLayerId(),
-			compact(entities)
-		);
+		const closedEntities = checkClosedPolygon(compact(entities));
+		if (!closedEntities) {
+			return null;
+		}
+		const polyLineEntity = new PolyLineEntity(closedEntities as unknown as Entity[]);
+		polyLineEntity.layerId = jsonEntity.layerId || getActiveLayerId();
 		polyLineEntity.id = jsonEntity.id;
 		polyLineEntity.lineColor = jsonEntity.lineColor;
 		polyLineEntity.lineWidth = jsonEntity.lineWidth;

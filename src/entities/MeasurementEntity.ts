@@ -12,7 +12,7 @@ import {
 	MEASUREMENT_ORIGIN_MARGIN,
 	TO_RADIANS,
 } from '../App.consts';
-import type {Shape, SnapPoint} from '../App.types';
+import type {Edge, Shape, SnapPoint} from '../App.types';
 import type {DrawController} from '../drawControllers/DrawController';
 import {pointDistance} from '../helpers/distance-between-points';
 import {isPointEqual} from '../helpers/is-point-equal';
@@ -33,8 +33,8 @@ export class MeasurementEntity implements Entity {
 	private endPoint: Point;
 	private offsetPoint: Point;
 
-	constructor(layerId: string, startPoint: Point, endPoint: Point, offsetPoint: Point) {
-		this.layerId = layerId;
+	constructor(startPoint: Point, endPoint: Point, offsetPoint: Point) {
+		this.layerId = getActiveLayerId();
 		this.startPoint = startPoint;
 		this.endPoint = endPoint;
 		this.offsetPoint = offsetPoint;
@@ -299,7 +299,6 @@ export class MeasurementEntity implements Entity {
 
 	public clone(): MeasurementEntity {
 		return new MeasurementEntity(
-			getActiveLayerId(),
 			this.startPoint.clone(),
 			this.endPoint.clone(),
 			this.offsetPoint.clone()
@@ -436,6 +435,10 @@ export class MeasurementEntity implements Entity {
 		return null;
 	}
 
+	public getEdges(): Edge[] {
+		return [];
+	}
+
 	public getSnapPoints(): SnapPoint[] {
 		return [];
 	}
@@ -556,12 +559,8 @@ export class MeasurementEntity implements Entity {
 			jsonEntity.shapeData.offsetPoint.x,
 			jsonEntity.shapeData.offsetPoint.y
 		);
-		const measurementEntity = new MeasurementEntity(
-			jsonEntity.layerId || getActiveLayerId(),
-			startPoint,
-			endPoint,
-			offsetPoint
-		);
+		const measurementEntity = new MeasurementEntity(startPoint, endPoint, offsetPoint);
+		measurementEntity.layerId = jsonEntity.layerId || getActiveLayerId();
 		measurementEntity.id = jsonEntity.id;
 		measurementEntity.lineColor = jsonEntity.lineColor;
 		measurementEntity.lineWidth = jsonEntity.lineWidth;

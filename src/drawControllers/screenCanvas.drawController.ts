@@ -1,5 +1,7 @@
-import {Point, type Vector} from '@flatten-js/core';
+import {Arc, Point, type Vector} from '@flatten-js/core';
 import {CANVAS_BACKGROUND_COLOR, MOUSE_ZOOM_MULTIPLIER} from '../App.consts';
+import type {Edge} from '../App.types.ts';
+import type {PolyLineEntity} from '../entities/PolyLineEntity.ts';
 import {getAngleWithXAxis} from '../helpers/get-angle-with-x-axis.ts';
 import {getBoundingBoxOfMultipleEntities} from '../helpers/get-bounding-box-of-multiple-entities.ts';
 import {mapNumberRange} from '../helpers/map-number-range.ts';
@@ -478,7 +480,7 @@ export class ScreenCanvasDrawController implements DrawController {
 	}
 
 	/**
-	 * Fill polygon with color
+	 * Fill polygon consisting of straight line segments with color
 	 * @param points
 	 */
 	public fillPolygon(...points: Point[]) {
@@ -493,5 +495,53 @@ export class ScreenCanvasDrawController implements DrawController {
 		});
 		this.context.closePath();
 		this.context.fill();
+	}
+
+	/**
+	 * Fill a closed polyline consisting of straight lines and arcs with color
+	 * The holes are cut out of the filled area
+	 * @param fillBorder
+	 * @param holes
+	 */
+	public fillPolyline(fillBorder: PolyLineEntity, holes: PolyLineEntity[] = []) {
+		this.context.beginPath();
+		for (const polyline of [fillBorder, ...holes]) {
+			this.addClosedPath(polyline.getOrderedEdges());
+		}
+		// Even-odd makes sure the holes are not filled, regardless of the direction of their edges
+		this.context.fill('evenodd');
+	}
+
+	/**
+	 * Adds a closed path to the current canvas path
+	 * @param edges segments and arcs in order, where every edge starts where the previous edge ended
+	 */
+	private addClosedPath(edges: Edge[]) {
+		if (edges.length === 0) {
+			return;
+		}
+
+		const startScreen = this.worldToTarget(edges[0].start);
+		this.context.moveTo(startScreen.x, this.canvasSize.y - startScreen.y);
+
+		for (const edge of edges) {
+			if (edge instanceof Arc) {
+				const centerScreen = this.worldToTarget(edge.center);
+				// Flip angles over the x-axis, because we go from world to screen coordinates which flips the y-axis direction
+				this.context.arc(
+					centerScreen.x,
+					this.canvasSize.y - centerScreen.y,
+					edge.r.valueOf() * this.screenScale,
+					-edge.startAngle,
+					-edge.endAngle,
+					edge.counterClockwise
+				);
+			} else {
+				const endScreen = this.worldToTarget(edge.end);
+				this.context.lineTo(endScreen.x, this.canvasSize.y - endScreen.y);
+			}
+		}
+
+		this.context.closePath();
 	}
 }

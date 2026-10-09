@@ -1,9 +1,10 @@
 import type {Box, Point, Segment} from '@flatten-js/core';
-import type {Shape, SnapPoint} from '../App.types';
+import type {Edge, Shape, SnapPoint} from '../App.types';
 import type {DrawController} from '../drawControllers/DrawController.ts';
 import type {ArcJsonData} from './ArcEntity';
 import type {ArrowHeadJsonData} from './ArrowHeadEntity.ts';
 import type {CircleJsonData} from './CircleEntity';
+import type {FillJsonData} from './FillEntity.ts';
 import type {ImageJsonData} from './ImageEntity';
 import type {LineEntity, LineJsonData} from './LineEntity';
 import type {PointJsonData} from './PointEntity';
@@ -36,6 +37,7 @@ export interface Entity {
 	getBoundingBox(): Box;
 	getFirstPoint(): Point | null;
 	getShape(): Shape | null;
+	getEdges(): Edge[];
 	getSnapPoints(): SnapPoint[];
 	getIntersections(entity: Entity): Point[];
 	distanceTo(shape: Shape): [number, Segment] | null;
@@ -57,6 +59,7 @@ export enum EntityName {
 	ArrowHead = 'ArrowHead',
 	Text = 'Text',
 	PolyLine = 'PolyLine',
+	Fill = 'Fill',
 }
 
 export type ShapeJsonData =
@@ -67,7 +70,8 @@ export type ShapeJsonData =
 	| PointJsonData
 	| ImageJsonData
 	| ArrowHeadJsonData
-	| TextJsonData;
+	| TextJsonData
+	| FillJsonData;
 
 export interface JsonEntity<TShapeJsonData = ShapeJsonData> {
 	id: string;

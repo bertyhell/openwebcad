@@ -1,6 +1,6 @@
 import type * as Flatten from '@flatten-js/core';
 import {type Box, Point, Polygon, Relations, type Segment, Vector} from '@flatten-js/core';
-import {type Shape, type SnapPoint, SnapPointType} from '../App.types';
+import {type Edge, type Shape, type SnapPoint, SnapPointType} from '../App.types';
 import type {DrawController} from '../drawControllers/DrawController.ts';
 import {twoPointBoxToPolygon} from '../helpers/box-to-polygon';
 import {getExportColor} from '../helpers/get-export-color';
@@ -24,13 +24,12 @@ export class ImageEntity implements Entity {
 	private angle: number;
 
 	constructor(
-		layerId: string,
 		imgData: HTMLImageElement,
 		startPointOrPolygon?: Point | Polygon,
 		endPointOrAngle?: Point | number,
 		angle = 0
 	) {
-		this.layerId = layerId;
+		this.layerId = getActiveLayerId();
 		this.imageElement = imgData;
 		if (startPointOrPolygon instanceof Polygon) {
 			this.polygon = startPointOrPolygon as Polygon;
@@ -105,7 +104,7 @@ export class ImageEntity implements Entity {
 	public clone(): ImageEntity {
 		const clonedImage = document.createElement('img');
 		clonedImage.src = this.imageElement.src;
-		return new ImageEntity(getActiveLayerId(), clonedImage, this.polygon.clone());
+		return new ImageEntity(clonedImage, this.polygon.clone());
 	}
 
 	// TODO add destroy method to cleanup this.imageElement.src
@@ -137,6 +136,10 @@ export class ImageEntity implements Entity {
 
 	public getShape(): Shape | null {
 		return this.polygon;
+	}
+
+	public getEdges(): Edge[] {
+		return polygonToSegments(this.polygon);
 	}
 
 	public getSnapPoints(): SnapPoint[] {
@@ -233,11 +236,8 @@ export class ImageEntity implements Entity {
 		);
 		const image = new Image();
 		image.src = jsonEntity.shapeData.imageData;
-		const rectangleEntity = new ImageEntity(
-			jsonEntity.layerId || getActiveLayerId(),
-			image,
-			rectangle
-		);
+		const rectangleEntity = new ImageEntity(image, rectangle);
+		rectangleEntity.layerId = jsonEntity.layerId || getActiveLayerId();
 		rectangleEntity.id = jsonEntity.id;
 		rectangleEntity.lineColor = jsonEntity.lineColor;
 		rectangleEntity.lineWidth = jsonEntity.lineWidth;

@@ -1,0 +1,679 @@
+import { Arc, Circle, Point, Segment } from '@flatten-js/core'; // tests/find-enclosing-boundary.test.ts
+import { describe, expect, it } from 'vitest';
+import { findEnclosingBoundary } from './find-enclosing-boundary.ts';
+import { isPointEqual } from './is-point-equal.ts';
+import { validateClosedBoundary } from './tests/validate-closed-boundary.ts';
+
+describe('findEnclosingBoundary', () => {
+	it('returns null for empty input', () => {
+		const pt = new Point(0, 0);
+		const result = findEnclosingBoundary(pt, []);
+		expect(result).toBeNull();
+	});
+
+	/**
+	 * (X)
+	 * A----B----C
+	 * Open path: no loop
+	 */
+	it('returns null for non-closed segments', () => {
+		const A = new Point(0, 0);
+		const B = new Point(1, 0);
+		const C = new Point(2, 0);
+		const segAB = new Segment(A, B);
+		const segBC = new Segment(B, C);
+		// Only two segments in a line—no closed loop
+		const result = findEnclosingBoundary(new Point(1, 0.1), [segAB, segBC]);
+		expect(result).toBeNull();
+	});
+
+	/**
+	 *       C
+	 *      / \
+	 *     / X \
+	 *    A-----B
+	 */
+	it('detects triangular boundary', () => {
+		const A = new Point(0, 0);
+		const B = new Point(1, 0);
+		const C = new Point(0, 1);
+		const segAB = new Segment(A, B);
+		const segBC = new Segment(B, C);
+		const segCA = new Segment(C, A);
+		const edges = [segAB, segBC, segCA];
+		const query = new Point(0.2, 0.2);
+
+		const boundary = findEnclosingBoundary(query, edges);
+
+		validateClosedBoundary(boundary?.boundary, edges.length, edges.length, 0);
+
+		// Must contain exactly those three edges, in any order
+		for (let i = 0; i < edges.length; i++) {
+			const edge = edges[i];
+			const boundaryEdge = boundary?.boundary?.find(
+				(e) =>
+					(isPointEqual(e.start, edge.start) && isPointEqual(e.end, edge.end)) ||
+					(isPointEqual(e.start, edge.end) && isPointEqual(e.end, edge.start))
+			);
+			expect(boundaryEdge).not.toBeUndefined();
+		}
+	});
+
+	/**
+	 *    C     (X)
+	 *    | \
+	 *    |   \
+	 *    A-----B
+	 */
+	it('returns null when point is outside triangle', () => {
+		const A = new Point(0, 0);
+		const B = new Point(1, 0);
+		const C = new Point(0, 1);
+		const segAB = new Segment(A, B);
+		const segBC = new Segment(B, C);
+		const segCA = new Segment(C, A);
+		const query = new Point(1, 1); // clearly outside
+		const result = findEnclosingBoundary(query, [segAB, segBC, segCA]);
+		expect(result).toBeNull();
+	});
+
+	/**
+	 *    C---___
+	 *    | \     \
+	 *    |   \    \
+	 *    | X   \  |
+	 *    A-------B
+	 */
+	it('returns triangle when triangle and arc both make a boundary', () => {
+		const A = new Point(0, 0);
+		const B = new Point(1, 0);
+		const C = new Point(0, 1);
+
+		const segAB = new Segment(A, B);
+		const segBC = new Segment(B, C);
+		const segCA = new Segment(C, A);
+		const ARC = new Arc(new Point(0, 0), 1, 0, Math.PI / 2, true);
+
+		const query = new Point(0.2, 0.2); // clearly outside
+		const boundary = findEnclosingBoundary(query, [segAB, segBC, segCA, ARC]);
+		validateClosedBoundary(boundary?.boundary, 3, 3, 0);
+		expect(boundary?.holes).toHaveLength(0);
+
+		const arc = boundary?.boundary?.find((edge) => edge instanceof Arc);
+		expect(arc).toBeUndefined();
+	});
+
+	/**
+	 *       F
+	 *       |
+	 *       C
+	 *      / \
+	 *     / X \
+	 *    A-----B
+	 *   /       \
+	 *  D         E
+	 */
+	it('detects triangular boundary when vertices have other segments', () => {
+		const A = new Point(0, 0);
+		const B = new Point(1, 0);
+		const C = new Point(0, 1);
+		const D = new Point(-1, -1);
+		const E = new Point(2, -1);
+		const F = new Point(0, 2);
+
+		const segAB = new Segment(A, B);
+		const segBC = new Segment(B, C);
+		const segCA = new Segment(C, A);
+		const segDA = new Segment(A, D);
+		const segBE = new Segment(E, B);
+		const segCF = new Segment(F, C);
+
+		const edges = [segAB, segBC, segCA, segDA, segBE, segCF];
+		const query = new Point(0.5, 0.3);
+
+		const boundary = findEnclosingBoundary(query, edges);
+
+		validateClosedBoundary(boundary?.boundary, 3, 3, 0);
+		expect(boundary?.holes).toHaveLength(0);
+
+		// Must contain exactly the 3 center edges, in any order
+		for (let i = 0; i < 3; i++) {
+			const edge = edges[i];
+			const boundaryEdge = boundary?.boundary?.find(
+				(e) =>
+					(isPointEqual(e.start, edge.start) && isPointEqual(e.end, edge.end)) ||
+					(isPointEqual(e.start, edge.end) && isPointEqual(e.end, edge.start))
+			);
+			expect(boundaryEdge).not.toBeUndefined();
+		}
+	});
+
+	/**
+	 *    p3-----p2
+	 *    |   X   |
+	 *    p0-----p1
+	 */
+	it('detects square boundary with random order', () => {
+		const p0 = new Point(0, 0);
+		const p1 = new Point(1, 0);
+		const p2 = new Point(1, 1);
+		const p3 = new Point(0, 1);
+		const seg01 = new Segment(p0, p1);
+		const seg12 = new Segment(p1, p2);
+		const seg23 = new Segment(p2, p3);
+		const seg30 = new Segment(p3, p0);
+		const shuffled = [seg23, seg01, seg30, seg12];
+		const query = new Point(0.5, 0.5);
+
+		const boundary = findEnclosingBoundary(query, shuffled);
+		validateClosedBoundary(boundary?.boundary, 4, 4, 0);
+	});
+
+	/**
+	 *   C
+	 *   | \            S3---S2
+	 *   |   \          |    |
+	 *   | X   \        | X  |
+	 *   A------B      S0---S1
+	 */
+	it('selects correct boundary among multiple loops', () => {
+		// Triangle
+		const A = new Point(0, 0);
+		const B = new Point(1, 0);
+		const C = new Point(0, 1);
+		const triAB = new Segment(A, B);
+		const triBC = new Segment(B, C);
+		const triCA = new Segment(C, A);
+		// Square
+		const S0 = new Point(2, 2);
+		const S1 = new Point(3, 2);
+		const S2 = new Point(3, 3);
+		const S3 = new Point(2, 3);
+		const sq01 = new Segment(S0, S1);
+		const sq12 = new Segment(S1, S2);
+		const sq23 = new Segment(S2, S3);
+		const sq30 = new Segment(S3, S0);
+
+		const all = [triAB, triBC, triCA, sq01, sq12, sq23, sq30];
+		const insideTriangle = new Point(0.1, 0.1);
+		const insideSquare = new Point(2.5, 2.5);
+
+		// Triangle query
+		const triangleBoundary = findEnclosingBoundary(insideTriangle, all);
+		validateClosedBoundary(triangleBoundary?.boundary, 3, 3, 0);
+		expect(triangleBoundary?.holes).toHaveLength(0);
+
+		// Square query
+		const squareBoundary = findEnclosingBoundary(insideSquare, all);
+		validateClosedBoundary(squareBoundary?.boundary, 4, 4, 0);
+		expect(squareBoundary?.holes).toHaveLength(0);
+	});
+
+	/**
+	 *       C
+	 *      / \
+	 *     /   \
+	 *    A--X--B
+	 */
+	it('returns boundary when point is on edge', () => {
+		const A = new Point(0, 0);
+		const B = new Point(1, 0);
+		const C = new Point(0, 1);
+		const segAB = new Segment(A, B);
+		const segBC = new Segment(B, C);
+		const segCA = new Segment(C, A);
+
+		// Point exactly on AB
+		const onEdge = new Point(0.5, 0);
+		const boundary = findEnclosingBoundary(onEdge, [segAB, segBC, segCA]);
+		validateClosedBoundary(boundary?.boundary, 3, 3, 0);
+		expect(boundary?.holes).toHaveLength(0);
+	});
+
+	/**
+	 *         ______
+	 *   |   X      |
+	 *   |
+	 *      ----
+	 */
+	it('detects no boundary for loose segments', () => {
+		const lineTop = new Segment(new Point(10, 0), new Point(30, 0));
+		const lineRight = new Segment(new Point(30, 0), new Point(30, -10));
+		const lineBottom = new Segment(new Point(20, -30), new Point(10, -30));
+		const lineLeft = new Segment(new Point(0, -10), new Point(0, -25));
+		const boundary = findEnclosingBoundary(new Point(0, 0.2), [
+			lineTop,
+			lineRight,
+			lineBottom,
+			lineLeft,
+		]);
+
+		expect(boundary).toBeNull();
+	});
+
+	/**
+	 * ----------------------------
+	 * |                          |
+	 * |                  ______  |
+	 * |            |   X      |  |
+	 * |            |             |
+	 * |               ----       |
+	 * |                          |
+	 * |---------------------------
+	 */
+	it('detects boundary outside other line segments', () => {
+		const lineTop = new Segment(new Point(10, 0), new Point(30, 0));
+		const lineRight = new Segment(new Point(30, 0), new Point(30, -10));
+		const lineBottom = new Segment(new Point(20, -30), new Point(10, -30));
+		const lineLeft = new Segment(new Point(0, -10), new Point(0, -25));
+
+		const lineTop2 = new Segment(new Point(-50, 50), new Point(50, 50));
+		const lineRight2 = new Segment(new Point(50, 50), new Point(50, -50));
+		const lineBottom2 = new Segment(new Point(50, -50), new Point(-50, -50));
+		const lineLeft2 = new Segment(new Point(-50, -50), new Point(-50, 50));
+
+		const boundary = findEnclosingBoundary(new Point(20, -10), [
+			lineTop,
+			lineTop2,
+			lineRight,
+			lineRight2,
+			lineBottom,
+			lineBottom2,
+			lineLeft,
+			lineLeft2,
+		]);
+		validateClosedBoundary(boundary?.boundary, 4, 4, 0);
+		expect(boundary?.holes).toHaveLength(0);
+	});
+
+	/**
+	 *      |                          |
+	 *      |                          |
+	 * -----+--------------------------+----
+	 *      |                          |
+	 *      |                  ______  |
+	 *      |            |   X      |  |
+	 *      |            |             |
+	 *      |               ----       |
+	 *      |                          |
+	 * -----+--------------------------+----
+	 *      |                          |
+	 *      |                          |
+	 */
+	it('detects boundary outside other line segments even for intersections with segments', () => {
+		const lineTop = new Segment(new Point(10, 0), new Point(30, 0));
+		const lineRight = new Segment(new Point(30, 0), new Point(30, -10));
+		const lineBottom = new Segment(new Point(20, -30), new Point(10, -30));
+		const lineLeft = new Segment(new Point(0, -10), new Point(0, -25));
+
+		const lineTop2 = new Segment(new Point(-70, 50), new Point(70, 50));
+		const lineRight2 = new Segment(new Point(50, 70), new Point(50, -70));
+		const lineBottom2 = new Segment(new Point(70, -50), new Point(-70, -50));
+		const lineLeft2 = new Segment(new Point(-50, -70), new Point(-50, 70));
+
+		const boundary = findEnclosingBoundary(new Point(20, -10), [
+			lineTop,
+			lineTop2,
+			lineRight,
+			lineRight2,
+			lineBottom,
+			lineBottom2,
+			lineLeft,
+			lineLeft2,
+		]);
+
+		validateClosedBoundary(boundary?.boundary, 4, 4, 0);
+		expect(boundary?.holes).toHaveLength(0);
+	});
+
+	/**
+	 *    |            \
+	 *    |             \
+	 * ---+--------------+------
+	 *    |               \
+	 *    |               |
+	 *    |              /
+	 * ---+------------+--------
+	 *    |           /
+	 *    |         /
+	 */
+	it('detects boundary even for intersections with arc', () => {
+		const lineTop = new Segment(new Point(-70, 50), new Point(70, 50));
+		const arcRight = new Arc(new Point(-70, 0), 140, -Math.PI / 2, Math.PI / 2, true);
+		const lineBottom = new Segment(new Point(70, -50), new Point(-70, -50));
+		const lineLeft = new Segment(new Point(-50, -70), new Point(-50, 70));
+
+		const boundary = findEnclosingBoundary(new Point(20, -10), [
+			lineTop,
+			arcRight,
+			lineBottom,
+			lineLeft,
+		]);
+
+		validateClosedBoundary(boundary?.boundary, 4, 3, 1);
+		expect(boundary?.holes).toHaveLength(0);
+	});
+
+	/**
+	 *      |                          \
+	 *      |                           \
+	 * -----+----------------------------+----------
+	 *      |                              \
+	 *      |                  ______       \
+	 *      |            |   X      |        |
+	 *      |            |                   |
+	 *      |               ----            /
+	 *      |                              /
+	 * -----+----------------------------+-----------
+	 *      |                           /
+	 *      |                         /
+	 */
+	it('detects boundary outside other line segments even for intersections with arc', () => {
+		const lineTop = new Segment(new Point(10, 0), new Point(30, 0));
+		const lineRight = new Segment(new Point(30, 0), new Point(30, -10));
+		const lineBottom = new Segment(new Point(20, -30), new Point(10, -30));
+		const lineLeft = new Segment(new Point(0, -10), new Point(0, -25));
+
+		const lineTop2 = new Segment(new Point(-70, 50), new Point(70, 50));
+		const arcRight2 = new Arc(new Point(-70, 0), 140, -Math.PI / 2, Math.PI / 2, true);
+		const lineBottom2 = new Segment(new Point(70, -50), new Point(-70, -50));
+		const lineLeft2 = new Segment(new Point(-50, -70), new Point(-50, 70));
+
+		const boundary = findEnclosingBoundary(new Point(20, -10), [
+			lineTop,
+			lineTop2,
+			lineRight,
+			arcRight2,
+			lineBottom,
+			lineBottom2,
+			lineLeft,
+			lineLeft2,
+		]);
+
+		validateClosedBoundary(boundary?.boundary, 4, 3, 1);
+		expect(boundary?.holes).toHaveLength(0);
+	});
+
+	describe('arcs', () => {
+		/**
+		 *       -----
+		 *     /   X   \
+		 *    |         |
+		 *     \       /
+		 *       -----
+		 */
+		it('detects full circle arc as boundary', () => {
+			const center = new Point(0, 0);
+			const fullCircle = new Arc(center, 1, 0, 2 * Math.PI, false);
+			const boundary = findEnclosingBoundary(new Point(0, 0), [fullCircle]);
+			expect(boundary).not.toBeNull();
+			if (boundary) {
+				expect(boundary?.boundary).toHaveLength(1);
+				expect(boundary?.boundary[0] instanceof Arc).toBe(true);
+				expect(isPointEqual(boundary?.boundary[0].start, boundary?.boundary[0].end));
+				expect(boundary?.holes).toHaveLength(0);
+			}
+		});
+
+		/**
+		 *      ______
+		 *    /   X   \
+		 *   |         |
+		 *   -----------
+		 */
+		it('detects half-disk boundary formed by arc and segment', () => {
+			const center = new Point(0, 0);
+			// Upper half-circle (0 → π)
+			const halfCircle = new Arc(center, 1, 0, Math.PI, true);
+			const closingSegment = new Segment(halfCircle.end, halfCircle.start);
+			const boundary = findEnclosingBoundary(new Point(0, 0.2), [halfCircle, closingSegment]);
+
+			validateClosedBoundary(boundary?.boundary, 2, 1, 1);
+			expect(boundary?.holes).toHaveLength(0);
+		});
+
+		/**
+		 *      /¯¯¯¯¯¯¯¯¯¯¯¯\
+		 *   |¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯\¯¯|
+		 *  /|                  \ |
+		 * | |           x        |
+		 * | |                    |\
+		 * | |                    | |
+		 * | |                    |/
+		 *  \|                   /|
+		 *   |--\-------------/--|
+		 *       \__________ /
+		 */
+		it('detects arc and segment boundary from the intersection of a square with a circle', () => {
+			// circle
+			const center = new Point(0, 0);
+			const circle = new Circle(center, 1);
+			// square segments
+			const side = 0.85;
+			const left = new Segment(new Point(-side, -side), new Point(-side, side));
+			const top = new Segment(new Point(-side, -side), new Point(side, -side));
+			const right = new Segment(new Point(side, -side), new Point(side, side));
+			const bottom = new Segment(new Point(side, side), new Point(-side, side));
+			const boundary = findEnclosingBoundary(new Point(0.1, 0.1), [
+				circle,
+				left,
+				top,
+				right,
+				bottom,
+			]);
+
+			validateClosedBoundary(boundary?.boundary, 8, 4, 4);
+			expect(boundary?.holes).toHaveLength(0);
+		});
+
+		/**
+		 *                      |
+		 *                      |
+		 *        /¯¯¯¯¯¯¯¯¯¯¯¯\|
+		 *     /                |\
+		 *   /                  | \
+		 *  |                   |  |
+		 * |                    |   |
+		 * |                    | X |
+		 *  |                   |  |
+		 *   \                  | /
+		 *     \                /
+		 *        \__________/  |
+		 *                      |
+		 */
+		it('detects arc and segment boundary from the intersection of a line with a circle (right side)', () => {
+			// circle
+			const center = new Point(0, 0);
+			const circle = new Circle(center, 1);
+			// segments
+			const segment = new Segment(new Point(0.5, -2), new Point(0.5, 2));
+			const boundary = findEnclosingBoundary(new Point(0.6, 0), [circle, segment]);
+
+			validateClosedBoundary(boundary?.boundary, 2, 1, 1);
+		});
+
+		/**
+		 *
+		 *
+		 *        /¯¯¯¯¯¯¯¯¯¯¯¯ \
+		 *     /      x            \
+		 *   /      /¯¯¯¯¯¯¯¯\       \
+		 *  |      /          \       |
+		 * |       |           |      |
+		 * |       |           |      |
+		 *  |       \         /      |
+		 *   \       \_______/      /
+		 *     \                  /
+		 *        \_____________/
+		 *
+		 */
+		it('detects arc boundary with hole', () => {
+			// circle 1
+			const center1 = new Point(0, 0);
+			const circle1 = new Circle(center1, 1);
+
+			// circle 2
+			const center2 = new Point(0, 0);
+			const circle2 = new Circle(center2, 0.5);
+
+			const boundary = findEnclosingBoundary(new Point(0, 0.7), [circle1, circle2]);
+
+			validateClosedBoundary(boundary?.boundary, 1, 0, 1);
+			expect(boundary?.holes).toHaveLength(1);
+			validateClosedBoundary(boundary?.holes?.[0], 1, 0, 1);
+		});
+
+		/**
+		 *                           /
+		 *                         /
+		 *        /¯¯¯¯¯¯¯¯¯¯¯¯\ /
+		 *     /      x        / \
+		 *   /    |\         /    \
+		 *  |     |  \     /       |
+		 * |      |    \ /          |
+		 * |      |    / \          |
+		 *  |     |  /    \        |
+		 *   \    |/        \     /
+		 *     \              \/
+		 *        \__________/  \
+		 *                        \
+		 */
+		it('detects arc and segment boundary with hole', () => {
+			// circle
+			const center = new Point(0, 0);
+			const circle = new Circle(center, 1);
+			// segments
+			const topLeftToBottomRight = new Segment(new Point(-0.5, 0.5), new Point(2, -2));
+			const bottomLeftToTopRight = new Segment(new Point(-0.5, -0.5), new Point(2, 2));
+			const vertical = new Segment(new Point(-0.5, -0.5), new Point(-0.5, 0.5));
+
+			const boundary = findEnclosingBoundary(new Point(0, 0.5), [
+				circle,
+				topLeftToBottomRight,
+				bottomLeftToTopRight,
+				vertical,
+			]);
+
+			// The triangle on the left only touches the boundary in a single point, so it is a hole in the boundary
+			validateClosedBoundary(boundary?.boundary, 3, 2, 1);
+			expect(boundary?.holes).toHaveLength(1);
+			validateClosedBoundary(boundary?.holes?.[0], 3, 3, 0);
+		});
+	});
+
+	describe('holes', () => {
+		function square(minX: number, minY: number, size: number): Segment[] {
+			const p1 = new Point(minX, minY);
+			const p2 = new Point(minX + size, minY);
+			const p3 = new Point(minX + size, minY + size);
+			const p4 = new Point(minX, minY + size);
+			return [new Segment(p1, p2), new Segment(p2, p3), new Segment(p3, p4), new Segment(p4, p1)];
+		}
+
+		/**
+		 *  A
+		 *  |--------------------|
+		 *  |  x                 |
+		 *  |    B               |
+		 *  |    |-----------|   |
+		 *  |    |   C       |   |
+		 *  |    |   |----|  |   |
+		 *  |    |   |----|  |   |
+		 *  |    |-----------|   |
+		 *  |--------------------|
+		 */
+		it('only uses the outermost loops inside the boundary as holes', () => {
+			const shapes = [...square(0, 0, 10), ...square(2, 2, 6), ...square(4, 4, 2)];
+
+			const boundary = findEnclosingBoundary(new Point(1, 1), shapes);
+
+			validateClosedBoundary(boundary?.boundary, 4, 4, 0);
+			expect(boundary?.area).toBeCloseTo(100);
+			expect(boundary?.holes).toHaveLength(1);
+			validateClosedBoundary(boundary?.holes[0], 4, 4, 0);
+			expect(boundary?.holes[0].every((edge) => edge.start.x >= 2 && edge.start.x <= 8)).toBe(true);
+			expect(boundary?.holes[0].some((edge) => edge.start.x === 2)).toBe(true);
+		});
+
+		it('detects the hole inside a nested boundary', () => {
+			const shapes = [...square(0, 0, 10), ...square(2, 2, 6), ...square(4, 4, 2)];
+
+			const boundary = findEnclosingBoundary(new Point(3, 3), shapes);
+
+			validateClosedBoundary(boundary?.boundary, 4, 4, 0);
+			expect(boundary?.area).toBeCloseTo(36);
+			expect(boundary?.holes).toHaveLength(1);
+			expect(boundary?.holes[0].some((edge) => edge.start.x === 4)).toBe(true);
+		});
+
+		it('does not return holes for the innermost boundary', () => {
+			const shapes = [...square(0, 0, 10), ...square(2, 2, 6), ...square(4, 4, 2)];
+
+			const boundary = findEnclosingBoundary(new Point(5, 5), shapes);
+
+			expect(boundary?.area).toBeCloseTo(4);
+			expect(boundary?.holes).toHaveLength(0);
+		});
+
+		/**
+		 *  |--------------------|
+		 *  |  x                 |
+		 *  |    |-----|-----|   |
+		 *  |    |     |     |   |
+		 *  |    |-----|-----|   |
+		 *  |--------------------|
+		 */
+		it('uses all faces of a split island as holes', () => {
+			const shapes = [
+				...square(0, 0, 10),
+				...square(2, 2, 6),
+				new Segment(new Point(5, 2), new Point(5, 8)),
+			];
+
+			const boundary = findEnclosingBoundary(new Point(1, 1), shapes);
+
+			expect(boundary?.area).toBeCloseTo(100);
+			expect(boundary?.holes).toHaveLength(2);
+		});
+
+		it('does not use loops next to the boundary as holes', () => {
+			const shapes = [...square(0, 0, 10), new Segment(new Point(5, 0), new Point(5, 10))];
+
+			const boundary = findEnclosingBoundary(new Point(1, 1), shapes);
+
+			expect(boundary?.area).toBeCloseTo(50);
+			expect(boundary?.holes).toHaveLength(0);
+		});
+
+		it('detects holes in negative coordinate space', () => {
+			const shapes = [...square(-20, -20, 10), ...square(-18, -18, 6)];
+
+			const boundary = findEnclosingBoundary(new Point(-19, -19), shapes);
+
+			expect(boundary?.area).toBeCloseTo(100);
+			expect(boundary?.holes).toHaveLength(1);
+		});
+
+		/**
+		 *  |------(  A  )------|
+		 *  |      ( (B) )      |
+		 *  |       -----       |
+		 *  |  x                |
+		 *  |-------------------|
+		 * Circle A crosses the top edge of the square, circle B intersects circle A
+		 * Circle B is part of the boundary, so it should not be a hole
+		 */
+		it('does not use a full circle that intersects the boundary as a hole', () => {
+			const shapes = [
+				...square(0, 0, 10),
+				new Arc(new Point(5, 9), 2, 0, 2 * Math.PI, true),
+				new Arc(new Point(5, 6.5), 1.5, 0, 2 * Math.PI, true),
+			];
+
+			const boundary = findEnclosingBoundary(new Point(1, 1), shapes);
+
+			expect(boundary?.holes).toHaveLength(0);
+			expect(boundary?.area).toBeLessThan(100 - Math.PI * 1.5 * 1.5);
+		});
+	});
+});

@@ -56,11 +56,11 @@ describe('MeasurementEntity text orientation in draw() method', () => {
 		expectedDirectionY: number
 	) => {
 		const measurement = new MeasurementEntity(
-			'mockLayerIdGlobal',
 			startPoint,
 			endPoint,
 			offsetPoint
 		);
+		measurement.layerId = 'mockLayerIdGlobal';
 		measurement.lineColor = '#fff';
 		measurement.draw(mockDrawController as unknown as DrawController);
 
@@ -126,7 +126,8 @@ describe('MeasurementEntity.getBoundingBox', () => {
 		const endPoint = new Point(100, 0); // Distance = 100
 		const offsetPoint = new Point(50, 50); // Text above the line
 
-		const entity = new MeasurementEntity(layerId, startPoint, endPoint, offsetPoint);
+		const entity = new MeasurementEntity(startPoint, endPoint, offsetPoint);
+		entity.layerId = layerId;
 		const actualBoundingBox: Box = entity.getBoundingBox();
 
 		// --- Start: Recalculate expected text properties (similar to getDrawPoints and draw) ---
@@ -170,8 +171,8 @@ describe('MeasurementEntity.getBoundingBox', () => {
 		// Using imported constants directly
 		const totalOffsetText = MEASUREMENT_LABEL_OFFSET + MEASUREMENT_FONT_SIZE / 2;
 		const midpointMeasurementLineOffset = midpointMeasurementLine
-			.clone()
-			.translate(normalUnit.multiply(totalOffsetText)); // This is the text center
+		.clone()
+		.translate(normalUnit.multiply(totalOffsetText)); // This is the text center
 
 		// Correct distance calculation and rounding
 		const distanceVal = startPoint.distanceTo(endPoint)[0]; // distanceTo returns [distance, segment]
@@ -245,8 +246,11 @@ describe('MeasurementEntity.getBoundingBox', () => {
 // 4. Test Suite: 'MeasurementEntity.distanceTo'
 describe('MeasurementEntity.distanceTo', () => {
 	const layerId = 'mockLayerIdGlobal';
-	const createMeasurement = (start: Point, end: Point, offset: Point) =>
-		new MeasurementEntity(layerId, start, end, offset);
+	const createMeasurement = (start: Point, end: Point, offset: Point) => {
+		const measurement = new MeasurementEntity(start, end, offset);
+		measurement.layerId = layerId;
+		return measurement;
+	}
 
 	// Test data derived from previous failures and analysis.
 	// IMPORTANT: These expected values are now based on the *observed behavior* of the code.
@@ -342,8 +346,11 @@ describe('MeasurementEntity.distanceTo', () => {
 // 5. Test Suite: 'MeasurementEntity.containsPointOnShape'
 describe('MeasurementEntity.containsPointOnShape', () => {
 	const layerId = 'mockLayerIdGlobal';
-	const createMeasurement = (start: Point, end: Point, offset: Point) =>
-		new MeasurementEntity(layerId, start, end, offset);
+	const createMeasurement = (start: Point, end: Point, offset: Point) => {
+		const measurement = new MeasurementEntity(start, end, offset);
+		measurement.layerId = layerId;
+		return measurement;
+	}
 
 	// These tests should generally pass if getDrawPoints is correct.
 	// We assume the logic of Segment.contains() from flatten-js is correct.
@@ -411,11 +418,11 @@ describe('MeasurementEntity draw() styling for selection', () => {
 	it('should apply selection styling to all components when selected', () => {
 		(isEntitySelected as Mock).mockReturnValue(true);
 		const measurement = new MeasurementEntity(
-			'mockLayerIdGlobal',
 			new Point(0, 0),
 			new Point(10, 0),
 			new Point(5, 5)
 		);
+		measurement.layerId = 'mockLayerIdGlobal';
 		measurement.draw(mockDrawController as unknown as DrawController);
 
 		// From previous successful test: 4 calls to setLineStyles, 7 to drawLine, 2 to fillPolygon
@@ -430,11 +437,11 @@ describe('MeasurementEntity draw() styling for selection', () => {
 	it('should NOT apply selection styling when not selected', () => {
 		(isEntitySelected as Mock).mockReturnValue(false);
 		const measurement = new MeasurementEntity(
-			'mockLayerIdGlobal',
 			new Point(0, 0),
 			new Point(10, 0),
 			new Point(5, 5)
 		);
+		measurement.layerId = 'mockLayerIdGlobal';
 		measurement.draw(mockDrawController as unknown as DrawController);
 
 		expect(mockDrawController.setLineStyles).toHaveBeenCalledTimes(4);

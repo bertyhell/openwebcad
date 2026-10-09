@@ -1,6 +1,6 @@
 import {Arc, type Box, Line, Point, type Segment} from '@flatten-js/core';
 import {uniqWith} from 'es-toolkit';
-import {type Shape, type SnapPoint, SnapPointType, type StartAndEndpointEntity} from '../App.types';
+import {type Edge, type Shape, type SnapPoint, SnapPointType, type StartAndEndpointEntity,} from '../App.types';
 import type {DrawController} from '../drawControllers/DrawController.ts';
 import {getExportColor} from '../helpers/get-export-color';
 import {isPointEqual} from '../helpers/is-point-equal';
@@ -24,16 +24,27 @@ export class ArcEntity implements Entity, StartAndEndpointEntity {
 		return new Line(centerPoint, pointOnArc).slope;
 	}
 
+	constructor(arc: Arc);
 	constructor(
-		layerId: string,
 		centerPoint: Point,
-		radius: number,
-		startAngle: number,
-		endAngle: number,
-		counterClockwise = true
+		radius?: number,
+		startAngle?: number,
+		endAngle?: number,
+		counterClockwise?: boolean
+	);
+	constructor(
+		centerPointOrArc: Point | Arc,
+		radius?: number,
+		startAngle?: number,
+		endAngle?: number,
+		counterClockwise?: boolean
 	) {
-		this.layerId = layerId;
-		this.arc = new Arc(centerPoint, radius, startAngle, endAngle, counterClockwise);
+		this.layerId = getActiveLayerId();
+		if (centerPointOrArc instanceof Arc) {
+			this.arc = centerPointOrArc;
+		} else {
+			this.arc = new Arc(centerPointOrArc, radius, startAngle, endAngle, counterClockwise);
+		}
 	}
 
 	public draw(
@@ -91,14 +102,7 @@ export class ArcEntity implements Entity, StartAndEndpointEntity {
 	public clone(): Entity {
 		if (this.arc) {
 			const { center, r, startAngle, endAngle, counterClockwise } = this.arc;
-			return new ArcEntity(
-				getActiveLayerId(),
-				center,
-				r.valueOf(),
-				startAngle,
-				endAngle,
-				counterClockwise
-			);
+			return new ArcEntity(center, r.valueOf(), startAngle, endAngle, counterClockwise);
 		}
 		return this;
 	}
@@ -117,6 +121,10 @@ export class ArcEntity implements Entity, StartAndEndpointEntity {
 
 	public getShape(): Shape | null {
 		return this.arc;
+	}
+
+	public getEdges(): Edge[] {
+		return [this.arc];
 	}
 
 	public getSnapPoints(): SnapPoint[] {
@@ -188,7 +196,6 @@ export class ArcEntity implements Entity, StartAndEndpointEntity {
 			const endAngle = ArcEntity.getAngle(this.arc.center, point2);
 
 			const newArc = new ArcEntity(
-				getActiveLayerId(),
 				this.arc.center,
 				Number(this.arc.r),
 				startAngle,
@@ -237,14 +244,8 @@ export class ArcEntity implements Entity, StartAndEndpointEntity {
 		const endAngle = jsonEntity.shapeData.endAngle;
 		const counterClockwise = jsonEntity.shapeData.counterClockwise;
 
-		const arcEntity = new ArcEntity(
-			jsonEntity.layerId || getActiveLayerId(),
-			center,
-			radius,
-			startAngle,
-			endAngle,
-			counterClockwise
-		);
+		const arcEntity = new ArcEntity(center, radius, startAngle, endAngle, counterClockwise);
+		arcEntity.layerId = jsonEntity.layerId || getActiveLayerId();
 		arcEntity.id = jsonEntity.id;
 		arcEntity.lineColor = jsonEntity.lineColor;
 		arcEntity.lineWidth = jsonEntity.lineWidth;

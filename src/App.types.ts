@@ -1,4 +1,5 @@
 import type {Arc, Circle, Point, Polygon, Segment} from '@flatten-js/core';
+import type {Entity} from './entities/Entity.ts';
 
 export type Shape = Polygon | Segment | Point | Circle | Arc;
 
@@ -53,7 +54,19 @@ export enum LOCAL_STORAGE_KEY {
 	DROPDOWN = 'OPEN_WEB_CAD__DROPDOWN',
 }
 
-export interface StartAndEndpointEntity {
+export interface StartAndEndpointEntity extends Entity {
 	getStartPoint(): Point;
 	getEndPoint(): Point;
 }
+
+export interface BoundingBox {
+	minX: number;
+	minY: number;
+	maxX: number;
+	maxY: number;
+}
+
+export type VertexId = string;
+export type EdgeId = string;
+export type Edge = Segment | Arc;
+export type EdgeWithId = Edge & { id: EdgeId };

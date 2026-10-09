@@ -1,9 +1,9 @@
 import {Tool} from '../tools';
 import {createMachine} from 'xstate';
-import type {BoundingBox} from "../helpers/get-bounding-box-of-multiple-entities.ts";
 import {GET_ALIGN_ACTION, GET_ALIGN_TOOL_STATE} from "./align-tool.helpers.ts";
 import type {Entity} from "../entities/Entity.ts";
 import {middle} from "../helpers/middle.ts";
+import type {BoundingBox} from "../App.types.ts";
 
 /**
  * AlignCenterHorizontal tool state machine
@@ -12,11 +12,11 @@ import {middle} from "../helpers/middle.ts";
  * When the user presses enter, the selected entities are center horizontal aligned
  */
 export const alignCenterHorizontalToolStateMachine = createMachine(
-    GET_ALIGN_TOOL_STATE(Tool.ALIGN_CENTER_HORIZONTAL),
-    GET_ALIGN_ACTION((entity: Entity, boundingBox: BoundingBox) => {
-        const entityBoundingBox = entity.getBoundingBox();
-        const centerBoundingBoxX = middle(boundingBox.minX, boundingBox.maxX);
-        const centerEntityX = middle(entityBoundingBox.xmin, entityBoundingBox.xmax);
-      entity.move(centerBoundingBoxX - centerEntityX, 0);
-    })
+	GET_ALIGN_TOOL_STATE(Tool.ALIGN_CENTER_HORIZONTAL),
+	GET_ALIGN_ACTION((entity: Entity, boundingBox: BoundingBox) => {
+		const entityBoundingBox = entity.getBoundingBox();
+		const centerBoundingBoxX = middle(boundingBox.minX, boundingBox.maxX);
+		const centerEntityX = middle(entityBoundingBox.xmin, entityBoundingBox.xmax);
+		entity.move(centerBoundingBoxX - centerEntityX, 0);
+	})
 );

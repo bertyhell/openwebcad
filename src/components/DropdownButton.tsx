@@ -1,7 +1,6 @@
 import type {CSSProperties, FC, ReactNode} from 'react';
 import useLocalStorageState from 'use-local-storage-state';
 import {LOCAL_STORAGE_KEY} from '../App.types.ts';
-import {keyboardHandler} from '../helpers/keyboard-handler.ts';
 import {Button} from './Button.tsx';
 import {Icon, IconName} from './Icon/Icon.tsx';
 
@@ -59,7 +58,6 @@ export const DropdownButton: FC<DropdownButtonProps> = ({
 				<div
 					className="flex flex-row flex-wrap max-w-72 gap-1 pl-1 pb-6"
 					onClick={() => setIsOpen(false)}
-					onKeyUp={keyboardHandler(() => setIsOpen(false))}
 				>
 					{children}
 				</div>

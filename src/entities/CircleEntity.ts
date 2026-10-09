@@ -1,5 +1,5 @@
-import {type Box, Circle, Point, type Segment} from '@flatten-js/core';
-import {type Shape, type SnapPoint, SnapPointType} from '../App.types';
+import {Arc, type Box, Circle, Point, type Segment} from '@flatten-js/core';
+import {type Edge, type Shape, type SnapPoint, SnapPointType} from '../App.types';
 import type {DrawController} from '../drawControllers/DrawController';
 import {getExportColor} from '../helpers/get-export-color';
 import {mirrorPointOverAxis} from '../helpers/mirror-point-over-axis.ts';
@@ -17,8 +17,8 @@ export class CircleEntity implements Entity {
 
 	private circle: Circle;
 
-	constructor(layerId: string, centerPointOrCircle?: Point | Circle, radius?: number) {
-		this.layerId = layerId;
+	constructor(centerPointOrCircle?: Point | Circle, radius?: number) {
+		this.layerId = getActiveLayerId();
 		if (centerPointOrCircle instanceof Circle) {
 			this.circle = centerPointOrCircle as Circle;
 		} else {
@@ -64,7 +64,7 @@ export class CircleEntity implements Entity {
 
 	public clone(): Entity {
 		if (this.circle) {
-			return new CircleEntity(getActiveLayerId(), this.circle.clone());
+			return new CircleEntity(this.circle.clone());
 		}
 		return this;
 	}
@@ -89,6 +89,10 @@ export class CircleEntity implements Entity {
 
 	public getShape(): Shape | null {
 		return this.circle;
+	}
+
+	public getEdges(): Edge[] {
+		return [new Arc(this.circle.center, this.circle.r, 0, 2 * Math.PI, true)];
 	}
 
 	public getSnapPoints(): SnapPoint[] {
@@ -182,7 +186,8 @@ export class CircleEntity implements Entity {
 		}
 		const center = new Point(jsonEntity.shapeData.center.x, jsonEntity.shapeData.center.y);
 		const radius = jsonEntity.shapeData.radius;
-		const circleEntity = new CircleEntity(jsonEntity.layerId || getActiveLayerId(), center, radius);
+		const circleEntity = new CircleEntity(center, radius);
+		circleEntity.layerId = jsonEntity.layerId || getActiveLayerId();
 		circleEntity.id = jsonEntity.id;
 		circleEntity.lineColor = jsonEntity.lineColor;
 		circleEntity.lineWidth = jsonEntity.lineWidth;

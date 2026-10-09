@@ -5,7 +5,7 @@ import type { PolyLineEntity } from '../entities/PolyLineEntity.ts';
 import { getAngleWithXAxis } from '../helpers/get-angle-with-x-axis.ts';
 import { mapNumberRange } from '../helpers/map-number-range.ts';
 import { StateVariable } from '../helpers/undo-stack.ts';
-import { triggerReactUpdate } from '../state.ts';
+import { requestRedraw, triggerReactUpdate } from '../state.ts';
 import { DEFAULT_TEXT_OPTIONS, type DrawController } from './DrawController';
 
 /**
@@ -44,6 +44,7 @@ export class ScreenCanvasDrawController implements DrawController {
 	}
 
 	public setCanvasSize(newCanvasSize: Point) {
+		requestRedraw();
 		this.canvasSize = newCanvasSize;
 	}
 
@@ -52,6 +53,7 @@ export class ScreenCanvasDrawController implements DrawController {
 	}
 
 	public setScreenScale(newScreenScale: number) {
+		requestRedraw();
 		this.screenScale = newScreenScale;
 		triggerReactUpdate(StateVariable.screenZoom);
 	}
@@ -61,11 +63,13 @@ export class ScreenCanvasDrawController implements DrawController {
 	}
 
 	public setScreenOffset(newScreenOffset: Point) {
+		requestRedraw();
 		this.screenOffset = newScreenOffset;
 		triggerReactUpdate(StateVariable.screenOffset);
 	}
 
 	public setScreenMouseLocation(newScreenMouseLocation: Point): void {
+		requestRedraw();
 		this.screenMouseLocation = newScreenMouseLocation;
 		triggerReactUpdate(StateVariable.screenMouseLocation);
 	}
@@ -79,6 +83,7 @@ export class ScreenCanvasDrawController implements DrawController {
 	}
 
 	public panScreen(screenOffsetX: number, screenOffsetY: number) {
+		requestRedraw();
 		this.screenOffset = new Point(
 			this.screenOffset.x - screenOffsetX / this.screenScale,
 			this.screenOffset.y - screenOffsetY / this.screenScale
@@ -91,6 +96,7 @@ export class ScreenCanvasDrawController implements DrawController {
 	 * @param deltaY
 	 */
 	public zoomScreen(deltaY: number) {
+		requestRedraw();
 		const worldMouseLocationBeforeZoom = this.getWorldMouseLocation();
 		const oldScreenScale = this.getScreenScale();
 

@@ -31,6 +31,7 @@ import {
 	getSnapPoint,
 	getSnapPointOnAngleGuide,
 	redo,
+	requestRedraw,
 	setActiveToolActor,
 	setGhostHelperEntities,
 	setHighlightedEntityIds,
@@ -291,6 +292,8 @@ export class InputController {
 		if (shouldLetElementHandleKey(evt)) {
 			return;
 		}
+		// The typed text is drawn next to the cursor
+		requestRedraw();
 		if (evt.key === 'F12') {
 			// F12 => open developer tools
 			return;

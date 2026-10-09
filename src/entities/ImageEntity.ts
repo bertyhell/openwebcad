@@ -9,7 +9,12 @@ import { mirrorAngleOverAxis } from '../helpers/mirror-angle-over-axis.ts';
 import { mirrorPointOverAxis } from '../helpers/mirror-point-over-axis.ts';
 import { polygonToSegments } from '../helpers/polygon-to-segments';
 import { scalePoint } from '../helpers/scale-point';
-import { getActiveLayerId, isEntityHighlighted, isEntitySelected } from '../state.ts';
+import {
+	getActiveLayerId,
+	isEntityHighlighted,
+	isEntitySelected,
+	requestRedraw,
+} from '../state.ts';
 import { type Entity, EntityName, type JsonEntity } from './Entity';
 import type { LineEntity } from './LineEntity.ts';
 
@@ -224,6 +229,7 @@ export class ImageEntity implements Entity {
 					y: vertex.y,
 				})),
 				imageData: this.imageElement.src,
+				angle: this.angle,
 			},
 		};
 	}
@@ -236,8 +242,10 @@ export class ImageEntity implements Entity {
 			jsonEntity.shapeData.points.map((point) => new Point(point.x, point.y))
 		);
 		const image = new Image();
+		// The image is drawn once it is loaded
+		image.onload = requestRedraw;
 		image.src = jsonEntity.shapeData.imageData;
-		const rectangleEntity = new ImageEntity(image, rectangle);
+		const rectangleEntity = new ImageEntity(image, rectangle, jsonEntity.shapeData.angle ?? 0);
 		rectangleEntity.layerId = jsonEntity.layerId || getActiveLayerId();
 		rectangleEntity.id = jsonEntity.id;
 		rectangleEntity.lineColor = jsonEntity.lineColor;
@@ -248,5 +256,9 @@ export class ImageEntity implements Entity {
 
 export interface ImageJsonData {
 	points: { x: number; y: number }[];
+	/**
+	 * Rotation of the image in radians
+	 */
+	angle?: number;
 	imageData: string;
 }

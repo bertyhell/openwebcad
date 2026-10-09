@@ -3,12 +3,11 @@ import { debounce } from 'es-toolkit';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { Actor, type MachineSnapshot } from 'xstate';
-import { AUTOSAVE_DELAY, HIGHLIGHT_ENTITY_DISTANCE, SNAP_POINT_DISTANCE } from './App.consts';
+import { AUTOSAVE_DELAY, HOVERED_SNAP_POINT_TIME, SNAP_POINT_DISTANCE } from './App.consts';
 import App from './App.tsx';
 import { HtmlEvent } from './App.types.ts';
 import { ScreenCanvasDrawController } from './drawControllers/screenCanvas.drawController';
 import { draw } from './helpers/draw';
-import { findClosestEntity } from './helpers/find-closest-entity';
 import { getNewLayer } from './helpers/get-new-layer.ts';
 import type { JsonDrawingFileDeserialized } from './helpers/import-export-handlers/json.types.ts';
 import { localStorageExport } from './helpers/import-export-handlers/local-storage.export.ts';
@@ -16,18 +15,19 @@ import { getEntitiesAndLayersFromLocalStorage } from './helpers/import-export-ha
 import { trackHoveredSnapPoint } from './helpers/track-hovered-snap-points';
 import { InputController } from './inputController/input-controller.ts';
 import {
+	clearRedrawRequest,
 	getActiveToolActor,
 	getCanvas,
-	getEditableEntities,
 	getHoveredSnapPoints,
+	getIsRedrawRequested,
 	getLastDrawTimestamp,
 	getScreenCanvasDrawController,
 	getSnapPoint,
+	requestRedraw,
 	setActiveLayerId,
 	setActiveToolActor,
 	setCanvas,
 	setEntities,
-	setHighlightedEntityIds,
 	setHoveredSnapPoints,
 	setInputController,
 	setLastDrawTimestamp,
@@ -44,49 +44,22 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLDivElement).render(
 	</React.StrictMode>
 );
 
+/**
+ * Redraw at least this often, as a safety net for changes that don't request a redraw, eg: an image that finished loading
+ */
+const MAX_TIME_BETWEEN_REDRAWS = 1000;
+
 function startDrawLoop(
 	screenCanvasDrawController: ScreenCanvasDrawController,
 	timestamp: DOMHighResTimeStamp
 ) {
-	const lastDrawTimestamp = getLastDrawTimestamp();
-
-	const elapsedTime = timestamp - lastDrawTimestamp;
+	const elapsedTime = timestamp - getLastDrawTimestamp();
 	setLastDrawTimestamp(timestamp);
 
-	// biome-ignore lint/suspicious/noExplicitAny: snapshot of whichever tool is active
-	const activeToolSnapshot: MachineSnapshot<any, any, any, any, any, any, any, any> | undefined =
-		getActiveToolActor()?.getSnapshot();
-	if (
-		activeToolSnapshot?.status === 'active' &&
-		activeToolSnapshot?.can({ type: ActorEvent.DRAW })
-	) {
-		getActiveToolActor()?.send({
-			type: ActorEvent.DRAW,
-			drawController: screenCanvasDrawController,
-		} as DrawEvent);
-	}
-
 	/**
-	 * Highlight the entity closest to the mouse when the select tool is active
+	 * Track hovered snap points, a snap point that is hovered long enough gets marked
 	 */
-	if (getActiveToolActor()?.getSnapshot()?.context?.type === Tool.SELECT) {
-		const screenCanvasDrawController = getScreenCanvasDrawController();
-		if (!screenCanvasDrawController) {
-			throw new Error('getScreenCanvasDrawController() returned null');
-		}
-		const { distance, entity: closestEntity } = findClosestEntity(
-			screenCanvasDrawController.getWorldMouseLocation(),
-			getEditableEntities()
-		);
-
-		if (distance < HIGHLIGHT_ENTITY_DISTANCE) {
-			setHighlightedEntityIds([closestEntity.id]);
-		}
-	}
-
-	/**
-	 * Track hovered snap points
-	 */
+	const wasMarked = isLastHoveredSnapPointMarked();
 	trackHoveredSnapPoint(
 		getSnapPoint(),
 		getHoveredSnapPoints(),
@@ -94,15 +67,43 @@ function startDrawLoop(
 		SNAP_POINT_DISTANCE / screenCanvasDrawController.getScreenScale(),
 		elapsedTime
 	);
+	if (wasMarked !== isLastHoveredSnapPointMarked()) {
+		requestRedraw();
+	}
 
-	/**
-	 * Draw everything on the canvas
-	 */
-	draw(screenCanvasDrawController);
+	timeSinceLastRedraw += elapsedTime;
+	if (getIsRedrawRequested() || timeSinceLastRedraw > MAX_TIME_BETWEEN_REDRAWS) {
+		timeSinceLastRedraw = 0;
+
+		// Let the active tool update its preview, eg: the line that follows the mouse
+		// biome-ignore lint/suspicious/noExplicitAny: snapshot of whichever tool is active
+		const activeToolSnapshot: MachineSnapshot<any, any, any, any, any, any, any, any> | undefined =
+			getActiveToolActor()?.getSnapshot();
+		if (
+			activeToolSnapshot?.status === 'active' &&
+			activeToolSnapshot?.can({ type: ActorEvent.DRAW })
+		) {
+			getActiveToolActor()?.send({
+				type: ActorEvent.DRAW,
+				drawController: screenCanvasDrawController,
+			} as DrawEvent);
+		}
+
+		draw(screenCanvasDrawController);
+
+		// Changes made by the tool preview are drawn already
+		clearRedrawRequest();
+	}
 
 	requestAnimationFrame((newTimestamp: DOMHighResTimeStamp) => {
 		startDrawLoop(screenCanvasDrawController, newTimestamp);
 	});
+}
+
+let timeSinceLastRedraw = 0;
+
+function isLastHoveredSnapPointMarked(): boolean {
+	return (getHoveredSnapPoints().at(-1)?.milliSecondsHovered ?? 0) > HOVERED_SNAP_POINT_TIME;
 }
 
 /**

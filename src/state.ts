@@ -39,7 +39,7 @@ let entities: Entity[] = [];
 /**
  * Entities that are highlighted: when the mouse is close to an entity
  */
-let highlightedEntityIds: string[] = [];
+let highlightedEntityIdSet = new Set<string>();
 
 /**
  * Entities that are drawn faded, eg: the original entities while previewing a move or rotate operation
@@ -50,6 +50,7 @@ let dimmedEntityIds: string[] = [];
  * Entities that are selected by the user by clicking on them with the select tool or by selecting them with a selection rectangle
  */
 let selectedEntityIds: string[] = [];
+let selectedEntityIdSet = new Set<string>();
 
 /**
  * Whether to draw the cursor or not
@@ -141,6 +142,11 @@ let activeFillColor = '#fff';
 let activeLineWidth = 1;
 
 /**
+ * The canvas is only redrawn when something changed since the last frame
+ */
+let isRedrawRequested = true;
+
+/**
  * Layers that can contain entities
  */
 let layers: Layer[] = [
@@ -193,10 +199,10 @@ export const getInputController = (): InputController => {
 };
 
 export const getSelectedEntities = (): Entity[] => {
-	return entities.filter((e) => selectedEntityIds.includes(e.id));
+	return entities.filter((e) => selectedEntityIdSet.has(e.id));
 };
 export const getNotSelectedEntities = (): Entity[] => {
-	return entities.filter((e) => !selectedEntityIds.includes(e.id));
+	return entities.filter((e) => !selectedEntityIdSet.has(e.id));
 };
 /**
  * Filtered entity lists are cached as long as the entities and layers don't change,
@@ -246,13 +252,24 @@ export const isEntityEditable = (entity: Entity): boolean => {
 export const getEditableSelectedEntities = (): Entity[] => {
 	return getSelectedEntities().filter(isEntityEditable);
 };
-export const isEntitySelected = (entity: Entity) => selectedEntityIds.includes(entity.id);
-export const isEntityHighlighted = (entity: Entity) => highlightedEntityIds.includes(entity.id);
+export const isEntitySelected = (entity: Entity) => selectedEntityIdSet.has(entity.id);
+export const isEntityHighlighted = (entity: Entity) => highlightedEntityIdSet.has(entity.id);
 export const getLayers = () => {
 	return layers;
 };
 export const getActiveLayerId = (): string => {
 	return activeLayerId;
+};
+
+/**
+ * Ask the draw loop to redraw the canvas on the next animation frame
+ */
+export const requestRedraw = () => {
+	isRedrawRequested = true;
+};
+export const getIsRedrawRequested = () => isRedrawRequested;
+export const clearRedrawRequest = () => {
+	isRedrawRequested = false;
 };
 
 // setters
@@ -277,6 +294,7 @@ export const setActiveToolActor = (
 	newToolActor: Actor<any>,
 	triggerReact = true
 ) => {
+	requestRedraw();
 	const oldToolActor = getActiveToolActor();
 	oldToolActor?.stop();
 
@@ -301,45 +319,56 @@ export const setActiveToolActor = (
 	}
 };
 export const setLastStateInstructions = (newInstructions: string | null) => {
+	requestRedraw();
 	lastStateInstructions = newInstructions;
 	triggerReactUpdate(StateVariable.instructions);
 };
 export const setEntities = (newEntities: Entity[], trackInUndoStack = false) => {
+	requestRedraw();
 	entities = newEntities;
 	if (trackInUndoStack) {
 		commitUndoState();
 	}
 };
 export const setHighlightedEntityIds = (newEntityIds: string[]) => {
-	highlightedEntityIds = newEntityIds;
+	requestRedraw();
+	highlightedEntityIdSet = new Set(newEntityIds);
 };
 export const setSelectedEntityIds = (newEntityIds: string[]) => {
+	requestRedraw();
 	const selectionChanged = !isEqual(selectedEntityIds, newEntityIds);
 	selectedEntityIds = newEntityIds;
+	selectedEntityIdSet = new Set(newEntityIds);
 
 	if (selectionChanged) {
 		triggerReactUpdate(StateVariable.selectedEntityIds);
 	}
 };
 export const setDimmedEntityIds = (newEntityIds: string[]) => {
+	requestRedraw();
 	dimmedEntityIds = newEntityIds;
 };
 export const setShouldDrawCursor = (newValue: boolean) => {
+	requestRedraw();
 	shouldDrawCursor = newValue;
 };
 export const setAngleGuideEntities = (newAngleGuideEntities: Entity[]) => {
+	requestRedraw();
 	angleGuideEntities = newAngleGuideEntities;
 };
 export const setGhostHelperEntities = (newGhostHelperEntities: Entity[]) => {
+	requestRedraw();
 	ghostHelperEntities = newGhostHelperEntities;
 };
 export const setShouldDrawHelpers = (shouldDraw: boolean) => {
+	requestRedraw();
 	setSnapPoint(null);
 	setSnapPointOnAngleGuide(null);
 	setAngleGuideEntities([]);
 	shouldDrawHelpers = shouldDraw;
 };
 export const setDebugEntities = (newDebugEntities: Entity[]) => {
+	requestRedraw();
 	debugEntities = newDebugEntities;
 };
 export const setAngleStep = (newStep: number, triggerReact = true) => {
@@ -361,9 +390,11 @@ export const setPanStartLocation = (newLocation: Point | null) => {
 	panStartLocation = newLocation;
 };
 export const setSnapPoint = (newSnapPoint: SnapPoint | null) => {
+	requestRedraw();
 	snapPoint = newSnapPoint;
 };
 export const setSnapPointOnAngleGuide = (newSnapPointOnAngleGuide: SnapPoint | null) => {
+	requestRedraw();
 	snapPointOnAngleGuide = newSnapPointOnAngleGuide;
 };
 export const setAngleGuideOriginPoint = (newAngleGuideOriginPoint: Point | null) => {
@@ -397,6 +428,7 @@ export const setActiveLineWidth = (newWidth: number, triggerReact = true) => {
 	}
 };
 export const setLayers = (newLayers: Layer[], triggerReact = true, trackInUndoStack = false) => {
+	requestRedraw();
 	layers = newLayers;
 	if (trackInUndoStack) {
 		commitUndoState();
@@ -407,6 +439,7 @@ export const setLayers = (newLayers: Layer[], triggerReact = true, trackInUndoSt
 	}
 };
 export const setActiveLayerId = (newActiveLayerId: string, triggerReact = true) => {
+	requestRedraw();
 	activeLayerId = newActiveLayerId;
 
 	if (triggerReact) {
@@ -489,6 +522,7 @@ function restoreUndoState(undoState: UndoState) {
 	if (!layers.some((layer) => layer.id === activeLayerId)) {
 		activeLayerId = layers[0]?.id;
 	}
+	requestRedraw();
 	triggerReactUpdate(StateVariable.layers);
 	notifyDrawingChanged();
 }

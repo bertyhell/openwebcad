@@ -1,5 +1,4 @@
 import type { Point } from '@flatten-js/core';
-import { compact } from 'es-toolkit';
 import { SNAP_ANGLE_DISTANCE } from '../App.consts';
 import { type SnapPoint, SnapPointType } from '../App.types';
 import type { Entity } from '../entities/Entity';
@@ -7,7 +6,8 @@ import type { LineEntity } from '../entities/LineEntity';
 import { findClosestEntity } from './find-closest-entity';
 import { getAngleGuideLines } from './get-angle-guide-lines';
 import { getClosestSnapPointWithinRadius } from './get-closest-snap-point';
-import { getIntersectionPoints } from './get-intersection-points';
+import { getIntersectionPoints, getIntersectionPointsBetween } from './get-intersection-points';
+import { getEntitySnapPointIndex } from './snap-point-index';
 
 /**
  * Gets the angle guides from the angle point to the mouse if the mouse is close to one of the angle steps and also returns the closest snap point
@@ -48,44 +48,25 @@ export function getDrawHelpers(
 		}
 	}
 
-	// Calculate snap points
-	const entitySnapPoints = [
-		...entities.flatMap((entity) => {
-			return entity.getSnapPoints();
-		}),
-		...getIntersectionPoints(compact(entities)).map((point) => ({
-			point,
-			type: SnapPointType.Intersection,
-		})),
-	];
-
-	const closestSnapPoint = getClosestSnapPointWithinRadius(
-		entitySnapPoints,
+	// Snap points of the entities don't change while the mouse moves, so they are cached
+	entitySnapPoint = getEntitySnapPointIndex(entities).getClosestWithinRadius(
 		worldMouseLocation,
 		maxSnapDistance
 	);
 
-	if (closestSnapPoint) {
-		entitySnapPoint = closestSnapPoint;
-	}
-
-	const angleSnapPoints = [
+	// Only the intersections with the angle guides depend on the mouse location
+	const angleSnapPoints: SnapPoint[] = [
 		...nearestAngleSnapPoints,
-		// TODO only search for intersections between angle guides and other angle guides and between angle guides and entities, but not between entities
-		...getIntersectionPoints([...compact(entities), ...angleGuides]).map((point) => ({
-			point,
-			type: SnapPointType.Intersection,
-		})),
+		...[
+			...getIntersectionPointsBetween(angleGuides, entities),
+			...getIntersectionPoints(angleGuides),
+		].map((point) => ({ point, type: SnapPointType.Intersection })),
 	];
-	const closestAngleSnapPoint = getClosestSnapPointWithinRadius(
+	angleSnapPoint = getClosestSnapPointWithinRadius(
 		angleSnapPoints,
 		worldMouseLocation,
 		maxSnapDistance
 	);
-
-	if (closestAngleSnapPoint) {
-		angleSnapPoint = closestAngleSnapPoint;
-	}
 
 	return { angleGuides, entitySnapPoint, angleSnapPoint };
 }

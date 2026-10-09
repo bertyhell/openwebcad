@@ -1,7 +1,13 @@
 /**
- * Width of the toolbar containing all the tools on the left side of the screen
+ * Width of the expanded sidebar containing all the tools on the left side of the screen
+ * Also used as the canvas offset when there is no canvas element (eg: during unit tests)
  */
-export const TOOLBAR_WIDTH = 320;
+export const TOOLBAR_WIDTH = 304;
+
+/**
+ * Width of the sidebar when it is collapsed to a narrow icon rail
+ */
+export const TOOLBAR_WIDTH_COLLAPSED = 56;
 
 /**
  * Very small number that will be used to compare floating point numbers on equality
@@ -27,7 +33,7 @@ export const CURSOR_SIZE = 30;
 /**
  * The background color of the canvas
  */
-export const CANVAS_BACKGROUND_COLOR = '#111';
+export const CANVAS_BACKGROUND_COLOR = '#181715';
 
 /**
  * The foreground color of the canvas

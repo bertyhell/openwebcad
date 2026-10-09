@@ -1,5 +1,6 @@
 import { Point } from '@flatten-js/core';
 import { compact, round } from 'es-toolkit';
+import { toast } from 'react-toastify';
 import { Actor } from 'xstate';
 import {
 	CANVAS_INPUT_FIELD_BACKGROUND_COLOR,
@@ -12,11 +13,12 @@ import {
 	SNAP_POINT_DISTANCE,
 	TOOLBAR_WIDTH,
 } from '../App.consts.ts';
-import { MouseButton } from '../App.types.ts';
+import { HtmlEvent, MouseButton } from '../App.types.ts';
 import type { ScreenCanvasDrawController } from '../drawControllers/screenCanvas.drawController.ts';
 import { calculateAngleGuidesAndSnapPoints } from '../helpers/calculate-angle-guides-and-snap-points.ts';
 import { findClosestEntity } from '../helpers/find-closest-entity.ts';
 import { getClosestSnapPointWithinRadius } from '../helpers/get-closest-snap-point.ts';
+import { localStorageExport } from '../helpers/import-export-handlers/local-storage.export.ts';
 import {
 	getActiveToolActor,
 	getCanvas,
@@ -45,11 +47,19 @@ import {
 	type RelativePointInputEvent,
 	type TextInputEvent,
 } from '../tools/tool.types.ts';
-import { Tool } from '../tools.ts';
+import { TOOL_SHORTCUTS, Tool } from '../tools.ts';
 
 const NUMBER_REGEXP = /^[0-9]+([.][0-9]+)?$/;
 const ABSOLUTE_POINT_REGEXP = /^([0-9]+([.][0-9]+)?)\s*,\s*([0-9]+([.][0-9]+)?)$/;
 const RELATIVE_POINT_REGEXP = /^@([0-9]+([.][0-9]+)?)\s*,\s*([0-9]+([.][0-9]+)?)$/;
+
+/**
+ * Distance between the left of the window and the left of the canvas
+ * Falls back to the toolbar width when there is no canvas (eg: during unit tests)
+ */
+function getCanvasOffsetLeft(): number {
+	return getCanvas()?.getBoundingClientRect().left ?? TOOLBAR_WIDTH;
+}
 
 export class InputController {
 	private text = '';
@@ -147,7 +157,7 @@ export class InputController {
 
 			const worldMouseLocationTemp = getScreenCanvasDrawController().targetToWorld(
 				new Point(
-					evt.clientX - TOOLBAR_WIDTH,
+					evt.clientX - getCanvasOffsetLeft(),
 					getScreenCanvasDrawController().getCanvasSize().y - evt.clientY
 				)
 			);
@@ -172,7 +182,7 @@ export class InputController {
 		setShouldDrawCursor(true);
 		const screenCanvasDrawController = getScreenCanvasDrawController();
 		const newScreenMouseLocation = new Point(
-			evt.clientX - TOOLBAR_WIDTH,
+			evt.clientX - getCanvasOffsetLeft(),
 			getScreenCanvasDrawController().getCanvasSize().y - evt.clientY
 		);
 		screenCanvasDrawController.setScreenMouseLocation(newScreenMouseLocation);
@@ -225,7 +235,7 @@ export class InputController {
 
 		setPanStartLocation(
 			new Point(
-				evt.clientX - TOOLBAR_WIDTH,
+				evt.clientX - getCanvasOffsetLeft(),
 				getScreenCanvasDrawController().getCanvasSize().y - evt.clientY
 			)
 		);
@@ -282,6 +292,12 @@ export class InputController {
 		evt.stopPropagation();
 		if (evt.ctrlKey && evt.key === 'v') {
 			// User wants to paste the clipboard
+		} else if (evt.ctrlKey && evt.key === 's') {
+			// User wants to save the drawing to local storage
+			localStorageExport().then(() => toast.success('Saved'));
+		} else if (evt.key === '[' && this.text === '') {
+			// User wants to collapse or expand the sidebar
+			window.dispatchEvent(new CustomEvent(HtmlEvent.TOGGLE_SIDEBAR));
 		} else if (evt.ctrlKey && !evt.shiftKey && evt.key === 'z') {
 			// User wants to undo the last action
 			this.handleUndo(evt);
@@ -359,9 +375,19 @@ export class InputController {
 		if (this.text === '') {
 			return [];
 		}
-		return (Object.keys(TOOL_STATE_MACHINES).filter((cmd) =>
-			cmd.startsWith(this.text.toUpperCase())
-		) || null) as Tool[];
+		const text = this.text.toUpperCase();
+		const toolNames = Object.keys(TOOL_STATE_MACHINES).filter((cmd) =>
+			cmd.startsWith(text)
+		) as Tool[];
+
+		// Single letter shortcuts take precedence over tools that start with that letter. eg: D => COPY
+		const shortcutTool = (Object.keys(TOOL_SHORTCUTS) as Tool[]).find(
+			(tool) => TOOL_SHORTCUTS[tool] === text
+		);
+		if (!shortcutTool) {
+			return toolNames;
+		}
+		return [shortcutTool, ...toolNames.filter((toolName) => toolName !== shortcutTool)];
 	}
 
 	public handleEnterKey() {
@@ -471,8 +497,8 @@ export class InputController {
 		}
 	}
 
-	public handleUndo(evt: KeyboardEvent) {
-		evt.preventDefault();
+	public handleUndo(evt?: KeyboardEvent) {
+		evt?.preventDefault();
 		undo();
 		setGhostHelperEntities([]);
 		setSelectedEntityIds([]);
@@ -481,8 +507,8 @@ export class InputController {
 		});
 	}
 
-	public handleRedo(evt: KeyboardEvent) {
-		evt.preventDefault();
+	public handleRedo(evt?: KeyboardEvent) {
+		evt?.preventDefault();
 		redo();
 		setGhostHelperEntities([]);
 		setSelectedEntityIds([]);

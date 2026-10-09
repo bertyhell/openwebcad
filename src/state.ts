@@ -1,12 +1,18 @@
-import type {Point} from '@flatten-js/core';
-import {isEqual} from 'es-toolkit';
-import {toast} from 'react-toastify';
-import type {Actor, MachineSnapshot} from 'xstate';
-import {type HoverPoint, HtmlEvent, type Layer, type SnapPoint, type StateMetaData,} from './App.types';
-import type {ScreenCanvasDrawController} from './drawControllers/screenCanvas.drawController';
-import type {Entity} from './entities/Entity';
-import {createStack, StateVariable, type UndoState} from './helpers/undo-stack';
-import type {InputController} from './inputController/input-controller.ts'; // state variables
+import type { Point } from '@flatten-js/core';
+import { isEqual } from 'es-toolkit';
+import { toast } from 'react-toastify';
+import type { Actor, MachineSnapshot } from 'xstate';
+import {
+	type HoverPoint,
+	HtmlEvent,
+	type Layer,
+	type SnapPoint,
+	type StateMetaData,
+} from './App.types';
+import type { ScreenCanvasDrawController } from './drawControllers/screenCanvas.drawController';
+import type { Entity } from './entities/Entity';
+import { createStack, StateVariable, type UndoState } from './helpers/undo-stack';
+import type { InputController } from './inputController/input-controller.ts'; // state variables
 
 // state variables
 /**
@@ -199,6 +205,19 @@ export const getActiveLayerId = (): string => {
 export const setCanvas = (newCanvas: HTMLCanvasElement) => {
 	canvas = newCanvas;
 };
+// biome-ignore lint/suspicious/noExplicitAny: xstate snapshot of any tool state machine
+const updateInstructionsFromSnapshot = (
+	state: MachineSnapshot<any, any, any, any, any, any, any, any>
+) => {
+	const stateInstructions = Object.values(state?.getMeta() as Record<string, StateMetaData>)[0]
+		?.instructions;
+
+	if (getLastStateInstructions() === stateInstructions) {
+		return;
+	}
+
+	setLastStateInstructions(stateInstructions || null);
+};
 export const setActiveToolActor = (
 	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	newToolActor: Actor<any>,
@@ -209,16 +228,10 @@ export const setActiveToolActor = (
 
 	activeToolActor = newToolActor;
 	activeToolActor.subscribe({
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		next: (state: MachineSnapshot<any, any, any, any, any, any, any, any>) => {
-			const stateInstructions = Object.values(state?.getMeta() as Record<string, StateMetaData>)[0]
-				?.instructions;
-
-			if (getLastStateInstructions() === stateInstructions) {
-				return;
-			}
-
-			setLastStateInstructions(stateInstructions || null);
+		next: (state) => {
+			// A tool can switch to another tool during its own transition, ignore its snapshots after that
+			if (activeToolActor !== newToolActor) return;
+			updateInstructionsFromSnapshot(state);
 		},
 		error: (err) => {
 			toast.error(
@@ -231,6 +244,8 @@ export const setActiveToolActor = (
 		},
 	});
 	activeToolActor.start();
+	// Subscribers only receive later snapshots, so read the instructions of the initial state here
+	updateInstructionsFromSnapshot(activeToolActor.getSnapshot());
 
 	console.log('User clicked on tool: ', {
 		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
@@ -243,6 +258,7 @@ export const setActiveToolActor = (
 };
 export const setLastStateInstructions = (newInstructions: string | null) => {
 	lastStateInstructions = newInstructions;
+	triggerReactUpdate(StateVariable.instructions);
 };
 export const setEntities = (newEntities: Entity[], trackInUndoStack = false) => {
 	if (trackInUndoStack) {
@@ -254,7 +270,12 @@ export const setHighlightedEntityIds = (newEntityIds: string[]) => {
 	highlightedEntityIds = newEntityIds;
 };
 export const setSelectedEntityIds = (newEntityIds: string[]) => {
+	const selectionChanged = !isEqual(selectedEntityIds, newEntityIds);
 	selectedEntityIds = newEntityIds;
+
+	if (selectionChanged) {
+		triggerReactUpdate(StateVariable.selectedEntityIds);
+	}
 };
 export const setShouldDrawCursor = (newValue: boolean) => {
 	shouldDrawCursor = newValue;
@@ -278,7 +299,7 @@ export const setAngleStep = (newStep: number, triggerReact = true) => {
 	angleStep = newStep;
 
 	if (triggerReact) {
-		triggerReactUpdate(StateVariable.activeTool);
+		triggerReactUpdate(StateVariable.angleStep);
 	}
 };
 export const setScreenCanvasDrawController = (
@@ -364,6 +385,9 @@ const reactStateVariables: StateVariable[] = [
 	StateVariable.activeFillColor,
 	StateVariable.activeLineWidth,
 	StateVariable.screenZoom,
+	StateVariable.layers,
+	StateVariable.selectedEntityIds,
+	StateVariable.instructions,
 ];
 
 const undoableStateVariables: StateVariable[] = [StateVariable.entities];

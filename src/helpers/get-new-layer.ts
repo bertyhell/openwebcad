@@ -6,6 +6,6 @@ export function getNewLayer(): Layer {
 		id: crypto.randomUUID(),
 		isLocked: false,
 		isVisible: true,
-		name: `New layer ${getLayers().length}${1}`,
+		name: `New layer ${getLayers().length + 1}`,
 	};
 }

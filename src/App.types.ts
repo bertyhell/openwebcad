@@ -36,6 +36,7 @@ export enum MouseButton {
 
 export enum HtmlEvent {
 	UPDATE_STATE = 'UPDATE_STATE',
+	TOGGLE_SIDEBAR = 'TOGGLE_SIDEBAR',
 }
 
 export interface StateMetaData {
@@ -51,7 +52,7 @@ export interface Layer {
 
 export enum LOCAL_STORAGE_KEY {
 	DRAWING = 'OPEN_WEB_CAD__DRAWING',
-	DROPDOWN = 'OPEN_WEB_CAD__DROPDOWN',
+	SIDEBAR = 'OPEN_WEB_CAD__SIDEBAR',
 }
 
 export interface StartAndEndpointEntity extends Entity {

@@ -1,1 +1,69 @@
 @import "tailwindcss";
+
+/* Source Sans 3 variable font (weights 300 - 800) */
+@font-face {
+	font-family: "Source Sans 3";
+	font-style: normal;
+	font-weight: 300 800;
+	font-display: swap;
+	src: url("./assets/fonts/source-sans-3-latin-ext.woff2") format("woff2");
+	unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+		U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+	font-family: "Source Sans 3";
+	font-style: normal;
+	font-weight: 300 800;
+	font-display: swap;
+	src: url("./assets/fonts/source-sans-3-latin.woff2") format("woff2");
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+		U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@theme {
+	--font-sans: "Source Sans 3", -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+
+	/* Brand */
+	--color-hw-red: #d5182a;
+	--color-hw-red-600: #c5152c;
+	--color-hw-red-700: #b0121f;
+	--color-hw-danger-soft: #f07a6e;
+	--color-hw-danger-bg: #3a1e1c;
+	--color-hw-danger-border: #6b2b26;
+
+	/* Warm greys, light to dark */
+	--color-hw-paper: #ffffff;
+	--color-hw-stone-100: #eceae6;
+	--color-hw-stone-300: #c7c4bd;
+	--color-hw-stone-500: #8b8780;
+	--color-hw-stone-700: #6b6863;
+	--color-hw-graphite: #4a4844;
+	--color-hw-line: #3a3936;
+	--color-hw-ash: #34332f;
+	--color-hw-divider: #2e2d2a;
+	--color-hw-ink: #2a2926;
+	--color-hw-night: #21201e;
+	--color-hw-canvas: #181715;
+
+	/* Tool categories */
+	--color-hw-draw: oklch(0.7 0.15 30);
+	--color-hw-modify: oklch(0.8 0.12 82);
+	--color-hw-annotate: oklch(0.76 0.1 145);
+	--color-hw-align: oklch(0.76 0.08 240);
+}
+
+.hw-scrollbar {
+	scrollbar-width: thin;
+	scrollbar-color: var(--color-hw-graphite) transparent;
+}
+
+/* Toasts restyled to match the sidebar */
+.Toastify__toast {
+	min-height: 0;
+	padding: 10px 16px;
+	border-radius: 0;
+	background: var(--color-hw-stone-100);
+	color: var(--color-hw-ink);
+	font: 600 13px/1.3 var(--font-sans);
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}

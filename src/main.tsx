@@ -2,7 +2,7 @@ import { Point } from '@flatten-js/core';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { Actor, type MachineSnapshot } from 'xstate';
-import { HIGHLIGHT_ENTITY_DISTANCE, SNAP_POINT_DISTANCE, TOOLBAR_WIDTH } from './App.consts';
+import { HIGHLIGHT_ENTITY_DISTANCE, SNAP_POINT_DISTANCE } from './App.consts';
 import App from './App.tsx';
 import { ScreenCanvasDrawController } from './drawControllers/screenCanvas.drawController';
 import { draw } from './helpers/draw';
@@ -102,15 +102,26 @@ function startDrawLoop(
 	});
 }
 
-function handleWindowResize() {
-	getScreenCanvasDrawController().setCanvasSize(
-		new Point(window.innerWidth - TOOLBAR_WIDTH, window.innerHeight)
-	);
+/**
+ * The canvas fills the space next to the sidebar, so it resizes with the window and when the sidebar collapses
+ * Keep the canvas resolution in sync with its size on screen
+ */
+let lastCanvasLeft: number | null = null;
+function handleCanvasResize() {
 	const canvas = getCanvas();
-	if (canvas) {
-		canvas.width = window.innerWidth - TOOLBAR_WIDTH;
-		canvas.height = window.innerHeight;
+	if (!canvas) return;
+	const width = canvas.clientWidth;
+	const height = canvas.clientHeight;
+	canvas.width = width;
+	canvas.height = height;
+	getScreenCanvasDrawController().setCanvasSize(new Point(width, height));
+
+	// Keep the drawing at the same place on the screen when the sidebar changes width
+	const canvasLeft = canvas.getBoundingClientRect().left;
+	if (lastCanvasLeft !== null && canvasLeft !== lastCanvasLeft) {
+		getScreenCanvasDrawController().panScreen(lastCanvasLeft - canvasLeft, 0);
 	}
+	lastCanvasLeft = canvasLeft;
 }
 
 function initApplication() {
@@ -136,11 +147,11 @@ function initApplication() {
 		const screenCanvasDrawController = new ScreenCanvasDrawController(context);
 		setScreenCanvasDrawController(screenCanvasDrawController);
 
-		window.addEventListener('resize', handleWindowResize);
+		new ResizeObserver(handleCanvasResize).observe(canvas);
 		const inputController = new InputController();
 		setInputController(inputController);
 
-		handleWindowResize();
+		handleCanvasResize();
 
 		startDrawLoop(screenCanvasDrawController, 0);
 

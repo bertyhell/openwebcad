@@ -28,6 +28,8 @@ export enum StateVariable {
 	activeFillColor = 'activeFillColor',
 	activeLineWidth = 'activeLineWidth',
 	layers = 'layers',
+	selectedEntityIds = 'selectedEntityIds',
+	instructions = 'instructions',
 }
 
 /**

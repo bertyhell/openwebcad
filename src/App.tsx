@@ -1,13 +1,31 @@
 import './App.css';
+import { useEffect } from 'react';
 import { ToastContainer } from 'react-toastify';
-import { Toolbar } from './components/Toolbar.tsx';
+import { Sidebar } from './components/sidebar/Sidebar.tsx';
 
 function App() {
+	useEffect(() => {
+		// Prevent the browser from zooming the page when the user zooms the canvas with ctrl + scroll
+		const handleWheel = (event: WheelEvent) => {
+			if (event.ctrlKey) {
+				event.preventDefault();
+			}
+		};
+		window.addEventListener('wheel', handleWheel, { passive: false });
+		return () => window.removeEventListener('wheel', handleWheel);
+	}, []);
+
 	return (
-		<div className="overflow-y-scroll h-lvh pb-12 w-80" style={{ scrollbarWidth: 'none' }}>
-			<Toolbar />
-			<ToastContainer position="bottom-right" theme="light" />
-		</div>
+		<>
+			<Sidebar />
+			<ToastContainer
+				position="bottom-center"
+				theme="light"
+				hideProgressBar
+				closeButton={false}
+				autoClose={1800}
+			/>
+		</>
 	);
 }
 

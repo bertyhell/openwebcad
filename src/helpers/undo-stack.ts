@@ -25,6 +25,7 @@ export enum StateVariable {
 	hoveredSnapPoints = 'hoveredSnapPoints',
 	lastDrawTimestamp = 'lastDrawTimestamp',
 	activeLineColor = 'activeLineColor',
+	activeFillColor = 'activeFillColor',
 	activeLineWidth = 'activeLineWidth',
 	layers = 'layers',
 }

@@ -15,6 +15,7 @@ import {importEntitiesFromSvgFile} from '../helpers/import-export-handlers/svg.i
 import {times} from '../helpers/times';
 import {
 	getActiveLayerId,
+	getActiveFillColor,
 	getActiveLineColor,
 	getActiveLineWidth,
 	getActiveToolActor,
@@ -23,6 +24,7 @@ import {
 	getScreenCanvasDrawController,
 	redo,
 	setActiveLayerId,
+	setActiveFillColor,
 	setActiveLineColor,
 	setActiveLineWidth,
 	setActiveToolActor,
@@ -45,6 +47,7 @@ export const Toolbar: FC = () => {
 	const [activeToolLocal, setActiveToolLocal] = useState<Tool>(Tool.LINE);
 	const [angleStepLocal, setAngleStepLocal] = useState<number>(45);
 	const [activeLineColorLocal, setActiveLineColorLocal] = useState<string>('#FFF');
+	const [activeFillColorLocal, setActiveFillColorLocal] = useState<string>('#FFF');
 	const [activeLineWidthLocal, setActiveLineWidthLocal] = useState<number>(1);
 	const [screenZoomLocal, setScreenZoomLocal] = useState<number>(1);
 	const [layersLocal, setLayersLocal] = useState<Layer[]>(getLayers());
@@ -54,6 +57,7 @@ export const Toolbar: FC = () => {
 		setActiveToolLocal(getActiveToolActor()?.getSnapshot()?.context.type);
 		setAngleStepLocal(getAngleStep());
 		setActiveLineColorLocal(getActiveLineColor());
+		setActiveFillColorLocal(getActiveFillColor());
 		setActiveLineWidthLocal(getActiveLineWidth());
 		setScreenZoomLocal(getScreenCanvasDrawController().getScreenScale());
 		setLayersLocal(getLayers());
@@ -398,6 +402,29 @@ export const Toolbar: FC = () => {
 						onClick={(evt) => {
 							evt.stopPropagation();
 							setActiveLineColor(color);
+						}}
+					/>
+				))}
+			</DropdownButton>
+			<DropdownButton
+				title="Fill color"
+				dataId="fill-color-button"
+				label="Fill color"
+				iconComponent={
+					<div className="w-5 h-5" style={{ backgroundColor: activeFillColorLocal }} />
+				}
+			>
+				{COLOR_LIST.map((color) => (
+					<Button
+						key={`fill-color--${color}`}
+						title="Change fill color"
+						dataId={`fill-color-${color}-button`}
+						className="w-10"
+						style={{ backgroundColor: color }}
+						active={color === activeFillColorLocal}
+						onClick={(evt) => {
+							evt.stopPropagation();
+							setActiveFillColor(color);
 						}}
 					/>
 				))}

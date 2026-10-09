@@ -15,6 +15,7 @@ import {
 import type { BoundaryWithHoles } from '../helpers/find-loops-in-edges.types.ts';
 import { isPointEqual } from '../helpers/is-point-equal.ts';
 import {
+	getActiveFillColor,
 	getActiveLineColor,
 	getEntities,
 	getLayers,
@@ -202,7 +203,7 @@ export function handleMouseClick(worldMouseLocation: Point) {
 		edgesToPolyline(boundary.boundary),
 		boundary.holes.map(edgesToPolyline)
 	);
-	fillEntity.fillColor = getActiveLineColor();
+	fillEntity.fillColor = getActiveFillColor();
 	fillEntity.lineColor = getActiveLineColor();
 
 	// Fills are drawn below all other entities, so the boundary lines stay visible

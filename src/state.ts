@@ -120,6 +120,11 @@ let lastDrawTimestamp: DOMHighResTimeStamp = 0;
 let activeLineColor = '#fff';
 
 /**
+ * Active fill color
+ */
+let activeFillColor = '#fff';
+
+/**
  * Active line width
  */
 let activeLineWidth = 1;
@@ -160,6 +165,7 @@ export const getAngleGuideOriginPoint = () => angleGuideOriginPoint;
 export const getHoveredSnapPoints = () => hoveredSnapPoints;
 export const getLastDrawTimestamp = () => lastDrawTimestamp;
 export const getActiveLineColor = () => activeLineColor;
+export const getActiveFillColor = () => activeFillColor;
 export const getActiveLineWidth = () => activeLineWidth;
 export const getScreenCanvasDrawController = (): ScreenCanvasDrawController => {
 	if (!screenCanvasDrawController) {
@@ -308,6 +314,13 @@ export const setActiveLineColor = (newColor: string, triggerReact = true) => {
 		triggerReactUpdate(StateVariable.activeLineColor);
 	}
 };
+export const setActiveFillColor = (newColor: string, triggerReact = true) => {
+	activeFillColor = newColor;
+
+	if (triggerReact) {
+		triggerReactUpdate(StateVariable.activeFillColor);
+	}
+};
 export const setActiveLineWidth = (newWidth: number, triggerReact = true) => {
 	activeLineWidth = newWidth;
 
@@ -348,6 +361,7 @@ const reactStateVariables: StateVariable[] = [
 	StateVariable.activeTool,
 	StateVariable.angleStep,
 	StateVariable.activeLineColor,
+	StateVariable.activeFillColor,
 	StateVariable.activeLineWidth,
 	StateVariable.screenZoom,
 ];

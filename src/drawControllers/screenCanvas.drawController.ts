@@ -6,7 +6,7 @@ import {getAngleWithXAxis} from '../helpers/get-angle-with-x-axis.ts';
 import {getBoundingBoxOfMultipleEntities} from '../helpers/get-bounding-box-of-multiple-entities.ts';
 import {mapNumberRange} from '../helpers/map-number-range.ts';
 import {StateVariable} from '../helpers/undo-stack.ts';
-import {getEntities, getScreenCanvasDrawController, triggerReactUpdate} from '../state.ts';
+import {getEntities, triggerReactUpdate} from '../state.ts';
 import {DEFAULT_TEXT_OPTIONS, type DrawController} from './DrawController';
 
 /**

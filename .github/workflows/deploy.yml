@@ -1,10 +1,18 @@
-name: Test, Build, and Deploy
+Name: Test, Build, and Deploy
 
 on:
   push:
     branches:
       - master
+    tags:
+      - 'v*' # Triggers when you push a tag starting with 'v' (e.g., v1.0.0)
   pull_request:
+
+# Required permissions for native GitHub Pages deployment
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
   build-and-deploy:
@@ -40,12 +48,16 @@ jobs:
         run: npm run build
 
       - name: 🛑 Disable Jekyll
-        if: github.event_name == 'push'
+        if: startsWith(github.ref, 'refs/tags/')
         run: echo > dist/.nojekyll
 
-      - name: 🚀 Deploy
-        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/master'
-        uses: peaceiris/actions-gh-pages@v4
+      - name: 📤 Upload artifact
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
+          path: ./dist
+
+      - name: 🚀 Deploy to GitHub Pages
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/deploy-pages@v4
+        

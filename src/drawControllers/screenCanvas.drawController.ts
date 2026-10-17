@@ -414,7 +414,7 @@ export class ScreenCanvasDrawController implements DrawController {
 		const screenWidth = width * this.screenScale;
 		const screenHeight = height * this.screenScale;
 		const screenCenterX = screenCenter.x;
-		const screenCenterY = screenCenter.y;
+		const screenCenterY = this.canvasSize.y - screenCenter.y;
 
 		// Rotate and translate context
 		this.context.translate(screenCenterX, screenCenterY);

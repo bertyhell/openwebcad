@@ -410,16 +410,11 @@ export class ScreenCanvasDrawController implements DrawController {
 		height: number,
 		angle: number
 	): void {
-		const [screenBasePoint, screenDimensions] = this.worldsToTargets([
-			new Point(xMin, yMin),
-			new Point(width, height),
-		]);
-		const screenXMin = screenBasePoint.x;
-		const screenYMin = screenBasePoint.y;
-		const screenWidth = screenDimensions.x;
-		const screenHeight = screenDimensions.y;
-		const screenCenterX = screenXMin + screenWidth / 2;
-		const screenCenterY = screenYMin + screenHeight / 2;
+		const screenCenter = this.worldToTarget(new Point(xMin + width / 2, yMin + height / 2));
+		const screenWidth = width * this.screenScale;
+		const screenHeight = height * this.screenScale;
+		const screenCenterX = screenCenter.x;
+		const screenCenterY = screenCenter.y;
 
 		// Rotate and translate context
 		this.context.translate(screenCenterX, screenCenterY);

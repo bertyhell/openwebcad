@@ -1,5 +1,6 @@
 import { type ChangeEvent, type FC, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
+import packageJson from '../../../package.json';
 import { COLOR_LIST } from '../../App.consts.ts';
 import type { GridSettings } from '../../App.types.ts';
 import { exportEntitiesToDxfFile } from '../../helpers/import-export-handlers/dxf.export.ts';
@@ -236,6 +237,9 @@ export const FileMenu: FC<PopoverContentProps> = ({ onClose }) => {
 				<span className="flex-1">GitHub repository</span>
 				<span>↗</span>
 			</a>
+			<div className="px-2 pt-1 text-[11px] leading-none text-hw-stone-500" data-id="app-version">
+				OpenWebCAD v{packageJson.version}
+			</div>
 		</div>
 	);
 };

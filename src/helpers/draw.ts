@@ -59,8 +59,9 @@ export function draw(drawController: ScreenCanvasDrawController) {
 	}
 
 	drawHelpers(drawController, getAngleGuideEntities());
-	drawEntities(drawController, getGhostHelperEntities());
 	drawEntitiesWithDimming(drawController, getEntities(), getDimmedEntityIds());
+	// Draw ghost entities after the real entities, so in-progress drawings stay visible on top of images
+	drawEntities(drawController, getGhostHelperEntities());
 	drawDebugEntities(drawController, getDebugEntities());
 
 	const { snapPoint: closestSnapPoint } = getClosestSnapPoint(

@@ -329,21 +329,25 @@ export const AngleStepPicker: FC<{ angleStep: number; gridSettings: GridSettings
 }) => (
 	<div>
 		<PopoverLabel label="Snap angle step" />
-		<div className="grid grid-cols-5 gap-1">
+		<div className="grid grid-cols-6 gap-1">
 			{ANGLE_STEPS.map((angle) => (
 				<button
 					key={angle}
 					type="button"
-					title={`Add guide every ${angle} degrees`}
+					title={angle ? `Add guide every ${angle} degrees` : 'No angle snapping'}
 					onClick={() => setAngleStep(angle)}
 					className={`flex flex-col items-center gap-2 pt-2.5 pb-2 ${optionClasses(angle === angleStep)}`}
 					data-id={`angle-guide-${angle}-button`}
 				>
-					<span
-						className="w-[18px] h-0.5 ml-3 bg-hw-stone-300 origin-left"
-						style={{ transform: `rotate(-${angle}deg)` }}
-					/>
-					{angle}°
+					{angle ? (
+						<span
+							className="w-[18px] h-0.5 ml-3 bg-hw-stone-300 origin-left"
+							style={{ transform: `rotate(-${angle}deg)` }}
+						/>
+					) : (
+						<span className="h-0.5" />
+					)}
+					{angle ? `${angle}°` : 'Off'}
 				</button>
 			))}
 		</div>

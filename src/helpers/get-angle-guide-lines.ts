@@ -4,6 +4,10 @@ import { LineEntity } from '../entities/LineEntity';
 import { times } from './times';
 
 export function getAngleGuideLines(firstPoint: Point, angleStep: number): LineEntity[] {
+	// An angle step of 0 means angle snapping is disabled
+	if (!angleStep) {
+		return [];
+	}
 	// Only for 180 degrees since we draw lines that are infinite in both directions,
 	// so we only need to fill half a circle to fill the complete circle
 	return times(180 / angleStep, (i) => {

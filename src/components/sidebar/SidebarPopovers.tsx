@@ -102,9 +102,9 @@ export function getPropertyItems(appState: AppState): PropertyItem[] {
 		{
 			id: 'snap',
 			label: 'Snap',
-			value: `${appState.angleStep}°${appState.gridSettings.isSnapEnabled ? ' · Grid' : ''}`,
+			value: `${appState.angleStep ? `${appState.angleStep}°` : 'Off'}${appState.gridSettings.isSnapEnabled ? ' · Grid' : ''}`,
 			preview: null,
-			shortPreview: <span>{appState.angleStep}°</span>,
+			shortPreview: <span>{appState.angleStep ? `${appState.angleStep}°` : 'Off'}</span>,
 		},
 		{
 			id: 'zoom',

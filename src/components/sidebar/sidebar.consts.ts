@@ -310,7 +310,10 @@ export const ICON_PATHS = {
 };
 
 export const LINE_WIDTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-export const ANGLE_STEPS = [5, 15, 30, 45, 90];
+/**
+ * Angle steps for the angle guides. 0 disables angle snapping
+ */
+export const ANGLE_STEPS = [0, 5, 15, 30, 45, 90];
 export const ZOOM_LEVELS = [20, 50, 75, 100, 150, 200, 400];
 
 export const GITHUB_URL = 'https://github.com/bertyhell/openwebcad';

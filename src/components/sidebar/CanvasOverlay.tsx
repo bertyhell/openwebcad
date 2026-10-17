@@ -99,7 +99,7 @@ export const CanvasOverlay: FC<CanvasOverlayProps> = ({
 				<span>Layer · {activeLayerName}</span>
 				<span>{selectionLabel}</span>
 				<span>Zoom {Math.round(appState.screenZoom * 100)}%</span>
-				<span>Snap {appState.angleStep}°</span>
+				<span>Snap {appState.angleStep ? `${appState.angleStep}°` : 'off'}</span>
 			</div>
 		</>
 	);

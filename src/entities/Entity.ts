@@ -60,6 +60,7 @@ export enum EntityName {
 	Text = 'Text',
 	PolyLine = 'PolyLine',
 	Fill = 'Fill',
+	Group = 'Group',
 }
 
 export type ShapeJsonData =

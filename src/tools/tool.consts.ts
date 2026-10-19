@@ -13,14 +13,18 @@ import { arrayToolStateMachine } from './array-tool.ts';
 import { circleToolStateMachine } from './circle-tool';
 import { copyToolStateMachine } from './copy-tool.ts';
 import { chamferToolStateMachine, filletToolStateMachine } from './corner-tools.ts';
+import { eraseToolStateMachine } from './erase-tool.ts';
+import { explodeToolStateMachine } from './explode-tool.ts';
 import { extendToolStateMachine } from './extend-tool.ts';
 import { fillToolStateMachine } from './fill-tool.ts';
+import { groupToolStateMachine } from './group-tool.ts';
 import { imageImportToolStateMachine } from './image-import-tool';
 import { lineToolStateMachine } from './line-tool';
 import { measurementToolStateMachine } from './measurement-tool';
 import { mirrorToolStateMachine } from './mirror-tool.ts';
 import { moveToolStateMachine } from './move-tool';
 import { offsetToolStateMachine } from './offset-tool.ts';
+import { panToolStateMachine } from './pan-tool.ts';
 import { peditToolStateMachine } from './pedit-tool.ts';
 import { polyLineToolStateMachine } from './polyline-tool.ts';
 import { rectangleToolStateMachine } from './rectangle-tool';
@@ -85,6 +89,10 @@ export const TOOL_STATE_MACHINES: Record<
 	[Tool.PEDIT]: peditToolStateMachine,
 	[Tool.HATCH]: fillToolStateMachine,
 	[Tool.ZOOM]: zoomToolStateMachine,
+	[Tool.PAN]: panToolStateMachine,
+	[Tool.ERASE]: eraseToolStateMachine,
+	[Tool.GROUP]: groupToolStateMachine,
+	[Tool.EXPLODE]: explodeToolStateMachine,
 	[Tool.MIRROR]: mirrorToolStateMachine,
 	[Tool.OFFSET]: offsetToolStateMachine,
 	[Tool.FILLET]: filletToolStateMachine,

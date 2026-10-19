@@ -3,6 +3,7 @@ import { saveAs } from 'file-saver';
 import { toast } from 'react-toastify';
 import type { Layer } from '../../App.types.ts';
 import { type Entity, EntityName } from '../../entities/Entity.ts';
+import { flattenGroups } from '../../entities/GroupEntity.ts';
 import type { PolyLineEntity } from '../../entities/PolyLineEntity.ts';
 import type { TextEntity } from '../../entities/TextEntity.ts';
 import { getLayers, getVisibleEntities } from '../../state.ts';
@@ -302,7 +303,8 @@ export function convertEntitiesToDxf(
 		'ENDTAB',
 	];
 
-	const entityPairsList: DxfPairs = entities.flatMap((entity) => {
+	// Dxf R12 has no groups, export their members instead
+	const entityPairsList: DxfPairs = flattenGroups(entities).flatMap((entity) => {
 		const commonPairs: DxfPairs = [
 			8,
 			layerNameById.get(entity.layerId) ?? '0',

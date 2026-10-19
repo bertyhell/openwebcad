@@ -308,9 +308,11 @@ export class InputController {
 	}
 
 	public handleMouseDown(evt: MouseEvent) {
-		// Pan with the middle mouse button, or with the left mouse button while holding space
+		// Pan with the middle mouse button, or with the left mouse button while holding space or using the pan tool
+		const isPanToolActive = getActiveToolActor()?.getSnapshot()?.context.type === Tool.PAN;
 		const isPanButton =
-			evt.button === MouseButton.Middle || (evt.button === MouseButton.Left && this.isSpaceHeld);
+			evt.button === MouseButton.Middle ||
+			(evt.button === MouseButton.Left && (this.isSpaceHeld || isPanToolActive));
 		if (!isPanButton) return;
 
 		setPanStartLocation(

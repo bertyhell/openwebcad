@@ -28,6 +28,10 @@ export enum Tool {
 	ARC = 'ARC',
 	POLYLINE = 'POLYLINE',
 	TEXT = 'TEXT',
+	PAN = 'PAN',
+	ERASE = 'ERASE',
+	GROUP = 'GROUP',
+	EXPLODE = 'EXPLODE',
 }
 
 /**
@@ -48,6 +52,10 @@ export const TOOL_ALIASES: Partial<Record<Tool, string[]>> = {
 	[Tool.HATCH]: ['H', 'FILL'],
 	[Tool.TRIM]: ['TR'],
 	[Tool.ZOOM]: ['Z'],
+	[Tool.PAN]: ['P'],
+	[Tool.ERASE]: ['E'],
+	[Tool.GROUP]: ['G'],
+	[Tool.EXPLODE]: ['X'],
 	[Tool.MIRROR]: ['MI'],
 	[Tool.OFFSET]: ['O'],
 	[Tool.FILLET]: ['F'],

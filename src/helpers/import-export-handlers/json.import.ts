@@ -5,6 +5,7 @@ import { ArcEntity, type ArcJsonData } from '../../entities/ArcEntity';
 import { CircleEntity, type CircleJsonData } from '../../entities/CircleEntity';
 import { type Entity, EntityName, type JsonEntity } from '../../entities/Entity';
 import { FillEntity, type FillJsonData } from '../../entities/FillEntity.ts';
+import { GroupEntity, type GroupJsonData } from '../../entities/GroupEntity.ts';
 import { ImageEntity, type ImageJsonData } from '../../entities/ImageEntity.ts';
 import { LineEntity, type LineJsonData } from '../../entities/LineEntity';
 import { MeasurementEntity, type MeasurementJsonData } from '../../entities/MeasurementEntity.ts';
@@ -44,6 +45,39 @@ export function importEntitiesFromJsonFile(file: File | null | undefined) {
 		});
 		reader.readAsText(file, 'utf-8');
 	});
+}
+
+/**
+ * Converts the json of an entity in the open web cad format into an entity
+ */
+export function entityFromJson(entity: JsonEntity): Promise<Entity | null> {
+	switch (entity.type) {
+		case EntityName.Arc:
+			return ArcEntity.fromJson(entity as JsonEntity<ArcJsonData>);
+		case EntityName.Circle:
+			return CircleEntity.fromJson(entity as JsonEntity<CircleJsonData>);
+		case EntityName.Line:
+			return LineEntity.fromJson(entity as JsonEntity<LineJsonData>);
+		case EntityName.Point:
+			return PointEntity.fromJson(entity as JsonEntity<PointJsonData>);
+		case EntityName.Rectangle:
+			return RectangleEntity.fromJson(entity as JsonEntity<RectangleJsonData>);
+		case EntityName.Text:
+			return TextEntity.fromJson(entity as JsonEntity<TextJsonData>);
+		case EntityName.Measurement:
+			return MeasurementEntity.fromJson(entity as JsonEntity<MeasurementJsonData>);
+		case EntityName.Image:
+			return ImageEntity.fromJson(entity as JsonEntity<ImageJsonData>);
+		case EntityName.PolyLine:
+			return PolyLineEntity.fromJson(entity as JsonEntity<PolyLineJsonData>);
+		case EntityName.Fill:
+			return FillEntity.fromJson(entity as JsonEntity<FillJsonData>);
+		case EntityName.Group:
+			return GroupEntity.fromJson(entity as JsonEntity<GroupJsonData>, entityFromJson);
+
+		default:
+			throw new Error(`Invalid entity type: ${entity.type}`);
+	}
 }
 
 export async function getEntitiesAndLayersFromJsonObject(
@@ -96,36 +130,7 @@ export async function getEntitiesAndLayersFromJsonObject(
 		);
 	} else {
 		// open web cad format
-		const entityPromises: Promise<Entity | null>[] = compact(
-			data.entities.map((entity) => {
-				switch (entity.type) {
-					case EntityName.Arc:
-						return ArcEntity.fromJson(entity as JsonEntity<ArcJsonData>);
-					case EntityName.Circle:
-						return CircleEntity.fromJson(entity as JsonEntity<CircleJsonData>);
-					case EntityName.Line:
-						return LineEntity.fromJson(entity as JsonEntity<LineJsonData>);
-					case EntityName.Point:
-						return PointEntity.fromJson(entity as JsonEntity<PointJsonData>);
-					case EntityName.Rectangle:
-						return RectangleEntity.fromJson(entity as JsonEntity<RectangleJsonData>);
-					case EntityName.Text:
-						return TextEntity.fromJson(entity as JsonEntity<TextJsonData>);
-					case EntityName.Measurement:
-						return MeasurementEntity.fromJson(entity as JsonEntity<MeasurementJsonData>);
-					case EntityName.Image:
-						return ImageEntity.fromJson(entity as JsonEntity<ImageJsonData>);
-					case EntityName.PolyLine:
-						return PolyLineEntity.fromJson(entity as JsonEntity<PolyLineJsonData>);
-					case EntityName.Fill:
-						return FillEntity.fromJson(entity as JsonEntity<FillJsonData>);
-
-					default:
-						throw new Error(`Invalid entity type: ${entity.type}`);
-				}
-			})
-		);
-
+		const entityPromises = data.entities.map(entityFromJson);
 		entities = compact(await Promise.all(entityPromises));
 		layers = data.layers;
 		if (data.layers.length === 0) {

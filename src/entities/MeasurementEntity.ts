@@ -216,8 +216,6 @@ export class MeasurementEntity implements Entity {
 			offsetEndPointExtend,
 			offsetStartPointMargin,
 			offsetEndPointMargin,
-			midpointMeasurementLineOffset,
-			normalUnit,
 		} = drawPoints;
 
 		this.drawArrowHead(drawController, offsetStartPoint, offsetEndPoint, isHighlighted, isSelected);
@@ -233,23 +231,36 @@ export class MeasurementEntity implements Entity {
 		drawController.drawLine(offsetStartPointMargin, offsetStartPointExtend);
 		drawController.drawLine(offsetEndPointMargin, offsetEndPointExtend);
 
-		const distance = String(
+		const label = this.getLabel(drawPoints);
+		drawController.drawText(label.text, label.basePoint, {
+			textAlign: 'center',
+			textDirection: label.textDirection,
+			fontSize: MEASUREMENT_FONT_SIZE,
+			textColor: this.lineColor,
+		});
+	}
+
+	/**
+	 * Text, location and direction of the distance label
+	 * The text is never upside down
+	 */
+	public getLabel(drawPoints: NonNullable<ReturnType<MeasurementEntity['getDrawPoints']>>): {
+		text: string;
+		basePoint: Point;
+		textDirection: Vector;
+	} {
+		const text = String(
 			round(pointDistance(this.startPoint, this.endPoint), MEASUREMENT_DECIMAL_PLACES)
 		);
-		const originalTextDirection = normalUnit.rotate90CW();
-		let finalTextDirection = originalTextDirection;
+		const originalTextDirection = drawPoints.normalUnit.rotate90CW();
+		let textDirection = originalTextDirection;
 		if (
 			originalTextDirection.x < -EPSILON ||
 			(Math.abs(originalTextDirection.x) < EPSILON && originalTextDirection.y > EPSILON)
 		) {
-			finalTextDirection = new Vector(-originalTextDirection.x, -originalTextDirection.y);
+			textDirection = new Vector(-originalTextDirection.x, -originalTextDirection.y);
 		}
-		drawController.drawText(distance, midpointMeasurementLineOffset, {
-			textAlign: 'center',
-			textDirection: finalTextDirection,
-			fontSize: MEASUREMENT_FONT_SIZE,
-			textColor: this.lineColor,
-		});
+		return { text, basePoint: drawPoints.midpointMeasurementLineOffset, textDirection };
 	}
 
 	public move(x: number, y: number) {

@@ -123,8 +123,36 @@ describe('offsetEntity', () => {
 		expect(offsetEntity(new LineEntity(new Point(0, 0), new Point(10, 0)), 1, 'inside')).toBeNull();
 	});
 
-	it('offsets a polyline inwards past an arc radius by failing', () => {
-		expect(offsetEntity(roundedSquare(), 6, new Point(10, 10))).toBeNull();
+	it('drops an arc that shrinks away and joins its neighbours in a sharp corner', () => {
+		const inside = offsetEntity(roundedSquare(), 6, new Point(10, 10)) as PolyLineEntity;
+		expect(inside.entities).toHaveLength(4);
+		expect(inside.entities.every((entity) => entity instanceof LineEntity)).toBe(true);
+		const box = inside.getBoundingBox();
+		expect(box.xmin).toBeCloseTo(6);
+		expect(box.ymin).toBeCloseTo(6);
+		expect(box.xmax).toBeCloseTo(14);
+	});
+
+	it('drops chamfers that are too small for an inside offset', () => {
+		// 100x60 rectangle with 2x2 chamfers on the right corners
+		const polyLine = new PolyLineEntity([
+			new LineEntity(new Point(0, 0), new Point(98, 0)),
+			new LineEntity(new Point(98, 0), new Point(100, 2)),
+			new LineEntity(new Point(100, 2), new Point(100, 58)),
+			new LineEntity(new Point(100, 58), new Point(98, 60)),
+			new LineEntity(new Point(98, 60), new Point(0, 60)),
+			new LineEntity(new Point(0, 60), new Point(0, 0)),
+		]);
+		const inside = offsetEntity(polyLine, 10, 'inside') as PolyLineEntity;
+		expect(inside.entities).toHaveLength(4);
+		const box = inside.getBoundingBox();
+		expect(box.xmin).toBeCloseTo(10);
+		expect(box.xmax).toBeCloseTo(90);
+		expect(box.ymax).toBeCloseTo(50);
+	});
+
+	it('does not offset inwards past the size of the whole shape', () => {
+		expect(offsetEntity(roundedSquare(), 11, new Point(10, 10))).toBeNull();
 	});
 
 	it('adds a round join where an arc and a line no longer meet', () => {

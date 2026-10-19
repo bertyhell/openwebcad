@@ -115,25 +115,6 @@ function offsetClosedPoints(points: Point[], distance: number, side: OffsetSide)
 }
 
 /**
- * Offset an open chain of straight edges, towards the side of the edge closest to the side point
- */
-function offsetOpenPoints(points: Point[], distance: number, sidePoint: Point): Point[] | null {
-	let closestEdgeIndex = 0;
-	let closestDistance = Number.POSITIVE_INFINITY;
-	for (let index = 0; index < points.length - 1; index++) {
-		const edgeLine = new LineEntity(points[index], points[index + 1]);
-		const edgeDistance = edgeLine.distanceTo(sidePoint)?.[0] ?? Number.POSITIVE_INFINITY;
-		if (edgeDistance < closestDistance) {
-			closestDistance = edgeDistance;
-			closestEdgeIndex = index;
-		}
-	}
-	const side = getSideOfLine(points[closestEdgeIndex], points[closestEdgeIndex + 1], sidePoint);
-	const offsetPoints = offsetPointChain(points, false, side >= 0 ? distance : -distance);
-	return keepsEdgeDirections(points, offsetPoints, false) ? offsetPoints : null;
-}
-
-/**
  * A line or arc of a polyline, oriented so it starts where the previous one ends
  */
 type ChainSegment =
@@ -204,22 +185,6 @@ function getPolyLineChain(
 	const isClosed =
 		segments.length > 1 && segments[0].start.equalTo(segments[segments.length - 1].end);
 	return { segments, isClosed };
-}
-
-/**
- * Points of a polyline made of lines only, null when it contains arcs
- */
-function getPolyLinePoints(
-	chain: { segments: ChainSegment[]; isClosed: boolean } | null
-): { points: Point[]; isClosed: boolean } | null {
-	if (!chain || chain.segments.some((segment) => segment.kind !== 'line')) {
-		return null;
-	}
-	const points = [chain.segments[0].start, ...chain.segments.map((segment) => segment.end)];
-	if (chain.isClosed) {
-		points.pop();
-	}
-	return { points, isClosed: chain.isClosed };
 }
 
 /**
@@ -339,34 +304,111 @@ function createJoinArc(vertex: Point, start: Point, end: Point): ChainSegment {
 	};
 }
 
+function getChainSegmentShape(segment: ChainSegment): Segment | Arc {
+	return segment.kind === 'line'
+		? new Segment(segment.start, segment.end)
+		: new Arc(
+				segment.center,
+				segment.radius,
+				getAngle(segment.center, segment.start),
+				getAngle(segment.center, segment.end),
+				segment.counterClockwise
+			);
+}
+
+function getChainSegmentLength(segment: ChainSegment): number {
+	return segment.kind === 'line'
+		? segment.start.distanceTo(segment.end)[0]
+		: segment.radius * segment.sweep;
+}
+
+function getChainSegmentMiddle(segment: ChainSegment): Point {
+	return getChainSegmentShape(segment).middle();
+}
+
+/**
+ * Every point of a correct offset is at least the offset distance away from the original chain
+ * Catches offsets that collapsed so far that the remaining segments cross the original shape
+ */
+function staysAwayFromChain(
+	originals: ChainSegment[],
+	offsetSegments: ChainSegment[],
+	distance: number
+): boolean {
+	const originalShapes = originals.map(getChainSegmentShape);
+	const minimumDistance = Math.abs(distance) * (1 - 1e-6) - 1e-9;
+	return offsetSegments.every((segment) =>
+		[segment.start, segment.end, getChainSegmentMiddle(segment)].every((point) =>
+			originalShapes.every((shape) => shape.distanceTo(point)[0] >= minimumDistance)
+		)
+	);
+}
+
 /**
  * Offsets a chain of lines and arcs to the left and trims or extends neighbouring segments to meet each other
+ * Segments that collapse, eg: a small chamfer when shrinking a shape, are left out and their neighbours meet instead
  * @param distance positive offsets to the left of the walking direction, negative to the right
- * @returns null when the offset is too large for one of the segments
+ * @returns null when the offset is too large for the shape as a whole
  */
 function offsetChain(
 	segments: ChainSegment[],
 	isClosed: boolean,
 	distance: number
 ): ChainSegment[] | null {
-	const offsetSegments: ChainSegment[] = [];
-	for (const segment of segments) {
-		const offsetSegment = offsetChainSegment(segment, distance);
-		if (!offsetSegment) {
-			return null;
-		}
-		offsetSegments.push(offsetSegment);
-	}
+	// The original segments that are still part of the offset, with the point where each one meets the next
+	let remaining = segments.map((segment) => ({ original: segment, vertex: segment.end }));
+	const minimumCount = isClosed ? 2 : 1;
 
-	const count = segments.length;
-	const starts = offsetSegments.map((segment) => segment.start);
-	const ends = offsetSegments.map((segment) => segment.end);
+	while (remaining.length >= minimumCount) {
+		const result = joinOffsetSegments(remaining, isClosed, distance);
+		if (Array.isArray(result)) {
+			return staysAwayFromChain(segments, result, distance) ? result : null;
+		}
+		// Leave out the shortest collapsed segment, its neighbours meet near where it was
+		const collapsedIndex = result.collapsedIndices.reduce((shortest, index) =>
+			getChainSegmentLength(remaining[index].original) <
+			getChainSegmentLength(remaining[shortest].original)
+				? index
+				: shortest
+		);
+		const previousIndex = collapsedIndex - 1;
+		if (previousIndex >= 0 || isClosed) {
+			const previous = (previousIndex + remaining.length) % remaining.length;
+			remaining[previous] = {
+				...remaining[previous],
+				vertex: getChainSegmentMiddle(remaining[collapsedIndex].original),
+			};
+		}
+		remaining = remaining.filter((_, index) => index !== collapsedIndex);
+	}
+	return null;
+}
+
+/**
+ * Offsets the segments and joins neighbours
+ * @returns the offset segments, or the indices of the segments that collapsed
+ */
+function joinOffsetSegments(
+	remaining: { original: ChainSegment; vertex: Point }[],
+	isClosed: boolean,
+	distance: number
+): ChainSegment[] | { collapsedIndices: number[] } {
+	const count = remaining.length;
+	const offsetSegments = remaining.map(({ original }) => offsetChainSegment(original, distance));
+	const shrunkAway = offsetSegments.flatMap((segment, index) => (segment ? [] : [index]));
+	if (shrunkAway.length) {
+		return { collapsedIndices: shrunkAway };
+	}
+	const offsets = offsetSegments as ChainSegment[];
+
+	const starts = offsets.map((segment) => segment.start);
+	const ends = offsets.map((segment) => segment.end);
 	const joinArcs: (ChainSegment | null)[] = new Array(count).fill(null);
 	const joinCount = isClosed ? count : count - 1;
 	for (let index = 0; index < joinCount; index++) {
 		const nextIndex = (index + 1) % count;
-		const vertex = segments[index].end;
-		const joint = joinChainSegments(offsetSegments[index], offsetSegments[nextIndex], vertex);
+		const vertex = remaining[index].vertex;
+		const joint = joinChainSegments(offsets[index], offsets[nextIndex], vertex);
 		if (joint) {
 			ends[index] = joint;
 			starts[nextIndex] = joint;
@@ -376,10 +418,11 @@ function offsetChain(
 	}
 
 	const result: ChainSegment[] = [];
+	const collapsedIndices: number[] = [];
 	for (let index = 0; index < count; index++) {
-		const trimmed = withEndPoints(offsetSegments[index], starts[index], ends[index]);
-		if (!keepsSegmentDirection(segments[index], trimmed)) {
-			return null;
+		const trimmed = withEndPoints(offsets[index], starts[index], ends[index]);
+		if (!keepsSegmentDirection(remaining[index].original, trimmed)) {
+			collapsedIndices.push(index);
 		}
 		result.push(trimmed);
 		const joinArc = joinArcs[index];
@@ -387,7 +430,7 @@ function offsetChain(
 			result.push(joinArc);
 		}
 	}
-	return result;
+	return collapsedIndices.length ? { collapsedIndices } : result;
 }
 
 /**
@@ -413,16 +456,7 @@ function isSideLeftOfChain(
 	let closestSegment = segments[0];
 	let closestDistance = Number.POSITIVE_INFINITY;
 	for (const segment of segments) {
-		const shape =
-			segment.kind === 'line'
-				? new Segment(segment.start, segment.end)
-				: new Arc(
-						segment.center,
-						segment.radius,
-						getAngle(segment.center, segment.start),
-						getAngle(segment.center, segment.end),
-						segment.counterClockwise
-					);
+		const shape = getChainSegmentShape(segment);
 		const segmentDistance = shape.distanceTo(sidePoint)[0];
 		if (segmentDistance < closestDistance) {
 			closestDistance = segmentDistance;
@@ -434,15 +468,6 @@ function isSideLeftOfChain(
 	}
 	const isInside = closestSegment.center.distanceTo(sidePoint)[0] < closestSegment.radius;
 	return isInside === closestSegment.counterClockwise;
-}
-
-function createPolyLine(points: Point[], isClosed: boolean): PolyLineEntity {
-	const chain = isClosed ? [...points, points[0]] : points;
-	const lines: LineEntity[] = [];
-	for (let index = 0; index < chain.length - 1; index++) {
-		lines.push(new LineEntity(chain[index], chain[index + 1]));
-	}
-	return new PolyLineEntity(lines);
 }
 
 function createChainPolyLine(segments: ChainSegment[]): PolyLineEntity {
@@ -547,23 +572,6 @@ export function offsetEntity(entity: Entity, distance: number, side: OffsetSide)
 		case EntityName.PolyLine: {
 			const chain = getPolyLineChain(entity as PolyLineEntity);
 			if (!chain) {
-				break;
-			}
-			const polyLinePoints = getPolyLinePoints(chain);
-			if (polyLinePoints) {
-				if (polyLinePoints.points.length < 2) {
-					break;
-				}
-				const { points, isClosed } = polyLinePoints;
-				let offsetPoints: Point[] | null = null;
-				if (isClosed) {
-					offsetPoints = offsetClosedPoints(points, distance, side);
-				} else if (side instanceof Point) {
-					offsetPoints = offsetOpenPoints(points, distance, side);
-				}
-				if (offsetPoints) {
-					offsetResult = createPolyLine(offsetPoints, isClosed);
-				}
 				break;
 			}
 			const towardsLeft = isSideLeftOfChain(chain.segments, chain.isClosed, side);

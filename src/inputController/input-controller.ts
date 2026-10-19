@@ -513,9 +513,14 @@ export class InputController {
 		const isZoomToolActive = activeTool?.getSnapshot()?.context.type === Tool.ZOOM;
 		const isNumberForTool =
 			activeToolAcceptsNumberInput() && parseCommandInput(text).type === 'number';
+		// A tool that only asks for single key options gets those options, other text is a command. eg: AREA => [O]bject
+		const instantOptions = getActiveToolInstantOptions();
+		const isOtherThanInstantOption =
+			instantOptions.length > 0 && !instantOptions.includes(text.trim().toUpperCase());
 		if (
 			activeToolCanHandleTextInput &&
 			!isNumberForTool &&
+			!isOtherThanInstantOption &&
 			(!isZoomToolActive || isZoomOption(text))
 		) {
 			// The active tool asks for text, eg: a zoom option or the label of a text entity

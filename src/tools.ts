@@ -32,6 +32,9 @@ export enum Tool {
 	ERASE = 'ERASE',
 	GROUP = 'GROUP',
 	EXPLODE = 'EXPLODE',
+	DIST = 'DIST',
+	AREA = 'AREA',
+	BOUNDARY = 'BOUNDARY',
 }
 
 /**
@@ -56,6 +59,9 @@ export const TOOL_ALIASES: Partial<Record<Tool, string[]>> = {
 	[Tool.ERASE]: ['E'],
 	[Tool.GROUP]: ['G'],
 	[Tool.EXPLODE]: ['X'],
+	[Tool.DIST]: ['DI'],
+	[Tool.AREA]: ['AA'],
+	[Tool.BOUNDARY]: ['BO'],
 	[Tool.MIRROR]: ['MI'],
 	[Tool.OFFSET]: ['O'],
 	[Tool.FILLET]: ['F'],

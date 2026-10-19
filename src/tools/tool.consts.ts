@@ -9,10 +9,13 @@ import {
 	alignTopToolStateMachine,
 } from './align-tools.ts';
 import { arcToolStateMachine } from './arc-tool.ts';
+import { areaToolStateMachine } from './area-tool.ts';
 import { arrayToolStateMachine } from './array-tool.ts';
+import { boundaryToolStateMachine } from './boundary-tool.ts';
 import { circleToolStateMachine } from './circle-tool';
 import { copyToolStateMachine } from './copy-tool.ts';
 import { chamferToolStateMachine, filletToolStateMachine } from './corner-tools.ts';
+import { distToolStateMachine } from './dist-tool.ts';
 import { eraseToolStateMachine } from './erase-tool.ts';
 import { explodeToolStateMachine } from './explode-tool.ts';
 import { extendToolStateMachine } from './extend-tool.ts';
@@ -93,6 +96,9 @@ export const TOOL_STATE_MACHINES: Record<
 	[Tool.ERASE]: eraseToolStateMachine,
 	[Tool.GROUP]: groupToolStateMachine,
 	[Tool.EXPLODE]: explodeToolStateMachine,
+	[Tool.DIST]: distToolStateMachine,
+	[Tool.AREA]: areaToolStateMachine,
+	[Tool.BOUNDARY]: boundaryToolStateMachine,
 	[Tool.MIRROR]: mirrorToolStateMachine,
 	[Tool.OFFSET]: offsetToolStateMachine,
 	[Tool.FILLET]: filletToolStateMachine,

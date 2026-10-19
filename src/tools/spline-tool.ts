@@ -1,5 +1,6 @@
 import type { Point } from '@flatten-js/core';
 import { Actor, assign, createMachine } from 'xstate';
+import { SnapPointType } from '../App.types.ts';
 import { SplineEntity } from '../entities/SplineEntity.ts';
 import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
 import {
@@ -11,6 +12,7 @@ import {
 	setGhostHelperEntities,
 	setSelectedEntityIds,
 	setShouldDrawHelpers,
+	setToolSnapPoints,
 } from '../state';
 import { Tool } from '../tools';
 import { selectToolStateMachine } from './select-tool.ts';
@@ -122,6 +124,7 @@ export const splineToolStateMachine = createMachine(
 				setSelectedEntityIds([]);
 				setGhostHelperEntities([]);
 				setAngleGuideOriginPoint(null);
+				setToolSnapPoints([]);
 				return {
 					fitPoints: [],
 				};
@@ -129,8 +132,12 @@ export const splineToolStateMachine = createMachine(
 			[SplineAction.RECORD_POINT]: assign(({ context, event }) => {
 				const point = getPointFromEvent(context.fitPoints.at(-1) ?? null, event as PointInputEvent);
 				setAngleGuideOriginPoint(point);
+				const fitPoints = [...context.fitPoints, point];
+				setToolSnapPoints(
+					fitPoints.map((fitPoint) => ({ point: fitPoint, type: SnapPointType.Point }))
+				);
 				return {
-					fitPoints: [...context.fitPoints, point],
+					fitPoints,
 				};
 			}),
 			[SplineAction.DRAW_TEMP_SPLINE]: ({ context, event }) => {

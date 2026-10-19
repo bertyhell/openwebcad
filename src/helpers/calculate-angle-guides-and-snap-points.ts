@@ -8,11 +8,13 @@ import {
 	getHoveredSnapPoints,
 	getScreenCanvasDrawController,
 	getShouldDrawHelpers,
+	getToolSnapPoints,
 	getVisibleEntities,
 	setAngleGuideEntities,
 	setSnapPoint,
 	setSnapPointOnAngleGuide,
 } from '../state.ts';
+import { getClosestSnapPointWithinRadius } from './get-closest-snap-point.ts';
 import { getDrawHelpers } from './get-draw-guides.ts';
 import { getClosestGridPoint, getGridSpacing } from './grid.ts';
 
@@ -36,11 +38,21 @@ export function calculateAngleGuidesAndSnapPoints() {
 	);
 
 	if (getShouldDrawHelpers()) {
-		const { angleGuides, entitySnapPoint, angleSnapPoint } = getDrawHelpers(
+		const {
+			angleGuides,
+			entitySnapPoint: closestEntitySnapPoint,
+			angleSnapPoint,
+		} = getDrawHelpers(
 			entities,
 			compact([getAngleGuideOriginPoint(), ...eligibleHoveredPoints]),
 			worldMouseLocation,
 			angleStep,
+			SNAP_POINT_DISTANCE / screenScale
+		);
+		// Points the active tool already placed (eg: the first point of a spline that is being drawn) aren't entities yet
+		const entitySnapPoint = getClosestSnapPointWithinRadius(
+			compact([closestEntitySnapPoint, ...getToolSnapPoints()]),
+			worldMouseLocation,
 			SNAP_POINT_DISTANCE / screenScale
 		);
 		setAngleGuideEntities(angleGuides);

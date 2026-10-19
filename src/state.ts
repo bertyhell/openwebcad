@@ -69,6 +69,10 @@ let angleGuideEntities: Entity[] = [];
  * To give visual feedback to the user of the final result
  */
 let ghostHelperEntities: Entity[] = [];
+/**
+ * Points the active tool placed but that aren't part of an entity yet, so they can still be snapped to
+ */
+let toolSnapPoints: SnapPoint[] = [];
 
 /**
  * Should helper entities be calculated and drawn? eg: angle guides and snap points
@@ -190,6 +194,7 @@ export const getDimmedEntityIds = () => dimmedEntityIds;
 export const getShouldDrawCursor = () => shouldDrawCursor;
 export const getAngleGuideEntities = () => angleGuideEntities;
 export const getGhostHelperEntities = () => ghostHelperEntities;
+export const getToolSnapPoints = () => toolSnapPoints;
 export const getShouldDrawHelpers = () => shouldDrawHelpers;
 export const getDebugEntities = () => debugEntities;
 export const getAngleStep = () => angleStep;
@@ -317,6 +322,7 @@ export const setActiveToolActor = (
 	oldToolActor?.stop();
 	// Clear the previews of the previous tool
 	setGhostHelperEntities([]);
+	setToolSnapPoints([]);
 	setDimmedEntityIds([]);
 	setHighlightedEntityIds([]);
 
@@ -383,6 +389,9 @@ export const setAngleGuideEntities = (newAngleGuideEntities: Entity[]) => {
 export const setGhostHelperEntities = (newGhostHelperEntities: Entity[]) => {
 	requestRedraw();
 	ghostHelperEntities = newGhostHelperEntities;
+};
+export const setToolSnapPoints = (newToolSnapPoints: SnapPoint[]) => {
+	toolSnapPoints = newToolSnapPoints;
 };
 export const setShouldDrawHelpers = (shouldDraw: boolean) => {
 	requestRedraw();

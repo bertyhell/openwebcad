@@ -2,6 +2,7 @@ import {
 	type ChangeEvent,
 	type CSSProperties,
 	type FC,
+	type MouseEvent,
 	type ReactNode,
 	type SyntheticEvent,
 	useRef,
@@ -64,12 +65,14 @@ const ToolButtonShell: FC<ToolButtonShellProps> = ({
 		await startImageImport(file);
 	};
 
-	const handleClick = () => {
+	const handleClick = (evt: MouseEvent<HTMLButtonElement>) => {
 		if (toolDefinition.fileAccept) {
 			fileInputRef.current?.click();
 			return;
 		}
 		activateTool(toolDefinition.tool);
+		// Release the focus, otherwise ENTER after typing a value (eg: a chamfer distance) clicks the button again and restarts the tool
+		evt.currentTarget.blur();
 	};
 
 	return (

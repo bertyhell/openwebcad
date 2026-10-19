@@ -2,10 +2,17 @@ import { type Arc, type Circle, Point, type Polygon, type Segment } from '@flatt
 import { describe, expect, it } from 'vitest';
 import { ArcEntity } from '../entities/ArcEntity.ts';
 import { CircleEntity } from '../entities/CircleEntity.ts';
+import type { Entity } from '../entities/Entity.ts';
 import { LineEntity } from '../entities/LineEntity.ts';
 import { PolyLineEntity } from '../entities/PolyLineEntity.ts';
 import { RectangleEntity } from '../entities/RectangleEntity.ts';
-import { CornerType, createCorner } from './corner-entities.ts';
+import {
+	applyCorner,
+	CornerType,
+	createCorner,
+	createCornersAtSharedPoints,
+	getCornerTarget,
+} from './corner-entities.ts';
 import { extendEntity } from './extend-entity.ts';
 import { canOffsetEntity, offsetEntity } from './offset-entity.ts';
 
@@ -136,6 +143,99 @@ describe('createCorner', () => {
 				50
 			)
 		).toHaveProperty('error');
+	});
+});
+
+describe('applyCorner', () => {
+	function chamfer(
+		firstEntity: Entity,
+		firstClick: Point,
+		secondEntity: Entity,
+		secondClick: Point,
+		entities: Entity[]
+	) {
+		const first = getCornerTarget(firstEntity, firstClick);
+		const second = getCornerTarget(secondEntity, secondClick);
+		if (!first || !second) throw new Error('No corner target');
+		const corner = createCorner(first, second, CornerType.CHAMFER, 2);
+		if ('error' in corner) throw new Error(corner.error);
+		return applyCorner(entities, first, second, corner);
+	}
+
+	it('chamfers two adjacent sides of a rectangle into a polyline', () => {
+		const rectangle = new RectangleEntity(new Point(0, 0), new Point(10, 10));
+		const result = chamfer(rectangle, new Point(5, 0), rectangle, new Point(0, 5), [rectangle]);
+		expect(result).toHaveLength(1);
+		const polyLine = result[0] as PolyLineEntity;
+		expect(polyLine).toBeInstanceOf(PolyLineEntity);
+		expect(polyLine.id).toBe(rectangle.id);
+		expect(polyLine.numberOfSegments()).toBe(5);
+		const hasPoint = (x: number, y: number) =>
+			polyLine.getSnapPoints().some((snap) => snap.point.equalTo(new Point(x, y)));
+		expect(hasPoint(0, 0)).toBe(false);
+		expect(hasPoint(2, 0)).toBe(true);
+		expect(hasPoint(0, 2)).toBe(true);
+	});
+
+	it('explodes a rectangle when chamfering it with a line', () => {
+		const rectangle = new RectangleEntity(new Point(0, 0), new Point(10, 10));
+		const line = new LineEntity(new Point(20, 5), new Point(30, 5));
+		const result = chamfer(rectangle, new Point(10, 2), line, new Point(28, 5), [rectangle, line]);
+		// 4 rectangle sides, the line and the chamfer
+		expect(result).toHaveLength(6);
+		expect(result.filter((entity) => entity.id === line.id)).toHaveLength(1);
+		expect(result.some((entity) => entity.id === rectangle.id)).toBe(false);
+	});
+
+	it('ignores the arcs of a polyline', () => {
+		const arc = new ArcEntity(new Point(0, 0), 5, 0, Math.PI / 2, true);
+		const polyLine = new PolyLineEntity([arc, new LineEntity(new Point(0, 5), new Point(-10, 5))]);
+		expect(getCornerTarget(polyLine, new Point(5, 0.1))).toBeNull();
+		expect(getCornerTarget(polyLine, new Point(-5, 5))?.segmentIndex).toBe(1);
+	});
+});
+
+describe('createCornersAtSharedPoints', () => {
+	const hasPoint = (entity: Entity, x: number, y: number) =>
+		entity.getSnapPoints().some((snap) => snap.point.equalTo(new Point(x, y)));
+
+	it('chamfers all 4 corners of a rectangle', () => {
+		const rectangle = new RectangleEntity(new Point(0, 0), new Point(10, 10));
+		const result = createCornersAtSharedPoints([rectangle], [rectangle], CornerType.CHAMFER, 2);
+		expect(result.connectors).toHaveLength(4);
+		expect(result.entities).toHaveLength(1);
+		const polyLine = result.entities[0] as PolyLineEntity;
+		expect(polyLine).toBeInstanceOf(PolyLineEntity);
+		expect(polyLine.id).toBe(rectangle.id);
+		expect(polyLine.numberOfSegments()).toBe(8);
+		expect(hasPoint(polyLine, 0, 0)).toBe(false);
+		expect(hasPoint(polyLine, 2, 0)).toBe(true);
+		expect(hasPoint(polyLine, 8, 10)).toBe(true);
+	});
+
+	it('only makes corners where two lines meet in a point', () => {
+		const horizontal = new LineEntity(new Point(0, 0), new Point(10, 0));
+		const vertical = new LineEntity(new Point(10, 0), new Point(10, 10));
+		const loose = new LineEntity(new Point(20, 0), new Point(30, 0));
+		const entities = [horizontal, vertical, loose];
+		const result = createCornersAtSharedPoints(entities, entities, CornerType.FILLET, 2);
+		expect(result.connectors).toHaveLength(1);
+		// The 3 lines and the fillet arc
+		expect(result.entities).toHaveLength(4);
+		expectPoint(result.entities[0].getSnapPoints()[1].point, 8, 0);
+		expect(result.entities[0].id).toBe(horizontal.id);
+		expect(result.entities[2]).toBe(loose);
+		expect(result.entities[3]).toBeInstanceOf(ArcEntity);
+	});
+
+	it('skips corners where the distance does not fit', () => {
+		const horizontal = new LineEntity(new Point(0, 0), new Point(3, 0));
+		const vertical = new LineEntity(new Point(3, 0), new Point(3, 10));
+		const entities = [horizontal, vertical];
+		const result = createCornersAtSharedPoints(entities, entities, CornerType.CHAMFER, 5);
+		expect(result.connectors).toHaveLength(0);
+		expect(result.skippedCount).toBe(1);
+		expect(result.entities).toBe(entities);
 	});
 });
 

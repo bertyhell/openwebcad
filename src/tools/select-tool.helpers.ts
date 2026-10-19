@@ -8,6 +8,7 @@ import {
 	SELECTION_RECTANGLE_STYLE,
 	SELECTION_RECTANGLE_WIDTH,
 } from '../App.consts';
+import type { Entity } from '../entities/Entity';
 import { RectangleEntity } from '../entities/RectangleEntity';
 import { findClosestEntity } from '../helpers/find-closest-entity';
 import {
@@ -84,6 +85,23 @@ export function combineSelection(
 	return rectangleSelection;
 }
 
+/**
+ * The editable entities that a selection rectangle from the start point to the end point selects
+ */
+export function getEntitiesInsideRectangle(startPoint: Point, endPoint: Point): Entity[] {
+	const activeSelectionRectangle = new RectangleEntity(startPoint, endPoint);
+	const intersectionSelection = getIsIntersectionSelection(activeSelectionRectangle, startPoint);
+	const selectionBox = activeSelectionRectangle.getBoundingBox() as Box;
+	return getEditableEntities().filter((entity) => {
+		if (intersectionSelection) {
+			// Select all entities that are inside the selection rectangle or intersect with the selection rectangle
+			return entity.intersectsWithBox(selectionBox) || entity.isContainedInBox(selectionBox);
+		}
+		// Select only entities that are completely inside the selection rectangle
+		return entity.isContainedInBox(selectionBox);
+	});
+}
+
 export function selectEntitiesInsideRectangle(
 	startPoint: Point,
 	endPoint: Point,
@@ -91,19 +109,9 @@ export function selectEntitiesInsideRectangle(
 	holdingShift = false
 ): void {
 	// Finish the selection
-	const activeSelectionRectangle = new RectangleEntity(startPoint, endPoint);
-	const intersectionSelection = getIsIntersectionSelection(activeSelectionRectangle, startPoint);
-	const selectionBox = activeSelectionRectangle.getBoundingBox() as Box;
-	const rectangleSelection = getEditableEntities()
-		.filter((entity) => {
-			if (intersectionSelection) {
-				// Select all entities that are inside the selection rectangle or intersect with the selection rectangle
-				return entity.intersectsWithBox(selectionBox) || entity.isContainedInBox(selectionBox);
-			}
-			// Select only entities that are completely inside the selection rectangle
-			return entity.isContainedInBox(selectionBox);
-		})
-		.map((entity) => entity.id);
+	const rectangleSelection = getEntitiesInsideRectangle(startPoint, endPoint).map(
+		(entity) => entity.id
+	);
 	setSelectedEntityIds(
 		combineSelection(getSelectedEntityIds(), rectangleSelection, holdingCtrl, holdingShift)
 	);

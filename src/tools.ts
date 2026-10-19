@@ -35,6 +35,10 @@ export enum Tool {
 	DIST = 'DIST',
 	AREA = 'AREA',
 	BOUNDARY = 'BOUNDARY',
+	POINT = 'POINT',
+	POLYGON = 'POLYGON',
+	ELLIPSE = 'ELLIPSE',
+	SPLINE = 'SPLINE',
 }
 
 /**
@@ -62,6 +66,10 @@ export const TOOL_ALIASES: Partial<Record<Tool, string[]>> = {
 	[Tool.DIST]: ['DI'],
 	[Tool.AREA]: ['AA'],
 	[Tool.BOUNDARY]: ['BO'],
+	[Tool.POINT]: ['PO'],
+	[Tool.POLYGON]: ['POL'],
+	[Tool.ELLIPSE]: ['EL'],
+	[Tool.SPLINE]: ['SPL'],
 	[Tool.MIRROR]: ['MI'],
 	[Tool.OFFSET]: ['O'],
 	[Tool.FILLET]: ['F'],

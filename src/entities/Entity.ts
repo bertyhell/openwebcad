@@ -4,11 +4,13 @@ import type { DrawController } from '../drawControllers/DrawController.ts';
 import type { ArcJsonData } from './ArcEntity';
 import type { ArrowHeadJsonData } from './ArrowHeadEntity.ts';
 import type { CircleJsonData } from './CircleEntity';
+import type { EllipseJsonData } from './EllipseEntity.ts';
 import type { FillJsonData } from './FillEntity.ts';
 import type { ImageJsonData } from './ImageEntity';
 import type { LineEntity, LineJsonData } from './LineEntity';
 import type { PointJsonData } from './PointEntity';
 import type { RectangleJsonData } from './RectangleEntity';
+import type { SplineJsonData } from './SplineEntity.ts';
 import type { TextJsonData } from './TextEntity.ts';
 
 export interface Entity {
@@ -61,6 +63,8 @@ export enum EntityName {
 	PolyLine = 'PolyLine',
 	Fill = 'Fill',
 	Group = 'Group',
+	Ellipse = 'Ellipse',
+	Spline = 'Spline',
 }
 
 export type ShapeJsonData =
@@ -72,7 +76,9 @@ export type ShapeJsonData =
 	| ImageJsonData
 	| ArrowHeadJsonData
 	| TextJsonData
-	| FillJsonData;
+	| FillJsonData
+	| EllipseJsonData
+	| SplineJsonData;
 
 export interface JsonEntity<TShapeJsonData = ShapeJsonData> {
 	id: string;

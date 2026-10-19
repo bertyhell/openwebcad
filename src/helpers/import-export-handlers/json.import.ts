@@ -3,6 +3,7 @@ import { compact } from 'es-toolkit';
 import type { Layer } from '../../App.types.ts';
 import { ArcEntity, type ArcJsonData } from '../../entities/ArcEntity';
 import { CircleEntity, type CircleJsonData } from '../../entities/CircleEntity';
+import { EllipseEntity, type EllipseJsonData } from '../../entities/EllipseEntity.ts';
 import { type Entity, EntityName, type JsonEntity } from '../../entities/Entity';
 import { FillEntity, type FillJsonData } from '../../entities/FillEntity.ts';
 import { GroupEntity, type GroupJsonData } from '../../entities/GroupEntity.ts';
@@ -12,6 +13,7 @@ import { MeasurementEntity, type MeasurementJsonData } from '../../entities/Meas
 import { PointEntity, type PointJsonData } from '../../entities/PointEntity';
 import { PolyLineEntity, type PolyLineJsonData } from '../../entities/PolyLineEntity.ts';
 import { RectangleEntity, type RectangleJsonData } from '../../entities/RectangleEntity';
+import { SplineEntity, type SplineJsonData } from '../../entities/SplineEntity.ts';
 import { TextEntity, type TextJsonData } from '../../entities/TextEntity.ts';
 import { setActiveLayerId, setEntities, setLayers } from '../../state';
 import { zoomToBounds } from '../../tools/zoom-tool.helpers.ts';
@@ -72,6 +74,10 @@ export function entityFromJson(entity: JsonEntity): Promise<Entity | null> {
 			return PolyLineEntity.fromJson(entity as JsonEntity<PolyLineJsonData>);
 		case EntityName.Fill:
 			return FillEntity.fromJson(entity as JsonEntity<FillJsonData>);
+		case EntityName.Ellipse:
+			return EllipseEntity.fromJson(entity as JsonEntity<EllipseJsonData>);
+		case EntityName.Spline:
+			return SplineEntity.fromJson(entity as JsonEntity<SplineJsonData>);
 		case EntityName.Group:
 			return GroupEntity.fromJson(entity as JsonEntity<GroupJsonData>, entityFromJson);
 

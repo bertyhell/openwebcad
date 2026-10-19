@@ -16,6 +16,7 @@ import { circleToolStateMachine } from './circle-tool';
 import { copyToolStateMachine } from './copy-tool.ts';
 import { chamferToolStateMachine, filletToolStateMachine } from './corner-tools.ts';
 import { distToolStateMachine } from './dist-tool.ts';
+import { ellipseToolStateMachine } from './ellipse-tool.ts';
 import { eraseToolStateMachine } from './erase-tool.ts';
 import { explodeToolStateMachine } from './explode-tool.ts';
 import { extendToolStateMachine } from './extend-tool.ts';
@@ -29,11 +30,14 @@ import { moveToolStateMachine } from './move-tool';
 import { offsetToolStateMachine } from './offset-tool.ts';
 import { panToolStateMachine } from './pan-tool.ts';
 import { peditToolStateMachine } from './pedit-tool.ts';
+import { pointToolStateMachine } from './point-tool.ts';
+import { polygonToolStateMachine } from './polygon-tool.ts';
 import { polyLineToolStateMachine } from './polyline-tool.ts';
 import { rectangleToolStateMachine } from './rectangle-tool';
 import { rotateToolStateMachine } from './rotate-tool';
 import { scaleToolStateMachine } from './scale-tool';
 import { selectToolStateMachine } from './select-tool';
+import { splineToolStateMachine } from './spline-tool.ts';
 import { textToolStateMachine } from './text-tool.ts';
 import { trimToolStateMachine } from './trim-tool';
 import { zoomToolStateMachine } from './zoom-tool.ts';
@@ -99,6 +103,10 @@ export const TOOL_STATE_MACHINES: Record<
 	[Tool.DIST]: distToolStateMachine,
 	[Tool.AREA]: areaToolStateMachine,
 	[Tool.BOUNDARY]: boundaryToolStateMachine,
+	[Tool.POINT]: pointToolStateMachine,
+	[Tool.POLYGON]: polygonToolStateMachine,
+	[Tool.ELLIPSE]: ellipseToolStateMachine,
+	[Tool.SPLINE]: splineToolStateMachine,
 	[Tool.MIRROR]: mirrorToolStateMachine,
 	[Tool.OFFSET]: offsetToolStateMachine,
 	[Tool.FILLET]: filletToolStateMachine,

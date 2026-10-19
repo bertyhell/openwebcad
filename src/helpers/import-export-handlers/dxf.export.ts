@@ -2,6 +2,7 @@ import type { Arc, Circle, Point, Polygon, Segment } from '@flatten-js/core';
 import { saveAs } from 'file-saver';
 import { toast } from 'react-toastify';
 import type { Layer } from '../../App.types.ts';
+import type { CurveEntity } from '../../entities/CurveEntity.ts';
 import { type Entity, EntityName } from '../../entities/Entity.ts';
 import { flattenGroups } from '../../entities/GroupEntity.ts';
 import type { PolyLineEntity } from '../../entities/PolyLineEntity.ts';
@@ -182,6 +183,13 @@ function entityPairs(entity: Entity, commonPairs: DxfPairs): DxfPairs | null {
 		case EntityName.PolyLine: {
 			const { vertices, closed } = getPolyLineVertices(entity as PolyLineEntity);
 			return vertices.length >= 2 ? polylinePairs(vertices, closed, commonPairs) : null;
+		}
+		case EntityName.Ellipse:
+		case EntityName.Spline: {
+			// Dxf R12 has no ellipses and splines, export the segments that approximate the curve
+			const curve = entity as CurveEntity;
+			const vertices = curve.getApproximationPoints().map((point) => ({ point, bulge: 0 }));
+			return vertices.length >= 2 ? polylinePairs(vertices, curve.isClosed(), commonPairs) : null;
 		}
 		case EntityName.Text: {
 			const text = entity as TextEntity;

@@ -26,6 +26,9 @@ This is a React-based canvas drawing application that allows users to draw vario
   - intersections
   - circle centers
   - circle quadrants
+  - circle tangents
+  - grid points
+  - toggle each snap point type in the snap menu
 - Selection tool to highlight and modify shapes
   - Use CTRL to toggle selection
   - Use SHIFT to add to the current selection
@@ -39,22 +42,23 @@ This is a React-based canvas drawing application that allows users to draw vario
 - Export to JSON, DXF, SVG, PNG and PDF
 - The drawing is saved automatically in the browser
 - Select line color, fill color and line thickness
+- Light and dark theme (settings menu)
+- Offset polylines with arcs, choosing the side with a click or `[I]nside` / `[O]utside`
+- Fillet and chamfer rectangles, polylines and box-selected corners
+- `Esc` at the start of a tool switches back to the select tool
 
 
 ### Possible future feature ideas (TODO) in order of likelihood
 - Angular, radial and diameter dimensions
 - Draw with snap points for
-  - circle tangents
   - nearest point on line
   - prioritize certain snap points over others (eg: midpoint over nearest)
 - Edit existing lines and circles by dragging endpoints/middle points
-- Hatching
 - gradient fills
 - Import DWG files
 - Export to DWG
 - Export drawing to ASCII code
 - Touch and pen input
-- Light theme
 
 
 ## Technologies Used

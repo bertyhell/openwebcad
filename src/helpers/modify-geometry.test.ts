@@ -72,9 +72,61 @@ describe('offsetEntity', () => {
 		expectPoint(second.getEndPoint(), 9, 10);
 	});
 
-	it('does not offset polylines with arcs', () => {
-		const polyLine = new PolyLineEntity([new ArcEntity(new Point(0, 0), 1, 0, 1, true)]);
+	it('does not offset polylines with gaps', () => {
+		const polyLine = new PolyLineEntity([
+			new LineEntity(new Point(0, 0), new Point(10, 0)),
+			new LineEntity(new Point(20, 0), new Point(30, 0)),
+		]);
 		expect(canOffsetEntity(polyLine)).toBe(false);
+	});
+
+	// A 20x20 square with its bottom left corner rounded by a tangent arc with radius 5
+	const roundedSquare = () =>
+		new PolyLineEntity([
+			new LineEntity(new Point(5, 0), new Point(20, 0)),
+			new LineEntity(new Point(20, 0), new Point(20, 20)),
+			new LineEntity(new Point(20, 20), new Point(0, 20)),
+			new LineEntity(new Point(0, 20), new Point(0, 5)),
+			new ArcEntity(new Point(5, 5), 5, Math.PI, (3 * Math.PI) / 2, true),
+		]);
+
+	it('offsets a closed polyline with a tangent arc inwards and outwards', () => {
+		const polyLine = roundedSquare();
+		expect(canOffsetEntity(polyLine)).toBe(true);
+
+		const inside = offsetEntity(polyLine, 2, new Point(10, 10)) as PolyLineEntity;
+		const insideArc = inside.entities.find((entity) => entity instanceof ArcEntity) as ArcEntity;
+		expect(inside.entities).toHaveLength(5);
+		expect((insideArc.getShape() as Arc).r.valueOf()).toBeCloseTo(3);
+		expectPoint((insideArc.getShape() as Arc).center, 5, 5);
+		expect(inside.getBoundingBox().xmin).toBeCloseTo(2);
+		expect(inside.getBoundingBox().ymax).toBeCloseTo(18);
+
+		const outside = offsetEntity(polyLine, 2, new Point(30, 30)) as PolyLineEntity;
+		const outsideArc = outside.entities.find((entity) => entity instanceof ArcEntity) as ArcEntity;
+		expect((outsideArc.getShape() as Arc).r.valueOf()).toBeCloseTo(7);
+		expect(outside.getBoundingBox().xmax).toBeCloseTo(22);
+	});
+
+	it('offsets a polyline inwards past an arc radius by failing', () => {
+		expect(offsetEntity(roundedSquare(), 6, new Point(10, 10))).toBeNull();
+	});
+
+	it('adds a round join where an arc and a line no longer meet', () => {
+		// Line going right, then a counterclockwise half circle bulging up, meeting at a sharp corner
+		const polyLine = new PolyLineEntity([
+			new LineEntity(new Point(-10, 0), new Point(0, 0)),
+			new ArcEntity(new Point(5, 0), 5, Math.PI, 0, false),
+		]);
+		const offset = offsetEntity(polyLine, 1, new Point(-5, -5)) as PolyLineEntity;
+		expect(offset).not.toBeNull();
+		const arcs = offset.entities.filter((entity) => entity instanceof ArcEntity);
+		expect(arcs.length).toBeGreaterThanOrEqual(1);
+		for (let index = 1; index < offset.entities.length; index++) {
+			const previous = offset.entities[index - 1] as LineEntity | ArcEntity;
+			const current = offset.entities[index] as LineEntity | ArcEntity;
+			expect(previous.getEndPoint().distanceTo(current.getStartPoint())[0]).toBeCloseTo(0);
+		}
 	});
 });
 

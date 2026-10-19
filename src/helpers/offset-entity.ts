@@ -1,12 +1,4 @@
-import {
-	type Arc,
-	type Circle,
-	Line,
-	type Point,
-	Polygon,
-	type Segment,
-	Vector,
-} from '@flatten-js/core';
+import { Arc, Circle, Line, Point, Polygon, Segment, Vector } from '@flatten-js/core';
 import { ArcEntity } from '../entities/ArcEntity';
 import { CircleEntity } from '../entities/CircleEntity';
 import { type Entity, EntityName } from '../entities/Entity';
@@ -130,28 +122,301 @@ function offsetOpenPoints(points: Point[], distance: number, sidePoint: Point): 
 }
 
 /**
- * Points of a polyline made of lines only, null when it contains arcs
+ * A line or arc of a polyline, oriented so it starts where the previous one ends
  */
-function getPolyLinePoints(
+type ChainSegment =
+	| { kind: 'line'; start: Point; end: Point }
+	| {
+			kind: 'arc';
+			start: Point;
+			end: Point;
+			center: Point;
+			radius: number;
+			counterClockwise: boolean;
+			sweep: number;
+	  };
+
+const ARC_SAMPLE_COUNT = 16;
+
+function getAngle(center: Point, point: Point): number {
+	const angle = Math.atan2(point.y - center.y, point.x - center.x);
+	return angle < 0 ? angle + 2 * Math.PI : angle;
+}
+
+function getSweep(startAngle: number, endAngle: number, counterClockwise: boolean): number {
+	const sweep = counterClockwise ? endAngle - startAngle : startAngle - endAngle;
+	return ((sweep % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+}
+
+function pointOnCircle(center: Point, radius: number, angle: number): Point {
+	return new Point(center.x + radius * Math.cos(angle), center.y + radius * Math.sin(angle));
+}
+
+/**
+ * Lines and arcs of a connected polyline in walking order, null when it contains other entities or has gaps
+ */
+function getPolyLineChain(
 	polyLine: PolyLineEntity
-): { points: Point[]; isClosed: boolean } | null {
-	if (polyLine.entities.some((entity) => entity.getType() !== EntityName.Line)) {
+): { segments: ChainSegment[]; isClosed: boolean } | null {
+	if (
+		polyLine.entities.length === 0 ||
+		polyLine.entities.some(
+			(entity) => entity.getType() !== EntityName.Line && entity.getType() !== EntityName.Arc
+		)
+	) {
 		return null;
 	}
-	const segments = chainSegments(polyLine.entities);
-	const isConnected = segments.every(
-		(segment, index) =>
-			index === 0 || segments[index - 1].getEndPoint().equalTo(segment.getStartPoint())
+	const entities = chainSegments(polyLine.entities);
+	const isConnected = entities.every(
+		(entity, index) =>
+			index === 0 || entities[index - 1].getEndPoint().equalTo(entity.getStartPoint())
 	);
 	if (!isConnected) {
 		return null;
 	}
-	const points = [segments[0].getStartPoint(), ...segments.map((entity) => entity.getEndPoint())];
-	const isClosed = points.length > 2 && points[0].equalTo(points[points.length - 1]);
-	if (isClosed) {
+	const segments: ChainSegment[] = entities.map((entity) => {
+		if (entity.getType() === EntityName.Line) {
+			return { kind: 'line', start: entity.getStartPoint(), end: entity.getEndPoint() };
+		}
+		const arc = entity.getShape() as Arc;
+		return {
+			kind: 'arc',
+			start: arc.start,
+			end: arc.end,
+			center: arc.center,
+			radius: arc.r.valueOf(),
+			counterClockwise: arc.counterClockwise,
+			sweep: arc.sweep,
+		};
+	});
+	const isClosed =
+		segments.length > 1 && segments[0].start.equalTo(segments[segments.length - 1].end);
+	return { segments, isClosed };
+}
+
+/**
+ * Points of a polyline made of lines only, null when it contains arcs
+ */
+function getPolyLinePoints(
+	chain: { segments: ChainSegment[]; isClosed: boolean } | null
+): { points: Point[]; isClosed: boolean } | null {
+	if (!chain || chain.segments.some((segment) => segment.kind !== 'line')) {
+		return null;
+	}
+	const points = [chain.segments[0].start, ...chain.segments.map((segment) => segment.end)];
+	if (chain.isClosed) {
 		points.pop();
 	}
-	return { points, isClosed };
+	return { points, isClosed: chain.isClosed };
+}
+
+/**
+ * Points along the chain, arcs are approximated by straight pieces
+ */
+function sampleChain(segments: ChainSegment[]): Point[] {
+	const points: Point[] = [];
+	for (const segment of segments) {
+		points.push(segment.start);
+		if (segment.kind === 'arc') {
+			const startAngle = getAngle(segment.center, segment.start);
+			const direction = segment.counterClockwise ? 1 : -1;
+			for (let index = 1; index < ARC_SAMPLE_COUNT; index++) {
+				const angle = startAngle + (direction * segment.sweep * index) / ARC_SAMPLE_COUNT;
+				points.push(pointOnCircle(segment.center, segment.radius, angle));
+			}
+		}
+	}
+	return points;
+}
+
+/**
+ * Moves a segment to the left of its walking direction, arcs keep their center and change radius
+ * @returns null when an arc would get a radius of zero or less
+ */
+function offsetChainSegment(segment: ChainSegment, distance: number): ChainSegment | null {
+	if (segment.kind === 'line') {
+		const [start, end] = offsetSegmentPoints(segment.start, segment.end, distance);
+		return { kind: 'line', start, end };
+	}
+	// For a counterclockwise arc, the left side is towards the center
+	const radius = segment.radius + (segment.counterClockwise ? -distance : distance);
+	if (radius <= 1e-9) {
+		return null;
+	}
+	const scale = (point: Point) =>
+		pointOnCircle(segment.center, radius, getAngle(segment.center, point));
+	return { ...segment, radius, start: scale(segment.start), end: scale(segment.end) };
+}
+
+function getCarrierShape(segment: ChainSegment): Line | Circle {
+	return segment.kind === 'line'
+		? new Line(segment.start, segment.end)
+		: new Circle(segment.center, segment.radius);
+}
+
+/**
+ * Where two neighbouring offset segments meet:
+ * the shared point when they still touch (eg: tangent arcs), else the intersection of their extensions closest to the original vertex
+ * @returns null when their extensions don't intersect, eg: an arc moving away from a line on the outside of a corner
+ */
+function joinChainSegments(
+	segmentA: ChainSegment,
+	segmentB: ChainSegment,
+	vertex: Point
+): Point | null {
+	if (segmentA.end.equalTo(segmentB.start)) {
+		return segmentA.end;
+	}
+	if (segmentA.kind === 'line' && segmentB.kind === 'line') {
+		return joinLinesOrShared(segmentA, segmentB);
+	}
+	const intersections = getCarrierShape(segmentA).intersect(getCarrierShape(segmentB) as Circle);
+	if (!intersections.length) {
+		return null;
+	}
+	return intersections.reduce((closest, point) =>
+		point.distanceTo(vertex)[0] < closest.distanceTo(vertex)[0] ? point : closest
+	);
+}
+
+function joinLinesOrShared(segmentA: ChainSegment, segmentB: ChainSegment): Point {
+	const intersection = new Line(segmentA.start, segmentA.end).intersect(
+		new Line(segmentB.start, segmentB.end)
+	)[0];
+	// Parallel neighbouring edges don't intersect, they share the offset point
+	return intersection ?? segmentA.end;
+}
+
+/**
+ * An offset that is too large turns segments around, eg: shrinking an arc past its own end points
+ */
+function keepsSegmentDirection(original: ChainSegment, offset: ChainSegment): boolean {
+	if (original.kind === 'line') {
+		return new Vector(original.start, original.end).dot(new Vector(offset.start, offset.end)) > 0;
+	}
+	if (offset.kind !== 'arc') {
+		return false;
+	}
+	const sweep = getSweep(
+		getAngle(offset.center, offset.start),
+		getAngle(offset.center, offset.end),
+		offset.counterClockwise
+	);
+	return sweep > 1e-9 && Math.abs(sweep - original.sweep) < Math.PI;
+}
+
+function withEndPoints(segment: ChainSegment, start: Point, end: Point): ChainSegment {
+	return { ...segment, start, end };
+}
+
+/**
+ * Round join around the original vertex, for neighbouring offset segments that don't intersect
+ */
+function createJoinArc(vertex: Point, start: Point, end: Point): ChainSegment {
+	const startAngle = getAngle(vertex, start);
+	const endAngle = getAngle(vertex, end);
+	const counterClockwise = getSweep(startAngle, endAngle, true) < Math.PI;
+	return {
+		kind: 'arc',
+		start,
+		end,
+		center: vertex,
+		radius: vertex.distanceTo(start)[0],
+		counterClockwise,
+		sweep: getSweep(startAngle, endAngle, counterClockwise),
+	};
+}
+
+/**
+ * Offsets a chain of lines and arcs to the left and trims or extends neighbouring segments to meet each other
+ * @param distance positive offsets to the left of the walking direction, negative to the right
+ * @returns null when the offset is too large for one of the segments
+ */
+function offsetChain(
+	segments: ChainSegment[],
+	isClosed: boolean,
+	distance: number
+): ChainSegment[] | null {
+	const offsetSegments: ChainSegment[] = [];
+	for (const segment of segments) {
+		const offsetSegment = offsetChainSegment(segment, distance);
+		if (!offsetSegment) {
+			return null;
+		}
+		offsetSegments.push(offsetSegment);
+	}
+
+	const count = segments.length;
+	const starts = offsetSegments.map((segment) => segment.start);
+	const ends = offsetSegments.map((segment) => segment.end);
+	const joinArcs: (ChainSegment | null)[] = new Array(count).fill(null);
+	const joinCount = isClosed ? count : count - 1;
+	for (let index = 0; index < joinCount; index++) {
+		const nextIndex = (index + 1) % count;
+		const vertex = segments[index].end;
+		const joint = joinChainSegments(offsetSegments[index], offsetSegments[nextIndex], vertex);
+		if (joint) {
+			ends[index] = joint;
+			starts[nextIndex] = joint;
+		} else {
+			joinArcs[index] = createJoinArc(vertex, ends[index], starts[nextIndex]);
+		}
+	}
+
+	const result: ChainSegment[] = [];
+	for (let index = 0; index < count; index++) {
+		const trimmed = withEndPoints(offsetSegments[index], starts[index], ends[index]);
+		if (!keepsSegmentDirection(segments[index], trimmed)) {
+			return null;
+		}
+		result.push(trimmed);
+		const joinArc = joinArcs[index];
+		if (joinArc) {
+			result.push(joinArc);
+		}
+	}
+	return result;
+}
+
+/**
+ * Which way to offset the chain to end up on the side of the side point
+ * Closed chains: towards the inside when the side point is inside. Open chains: the side of the closest segment
+ */
+function isSidePointLeftOfChain(
+	segments: ChainSegment[],
+	isClosed: boolean,
+	sidePoint: Point
+): boolean {
+	if (isClosed) {
+		const points = sampleChain(segments);
+		const isInside = new Polygon(points).contains(sidePoint);
+		// For counterclockwise points, the left side is the inside
+		return isInside === getSignedArea(points) > 0;
+	}
+	let closestSegment = segments[0];
+	let closestDistance = Number.POSITIVE_INFINITY;
+	for (const segment of segments) {
+		const shape =
+			segment.kind === 'line'
+				? new Segment(segment.start, segment.end)
+				: new Arc(
+						segment.center,
+						segment.radius,
+						getAngle(segment.center, segment.start),
+						getAngle(segment.center, segment.end),
+						segment.counterClockwise
+					);
+		const segmentDistance = shape.distanceTo(sidePoint)[0];
+		if (segmentDistance < closestDistance) {
+			closestDistance = segmentDistance;
+			closestSegment = segment;
+		}
+	}
+	if (closestSegment.kind === 'line') {
+		return getSideOfLine(closestSegment.start, closestSegment.end, sidePoint) >= 0;
+	}
+	const isInside = closestSegment.center.distanceTo(sidePoint)[0] < closestSegment.radius;
+	return isInside === closestSegment.counterClockwise;
 }
 
 function createPolyLine(points: Point[], isClosed: boolean): PolyLineEntity {
@@ -163,8 +428,24 @@ function createPolyLine(points: Point[], isClosed: boolean): PolyLineEntity {
 	return new PolyLineEntity(lines);
 }
 
+function createChainPolyLine(segments: ChainSegment[]): PolyLineEntity {
+	return new PolyLineEntity(
+		segments.map((segment) =>
+			segment.kind === 'line'
+				? new LineEntity(segment.start, segment.end)
+				: new ArcEntity(
+						segment.center.clone(),
+						segment.radius,
+						getAngle(segment.center, segment.start),
+						getAngle(segment.center, segment.end),
+						segment.counterClockwise
+					)
+		)
+	);
+}
+
 /**
- * Lines, circles, arcs, rectangles and polylines made of lines can be offset
+ * Lines, circles, arcs, rectangles and connected polylines of lines and arcs can be offset
  */
 export function canOffsetEntity(entity: Entity): boolean {
 	switch (entity.getType()) {
@@ -174,7 +455,7 @@ export function canOffsetEntity(entity: Entity): boolean {
 		case EntityName.Rectangle:
 			return true;
 		case EntityName.PolyLine:
-			return !!getPolyLinePoints(entity as PolyLineEntity);
+			return !!getPolyLineChain(entity as PolyLineEntity);
 		default:
 			return false;
 	}
@@ -183,7 +464,7 @@ export function canOffsetEntity(entity: Entity): boolean {
 /**
  * Creates a copy of the entity at the given distance, on the side of the side point
  * Lines move parallel, circles and arcs get a larger or smaller radius,
- * rectangles and polylines made of lines grow or shrink with mitered corners
+ * rectangles and polylines grow or shrink with mitered corners, arcs in polylines keep their center
  * @returns null when the entity can't be offset, eg: an inward offset larger than a circle's radius
  */
 export function offsetEntity(entity: Entity, distance: number, sidePoint: Point): Entity | null {
@@ -241,16 +522,32 @@ export function offsetEntity(entity: Entity, distance: number, sidePoint: Point)
 		}
 
 		case EntityName.PolyLine: {
-			const polyLinePoints = getPolyLinePoints(entity as PolyLineEntity);
-			if (!polyLinePoints || polyLinePoints.points.length < 2) {
+			const chain = getPolyLineChain(entity as PolyLineEntity);
+			if (!chain) {
 				break;
 			}
-			const { points, isClosed } = polyLinePoints;
-			const offsetPoints = isClosed
-				? offsetClosedPoints(points, distance, sidePoint)
-				: offsetOpenPoints(points, distance, sidePoint);
-			if (offsetPoints) {
-				offsetResult = createPolyLine(offsetPoints, isClosed);
+			const polyLinePoints = getPolyLinePoints(chain);
+			if (polyLinePoints) {
+				if (polyLinePoints.points.length < 2) {
+					break;
+				}
+				const { points, isClosed } = polyLinePoints;
+				const offsetPoints = isClosed
+					? offsetClosedPoints(points, distance, sidePoint)
+					: offsetOpenPoints(points, distance, sidePoint);
+				if (offsetPoints) {
+					offsetResult = createPolyLine(offsetPoints, isClosed);
+				}
+				break;
+			}
+			const towardsLeft = isSidePointLeftOfChain(chain.segments, chain.isClosed, sidePoint);
+			const offsetSegments = offsetChain(
+				chain.segments,
+				chain.isClosed,
+				towardsLeft ? distance : -distance
+			);
+			if (offsetSegments) {
+				offsetResult = createChainPolyLine(offsetSegments);
 			}
 			break;
 		}

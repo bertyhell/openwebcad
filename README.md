@@ -8,44 +8,66 @@ This is a React-based canvas drawing application that allows users to draw vario
 
 ## Features
 
-- Fullscreen canvas next to a collapsible tool sidebar (press `[` to toggle it)
-- Draw: Line, Rectangle, Circle, Arc (3 points), Polyline, Polygon, Ellipse, Spline, Point, Text (multi-line), Image, Dimension, Hatch (solid fill), Boundary
-- Modify: Move, Copy, Scale, Rotate, Mirror, Offset, Array copy (linear and radial), Join, Fillet, Chamfer, Extend, Trim, Erase, Break, Stretch, Explode, Group, Align, Text edit, Measure (points at an interval)
-- Inquiry: Distance and Area
-- Properties panel: change the color, line width, layer and coordinates of the selection
-- Zoom and pan
-  - mouse wheel, `+` / `-`, `Home` to show the whole drawing, zoom tool
-  - middle mouse button, or hold `Space` and drag, arrow keys
-- Undo and redo, including layer changes
-- Layers: show/hide, lock, rename (double click), color for new entities, select all on a layer, move the selection to a layer
+### Drawing tools
+- **Line**, **Polyline**: straight segments, single or connected
+- **Rectangle**, **Polygon**: closed shapes with straight sides
+- **Circle**, **Ellipse**, **Arc**: round shapes (arc by 3 points or center, radius and angle)
+- **Spline**: smooth curve through points
+- **Point**: a single marker
+- **Text**: multi-line text
+- **Image**: place a picture in the drawing
+- **Dimension**: show the distance between two points
+- **Hatch**: fill a closed area with a solid color
+- **Boundary**: trace a closed outline around an area
+
+### Modify tools
+- **Move**, **Copy**: reposition or duplicate the selection
+- **Rotate**, **Scale**, **Mirror**: turn, resize or flip the selection
+- **Align**: match the selection to a target position and angle
+- **Offset**: draw a parallel copy at a given distance
+- **Array**: copy in a grid (linear) or around a center (radial)
+- **Fillet**: round corners
+- **Chamfer**: cut corners with a straight edge
+- **Trim**: cut away the part of a shape up to the next shape
+- **Extend**: lengthen a shape until it reaches another
+- **Break**: split a shape in two at a point
+- **Join**: connect separate lines and arcs into one polyline
+- **Explode**: turn a polyline or group into separate segments
+- **Stretch**: move part of a shape and keep the rest connected
+- **Group**: combine shapes so they act as one
+- **Erase**: delete the selection
+- **Text edit**: change existing text
+- **Measure**: place points along a shape at an interval
+
+### Inquiry
+- **Distance**: measure between two points
+- **Area**: measure the area of a closed shape
+
+### Selecting
+- Click to select, `CTRL` to toggle, `SHIFT` to add
+- Drag left to select everything touched, drag right to select everything fully inside
+- Properties panel: change color, line width, layer and coordinates of the selection
+
+### Precision
+- Snap points: endpoints, midpoints, intersections, circle centers, quadrants and tangents, grid; each can be toggled
 - Grid (`F7`) and snap to grid (`F9`)
-- Choose angle guides
-- Draw with snap points for
-  - endpoints
-  - midpoints
-  - intersections
-  - circle centers
-  - circle quadrants
-  - circle tangents
-  - grid points
-  - toggle each snap point type in the snap menu
-- Selection tool to highlight and modify shapes
-  - Use CTRL to toggle selection
-  - Use SHIFT to add to the current selection
-  - drag left, to select by intersecting
-  - drag right, to select by containing
-- Command line next to the cursor: type a command, an alias or a value (eg: `100`, `10,20`, `@10,-20`) and press ENTER
+- Angle guides while drawing
+- Command line next to the cursor: type a command, alias or value (eg: `100`, `10,20`, `@10,-20`) and press ENTER
   - `L` line, `PL` polyline, `REC` rectangle, `C` circle, `A` arc, `POL` polygon, `EL` ellipse, `SPL` spline, `PO` point, `T` / `MT` text, `IAT` image, `H` hatch, `BO` boundary, `DLI` dimension
   - `M` move, `CO` / `CP` copy, `SC` scale, `RO` rotate, `MI` mirror, `O` offset, `AR` array, `PE` join, `F` fillet, `CHA` chamfer, `EX` extend, `TR` trim, `E` erase, `BR` break, `S` stretch, `X` explode, `G` group, `AL` align, `ED` text edit, `ME` measure
   - `DI` distance, `AA` area, `Z` zoom, `P` pan, `R` redraw, `SN` grid snap, `COL` color, `EXP` export, `EXPORTPDF`
-- Import images, SVG, DXF (lines, circles, arcs, polylines, text and layers) and JSON files
+
+### View and organization
+- Zoom and pan: mouse wheel, `+` / `-`, `Home` to show the whole drawing, zoom tool, middle mouse button or `Space` + drag, arrow keys
+- Layers: show/hide, lock, rename, color for new shapes, select all on a layer, move the selection to a layer
+- Collapsible tool sidebar (`[`)
+- Light and dark theme
+
+### Files
+- Import images, SVG, DXF (lines, circles, arcs, polylines, text and layers) and JSON
 - Export to JSON, DXF, SVG, PNG and PDF
+- Undo and redo
 - The drawing is saved automatically in the browser
-- Select line color, fill color and line thickness
-- Light and dark theme (settings menu)
-- Offset polylines with arcs, choosing the side with a click or `[I]nside` / `[O]utside`
-- Fillet and chamfer rectangles, polylines and box-selected corners
-- `Esc` at the start of a tool switches back to the select tool
 
 
 ### Possible future feature ideas (TODO) in order of likelihood

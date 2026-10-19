@@ -27,7 +27,7 @@ export const POPOVER_LABELS: Record<PopoverId, string> = {
 	file: 'File',
 	color: 'Colour',
 	width: 'Line width',
-	snap: 'Snap angle step',
+	snap: 'Snapping',
 	zoom: 'Zoom',
 	align: 'Align selection',
 	layers: 'Layers',
@@ -141,7 +141,11 @@ export const PopoverContent: FC<PopoverContentProps> = ({
 			return <LineWidthPicker lineWidth={appState.lineWidth} />;
 		case 'snap':
 			return (
-				<AngleStepPicker angleStep={appState.angleStep} gridSettings={appState.gridSettings} />
+				<AngleStepPicker
+					angleStep={appState.angleStep}
+					gridSettings={appState.gridSettings}
+					snapPointConfig={appState.snapPointConfig}
+				/>
 			);
 		case 'zoom':
 			return <ZoomPicker screenZoom={appState.screenZoom} />;

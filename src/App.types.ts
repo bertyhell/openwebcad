@@ -69,6 +69,7 @@ export enum LOCAL_STORAGE_KEY {
 	DRAWING = 'OPEN_WEB_CAD__DRAWING',
 	SIDEBAR = 'OPEN_WEB_CAD__SIDEBAR',
 	GRID = 'OPEN_WEB_CAD__GRID',
+	SNAP_POINTS = 'OPEN_WEB_CAD__SNAP_POINTS',
 }
 
 export interface StartAndEndpointEntity extends Entity {

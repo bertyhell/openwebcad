@@ -9,6 +9,8 @@ import {
 	type Layer,
 	LOCAL_STORAGE_KEY,
 	type SnapPoint,
+	type SnapPointConfig,
+	SnapPointType,
 	type StateMetaData,
 } from './App.types';
 import type { ScreenCanvasDrawController } from './drawControllers/screenCanvas.drawController';
@@ -168,6 +170,23 @@ function loadGridSettings(): GridSettings {
 }
 
 /**
+ * Which kinds of snap points the mouse snaps to
+ */
+let snapPointConfig: SnapPointConfig = loadSnapPointConfig();
+
+function loadSnapPointConfig(): SnapPointConfig {
+	const defaultConfig = Object.fromEntries(
+		Object.values(SnapPointType).map((type) => [type, true])
+	) as SnapPointConfig;
+	try {
+		const storedConfig = globalThis.localStorage?.getItem(LOCAL_STORAGE_KEY.SNAP_POINTS);
+		return storedConfig ? { ...defaultConfig, ...JSON.parse(storedConfig) } : defaultConfig;
+	} catch {
+		return defaultConfig;
+	}
+}
+
+/**
  * Layers that can contain entities
  */
 let layers: Layer[] = [
@@ -208,6 +227,7 @@ export const getActiveLineColor = () => activeLineColor;
 export const getActiveFillColor = () => activeFillColor;
 export const getActiveLineWidth = () => activeLineWidth;
 export const getGridSettings = () => gridSettings;
+export const getSnapPointConfig = () => snapPointConfig;
 export const getScreenCanvasDrawController = (): ScreenCanvasDrawController => {
 	if (!screenCanvasDrawController) {
 		throw new Error('getScreenCanvasDrawController() returned null');
@@ -470,6 +490,16 @@ export const setGridSettings = (newGridSettings: GridSettings) => {
 	}
 	triggerReactUpdate(StateVariable.gridSettings);
 };
+export const setSnapPointConfig = (newSnapPointConfig: SnapPointConfig) => {
+	requestRedraw();
+	snapPointConfig = newSnapPointConfig;
+	try {
+		localStorage.setItem(LOCAL_STORAGE_KEY.SNAP_POINTS, JSON.stringify(newSnapPointConfig));
+	} catch {
+		// The snap point settings are a convenience, they don't need to be stored
+	}
+	triggerReactUpdate(StateVariable.snapPointConfig);
+};
 export const setLayers = (newLayers: Layer[], triggerReact = true, trackInUndoStack = false) => {
 	requestRedraw();
 	layers = newLayers;
@@ -522,6 +552,7 @@ const reactStateVariables: StateVariable[] = [
 	StateVariable.instructions,
 	StateVariable.entities,
 	StateVariable.gridSettings,
+	StateVariable.snapPointConfig,
 ];
 
 const undoStack = createStack();

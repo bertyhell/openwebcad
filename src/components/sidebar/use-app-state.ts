@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { type GridSettings, HtmlEvent, type Layer } from '../../App.types.ts';
+import { type GridSettings, HtmlEvent, type Layer, type SnapPointConfig } from '../../App.types.ts';
 import type { Entity } from '../../entities/Entity.ts';
 import {
 	getActiveFillColor,
@@ -14,6 +14,7 @@ import {
 	getScreenCanvasDrawController,
 	getSelectedEntities,
 	getSelectedEntityIds,
+	getSnapPointConfig,
 } from '../../state.ts';
 import type { Tool } from '../../tools.ts';
 
@@ -30,6 +31,7 @@ export interface AppState {
 	selectedCount: number;
 	selectedEntities: Entity[];
 	gridSettings: GridSettings;
+	snapPointConfig: SnapPointConfig;
 }
 
 function getScreenZoom(): number {
@@ -54,6 +56,7 @@ function readAppState(): AppState {
 		selectedCount: getSelectedEntityIds().length,
 		selectedEntities: getSelectedEntities(),
 		gridSettings: getGridSettings(),
+		snapPointConfig: getSnapPointConfig(),
 	};
 }
 

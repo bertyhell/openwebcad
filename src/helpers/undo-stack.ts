@@ -36,6 +36,7 @@ export enum StateVariable {
 	selectedEntityIds = 'selectedEntityIds',
 	instructions = 'instructions',
 	gridSettings = 'gridSettings',
+	snapPointConfig = 'snapPointConfig',
 }
 
 /**

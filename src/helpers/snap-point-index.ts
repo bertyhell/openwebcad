@@ -37,8 +37,13 @@ export class SnapPointIndex {
 
 	/**
 	 * Closest snap point that is less than maxDistance away from the location
+	 * @param isEnabled snap points for which this returns false are skipped
 	 */
-	public getClosestWithinRadius(location: Point, maxDistance: number): SnapPoint | null {
+	public getClosestWithinRadius(
+		location: Point,
+		maxDistance: number,
+		isEnabled: (snapPoint: SnapPoint) => boolean = () => true
+	): SnapPoint | null {
 		let closestSnapPoint: SnapPoint | null = null;
 		let closestDistance = maxDistance;
 		for (
@@ -48,7 +53,7 @@ export class SnapPointIndex {
 		) {
 			const snapPoint = this.snapPoints[index];
 			const distance = Math.hypot(snapPoint.point.x - location.x, snapPoint.point.y - location.y);
-			if (distance < closestDistance) {
+			if (distance < closestDistance && isEnabled(snapPoint)) {
 				closestDistance = distance;
 				closestSnapPoint = snapPoint;
 			}

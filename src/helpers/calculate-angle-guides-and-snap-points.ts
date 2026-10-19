@@ -8,6 +8,7 @@ import {
 	getHoveredSnapPoints,
 	getScreenCanvasDrawController,
 	getShouldDrawHelpers,
+	getSnapPointConfig,
 	getToolSnapPoints,
 	getVisibleEntities,
 	setAngleGuideEntities,
@@ -47,7 +48,8 @@ export function calculateAngleGuidesAndSnapPoints() {
 			compact([getAngleGuideOriginPoint(), ...eligibleHoveredPoints]),
 			worldMouseLocation,
 			angleStep,
-			SNAP_POINT_DISTANCE / screenScale
+			SNAP_POINT_DISTANCE / screenScale,
+			getSnapPointConfig()
 		);
 		// Points the active tool already placed (eg: the first point of a spline that is being drawn) aren't entities yet
 		const entitySnapPoint = getClosestSnapPointWithinRadius(

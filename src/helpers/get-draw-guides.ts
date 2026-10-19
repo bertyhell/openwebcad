@@ -1,6 +1,6 @@
 import type { Point } from '@flatten-js/core';
 import { SNAP_ANGLE_DISTANCE } from '../App.consts';
-import { type SnapPoint, SnapPointType } from '../App.types';
+import { type SnapPoint, type SnapPointConfig, SnapPointType } from '../App.types';
 import type { Entity } from '../entities/Entity';
 import type { LineEntity } from '../entities/LineEntity';
 import { findClosestEntity } from './find-closest-entity';
@@ -16,18 +16,21 @@ import { getEntitySnapPointIndex } from './snap-point-index';
  * @param worldMouseLocation the current mouse location
  * @param angleStep the angle in degrees at which the angle guides should be drawn
  * @param maxSnapDistance The distance that the mouse can snap to a snap point or angle guide
+ * @param snapPointConfig which kinds of snap points are enabled
  */
 export function getDrawHelpers(
 	entities: Entity[],
 	anglePoints: Point[],
 	worldMouseLocation: Point,
 	angleStep: number,
-	maxSnapDistance: number
+	maxSnapDistance: number,
+	snapPointConfig?: SnapPointConfig
 ): {
 	angleGuides: LineEntity[];
 	entitySnapPoint: SnapPoint | null;
 	angleSnapPoint: SnapPoint | null;
 } {
+	const isEnabled = (snapPoint: SnapPoint) => snapPointConfig?.[snapPoint.type] ?? true;
 	let entitySnapPoint: SnapPoint | null = null;
 	let angleSnapPoint: SnapPoint | null = null;
 	const nearestAngleSnapPoints: SnapPoint[] = [];
@@ -51,7 +54,8 @@ export function getDrawHelpers(
 	// Snap points of the entities don't change while the mouse moves, so they are cached
 	entitySnapPoint = getEntitySnapPointIndex(entities).getClosestWithinRadius(
 		worldMouseLocation,
-		maxSnapDistance
+		maxSnapDistance,
+		isEnabled
 	);
 
 	// Only the intersections with the angle guides depend on the mouse location
@@ -63,7 +67,7 @@ export function getDrawHelpers(
 		].map((point) => ({ point, type: SnapPointType.Intersection })),
 	];
 	angleSnapPoint = getClosestSnapPointWithinRadius(
-		angleSnapPoints,
+		angleSnapPoints.filter(isEnabled),
 		worldMouseLocation,
 		maxSnapDistance
 	);

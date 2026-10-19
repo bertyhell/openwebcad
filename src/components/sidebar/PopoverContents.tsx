@@ -2,7 +2,7 @@ import { type ChangeEvent, type FC, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import packageJson from '../../../package.json';
 import { COLOR_LIST } from '../../App.consts.ts';
-import type { GridSettings } from '../../App.types.ts';
+import { type GridSettings, type SnapPointConfig, SnapPointType } from '../../App.types.ts';
 import { exportEntitiesToDxfFile } from '../../helpers/import-export-handlers/dxf.export.ts';
 import { importEntitiesFromDxfFile } from '../../helpers/import-export-handlers/dxf.import.ts';
 import { exportEntitiesToJsonFile } from '../../helpers/import-export-handlers/json.export.ts';
@@ -18,12 +18,13 @@ import {
 	setActiveLineWidth,
 	setAngleStep,
 	setGridSettings,
+	setSnapPointConfig,
 } from '../../state.ts';
 import type { Tool } from '../../tools.ts';
 import { PathIcon } from '../PathIcon.tsx';
 import { toFullHexColor } from './color.helpers.ts';
-import { SettingsMenu } from './SettingsMenu.tsx';
 import { PopoverLabel } from './SectionHeader.tsx';
+import { SettingsMenu } from './SettingsMenu.tsx';
 import {
 	activateTool,
 	newDrawing,
@@ -342,10 +343,24 @@ const GridToggle: FC<{
 	</label>
 );
 
-export const AngleStepPicker: FC<{ angleStep: number; gridSettings: GridSettings }> = ({
-	angleStep,
-	gridSettings,
-}) => (
+const SNAP_POINT_OPTIONS: { type: SnapPointType; label: string; dataId: string }[] = [
+	{ type: SnapPointType.LineEndPoint, label: 'Endpoint', dataId: 'snap-endpoint-checkbox' },
+	{ type: SnapPointType.LineMidPoint, label: 'Midpoint', dataId: 'snap-midpoint-checkbox' },
+	{ type: SnapPointType.CircleCenter, label: 'Center', dataId: 'snap-center-checkbox' },
+	{ type: SnapPointType.CircleCardinal, label: 'Quadrant', dataId: 'snap-quadrant-checkbox' },
+	{
+		type: SnapPointType.Intersection,
+		label: 'Intersection',
+		dataId: 'snap-intersection-checkbox',
+	},
+	{ type: SnapPointType.Point, label: 'Point', dataId: 'snap-point-checkbox' },
+];
+
+export const AngleStepPicker: FC<{
+	angleStep: number;
+	gridSettings: GridSettings;
+	snapPointConfig: SnapPointConfig;
+}> = ({ angleStep, gridSettings, snapPointConfig }) => (
 	<div>
 		<PopoverLabel label="Snap angle step" />
 		<div className="grid grid-cols-6 gap-1">
@@ -387,6 +402,21 @@ export const AngleStepPicker: FC<{ angleStep: number; gridSettings: GridSettings
 			}
 			dataId="grid-snap-checkbox"
 		/>
+		<PopoverLabel label="Snap points" className="mt-4" />
+		<div className="grid grid-cols-2">
+			{SNAP_POINT_OPTIONS.map(({ type, label, dataId }) => (
+				<GridToggle
+					key={type}
+					label={label}
+					shortcut=""
+					isChecked={snapPointConfig[type]}
+					onToggle={() =>
+						setSnapPointConfig({ ...snapPointConfig, [type]: !snapPointConfig[type] })
+					}
+					dataId={dataId}
+				/>
+			))}
+		</div>
 	</div>
 );
 

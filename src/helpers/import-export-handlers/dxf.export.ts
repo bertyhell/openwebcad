@@ -20,7 +20,7 @@ const WHITE_COLOR = 7;
 type DxfPairs = (string | number)[];
 
 /**
- * Closest AutoCAD color index for a css color
+ * Closest dxf color index (ACI) for a css color
  * Dxf R12 only supports the 255 indexed colors, white and black both map to color 7
  */
 export function hexToAci(color: string, aciColors: number[][]): number {
@@ -252,7 +252,7 @@ export interface DxfExportResult {
 }
 
 /**
- * Converts the entities and layers into an ascii dxf file (AutoCAD R12)
+ * Converts the entities and layers into an ascii dxf file (DXF R12)
  * R12 is the simplest dxf version and can be opened by most CAD applications
  */
 export function convertEntitiesToDxf(

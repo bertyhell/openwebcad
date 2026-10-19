@@ -73,7 +73,7 @@ describe('dxf import', () => {
 });
 
 describe('dxf export', () => {
-	it('maps colors to the closest AutoCAD color index', () => {
+	it('maps colors to the closest dxf color index', () => {
 		expect(hexToAci('#ffffff', aciColors)).toBe(7);
 		expect(hexToAci('#ff0000', aciColors)).toBe(1);
 		expect(hexToAci('#0000ff', aciColors)).toBe(5);

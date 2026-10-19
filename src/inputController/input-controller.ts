@@ -102,6 +102,28 @@ function getActiveToolInstantOptions(): string[] {
 }
 
 /**
+ * Whether the active tool is waiting for its first input, eg: the line tool waiting for the start point
+ * The first waiting state is the one the INIT state moves to
+ */
+function activeToolIsAtStart(): boolean {
+	const activeToolSnapshot = getActiveToolActor()?.getSnapshot();
+	const activeToolState = activeToolSnapshot?.value;
+	const machine = activeToolSnapshot?.machine;
+	if (!machine || typeof activeToolState !== 'string') {
+		return false;
+	}
+	const initialState = machine.config.initial;
+	if (typeof initialState !== 'string') {
+		return false;
+	}
+	const always = machine.states?.[initialState]?.config?.always;
+	const startTarget = Array.isArray(always) ? undefined : always?.target;
+	const startState =
+		typeof startTarget === 'string' ? startTarget.replace(/^\./, '') : initialState;
+	return activeToolState === startState || activeToolState === initialState;
+}
+
+/**
  * Whether the active tool also accepts a number in its current state, eg: the arc angle next to the [I]nvert option
  */
 function activeToolAcceptsNumberInput(): boolean {
@@ -484,6 +506,13 @@ export class InputController {
 		if (getSelectedEntities().length > 0) {
 			// Deselect entities
 			setSelectedEntityIds([]);
+		} else if (
+			this.text === '' &&
+			getActiveToolActor()?.getSnapshot()?.context.type !== Tool.SELECT &&
+			activeToolIsAtStart()
+		) {
+			// Nothing to cancel in the active tool, go back to selecting
+			setActiveToolActor(new Actor(TOOL_STATE_MACHINES[Tool.SELECT]));
 		} else if (this.text === '') {
 			// Cancel tool action
 			getActiveToolActor()?.send({

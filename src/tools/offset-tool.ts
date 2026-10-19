@@ -1,11 +1,12 @@
 import { toast } from 'react-toastify';
-import { assign, createMachine } from 'xstate';
+import { Actor, assign, createMachine } from 'xstate';
 import type { Entity } from '../entities/Entity';
 import { canOffsetEntity, type OffsetSide, offsetEntity } from '../helpers/offset-entity';
 import { pickEntity } from '../helpers/pick-entity';
 import {
 	addEntities,
 	getEditableSelectedEntities,
+	setActiveToolActor,
 	setAngleGuideOriginPoint,
 	setGhostHelperEntities,
 	setHighlightedEntityIds,
@@ -13,6 +14,7 @@ import {
 	setShouldDrawHelpers,
 } from '../state';
 import { Tool } from '../tools';
+import { selectToolStateMachine } from './select-tool';
 import type {
 	DrawEvent,
 	MouseClickEvent,
@@ -47,6 +49,7 @@ export enum OffsetAction {
 	DRAW_PREVIEW = 'DRAW_PREVIEW',
 	ADD_OFFSET_ENTITY = 'ADD_OFFSET_ENTITY',
 	CLEAR_ENTITY = 'CLEAR_ENTITY',
+	SWITCH_TO_SELECT_TOOL = 'SWITCH_TO_SELECT_TOOL',
 }
 
 const INSIDE_OPTION = 'I';
@@ -147,7 +150,8 @@ export const offsetToolStateMachine = createMachine(
 						actions: OffsetAction.RECORD_DISTANCE,
 					},
 					ESC: {
-						target: OffsetState.INIT,
+						// Done offsetting, go back to selecting
+						actions: OffsetAction.SWITCH_TO_SELECT_TOOL,
 					},
 				},
 			},
@@ -252,6 +256,9 @@ export const offsetToolStateMachine = createMachine(
 				if (offsetResults.length) {
 					addEntities(offsetResults, true);
 				}
+			},
+			[OffsetAction.SWITCH_TO_SELECT_TOOL]: () => {
+				setActiveToolActor(new Actor(selectToolStateMachine));
 			},
 			[OffsetAction.CLEAR_ENTITY]: assign(() => {
 				setGhostHelperEntities([]);

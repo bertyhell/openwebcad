@@ -1,5 +1,6 @@
 import type { StateMachine } from 'xstate'; /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Tool } from '../tools';
+import { alignToolStateMachine } from './align-tool.ts';
 import {
 	alignBottomToolStateMachine,
 	alignCenterHorizontalToolStateMachine,
@@ -12,6 +13,7 @@ import { arcToolStateMachine } from './arc-tool.ts';
 import { areaToolStateMachine } from './area-tool.ts';
 import { arrayToolStateMachine } from './array-tool.ts';
 import { boundaryToolStateMachine } from './boundary-tool.ts';
+import { breakToolStateMachine } from './break-tool.ts';
 import { circleToolStateMachine } from './circle-tool';
 import { copyToolStateMachine } from './copy-tool.ts';
 import { chamferToolStateMachine, filletToolStateMachine } from './corner-tools.ts';
@@ -24,6 +26,7 @@ import { fillToolStateMachine } from './fill-tool.ts';
 import { groupToolStateMachine } from './group-tool.ts';
 import { imageImportToolStateMachine } from './image-import-tool';
 import { lineToolStateMachine } from './line-tool';
+import { measureToolStateMachine } from './measure-tool.ts';
 import { measurementToolStateMachine } from './measurement-tool';
 import { mirrorToolStateMachine } from './mirror-tool.ts';
 import { moveToolStateMachine } from './move-tool';
@@ -38,7 +41,9 @@ import { rotateToolStateMachine } from './rotate-tool';
 import { scaleToolStateMachine } from './scale-tool';
 import { selectToolStateMachine } from './select-tool';
 import { splineToolStateMachine } from './spline-tool.ts';
+import { stretchToolStateMachine } from './stretch-tool.ts';
 import { textToolStateMachine } from './text-tool.ts';
+import { textEditToolStateMachine } from './textedit-tool.ts';
 import { trimToolStateMachine } from './trim-tool';
 import { zoomToolStateMachine } from './zoom-tool.ts';
 
@@ -107,6 +112,11 @@ export const TOOL_STATE_MACHINES: Record<
 	[Tool.POLYGON]: polygonToolStateMachine,
 	[Tool.ELLIPSE]: ellipseToolStateMachine,
 	[Tool.SPLINE]: splineToolStateMachine,
+	[Tool.ALIGN]: alignToolStateMachine,
+	[Tool.MEASURE]: measureToolStateMachine,
+	[Tool.BREAK]: breakToolStateMachine,
+	[Tool.STRETCH]: stretchToolStateMachine,
+	[Tool.TEXTEDIT]: textEditToolStateMachine,
 	[Tool.MIRROR]: mirrorToolStateMachine,
 	[Tool.OFFSET]: offsetToolStateMachine,
 	[Tool.FILLET]: filletToolStateMachine,

@@ -258,6 +258,22 @@ export const TOOLS: ToolDefinition[] = [
 		dataId: 'group-button',
 	},
 	{
+		tool: Tool.BREAK,
+		group: ToolGroupId.MODIFY,
+		label: 'Break',
+		hint: 'Remove the part of an entity between two points',
+		iconPath: 'M3 12h6M15 12h6M10 8l-2 8M16 8l-2 8',
+		dataId: 'break-button',
+	},
+	{
+		tool: Tool.STRETCH,
+		group: ToolGroupId.MODIFY,
+		label: 'Stretch',
+		hint: 'Move the end points inside a window, the rest of the entities stays in place',
+		iconPath: 'M3 6h8v12H3zM11 6l8 0v12h-8M15 12h6M18 9l3 3-3 3',
+		dataId: 'stretch-button',
+	},
+	{
 		tool: Tool.DIMLINEAR,
 		group: ToolGroupId.ANNOTATE,
 		label: 'Dimension',

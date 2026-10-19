@@ -192,27 +192,29 @@ function entityPairs(entity: Entity, commonPairs: DxfPairs): DxfPairs | null {
 			return vertices.length >= 2 ? polylinePairs(vertices, curve.isClosed(), commonPairs) : null;
 		}
 		case EntityName.Text: {
+			// Dxf R12 texts have a single line, a multi-line text becomes a text per line
 			const text = entity as TextEntity;
 			const options = text.getOptions();
 			const horizontalAlignment = { left: 0, center: 1, right: 2 }[options.textAlign];
-			return [
+			const lineBasePoints = text.getLineBasePoints();
+			return text.getLines().flatMap((line, index) => [
 				0,
 				'TEXT',
 				...commonPairs,
-				...pointPairs(text.getBasePoint()),
+				...pointPairs(lineBasePoints[index]),
 				40,
 				formatNumber(text.getFontSize()),
 				1,
-				text.getLabel(),
+				line,
 				50,
 				formatNumber(Math.atan2(options.textDirection.y, options.textDirection.x) * TO_DEGREES),
 				72,
 				horizontalAlignment,
 				// The text is vertically centered on its base point
-				...pointPairs(text.getBasePoint(), 11),
+				...pointPairs(lineBasePoints[index], 11),
 				73,
 				2,
-			];
+			]);
 		}
 		default:
 			return null;

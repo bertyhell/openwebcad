@@ -39,6 +39,11 @@ export enum Tool {
 	POLYGON = 'POLYGON',
 	ELLIPSE = 'ELLIPSE',
 	SPLINE = 'SPLINE',
+	ALIGN = 'ALIGN',
+	MEASURE = 'MEASURE',
+	BREAK = 'BREAK',
+	STRETCH = 'STRETCH',
+	TEXTEDIT = 'TEXTEDIT',
 }
 
 /**
@@ -70,6 +75,11 @@ export const TOOL_ALIASES: Partial<Record<Tool, string[]>> = {
 	[Tool.POLYGON]: ['POL'],
 	[Tool.ELLIPSE]: ['EL'],
 	[Tool.SPLINE]: ['SPL'],
+	[Tool.ALIGN]: ['AL'],
+	[Tool.MEASURE]: ['ME'],
+	[Tool.BREAK]: ['BR'],
+	[Tool.STRETCH]: ['S'],
+	[Tool.TEXTEDIT]: ['ED', 'DDEDIT'],
 	[Tool.MIRROR]: ['MI'],
 	[Tool.OFFSET]: ['O'],
 	[Tool.FILLET]: ['F'],

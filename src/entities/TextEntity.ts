@@ -14,6 +14,11 @@ import type { LineEntity } from './LineEntity.ts';
  */
 const AVERAGE_CHARACTER_WIDTH = 0.55;
 
+/**
+ * Distance between the lines of a multi-line text relative to the font size
+ */
+const LINE_SPACING = 1.25;
+
 export interface TextOptions {
 	textDirection: Vector;
 	textAlign: 'left' | 'center' | 'right';
@@ -55,10 +60,31 @@ export class TextEntity implements Entity {
 			this.lineDash
 		);
 		// The text uses the line color, so it can be changed like the color of any other entity
-		drawController.drawText(this.label, this.basePoint, {
-			...this.options,
-			textColor: this.lineColor,
+		const lineBasePoints = this.getLineBasePoints();
+		this.getLines().forEach((line, index) => {
+			drawController.drawText(line, lineBasePoints[index], {
+				...this.options,
+				textColor: this.lineColor,
+			});
 		});
+	}
+
+	/**
+	 * Lines of the text, the label is split on new line characters
+	 */
+	public getLines(): string[] {
+		return this.label.split('\n');
+	}
+
+	/**
+	 * Base point of every line, the next line is below the previous line relative to the text direction
+	 */
+	public getLineBasePoints(): Point[] {
+		const lineOffset = this.options.textDirection
+			.normalize()
+			.rotate90CW()
+			.multiply(this.options.fontSize * LINE_SPACING);
+		return this.getLines().map((_, index) => this.basePoint.translate(lineOffset.multiply(index)));
 	}
 
 	public move(x: number, y: number) {
@@ -102,6 +128,10 @@ export class TextEntity implements Entity {
 		return this.label;
 	}
 
+	public setLabel(label: string): void {
+		this.label = label;
+	}
+
 	public getBasePoint(): Point {
 		return this.basePoint;
 	}
@@ -119,8 +149,11 @@ export class TextEntity implements Entity {
 	 * The text is vertically centered on the base point, like it is drawn
 	 */
 	public getBoundingBox(): Box {
-		const width = this.options.fontSize * AVERAGE_CHARACTER_WIDTH * this.label.length;
+		const lines = this.getLines();
+		const longestLineLength = Math.max(...lines.map((line) => line.length));
+		const width = this.options.fontSize * AVERAGE_CHARACTER_WIDTH * longestLineLength;
 		const halfHeight = this.options.fontSize / 2;
+		const extraLinesHeight = (lines.length - 1) * this.options.fontSize * LINE_SPACING;
 		let minX = this.basePoint.x;
 		if (this.options.textAlign === 'center') {
 			minX -= width / 2;
@@ -129,7 +162,7 @@ export class TextEntity implements Entity {
 		}
 		return new Box(
 			minX,
-			this.basePoint.y - halfHeight,
+			this.basePoint.y - halfHeight - extraLinesHeight,
 			minX + width,
 			this.basePoint.y + halfHeight
 		);

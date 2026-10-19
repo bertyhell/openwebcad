@@ -1,6 +1,7 @@
 import { Point } from '@flatten-js/core';
 import { describe, expect, it } from 'vitest';
 import { LineEntity } from '../entities/LineEntity.ts';
+import { alignEntities } from './align-tool.helpers.ts';
 import { getAlignedEntities } from './align-tools.ts';
 import { getPointAtDistanceTowards, moveEntities } from './move-tool.helpers.ts';
 import { getPointAtAngle, rotateEntities } from './rotate-tool.helpers.ts';
@@ -104,5 +105,14 @@ describe('combineSelection', () => {
 
 	it('toggles the selection with ctrl', () => {
 		expect(combineSelection(['a', 'b'], ['b', 'c'], true, false)).toEqual(['a', 'c']);
+	});
+});
+
+describe('alignEntities', () => {
+	it('moves and rotates so both source points lie on the destination direction', () => {
+		const line = new LineEntity(new Point(0, 0), new Point(10, 0));
+		alignEntities([line], new Point(0, 0), new Point(5, 5), new Point(10, 0), new Point(5, 20));
+		expectPoint(line.getStartPoint(), 5, 5);
+		expectPoint(line.getEndPoint(), 5, 15);
 	});
 });

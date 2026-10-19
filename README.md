@@ -2,7 +2,7 @@
 
 This is a React-based canvas drawing application that allows users to draw various shapes, such as lines, rectangles, and circles, on a fullscreen canvas. The application also includes features for selecting and erasing shapes, as well as exporting the drawing as an SVG file.
 
-![demo.gif](readme%2Fdemo.gif)
+![demo-floorplan.gif](readme%2Fdemo-floorplan.gif)
 
 ## DEMO: [https://bertyhell.github.io/openwebcad](https://bertyhell.github.io/openwebcad)
 

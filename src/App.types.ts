@@ -39,6 +39,10 @@ export enum HtmlEvent {
 	UPDATE_STATE = 'UPDATE_STATE',
 	TOGGLE_SIDEBAR = 'TOGGLE_SIDEBAR',
 	DRAWING_CHANGED = 'DRAWING_CHANGED',
+	/**
+	 * Open a sidebar popover from a typed command, the popover id is in the event detail
+	 */
+	OPEN_POPOVER = 'OPEN_POPOVER',
 }
 
 export interface GridSettings {

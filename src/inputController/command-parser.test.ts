@@ -1,20 +1,34 @@
 import { describe, expect, it } from 'vitest';
+import { CommandAction } from '../commands.ts';
 import { Tool } from '../tools.ts';
-import { getToolNamesFromPrefixText, parseCommandInput } from './command-parser.ts';
+import { getCommandNamesFromPrefixText, parseCommandInput } from './command-parser.ts';
 
-describe('getToolNamesFromPrefixText', () => {
+describe('getCommandNamesFromPrefixText', () => {
 	it('returns nothing for empty text', () => {
-		expect(getToolNamesFromPrefixText('')).toEqual([]);
+		expect(getCommandNamesFromPrefixText('')).toEqual([]);
 	});
 
-	it('puts the shortcut tool first', () => {
-		const tools = getToolNamesFromPrefixText('c');
-		expect(tools[0]).toBe(Tool.CIRCLE);
-		expect(tools).toContain(Tool.COPY);
+	it('puts the alias command first', () => {
+		const commandNames = getCommandNamesFromPrefixText('c');
+		expect(commandNames[0]).toBe(Tool.CIRCLE);
+		expect(commandNames).toContain(Tool.COPY);
+		expect(commandNames).toContain(CommandAction.COLOR);
 	});
 
-	it('finds a tool by a shortcut that is not a prefix of its name', () => {
-		expect(getToolNamesFromPrefixText('D')[0]).toBe(Tool.COPY);
+	it('finds a command by an alias that is not a prefix of its name', () => {
+		expect(getCommandNamesFromPrefixText('CP')[0]).toBe(Tool.COPY);
+		expect(getCommandNamesFromPrefixText('rectang')[0]).toBe(Tool.RECTANGLE);
+	});
+
+	it('prefers an alias over an exact name and an exact name over a prefix', () => {
+		expect(getCommandNamesFromPrefixText('FILL')[0]).toBe(Tool.HATCH);
+		expect(getCommandNamesFromPrefixText('FILLET')[0]).toBe(Tool.FILLET);
+		expect(getCommandNamesFromPrefixText('EXPORT')[0]).toBe(CommandAction.EXPORT);
+	});
+
+	it('lists every match only once', () => {
+		const commandNames = getCommandNamesFromPrefixText('LINE');
+		expect(commandNames.filter((commandName) => commandName === Tool.LINE)).toHaveLength(1);
 	});
 });
 
@@ -22,6 +36,14 @@ describe('parseCommandInput', () => {
 	it('parses tool names and shortcuts', () => {
 		expect(parseCommandInput('line')).toEqual({ type: 'tool', tool: Tool.LINE });
 		expect(parseCommandInput('M')).toEqual({ type: 'tool', tool: Tool.MOVE });
+	});
+
+	it('parses commands that run immediately', () => {
+		expect(parseCommandInput('ra')).toEqual({ type: 'action', action: CommandAction.REDRAW });
+		expect(parseCommandInput('EXPORTPDF')).toEqual({
+			type: 'action',
+			action: CommandAction.EXPORTPDF,
+		});
 	});
 
 	it('parses positive, negative and decimal numbers', () => {

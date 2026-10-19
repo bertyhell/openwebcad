@@ -58,7 +58,7 @@ export const fillToolStateMachine = createMachine(
 		},
 		context: {
 			startPoint: null,
-			type: Tool.FILL,
+			type: Tool.HATCH,
 		},
 		initial: FillState.INIT,
 		states: {

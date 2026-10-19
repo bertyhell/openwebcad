@@ -13,7 +13,6 @@ import { arrayToolStateMachine } from './array-tool.ts';
 import { circleToolStateMachine } from './circle-tool';
 import { copyToolStateMachine } from './copy-tool.ts';
 import { chamferToolStateMachine, filletToolStateMachine } from './corner-tools.ts';
-import { eraserToolStateMachine } from './eraser-tool';
 import { extendToolStateMachine } from './extend-tool.ts';
 import { fillToolStateMachine } from './fill-tool.ts';
 import { imageImportToolStateMachine } from './image-import-tool';
@@ -29,6 +28,7 @@ import { rotateToolStateMachine } from './rotate-tool';
 import { scaleToolStateMachine } from './scale-tool';
 import { selectToolStateMachine } from './select-tool';
 import { textToolStateMachine } from './text-tool.ts';
+import { trimToolStateMachine } from './trim-tool';
 import { zoomToolStateMachine } from './zoom-tool.ts';
 
 export const TOOL_STATE_MACHINES: Record<
@@ -68,13 +68,13 @@ export const TOOL_STATE_MACHINES: Record<
 	[Tool.RECTANGLE]: rectangleToolStateMachine,
 	[Tool.CIRCLE]: circleToolStateMachine,
 	[Tool.SELECT]: selectToolStateMachine,
-	[Tool.ERASER]: eraserToolStateMachine,
+	[Tool.TRIM]: trimToolStateMachine,
 	[Tool.MOVE]: moveToolStateMachine,
 	[Tool.COPY]: copyToolStateMachine,
 	[Tool.SCALE]: scaleToolStateMachine,
 	[Tool.ROTATE]: rotateToolStateMachine,
 	[Tool.IMAGE_IMPORT]: imageImportToolStateMachine,
-	[Tool.MEASUREMENT]: measurementToolStateMachine,
+	[Tool.DIMLINEAR]: measurementToolStateMachine,
 	[Tool.ALIGN_LEFT]: alignLeftToolStateMachine,
 	[Tool.ALIGN_CENTER_HORIZONTAL]: alignCenterHorizontalToolStateMachine,
 	[Tool.ALIGN_RIGHT]: alignRightToolStateMachine,
@@ -83,7 +83,7 @@ export const TOOL_STATE_MACHINES: Record<
 	[Tool.ALIGN_BOTTOM]: alignBottomToolStateMachine,
 	[Tool.ARRAY]: arrayToolStateMachine,
 	[Tool.PEDIT]: peditToolStateMachine,
-	[Tool.FILL]: fillToolStateMachine,
+	[Tool.HATCH]: fillToolStateMachine,
 	[Tool.ZOOM]: zoomToolStateMachine,
 	[Tool.MIRROR]: mirrorToolStateMachine,
 	[Tool.OFFSET]: offsetToolStateMachine,

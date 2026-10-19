@@ -18,48 +18,48 @@ import {
 	setShouldDrawHelpers,
 } from '../state';
 import { Tool } from '../tools';
+import type { MouseClickEvent, StateEvent, ToolContext } from './tool.types';
 import {
 	eraseArcSegment,
 	eraseCircleSegment,
 	eraseLineSegment,
 	getAllIntersectionPoints,
-} from './eraser-tool.helpers';
-import type { MouseClickEvent, StateEvent, ToolContext } from './tool.types';
+} from './trim-tool.helpers';
 
-export interface EraserContext extends ToolContext {
+export interface TrimContext extends ToolContext {
 	startPoint: Point | null;
 }
 
-export enum EraserState {
+export enum TrimState {
 	INIT = 'INIT',
 	WAITING_FOR_FIRST_CLICK = 'WAITING_FOR_FIRST_CLICK',
 }
 
-export enum EraserAction {
-	INIT_ERASER_TOOL = 'INIT_ERASER_TOOL',
+export enum TrimAction {
+	INIT_TRIM_TOOL = 'INIT_TRIM_TOOL',
 	HANDLE_MOUSE_CLICK = 'HANDLE_MOUSE_CLICK',
 }
 
-export const eraserToolStateMachine = createMachine(
+export const trimToolStateMachine = createMachine(
 	{
 		types: {} as {
-			context: EraserContext;
+			context: TrimContext;
 			events: StateEvent;
 		},
 		context: {
 			startPoint: null,
-			type: Tool.ERASER,
+			type: Tool.TRIM,
 		},
-		initial: EraserState.INIT,
+		initial: TrimState.INIT,
 		states: {
-			[EraserState.INIT]: {
-				description: 'Initializing the eraser tool',
+			[TrimState.INIT]: {
+				description: 'Initializing the trim tool',
 				always: {
-					actions: EraserAction.INIT_ERASER_TOOL,
-					target: EraserState.WAITING_FOR_FIRST_CLICK,
+					actions: TrimAction.INIT_TRIM_TOOL,
+					target: TrimState.WAITING_FOR_FIRST_CLICK,
 				},
 			},
-			[EraserState.WAITING_FOR_FIRST_CLICK]: {
+			[TrimState.WAITING_FOR_FIRST_CLICK]: {
 				description: 'Select a line segment to delete',
 				meta: {
 					instructions: 'Select a line segment to delete',
@@ -67,8 +67,8 @@ export const eraserToolStateMachine = createMachine(
 				on: {
 					// TODO implement a DRAW action to draw the segment that will be erased in dotted line
 					MOUSE_CLICK: {
-						actions: EraserAction.HANDLE_MOUSE_CLICK,
-						target: EraserState.WAITING_FOR_FIRST_CLICK,
+						actions: TrimAction.HANDLE_MOUSE_CLICK,
+						target: TrimState.WAITING_FOR_FIRST_CLICK,
 					},
 				},
 			},
@@ -77,12 +77,12 @@ export const eraserToolStateMachine = createMachine(
 	},
 	{
 		actions: {
-			[EraserAction.INIT_ERASER_TOOL]: assign(() => {
+			[TrimAction.INIT_TRIM_TOOL]: assign(() => {
 				setShouldDrawHelpers(false);
 				setGhostHelperEntities([]);
 				return {};
 			}),
-			[EraserAction.HANDLE_MOUSE_CLICK]: assign(({ context, event }) => {
+			[TrimAction.HANDLE_MOUSE_CLICK]: assign(({ context, event }) => {
 				handleMouseClick((event as MouseClickEvent).worldMouseLocation);
 
 				return context;

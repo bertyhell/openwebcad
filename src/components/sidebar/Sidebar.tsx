@@ -94,8 +94,11 @@ export const Sidebar: FC = () => {
 			closePopover();
 			return;
 		}
-		popoverTriggerRef.current = evt.currentTarget;
-		const rect = evt.currentTarget.getBoundingClientRect();
+		openPopoverAt(id, evt.currentTarget);
+	};
+	const openPopoverAt = (id: PopoverId, trigger: HTMLElement) => {
+		popoverTriggerRef.current = trigger;
+		const rect = trigger.getBoundingClientRect();
 		const isInLowerHalf = rect.top > window.innerHeight / 2;
 		setTooltip(null);
 		setPopover({
@@ -110,6 +113,19 @@ export const Sidebar: FC = () => {
 		popoverTriggerRef.current?.focus();
 		popoverTriggerRef.current = null;
 	};
+
+	// Open a popover from a typed command. eg: COLOR
+	useEffect(() => {
+		const handleOpenPopover = (evt: Event) => {
+			const id = (evt as CustomEvent<PopoverId>).detail;
+			const trigger = document.querySelector<HTMLElement>(`[data-popover-id="${id}"]`);
+			if (trigger) {
+				openPopoverAt(id, trigger);
+			}
+		};
+		window.addEventListener(HtmlEvent.OPEN_POPOVER, handleOpenPopover);
+		return () => window.removeEventListener(HtmlEvent.OPEN_POPOVER, handleOpenPopover);
+	});
 
 	// Close the popover with escape, before the canvas handles escape to cancel the active tool
 	useEffect(() => {
@@ -139,6 +155,7 @@ export const Sidebar: FC = () => {
 	const popoverTriggerProps = (id: PopoverId) => ({
 		'aria-haspopup': 'dialog' as const,
 		'aria-expanded': popover?.id === id,
+		'data-popover-id': id,
 		onClick: openPopover(id),
 	});
 

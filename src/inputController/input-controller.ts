@@ -14,6 +14,7 @@ import {
 	TOOLBAR_WIDTH,
 } from '../App.consts.ts';
 import { HtmlEvent, MouseButton, SnapPointType } from '../App.types.ts';
+import { COMMAND_ACTIONS } from '../command-actions.ts';
 import type { ScreenCanvasDrawController } from '../drawControllers/screenCanvas.drawController.ts';
 import { calculateAngleGuidesAndSnapPoints } from '../helpers/calculate-angle-guides-and-snap-points.ts';
 import { findClosestEntity } from '../helpers/find-closest-entity.ts';
@@ -54,7 +55,7 @@ import {
 import { zoomIn, zoomOut, zoomToBounds } from '../tools/zoom-tool.helpers.ts';
 import { isZoomOption } from '../tools/zoom-tool.ts';
 import { Tool } from '../tools.ts';
-import { getToolNamesFromPrefixText, parseCommandInput } from './command-parser.ts';
+import { getCommandNamesFromPrefixText, parseCommandInput } from './command-parser.ts';
 
 /**
  * Distance between the left of the window and the left of the canvas
@@ -180,7 +181,7 @@ export class InputController {
 			);
 		}
 
-		const matchingToolNames = getToolNamesFromPrefixText(this.text);
+		const matchingToolNames = getCommandNamesFromPrefixText(this.text);
 		const toolInstruction = getLastStateInstructions();
 		const texts: string[] = [];
 		if (toolInstruction) {
@@ -425,6 +426,8 @@ export class InputController {
 			this.handleEscapeKey();
 		} else if (evt.key === 'Enter') {
 			// User wants to submit the input or submit the action
+			// Prevent the enter from also clicking a button that a command focuses. eg: COLOR opens a popover
+			evt.preventDefault();
 			this.handleEnterKey();
 		} else if (evt.key === 'ArrowDown') {
 			// Move the screen down
@@ -527,6 +530,11 @@ export class InputController {
 				// User entered a command. eg: L or LINE
 				activeTool?.stop();
 				setActiveToolActor(new Actor(TOOL_STATE_MACHINES[command.tool]));
+				break;
+
+			case 'action':
+				// User entered a command that runs immediately. eg: REDRAW
+				COMMAND_ACTIONS[command.action]();
 				break;
 
 			case 'number':

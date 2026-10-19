@@ -8,12 +8,12 @@ import { getEntities } from '../../../src/state';
 import { initApplication } from '../../helpers/init-application';
 import { replayRecording } from '../../helpers/replay-recording';
 import { CANVAS_HEIGHT } from '../../helpers/tests.consts';
-import eraserRecording from './eraser.recording.json';
+import trimRecording from './trim.recording.json';
 
 test('Draw circle and line and erase part of circle', async () => {
 	const inputController = initApplication();
 
-	replayRecording(inputController, eraserRecording);
+	replayRecording(inputController, trimRecording);
 
 	const entities = getEntities();
 

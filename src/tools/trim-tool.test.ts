@@ -6,8 +6,8 @@ import { CircleEntity } from '../entities/CircleEntity.ts';
 import { EntityName } from '../entities/Entity.ts';
 import { RectangleEntity } from '../entities/RectangleEntity.ts';
 import { getEntities, setEntities } from '../state.ts';
-import { eraseCircleSegment, getAllIntersectionPoints } from './eraser-tool.helpers.ts';
-import { handleMouseClick } from './eraser-tool.ts';
+import { eraseCircleSegment, getAllIntersectionPoints } from './trim-tool.helpers.ts';
+import { handleMouseClick } from './trim-tool.ts';
 
 describe('erase-tool', () => {
 	/**

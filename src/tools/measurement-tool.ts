@@ -45,7 +45,7 @@ export const measurementToolStateMachine = createMachine(
 		context: {
 			startPoint: null,
 			endPoint: null,
-			type: Tool.MEASUREMENT,
+			type: Tool.DIMLINEAR,
 		},
 		initial: MeasurementState.INIT,
 		states: {

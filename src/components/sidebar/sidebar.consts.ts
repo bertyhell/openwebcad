@@ -1,4 +1,4 @@
-import { TOOL_SHORTCUTS, Tool } from '../../tools.ts';
+import { TOOL_ALIASES, Tool } from '../../tools.ts';
 
 export enum ToolGroupId {
 	DRAW = 'draw',
@@ -202,9 +202,9 @@ export const TOOLS: ToolDefinition[] = [
 		dataId: 'extend-button',
 	},
 	{
-		tool: Tool.MEASUREMENT,
+		tool: Tool.DIMLINEAR,
 		group: ToolGroupId.ANNOTATE,
-		label: 'Measure',
+		label: 'Dimension',
 		hint: 'Add a dimension between two points',
 		iconPath: 'M4 7v10M20 7v10M4 12h16M7 9l-3 3 3 3M17 9l3 3-3 3',
 		dataId: 'measurement-button',
@@ -218,25 +218,25 @@ export const TOOLS: ToolDefinition[] = [
 		dataId: 'text-button',
 	},
 	{
-		tool: Tool.FILL,
+		tool: Tool.HATCH,
 		group: ToolGroupId.ANNOTATE,
-		label: 'Fill',
+		label: 'Hatch',
 		hint: 'Fill an enclosed area with the fill colour',
 		iconPath:
 			'M4 11l7-7 8 8-7 7zM4 11h15M20 15.5c.8 1.3 1.5 2.2 1.5 3a1.5 1.5 0 0 1-3 0c0-.8.7-1.7 1.5-3z',
 		dataId: 'fill-button',
 	},
 	{
-		tool: Tool.ERASER,
+		tool: Tool.TRIM,
 		group: ToolGroupId.ANNOTATE,
-		label: 'Eraser',
-		hint: 'Erase parts of an entity between intersections',
+		label: 'Trim',
+		hint: 'Remove the part of an entity between its intersections',
 		iconPath: 'M6 2v16h16M2 6h16v16',
 		dataId: 'delete-segment-button',
 	},
 ].map((toolDefinition) => ({
 	...toolDefinition,
-	shortcut: TOOL_SHORTCUTS[toolDefinition.tool],
+	shortcut: TOOL_ALIASES[toolDefinition.tool]?.[0],
 }));
 
 export interface AlignDefinition {

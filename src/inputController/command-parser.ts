@@ -1,4 +1,5 @@
-import { TOOL_SHORTCUTS, Tool } from '../tools.ts';
+import { COMMAND_ACTION_ALIASES, CommandAction } from '../commands.ts';
+import { TOOL_ALIASES, Tool } from '../tools.ts';
 
 const NUMBER = '-?[0-9]+(?:[.][0-9]+)?';
 const NUMBER_REGEXP = new RegExp(`^${NUMBER}$`);
@@ -7,34 +8,52 @@ const RELATIVE_POINT_REGEXP = new RegExp(`^@(${NUMBER})\\s*,\\s*(${NUMBER})$`);
 
 export type ParsedCommand =
 	| { type: 'tool'; tool: Tool }
+	| { type: 'action'; action: CommandAction }
 	| { type: 'number'; value: number }
 	| { type: 'absolutePoint'; x: number; y: number }
 	| { type: 'relativePoint'; x: number; y: number }
 	| { type: 'text'; value: string };
 
+export type CommandName = Tool | CommandAction;
+
+const COMMAND_NAMES: CommandName[] = [...Object.values(Tool), ...Object.values(CommandAction)];
+
+const COMMAND_ALIASES: Partial<Record<CommandName, string[]>> = {
+	...TOOL_ALIASES,
+	...COMMAND_ACTION_ALIASES,
+};
+
 /**
- * Tools whose name starts with the typed text. eg: C => CIRCLE, COPY
- * Shortcuts take precedence over tools that start with that text. eg: D => COPY
+ * Commands that match the typed text, best match first. eg: C => CIRCLE, COPY, COLOR
+ * 1. a command with that exact alias. eg: CO => COPY
+ * 2. a command with that exact name. eg: ALIGN => ALIGN, not ALIGN_LEFT
+ * 3. commands whose name starts with the typed text
  */
-export function getToolNamesFromPrefixText(text: string): Tool[] {
+export function getCommandNamesFromPrefixText(text: string): CommandName[] {
 	if (text === '') {
 		return [];
 	}
 	const upperCaseText = text.toUpperCase();
-	const toolNames = Object.values(Tool).filter((toolName) => toolName.startsWith(upperCaseText));
-
-	const shortcutTool = (Object.keys(TOOL_SHORTCUTS) as Tool[]).find(
-		(tool) => TOOL_SHORTCUTS[tool] === upperCaseText
+	const aliasCommand = COMMAND_NAMES.find((commandName) =>
+		COMMAND_ALIASES[commandName]?.includes(upperCaseText)
 	);
-	if (!shortcutTool) {
-		return toolNames;
-	}
-	return [shortcutTool, ...toolNames.filter((toolName) => toolName !== shortcutTool)];
+	const exactCommand = COMMAND_NAMES.find((commandName) => commandName === upperCaseText);
+	const prefixCommands = COMMAND_NAMES.filter((commandName) =>
+		commandName.startsWith(upperCaseText)
+	);
+	const commandNames = [aliasCommand, exactCommand, ...prefixCommands].filter(
+		(commandName): commandName is CommandName => !!commandName
+	);
+	return [...new Set(commandNames)];
+}
+
+function isTool(commandName: CommandName): commandName is Tool {
+	return (Object.values(Tool) as string[]).includes(commandName);
 }
 
 /**
  * Interprets the text typed into the input field next to the cursor
- * - a tool name or shortcut. eg: L or LINE
+ * - a tool or command name or alias. eg: L or LINE
  * - a number. eg: 100 or -2.5
  * - an absolute point. eg: 10,20
  * - a relative point. eg: @10,-20
@@ -43,9 +62,11 @@ export function getToolNamesFromPrefixText(text: string): Tool[] {
 export function parseCommandInput(text: string): ParsedCommand {
 	const trimmedText = text.trim();
 
-	const tool = getToolNamesFromPrefixText(trimmedText)[0];
-	if (tool) {
-		return { type: 'tool', tool };
+	const commandName = getCommandNamesFromPrefixText(trimmedText)[0];
+	if (commandName) {
+		return isTool(commandName)
+			? { type: 'tool', tool: commandName }
+			: { type: 'action', action: commandName };
 	}
 
 	if (NUMBER_REGEXP.test(trimmedText)) {

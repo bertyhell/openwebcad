@@ -22,7 +22,7 @@ import { ALIGN_COLOR, ICON_PATHS, TOOL_GROUPS, TOOLS } from './sidebar.consts.ts
 import { RailToolButton, ToolButton, type TooltipTriggerEvent } from './ToolButton.tsx';
 import { useAppState } from './use-app-state.ts';
 
-type SectionId = 'draw' | 'modify' | 'annotate' | 'properties' | 'align' | 'layers';
+type SectionId = 'view' | 'draw' | 'modify' | 'annotate' | 'properties' | 'align' | 'layers';
 
 interface SidebarSettings {
 	isCollapsed: boolean;
@@ -32,6 +32,7 @@ interface SidebarSettings {
 const DEFAULT_SIDEBAR_SETTINGS: SidebarSettings = {
 	isCollapsed: false,
 	openSections: {
+		view: true,
 		draw: true,
 		modify: true,
 		annotate: true,

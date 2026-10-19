@@ -1,6 +1,7 @@
 import { TOOL_ALIASES, Tool } from '../../tools.ts';
 
 export enum ToolGroupId {
+	VIEW = 'view',
 	DRAW = 'draw',
 	MODIFY = 'modify',
 	ANNOTATE = 'annotate',
@@ -40,6 +41,7 @@ export const NEUTRAL_TOOL_COLOR = 'var(--color-hw-stone-100)';
 export const ALIGN_COLOR = 'var(--color-hw-align)';
 
 export const TOOL_GROUPS: ToolGroup[] = [
+	{ id: ToolGroupId.VIEW, name: 'View', color: NEUTRAL_TOOL_COLOR },
 	{ id: ToolGroupId.DRAW, name: 'Draw', color: 'var(--color-hw-draw)' },
 	{ id: ToolGroupId.MODIFY, name: 'Modify', color: 'var(--color-hw-modify)' },
 	{ id: ToolGroupId.ANNOTATE, name: 'Annotate', color: 'var(--color-hw-annotate)' },
@@ -48,7 +50,7 @@ export const TOOL_GROUPS: ToolGroup[] = [
 export const TOOLS: ToolDefinition[] = [
 	{
 		tool: Tool.SELECT,
-		group: ToolGroupId.DRAW,
+		group: ToolGroupId.VIEW,
 		label: 'Select',
 		hint: 'Select entities by clicking or dragging a box',
 		iconPath: 'M5 4l5 15 2.5-6.5L19 10z',
@@ -57,11 +59,20 @@ export const TOOLS: ToolDefinition[] = [
 	},
 	{
 		tool: Tool.ZOOM,
-		group: ToolGroupId.DRAW,
+		group: ToolGroupId.VIEW,
 		label: 'Zoom',
 		hint: 'Zoom to a window, a scale or all entities (A)',
 		iconPath: 'M10 4a6 6 0 1 0 0 12a6 6 0 1 0 0-12zM14.5 14.5L20 20M7 10h6M10 7v6',
 		dataId: 'zoom-button',
+		neutral: true,
+	},
+	{
+		tool: Tool.PAN,
+		group: ToolGroupId.VIEW,
+		label: 'Pan',
+		hint: 'Drag to move the view',
+		iconPath: 'M12 3v18M3 12h18M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3',
+		dataId: 'pan-button',
 		neutral: true,
 	},
 	{

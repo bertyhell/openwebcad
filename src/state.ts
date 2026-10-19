@@ -158,7 +158,7 @@ let isRedrawRequested = true;
 let gridSettings: GridSettings = loadGridSettings();
 
 function loadGridSettings(): GridSettings {
-	const defaultSettings: GridSettings = { isVisible: false, isSnapEnabled: false };
+	const defaultSettings: GridSettings = { isVisible: true, isSnapEnabled: false };
 	try {
 		const storedSettings = globalThis.localStorage?.getItem(LOCAL_STORAGE_KEY.GRID);
 		return storedSettings ? { ...defaultSettings, ...JSON.parse(storedSettings) } : defaultSettings;

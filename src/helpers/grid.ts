@@ -1,4 +1,5 @@
 import { Point } from '@flatten-js/core';
+import { GRID_AXIS_LINE_COLOR, GRID_MAJOR_LINE_COLOR, GRID_MINOR_LINE_COLOR } from '../App.consts';
 import type { ScreenCanvasDrawController } from '../drawControllers/screenCanvas.drawController';
 
 /**
@@ -10,10 +11,6 @@ const MIN_GRID_SPACING_PIXELS = 16;
  * Every n-th grid line is drawn brighter
  */
 const MAJOR_GRID_LINE_INTERVAL = 5;
-
-const MINOR_GRID_LINE_COLOR = '#24221f';
-const MAJOR_GRID_LINE_COLOR = '#302d29';
-const AXIS_LINE_COLOR = '#45413b';
 
 /**
  * Distance between grid lines in world units: 1, 2 or 5 times a power of 10,
@@ -39,9 +36,9 @@ export function getClosestGridPoint(point: Point, spacing: number): Point {
 
 function getLineColor(index: number): string {
 	if (index === 0) {
-		return AXIS_LINE_COLOR;
+		return GRID_AXIS_LINE_COLOR;
 	}
-	return index % MAJOR_GRID_LINE_INTERVAL === 0 ? MAJOR_GRID_LINE_COLOR : MINOR_GRID_LINE_COLOR;
+	return index % MAJOR_GRID_LINE_INTERVAL === 0 ? GRID_MAJOR_LINE_COLOR : GRID_MINOR_LINE_COLOR;
 }
 
 /**

@@ -1,5 +1,9 @@
 import { Arc, Point, type Vector } from '@flatten-js/core';
-import { CANVAS_BACKGROUND_COLOR, MOUSE_ZOOM_MULTIPLIER } from '../App.consts';
+import {
+	CANVAS_BACKGROUND_COLOR,
+	CANVAS_FOREGROUND_COLOR,
+	MOUSE_ZOOM_MULTIPLIER,
+} from '../App.consts';
 import type { Edge } from '../App.types.ts';
 import type { PolyLineEntity } from '../entities/PolyLineEntity.ts';
 import { getAngleWithXAxis } from '../helpers/get-angle-with-x-axis.ts';
@@ -7,6 +11,17 @@ import { mapNumberRange } from '../helpers/map-number-range.ts';
 import { StateVariable } from '../helpers/undo-stack.ts';
 import { requestRedraw, triggerReactUpdate } from '../state.ts';
 import { DEFAULT_TEXT_OPTIONS, type DrawController } from './DrawController';
+
+/**
+ * White is the default entity color, draw it in the foreground color so it stays visible on a light canvas
+ */
+function toScreenColor(color: string): string {
+	const lowerColor = color.toLowerCase();
+	if (lowerColor === '#fff' || lowerColor === '#ffffff' || lowerColor === 'white') {
+		return CANVAS_FOREGROUND_COLOR;
+	}
+	return color;
+}
 
 /**
  * Screen coordinate system:
@@ -191,7 +206,7 @@ export class ScreenCanvasDrawController implements DrawController {
 		lineWidth: number,
 		dash: number[] = []
 	) {
-		this.context.strokeStyle = color;
+		this.context.strokeStyle = toScreenColor(color);
 		this.context.lineWidth = lineWidth;
 		this.context.setLineDash(dash);
 
@@ -212,7 +227,7 @@ export class ScreenCanvasDrawController implements DrawController {
 	}
 
 	public setFillStyles(fillColor: string) {
-		this.context.fillStyle = fillColor;
+		this.context.fillStyle = toScreenColor(fillColor);
 	}
 
 	public clear() {
@@ -387,7 +402,7 @@ export class ScreenCanvasDrawController implements DrawController {
 		this.context.rotate(angle);
 		this.context.font = `${opts.fontSize}px ${opts.fontFamily}`;
 		this.context.textAlign = opts.textAlign;
-		this.context.fillStyle = opts.textColor;
+		this.context.fillStyle = toScreenColor(opts.textColor);
 		this.context.textBaseline = 'middle';
 		this.context.fillText(label, 0, 0);
 		this.context.restore();
@@ -456,7 +471,7 @@ export class ScreenCanvasDrawController implements DrawController {
 	 */
 	public fillRectScreen(xMin: number, yMin: number, width: number, height: number, color: string) {
 		// TODO see if we need to replace this with a call to fillPolygon
-		this.context.fillStyle = color;
+		this.context.fillStyle = toScreenColor(color);
 		this.context.fillRect(xMin, this.canvasSize.y - yMin, width, height);
 	}
 

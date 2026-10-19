@@ -1,5 +1,5 @@
 import { saveAs } from 'file-saver';
-import { SVG_MARGIN } from '../../App.consts.ts';
+import { PDF_MARGIN } from '../../App.consts.ts';
 import { PdfDrawController } from '../../drawControllers/pdf.drawController.ts';
 import type { Entity } from '../../entities/Entity';
 import { getVisibleEntities } from '../../state';
@@ -9,10 +9,10 @@ export async function convertEntitiesToPdfString(entities: Entity[]): Promise<Bl
 	const boundingBox = getBoundingBoxOfMultipleEntities(entities);
 
 	const pdfDrawController = new PdfDrawController(
-		boundingBox.minX - SVG_MARGIN,
-		boundingBox.minY - SVG_MARGIN,
-		boundingBox.maxX + SVG_MARGIN,
-		boundingBox.maxY + SVG_MARGIN
+		boundingBox.minX - PDF_MARGIN,
+		boundingBox.minY - PDF_MARGIN,
+		boundingBox.maxX + PDF_MARGIN,
+		boundingBox.maxY + PDF_MARGIN
 	);
 
 	for (const entity of entities) {

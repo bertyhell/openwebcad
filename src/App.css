@@ -54,6 +54,29 @@
 	--color-hw-align: oklch(0.76 0.08 240);
 }
 
+/* Light theme: invert the warm grey scale, the utilities read these variables */
+:root[data-theme="light"] {
+	--color-hw-danger-bg: #fbe4e1;
+	--color-hw-danger-border: #f0b3ab;
+	--color-hw-paper: #181715;
+	--color-hw-stone-100: #2a2926;
+	--color-hw-stone-300: #4a4844;
+	--color-hw-stone-500: #77736c;
+	--color-hw-stone-700: #a29e97;
+	--color-hw-graphite: #c7c4bd;
+	--color-hw-line: #d6d3cd;
+	--color-hw-ash: #e4e1dc;
+	--color-hw-divider: #e8e6e2;
+	--color-hw-ink: #f1efeb;
+	--color-hw-night: #f6f5f2;
+	--color-hw-canvas: #ffffff;
+	--color-hw-draw: oklch(0.55 0.17 30);
+	--color-hw-modify: oklch(0.6 0.13 82);
+	--color-hw-annotate: oklch(0.55 0.12 145);
+	--color-hw-align: oklch(0.55 0.1 240);
+	color-scheme: light;
+}
+
 .hw-scrollbar {
 	scrollbar-width: thin;
 	scrollbar-color: var(--color-hw-graphite) transparent;

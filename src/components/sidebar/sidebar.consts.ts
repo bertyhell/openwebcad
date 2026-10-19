@@ -370,7 +370,10 @@ export const ALIGN_TOOLS: AlignDefinition[] = [
 
 export const ICON_PATHS = {
 	file: 'M6 3h8l4 4v14H6zM14 3v4h4',
+	settings:
+		'M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1l2.1-2.1M17 7l2.1-2.1',
 	chevronDown: 'M6 9l6 6 6-6',
+	arrowLeft: 'M19 12H5M11 6l-6 6 6 6',
 	undo: 'M9 14L4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3',
 	redo: 'M15 14l5-5-5-5M20 9H9a5 5 0 0 0 0 10h3',
 	collapse: 'M4 4h16v16H4zM9 4v16M16 9l-3 3 3 3',

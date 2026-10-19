@@ -58,6 +58,8 @@ export const DEFAULT_TEXT_OPTIONS = {
 	textDirection: new Vector(1, 0),
 	textAlign: 'center' as const,
 	textColor: '#FFF',
-	fontSize: CANVAS_INPUT_FIELD_FONT_SIZE,
+	get fontSize() {
+		return CANVAS_INPUT_FIELD_FONT_SIZE;
+	},
 	fontFamily: 'sans-serif',
 };

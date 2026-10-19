@@ -22,6 +22,7 @@ import {
 import type { Tool } from '../../tools.ts';
 import { PathIcon } from '../PathIcon.tsx';
 import { toFullHexColor } from './color.helpers.ts';
+import { SettingsMenu } from './SettingsMenu.tsx';
 import { PopoverLabel } from './SectionHeader.tsx';
 import {
 	activateTool,
@@ -128,6 +129,7 @@ const FileImportButton: FC<{
 
 export const FileMenu: FC<PopoverContentProps> = ({ onClose }) => {
 	const [isConfirmingNew, setIsConfirmingNew] = useState(false);
+	const [isShowingSettings, setIsShowingSettings] = useState(false);
 
 	const handleSave = async () => {
 		onClose();
@@ -147,6 +149,10 @@ export const FileMenu: FC<PopoverContentProps> = ({ onClose }) => {
 		onClose();
 		await fileExport.handler();
 	};
+
+	if (isShowingSettings) {
+		return <SettingsMenu onBack={() => setIsShowingSettings(false)} />;
+	}
 
 	return (
 		<div className="flex flex-col gap-0.5">
@@ -226,6 +232,15 @@ export const FileMenu: FC<PopoverContentProps> = ({ onClose }) => {
 				))}
 			</div>
 			<div className="h-px mt-3 mb-1 bg-hw-line" />
+			<button
+				type="button"
+				onClick={() => setIsShowingSettings(true)}
+				className={MENU_ITEM_CLASSES}
+				data-id="settings-button"
+			>
+				<PathIcon path={ICON_PATHS.settings} size={18} />
+				<span className="flex-1">Settings…</span>
+			</button>
 			<a
 				href={GITHUB_URL}
 				target="_blank"

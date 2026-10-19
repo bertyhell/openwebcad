@@ -1,13 +1,15 @@
 import { toast } from 'react-toastify';
 import { assign, createMachine } from 'xstate';
 import type { Entity } from '../entities/Entity';
-import { canOffsetEntity, offsetEntity } from '../helpers/offset-entity';
+import { canOffsetEntity, type OffsetSide, offsetEntity } from '../helpers/offset-entity';
 import { pickEntity } from '../helpers/pick-entity';
 import {
 	addEntities,
+	getEditableSelectedEntities,
 	setAngleGuideOriginPoint,
 	setGhostHelperEntities,
 	setHighlightedEntityIds,
+	setSelectedEntityIds,
 	setShouldDrawHelpers,
 } from '../state';
 import { Tool } from '../tools';
@@ -16,17 +18,22 @@ import type {
 	MouseClickEvent,
 	NumberInputEvent,
 	StateEvent,
+	TextInputEvent,
 	ToolContext,
 } from './tool.types';
 
 export interface OffsetContext extends ToolContext {
 	distance: number | null;
-	entity: Entity | null;
+	/**
+	 * Entities to offset: the selection when the tool started, or the clicked entity
+	 */
+	entities: Entity[];
 }
 
 export enum OffsetState {
 	INIT = 'INIT',
 	WAITING_FOR_DISTANCE = 'WAITING_FOR_DISTANCE',
+	CHECK_SELECTION = 'CHECK_SELECTION',
 	WAITING_FOR_ENTITY = 'WAITING_FOR_ENTITY',
 	WAITING_FOR_SIDE = 'WAITING_FOR_SIDE',
 }
@@ -36,18 +43,39 @@ export enum OffsetAction {
 	RECORD_DISTANCE = 'RECORD_DISTANCE',
 	HIGHLIGHT_ENTITY = 'HIGHLIGHT_ENTITY',
 	RECORD_ENTITY = 'RECORD_ENTITY',
+	RECORD_SELECTION = 'RECORD_SELECTION',
 	DRAW_PREVIEW = 'DRAW_PREVIEW',
 	ADD_OFFSET_ENTITY = 'ADD_OFFSET_ENTITY',
 	CLEAR_ENTITY = 'CLEAR_ENTITY',
 }
 
+const INSIDE_OPTION = 'I';
+const OUTSIDE_OPTION = 'O';
+
 const isValidDistance = ({ event }: { event: StateEvent }) => (event as NumberInputEvent).value > 0;
+
+const isSideOption = ({ event }: { event: StateEvent }) =>
+	[INSIDE_OPTION, OUTSIDE_OPTION].includes((event as TextInputEvent).value.toUpperCase());
+
+function getSelectedOffsetEntities(): Entity[] {
+	return getEditableSelectedEntities().filter(canOffsetEntity);
+}
+
+/**
+ * The side from a click on the canvas or the typed [I]nside / [O]utside option
+ */
+function getEventSide(event: StateEvent): OffsetSide {
+	if (event.type === 'TEXT_INPUT') {
+		return (event as TextInputEvent).value.toUpperCase() === INSIDE_OPTION ? 'inside' : 'outside';
+	}
+	return (event as MouseClickEvent).worldMouseLocation;
+}
 
 /**
  * Offset tool state machine
  * 1. The user types the offset distance (ENTER reuses the last distance)
- * 2. The user clicks a line, circle, arc, rectangle or polyline
- * 3. The user clicks on the side where the offset copy should be placed
+ * 2. The user clicks a line, circle, arc, rectangle or polyline, or uses the entities selected before starting the tool
+ * 3. The user clicks on the side where the offset copy should be placed, or types [I]nside or [O]utside
  * Then the user can pick the next entity to offset with the same distance
  */
 export const offsetToolStateMachine = createMachine(
@@ -58,7 +86,7 @@ export const offsetToolStateMachine = createMachine(
 		},
 		context: {
 			distance: null,
-			entity: null,
+			entities: [],
 			type: Tool.OFFSET,
 		},
 		initial: OffsetState.INIT,
@@ -79,14 +107,27 @@ export const offsetToolStateMachine = createMachine(
 					NUMBER_INPUT: {
 						guard: isValidDistance,
 						actions: OffsetAction.RECORD_DISTANCE,
-						target: OffsetState.WAITING_FOR_ENTITY,
+						target: OffsetState.CHECK_SELECTION,
 					},
 					ENTER: {
 						// Reuse the last distance
 						guard: ({ context }) => !!context.distance,
-						target: OffsetState.WAITING_FOR_ENTITY,
+						target: OffsetState.CHECK_SELECTION,
 					},
 				},
+			},
+			[OffsetState.CHECK_SELECTION]: {
+				description: 'Use the selected entities, if there are any',
+				always: [
+					{
+						guard: () => getSelectedOffsetEntities().length > 0,
+						actions: OffsetAction.RECORD_SELECTION,
+						target: OffsetState.WAITING_FOR_SIDE,
+					},
+					{
+						target: OffsetState.WAITING_FOR_ENTITY,
+					},
+				],
 			},
 			[OffsetState.WAITING_FOR_ENTITY]: {
 				description: 'Select the entity to offset',
@@ -113,11 +154,12 @@ export const offsetToolStateMachine = createMachine(
 			[OffsetState.WAITING_FOR_SIDE]: {
 				description: 'Select the side to offset to',
 				meta: {
-					instructions: 'Click on the side where the offset should be placed',
+					instructions: 'Click on the side for the offset, or [I]nside / [O]utside',
+					instantOptions: [INSIDE_OPTION, OUTSIDE_OPTION],
 				},
 				always: {
 					// The click didn't hit an entity that can be offset
-					guard: ({ context }) => !context.entity,
+					guard: ({ context }) => context.entities.length === 0,
 					target: OffsetState.WAITING_FOR_ENTITY,
 				},
 				on: {
@@ -125,6 +167,11 @@ export const offsetToolStateMachine = createMachine(
 						actions: OffsetAction.DRAW_PREVIEW,
 					},
 					MOUSE_CLICK: {
+						actions: [OffsetAction.ADD_OFFSET_ENTITY, OffsetAction.CLEAR_ENTITY],
+						target: OffsetState.WAITING_FOR_ENTITY,
+					},
+					TEXT_INPUT: {
+						guard: isSideOption,
 						actions: [OffsetAction.ADD_OFFSET_ENTITY, OffsetAction.CLEAR_ENTITY],
 						target: OffsetState.WAITING_FOR_ENTITY,
 					},
@@ -144,7 +191,7 @@ export const offsetToolStateMachine = createMachine(
 				setHighlightedEntityIds([]);
 				setAngleGuideOriginPoint(null);
 				return {
-					entity: null,
+					entities: [],
 				};
 			}),
 			[OffsetAction.RECORD_DISTANCE]: assign(({ event }) => {
@@ -159,45 +206,57 @@ export const offsetToolStateMachine = createMachine(
 			[OffsetAction.RECORD_ENTITY]: assign(({ event }) => {
 				const entity = pickEntity((event as MouseClickEvent).worldMouseLocation);
 				if (!entity) {
-					return { entity: null };
+					return { entities: [] };
 				}
 				if (!canOffsetEntity(entity)) {
 					toast.info(`Offset is not supported for this ${entity.getType().toLowerCase()}`);
-					return { entity: null };
+					return { entities: [] };
 				}
 				setHighlightedEntityIds([entity.id]);
-				return { entity };
+				return { entities: [entity] };
+			}),
+			[OffsetAction.RECORD_SELECTION]: assign(() => {
+				const entities = getSelectedOffsetEntities();
+				// Show the entities as highlighted, so the selection isn't reused for the next offset
+				setSelectedEntityIds([]);
+				setHighlightedEntityIds(entities.map((entity) => entity.id));
+				return { entities };
 			}),
 			[OffsetAction.DRAW_PREVIEW]: ({ context, event }) => {
-				if (!context.entity || !context.distance) {
+				const distance = context.distance;
+				if (!distance) {
 					return;
 				}
-				const preview = offsetEntity(
-					context.entity,
-					context.distance,
-					(event as DrawEvent).drawController.getWorldMouseLocation()
+				const sidePoint = (event as DrawEvent).drawController.getWorldMouseLocation();
+				setGhostHelperEntities(
+					context.entities.flatMap((entity) => offsetEntity(entity, distance, sidePoint) ?? [])
 				);
-				setGhostHelperEntities(preview ? [preview] : []);
 			},
 			[OffsetAction.ADD_OFFSET_ENTITY]: ({ context, event }) => {
-				if (!context.entity || !context.distance) {
+				const distance = context.distance;
+				if (!distance || context.entities.length === 0) {
 					return;
 				}
-				const offsetResult = offsetEntity(
-					context.entity,
-					context.distance,
-					(event as MouseClickEvent).worldMouseLocation
+				const side = getEventSide(event);
+				const offsetResults = context.entities.flatMap(
+					(entity) => offsetEntity(entity, distance, side) ?? []
 				);
-				if (!offsetResult) {
-					toast.info('The offset distance is too large for this side');
-					return;
+				const skippedCount = context.entities.length - offsetResults.length;
+				if (skippedCount > 0) {
+					toast.info(
+						typeof side === 'string'
+							? `Skipped ${skippedCount} of ${context.entities.length}: too small for this distance, or without an inside and outside, eg: lines`
+							: 'The offset distance is too large for this side'
+					);
 				}
-				addEntities([offsetResult], true);
+				if (offsetResults.length) {
+					addEntities(offsetResults, true);
+				}
 			},
 			[OffsetAction.CLEAR_ENTITY]: assign(() => {
 				setGhostHelperEntities([]);
 				setHighlightedEntityIds([]);
-				return { entity: null };
+				return { entities: [] };
 			}),
 		},
 	}

@@ -108,6 +108,21 @@ describe('offsetEntity', () => {
 		expect(outside.getBoundingBox().xmax).toBeCloseTo(22);
 	});
 
+	it('offsets inside or outside without a side point', () => {
+		const circle = new CircleEntity(new Point(0, 0), 10);
+		expect((offsetEntity(circle, 2, 'inside')?.getShape() as Circle).r).toBeCloseTo(8);
+		expect((offsetEntity(circle, 2, 'outside')?.getShape() as Circle).r).toBeCloseTo(12);
+
+		const rectangle = new RectangleEntity(new Point(0, 0), new Point(10, 10));
+		expect((offsetEntity(rectangle, 1, 'inside')?.getShape() as Polygon).box.xmin).toBeCloseTo(1);
+
+		const outside = offsetEntity(roundedSquare(), 2, 'outside') as PolyLineEntity;
+		expect(outside.getBoundingBox().xmax).toBeCloseTo(22);
+
+		// A line has no inside or outside
+		expect(offsetEntity(new LineEntity(new Point(0, 0), new Point(10, 0)), 1, 'inside')).toBeNull();
+	});
+
 	it('offsets a polyline inwards past an arc radius by failing', () => {
 		expect(offsetEntity(roundedSquare(), 6, new Point(10, 10))).toBeNull();
 	});

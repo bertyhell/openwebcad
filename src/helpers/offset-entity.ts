@@ -9,6 +9,18 @@ import { copyEntityBaseProperties } from './copy-entity-base-properties';
 import { chainSegments } from './order-edge-boundary';
 
 /**
+ * Where to place the offset copy: on the side of a point, or inside or outside a closed shape, circle or arc
+ */
+export type OffsetSide = Point | 'inside' | 'outside';
+
+/**
+ * Whether the side is inside the shape, null for a point, so the caller checks the point against its own shape
+ */
+function getRequestedInside(side: OffsetSide): boolean | null {
+	return side instanceof Point ? null : side === 'inside';
+}
+
+/**
  * Which side of the directed line from start to end the point is on: 1 for left, -1 for right, 0 on the line
  */
 function getSideOfLine(start: Point, end: Point, point: Point): number {
@@ -93,8 +105,8 @@ function keepsEdgeDirections(points: Point[], offsetPoints: Point[], isClosed: b
 /**
  * Offset a closed shape of straight edges, towards the inside when the side point is inside the shape
  */
-function offsetClosedPoints(points: Point[], distance: number, sidePoint: Point): Point[] | null {
-	const isInside = new Polygon(points).contains(sidePoint);
+function offsetClosedPoints(points: Point[], distance: number, side: OffsetSide): Point[] | null {
+	const isInside = getRequestedInside(side) ?? new Polygon(points).contains(side as Point);
 	// For counterclockwise points, the left side is the inside
 	const isCounterClockwise = getSignedArea(points) > 0;
 	const towardsLeft = isInside === isCounterClockwise;
@@ -382,17 +394,22 @@ function offsetChain(
  * Which way to offset the chain to end up on the side of the side point
  * Closed chains: towards the inside when the side point is inside. Open chains: the side of the closest segment
  */
-function isSidePointLeftOfChain(
+function isSideLeftOfChain(
 	segments: ChainSegment[],
 	isClosed: boolean,
-	sidePoint: Point
-): boolean {
+	side: OffsetSide
+): boolean | null {
 	if (isClosed) {
 		const points = sampleChain(segments);
-		const isInside = new Polygon(points).contains(sidePoint);
+		const isInside = getRequestedInside(side) ?? new Polygon(points).contains(side as Point);
 		// For counterclockwise points, the left side is the inside
 		return isInside === getSignedArea(points) > 0;
 	}
+	if (!(side instanceof Point)) {
+		// An open chain has no inside or outside
+		return null;
+	}
+	const sidePoint = side;
 	let closestSegment = segments[0];
 	let closestDistance = Number.POSITIVE_INFINITY;
 	for (const segment of segments) {
@@ -465,9 +482,10 @@ export function canOffsetEntity(entity: Entity): boolean {
  * Creates a copy of the entity at the given distance, on the side of the side point
  * Lines move parallel, circles and arcs get a larger or smaller radius,
  * rectangles and polylines grow or shrink with mitered corners, arcs in polylines keep their center
- * @returns null when the entity can't be offset, eg: an inward offset larger than a circle's radius
+ * @param side a point on the side of the copy, or inside / outside for closed shapes, circles and arcs
+ * @returns null when the entity can't be offset, eg: an inward offset larger than a circle's radius or inside of a line
  */
-export function offsetEntity(entity: Entity, distance: number, sidePoint: Point): Entity | null {
+export function offsetEntity(entity: Entity, distance: number, side: OffsetSide): Entity | null {
 	if (distance <= 0) {
 		return null;
 	}
@@ -475,12 +493,15 @@ export function offsetEntity(entity: Entity, distance: number, sidePoint: Point)
 
 	switch (entity.getType()) {
 		case EntityName.Line: {
+			if (!(side instanceof Point)) {
+				break;
+			}
 			const segment = entity.getShape() as Segment;
-			const side = getSideOfLine(segment.start, segment.end, sidePoint);
+			const lineSide = getSideOfLine(segment.start, segment.end, side);
 			const [start, end] = offsetSegmentPoints(
 				segment.start,
 				segment.end,
-				side >= 0 ? distance : -distance
+				lineSide >= 0 ? distance : -distance
 			);
 			offsetResult = new LineEntity(start, end);
 			break;
@@ -488,7 +509,8 @@ export function offsetEntity(entity: Entity, distance: number, sidePoint: Point)
 
 		case EntityName.Circle: {
 			const circle = entity.getShape() as Circle;
-			const isInside = circle.center.distanceTo(sidePoint)[0] < circle.r.valueOf();
+			const isInside =
+				getRequestedInside(side) ?? circle.center.distanceTo(side as Point)[0] < circle.r.valueOf();
 			const radius = circle.r.valueOf() + (isInside ? -distance : distance);
 			if (radius > 0) {
 				offsetResult = new CircleEntity(circle.center.clone(), radius);
@@ -498,7 +520,8 @@ export function offsetEntity(entity: Entity, distance: number, sidePoint: Point)
 
 		case EntityName.Arc: {
 			const arc = entity.getShape() as Arc;
-			const isInside = arc.center.distanceTo(sidePoint)[0] < arc.r.valueOf();
+			const isInside =
+				getRequestedInside(side) ?? arc.center.distanceTo(side as Point)[0] < arc.r.valueOf();
 			const radius = arc.r.valueOf() + (isInside ? -distance : distance);
 			if (radius > 0) {
 				offsetResult = new ArcEntity(
@@ -514,7 +537,7 @@ export function offsetEntity(entity: Entity, distance: number, sidePoint: Point)
 
 		case EntityName.Rectangle: {
 			const polygon = entity.getShape() as Polygon;
-			const offsetPoints = offsetClosedPoints(polygon.vertices, distance, sidePoint);
+			const offsetPoints = offsetClosedPoints(polygon.vertices, distance, side);
 			if (offsetPoints) {
 				offsetResult = new RectangleEntity(new Polygon(offsetPoints));
 			}
@@ -532,15 +555,21 @@ export function offsetEntity(entity: Entity, distance: number, sidePoint: Point)
 					break;
 				}
 				const { points, isClosed } = polyLinePoints;
-				const offsetPoints = isClosed
-					? offsetClosedPoints(points, distance, sidePoint)
-					: offsetOpenPoints(points, distance, sidePoint);
+				let offsetPoints: Point[] | null = null;
+				if (isClosed) {
+					offsetPoints = offsetClosedPoints(points, distance, side);
+				} else if (side instanceof Point) {
+					offsetPoints = offsetOpenPoints(points, distance, side);
+				}
 				if (offsetPoints) {
 					offsetResult = createPolyLine(offsetPoints, isClosed);
 				}
 				break;
 			}
-			const towardsLeft = isSidePointLeftOfChain(chain.segments, chain.isClosed, sidePoint);
+			const towardsLeft = isSideLeftOfChain(chain.segments, chain.isClosed, side);
+			if (towardsLeft === null) {
+				break;
+			}
 			const offsetSegments = offsetChain(
 				chain.segments,
 				chain.isClosed,

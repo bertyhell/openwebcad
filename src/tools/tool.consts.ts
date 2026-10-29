@@ -41,6 +41,7 @@ import { rotateToolStateMachine } from './rotate-tool';
 import { scaleToolStateMachine } from './scale-tool';
 import { selectToolStateMachine } from './select-tool';
 import { splineToolStateMachine } from './spline-tool.ts';
+import { starToolStateMachine } from './star-tool.ts';
 import { stretchToolStateMachine } from './stretch-tool.ts';
 import { textToolStateMachine } from './text-tool.ts';
 import { textEditToolStateMachine } from './textedit-tool.ts';
@@ -110,6 +111,7 @@ export const TOOL_STATE_MACHINES: Record<
 	[Tool.BOUNDARY]: boundaryToolStateMachine,
 	[Tool.POINT]: pointToolStateMachine,
 	[Tool.POLYGON]: polygonToolStateMachine,
+	[Tool.STAR]: starToolStateMachine,
 	[Tool.ELLIPSE]: ellipseToolStateMachine,
 	[Tool.SPLINE]: splineToolStateMachine,
 	[Tool.ALIGN]: alignToolStateMachine,

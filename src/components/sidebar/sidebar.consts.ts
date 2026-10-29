@@ -124,6 +124,14 @@ export const TOOLS: ToolDefinition[] = [
 		dataId: 'polygon-button',
 	},
 	{
+		tool: Tool.STAR,
+		group: ToolGroupId.DRAW,
+		label: 'Star',
+		hint: 'Draw a star: center, a star point on the first circle, then the second circle, arrow up/down change the number of points',
+		iconPath: 'M12 3l2.6 5.9 6.4.6-4.8 4.3 1.4 6.3L12 16.8 6.4 20.1l1.4-6.3L3 9.5l6.4-.6z',
+		dataId: 'star-button',
+	},
+	{
 		tool: Tool.ELLIPSE,
 		group: ToolGroupId.DRAW,
 		label: 'Ellipse',

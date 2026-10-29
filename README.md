@@ -11,6 +11,7 @@ This is a React-based canvas drawing application that allows users to draw vario
 ### Drawing tools
 - **Line**, **Polyline**: straight segments, single or connected
 - **Rectangle**, **Polygon**: closed shapes with straight sides
+- **Star**: center, a star point on the first circle, then the second circle; `Up` / `Down` change the number of points
 - **Circle**, **Ellipse**, **Arc**: round shapes (arc by 3 points or center, radius and angle)
 - **Spline**: smooth curve through points
 - **Point**: a single marker
@@ -53,7 +54,7 @@ This is a React-based canvas drawing application that allows users to draw vario
 - Grid (`F7`) and snap to grid (`F9`)
 - Angle guides while drawing
 - Command line next to the cursor: type a command, alias or value (eg: `100`, `10,20`, `@10,-20`) and press ENTER
-  - `L` line, `PL` polyline, `REC` rectangle, `C` circle, `A` arc, `POL` polygon, `EL` ellipse, `SPL` spline, `PO` point, `T` / `MT` text, `IAT` image, `H` hatch, `BO` boundary, `DLI` dimension
+  - `L` line, `PL` polyline, `REC` rectangle, `C` circle, `A` arc, `POL` polygon, `STAR` star, `EL` ellipse, `SPL` spline, `PO` point, `T` / `MT` text, `IAT` image, `H` hatch, `BO` boundary, `DLI` dimension
   - `M` move, `CO` / `CP` copy, `SC` scale, `RO` rotate, `MI` mirror, `O` offset, `AR` array, `PE` join, `F` fillet, `CHA` chamfer, `EX` extend, `TR` trim, `E` erase, `BR` break, `S` stretch, `X` explode, `G` group, `AL` align, `ED` text edit, `ME` measure
   - `DI` distance, `AA` area, `Z` zoom, `P` pan, `R` redraw, `SN` grid snap, `COL` color, `EXP` export, `EXPORTPDF`
 

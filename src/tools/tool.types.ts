@@ -36,6 +36,8 @@ export enum ActorEvent {
 	TEXT_INPUT = 'TEXT_INPUT',
 	ABSOLUTE_POINT_INPUT = 'ABSOLUTE_POINT_INPUT',
 	RELATIVE_POINT_INPUT = 'RELATIVE_POINT_INPUT',
+	ARROW_UP = 'ARROW_UP',
+	ARROW_DOWN = 'ARROW_DOWN',
 }
 
 export interface MouseClickEvent extends EventObject {
@@ -56,6 +58,14 @@ export interface KeyboardEnterEvent extends EventObject {
 
 export interface KeyboardDeleteEvent extends EventObject {
 	type: ActorEvent.DELETE;
+}
+
+export interface KeyboardArrowUpEvent extends EventObject {
+	type: ActorEvent.ARROW_UP;
+}
+
+export interface KeyboardArrowDownEvent extends EventObject {
+	type: ActorEvent.ARROW_DOWN;
 }
 
 export interface NumberInputEvent extends EventObject {
@@ -101,6 +111,8 @@ export type StateEvent =
 	| KeyboardEscEvent
 	| KeyboardEnterEvent
 	| KeyboardDeleteEvent
+	| KeyboardArrowUpEvent
+	| KeyboardArrowDownEvent
 	| NumberInputEvent
 	| TextInputEvent
 	| AbsolutePointInputEvent

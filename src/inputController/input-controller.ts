@@ -93,6 +93,13 @@ function activeToolAcceptsTextInput(): boolean {
 }
 
 /**
+ * Whether the active tool's current state reacts to this event, eg: the arrow keys in the polygon tool
+ */
+function activeToolHandlesEvent(type: ActorEvent.ARROW_UP | ActorEvent.ARROW_DOWN): boolean {
+	return !!getActiveToolActor()?.getSnapshot()?.can({ type });
+}
+
+/**
  * Single key options of the active tool's current state that are applied instantly, eg: [I]nvert in the arc tool
  */
 function getActiveToolInstantOptions(): string[] {
@@ -453,6 +460,15 @@ export class InputController {
 			// Prevent the enter from also clicking a button that a command focuses. eg: COLOR opens a popover
 			evt.preventDefault();
 			this.handleEnterKey();
+		} else if (
+			(evt.key === 'ArrowUp' || evt.key === 'ArrowDown') &&
+			activeToolHandlesEvent(evt.key === 'ArrowUp' ? ActorEvent.ARROW_UP : ActorEvent.ARROW_DOWN)
+		) {
+			// The active tool uses the up and down arrows, eg: to change the number of sides in the polygon tool
+			evt.preventDefault();
+			getActiveToolActor()?.send({
+				type: evt.key === 'ArrowUp' ? ActorEvent.ARROW_UP : ActorEvent.ARROW_DOWN,
+			});
 		} else if (evt.key === 'ArrowDown') {
 			// Move the screen down
 			getScreenCanvasDrawController().setScreenOffset(this.getScreenPanStep('down', evt.shiftKey));

@@ -30,6 +30,7 @@ const MIN_SIDE_COUNT = 3;
 const MAX_SIDE_COUNT = 1024;
 const INSCRIBED_OPTION = 'I';
 const CIRCUMSCRIBED_OPTION = 'C';
+const SIDE_COUNT_TOAST_ID = 'polygon-side-count';
 
 /**
  * The side count and mode of the last polygon are used again for the next polygon
@@ -53,6 +54,8 @@ export enum PolygonState {
 export enum PolygonAction {
 	INIT_POLYGON_TOOL = 'INIT_POLYGON_TOOL',
 	RECORD_SIDE_COUNT = 'RECORD_SIDE_COUNT',
+	INCREASE_SIDE_COUNT = 'INCREASE_SIDE_COUNT',
+	DECREASE_SIDE_COUNT = 'DECREASE_SIDE_COUNT',
 	RECORD_CENTER = 'RECORD_CENTER',
 	SET_MODE = 'SET_MODE',
 	DRAW_TEMP_POLYGON = 'DRAW_TEMP_POLYGON',
@@ -62,6 +65,22 @@ export enum PolygonAction {
 
 function isValidSideCount(value: number): boolean {
 	return Number.isInteger(value) && value >= MIN_SIDE_COUNT && value <= MAX_SIDE_COUNT;
+}
+
+/**
+ * Changes the side count with the arrow keys and shows the new count, since it isn't visible before the radius step
+ */
+function changeSideCount(context: PolygonContext, delta: number): Partial<PolygonContext> {
+	lastSideCount = Math.min(MAX_SIDE_COUNT, Math.max(MIN_SIDE_COUNT, context.sideCount + delta));
+	const message = `Number of sides: ${lastSideCount}`;
+	if (toast.isActive(SIDE_COUNT_TOAST_ID)) {
+		toast.update(SIDE_COUNT_TOAST_ID, { render: message });
+	} else {
+		toast.info(message, { toastId: SIDE_COUNT_TOAST_ID });
+	}
+	return {
+		sideCount: lastSideCount,
+	};
 }
 
 function createPolygon(context: PolygonContext, radiusPoint: Point): PolyLineEntity {
@@ -96,6 +115,14 @@ export const polygonToolStateMachine = createMachine(
 			type: Tool.POLYGON,
 		},
 		initial: PolygonState.INIT,
+		on: {
+			ARROW_UP: {
+				actions: PolygonAction.INCREASE_SIDE_COUNT,
+			},
+			ARROW_DOWN: {
+				actions: PolygonAction.DECREASE_SIDE_COUNT,
+			},
+		},
 		states: {
 			[PolygonState.INIT]: {
 				description: 'Initializing the polygon tool',
@@ -108,7 +135,7 @@ export const polygonToolStateMachine = createMachine(
 				description: 'Enter the number of sides',
 				meta: {
 					instructions:
-						'Enter the number of sides, ENTER to keep the last number, or select the center',
+						'Enter the number of sides, ENTER to keep the last number, or select the center. Arrow up/down changes the number of sides',
 				},
 				on: {
 					NUMBER_INPUT: [
@@ -143,7 +170,8 @@ export const polygonToolStateMachine = createMachine(
 			[PolygonState.WAITING_FOR_CENTER]: {
 				description: 'Select the center of the polygon',
 				meta: {
-					instructions: 'Select the center of the polygon',
+					instructions:
+						'Select the center of the polygon. Arrow up/down changes the number of sides',
 				},
 				on: {
 					MOUSE_CLICK: {
@@ -163,7 +191,7 @@ export const polygonToolStateMachine = createMachine(
 				description: 'Select the radius of the polygon',
 				meta: {
 					instructions:
-						'Select a corner or type the radius, [I]nscribed: corners on the circle, [C]ircumscribed: sides touch the circle',
+						'Select a corner or type the radius, [I]nscribed: corners on the circle, [C]ircumscribed: sides touch the circle. Arrow up/down changes the number of sides',
 					instantOptions: [INSCRIBED_OPTION, CIRCUMSCRIBED_OPTION],
 				},
 				on: {
@@ -215,6 +243,8 @@ export const polygonToolStateMachine = createMachine(
 					sideCount: lastSideCount,
 				};
 			}),
+			[PolygonAction.INCREASE_SIDE_COUNT]: assign(({ context }) => changeSideCount(context, 1)),
+			[PolygonAction.DECREASE_SIDE_COUNT]: assign(({ context }) => changeSideCount(context, -1)),
 			[PolygonAction.RECORD_CENTER]: assign(({ event }) => {
 				const center = getPointFromEvent(null, event as PointInputEvent);
 				setAngleGuideOriginPoint(center);

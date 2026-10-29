@@ -1,6 +1,7 @@
 import type { Point } from '@flatten-js/core';
 import { toast } from 'react-toastify';
 import { Actor, assign, createMachine } from 'xstate';
+import { GUIDE_LINE_COLOR, GUIDE_LINE_STYLE, GUIDE_LINE_WIDTH } from '../App.consts.ts';
 import { CircleEntity } from '../entities/CircleEntity.ts';
 import type { Entity } from '../entities/Entity.ts';
 import { LineEntity } from '../entities/LineEntity';
@@ -115,9 +116,14 @@ function createStar(
 	return star;
 }
 
-function createGhostCircle(center: Point, radius: number): CircleEntity {
+/**
+ * Dashed helper circle, like the guide lines of the arc tool
+ */
+function createGuideCircle(center: Point, radius: number): CircleEntity {
 	const circle = new CircleEntity(center, radius);
-	circle.lineColor = getActiveLineColor();
+	circle.lineColor = GUIDE_LINE_COLOR;
+	circle.lineWidth = GUIDE_LINE_WIDTH;
+	circle.lineDash = GUIDE_LINE_STYLE;
 	return circle;
 }
 
@@ -310,7 +316,7 @@ export const starToolStateMachine = createMachine(
 				const firstRadius = getRadius(context.center, mouseLocation);
 				// Preview the star with the circle ratio of the last star
 				setGhostHelperEntities([
-					createGhostCircle(context.center, firstRadius),
+					createGuideCircle(context.center, firstRadius),
 					createStar(
 						context.center,
 						mouseLocation,
@@ -323,8 +329,8 @@ export const starToolStateMachine = createMachine(
 				if (!context.center || !context.firstRadiusPoint) return;
 				const secondRadius = getSecondRadius(context.center, event as PointInputEvent);
 				const ghostEntities: Entity[] = [
-					createGhostCircle(context.center, getRadius(context.center, context.firstRadiusPoint)),
-					createGhostCircle(context.center, secondRadius),
+					createGuideCircle(context.center, getRadius(context.center, context.firstRadiusPoint)),
+					createGuideCircle(context.center, secondRadius),
 					createStar(context.center, context.firstRadiusPoint, secondRadius, context.pointCount),
 				];
 				setGhostHelperEntities(ghostEntities);

@@ -177,22 +177,32 @@ export class SvgDrawController implements DrawController {
 		const canvasCenterPoint = this.worldToTarget(centerPoint);
 		const canvasRadius = radius * this.screenScale;
 
-		// Calculate start and end points of the arc
-		let startPoint = new Point(canvasCenterPoint.x + canvasRadius, canvasCenterPoint.y);
-		startPoint = startPoint.rotate(startAngle, canvasCenterPoint);
-		let endPoint = new Point(canvasCenterPoint.x + canvasRadius, canvasCenterPoint.y);
-		endPoint = endPoint.rotate(endAngle, canvasCenterPoint);
+		// Calculate the start and end points in world space (y-axis up) and then convert them to svg space (y-axis down),
+		// since the angles are world angles
+		const [startPoint, endPoint] = this.worldsToTargets([
+			new Point(
+				centerPoint.x + radius * Math.cos(startAngle),
+				centerPoint.y + radius * Math.sin(startAngle)
+			),
+			new Point(
+				centerPoint.x + radius * Math.cos(endAngle),
+				centerPoint.y + radius * Math.sin(endAngle)
+			),
+		]);
 
-		// Normalize the sweep angle to be between 0 and 2π
-		let sweep = endAngle - startAngle;
-		if (counterClockwise && sweep > 0) {
-			sweep -= 2 * Math.PI;
-		} else if (!counterClockwise && sweep < 0) {
+		// Size of the arc going from start angle to end angle in the arc's direction, between 0 and 2π
+		// Counterclockwise means increasing angles in world space
+		let sweep = counterClockwise ? endAngle - startAngle : startAngle - endAngle;
+		while (sweep < 0) {
 			sweep += 2 * Math.PI;
 		}
+		while (sweep > 2 * Math.PI) {
+			sweep -= 2 * Math.PI;
+		}
 
-		const largeArcFlag = Math.abs(sweep) > Math.PI ? '1' : '0';
-		const sweepFlag = counterClockwise ? '0' : '1'; // SVG: 0 = CCW, 1 = CW
+		const largeArcFlag = sweep > Math.PI ? '1' : '0';
+		// The y-axis flips between world and svg space, so world counterclockwise becomes svg decreasing angles (sweep flag 0)
+		const sweepFlag = counterClockwise ? '0' : '1';
 
 		const attributes = `fill="none" stroke="${this.lineColor}" stroke-width="${this.lineWidth}" stroke-dasharray="${this.lineDash.join(',')}" stroke-linecap="round"`;
 		let svgPath: string;

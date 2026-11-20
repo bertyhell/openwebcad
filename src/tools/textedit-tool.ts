@@ -13,12 +13,13 @@ import {
 	setAngleGuideOriginPoint,
 	setEntities,
 	setGhostHelperEntities,
+	setHighlightedEntityIds,
 	setSelectedEntityIds,
 	setShouldDrawHelpers,
 } from '../state';
 import { Tool } from '../tools';
 import { selectToolStateMachine } from './select-tool.ts';
-import type { MouseClickEvent, StateEvent, ToolContext } from './tool.types';
+import type { DrawEvent, MouseClickEvent, StateEvent, ToolContext } from './tool.types';
 
 export enum TextEditState {
 	INIT = 'INIT',
@@ -27,6 +28,8 @@ export enum TextEditState {
 
 export enum TextEditAction {
 	INIT_TEXTEDIT_TOOL = 'INIT_TEXTEDIT_TOOL',
+	HIGHLIGHT_TEXT = 'HIGHLIGHT_TEXT',
+	CLEAR_HIGHLIGHT = 'CLEAR_HIGHLIGHT',
 	EDIT_TEXT = 'EDIT_TEXT',
 	SWITCH_TO_SELECT_TOOL = 'SWITCH_TO_SELECT_TOOL',
 }
@@ -93,7 +96,11 @@ export const textEditToolStateMachine = createMachine(
 				meta: {
 					instructions: 'Select the text to edit, SHIFT + ENTER adds a new line',
 				},
+				exit: TextEditAction.CLEAR_HIGHLIGHT,
 				on: {
+					DRAW: {
+						actions: TextEditAction.HIGHLIGHT_TEXT,
+					},
 					MOUSE_CLICK: {
 						actions: TextEditAction.EDIT_TEXT,
 					},
@@ -112,9 +119,17 @@ export const textEditToolStateMachine = createMachine(
 				setGhostHelperEntities([]);
 				setAngleGuideOriginPoint(null);
 			},
+			[TextEditAction.HIGHLIGHT_TEXT]: ({ event }) => {
+				const text = pickText((event as DrawEvent).drawController.getWorldMouseLocation());
+				setHighlightedEntityIds(text ? [text.id] : []);
+			},
+			[TextEditAction.CLEAR_HIGHLIGHT]: () => {
+				setHighlightedEntityIds([]);
+			},
 			[TextEditAction.EDIT_TEXT]: ({ event }) => {
 				const text = pickText((event as MouseClickEvent).worldMouseLocation);
 				if (text) {
+					setHighlightedEntityIds([]);
 					editText(text).catch((err) => console.error('Failed to edit text', err));
 				}
 			},

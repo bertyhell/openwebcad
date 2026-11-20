@@ -2,7 +2,6 @@ import type { Box, Point, Polygon } from '@flatten-js/core';
 import { uniq } from 'es-toolkit';
 import {
 	EPSILON,
-	HIGHLIGHT_ENTITY_DISTANCE,
 	SELECTION_RECTANGLE_COLOR_CONTAINS,
 	SELECTION_RECTANGLE_COLOR_INTERSECTION,
 	SELECTION_RECTANGLE_STYLE,
@@ -10,27 +9,36 @@ import {
 } from '../App.consts';
 import type { Entity } from '../entities/Entity';
 import { RectangleEntity } from '../entities/RectangleEntity';
-import { findClosestEntity } from '../helpers/find-closest-entity';
+import { pickEntity } from '../helpers/pick-entity';
 import {
 	getEditableEntities,
 	getSelectedEntityIds,
 	isEntitySelected,
 	setGhostHelperEntities,
+	setHighlightedEntityIds,
 	setSelectedEntityIds,
 } from '../state';
 import type { SelectContext } from './select-tool';
 import type { MouseClickEvent } from './tool.types';
 
+/**
+ * Highlight the entity under the mouse, so the user knows which entity a click will select
+ */
+export function highlightHoveredEntity(worldMouseLocation: Point): void {
+	const entity = pickEntity(worldMouseLocation);
+	setHighlightedEntityIds(entity ? [entity.id] : []);
+}
+
 export function handleFirstSelectionPoint(
 	context: SelectContext,
 	event: MouseClickEvent
 ): SelectContext {
-	const closestEntityInfo = findClosestEntity(event.worldMouseLocation, getEditableEntities());
+	// The same entity that is highlighted under the mouse
+	const closestEntity = pickEntity(event.worldMouseLocation);
 
 	// Mouse is close to entity and is not dragging a rectangle
-	if (closestEntityInfo && closestEntityInfo.distance < HIGHLIGHT_ENTITY_DISTANCE) {
+	if (closestEntity) {
 		// Select the entity close to the mouse
-		const closestEntity = closestEntityInfo.entity;
 		if (!event.holdingCtrl && !event.holdingShift) {
 			setSelectedEntityIds([closestEntity.id]);
 		} else if (event.holdingCtrl) {

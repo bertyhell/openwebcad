@@ -10,12 +10,19 @@ import {
 	setActiveToolActor,
 	setAngleGuideOriginPoint,
 	setGhostHelperEntities,
+	setHighlightedEntityIds,
 	setSelectedEntityIds,
 	setShouldDrawHelpers,
 } from '../state';
 import { Tool } from '../tools';
 import { selectToolStateMachine } from './select-tool.ts';
-import type { MouseClickEvent, NumberInputEvent, StateEvent, ToolContext } from './tool.types';
+import type {
+	DrawEvent,
+	MouseClickEvent,
+	NumberInputEvent,
+	StateEvent,
+	ToolContext,
+} from './tool.types';
 
 /**
  * Don't add more points than this, eg: when the user types a very small interval by accident
@@ -34,6 +41,8 @@ export enum MeasureState {
 
 export enum MeasureAction {
 	INIT_MEASURE_TOOL = 'INIT_MEASURE_TOOL',
+	HIGHLIGHT_ENTITY = 'HIGHLIGHT_ENTITY',
+	CLEAR_HIGHLIGHT = 'CLEAR_HIGHLIGHT',
 	PICK_ENTITY = 'PICK_ENTITY',
 	ADD_POINTS = 'ADD_POINTS',
 	SWITCH_TO_SELECT_TOOL = 'SWITCH_TO_SELECT_TOOL',
@@ -67,7 +76,11 @@ export const measureToolStateMachine = createMachine(
 				meta: {
 					instructions: 'Select the entity to place points along',
 				},
+				exit: MeasureAction.CLEAR_HIGHLIGHT,
 				on: {
+					DRAW: {
+						actions: MeasureAction.HIGHLIGHT_ENTITY,
+					},
 					MOUSE_CLICK: [
 						{
 							guard: ({ event }) => !!pickEntity((event as MouseClickEvent).worldMouseLocation),
@@ -108,6 +121,13 @@ export const measureToolStateMachine = createMachine(
 					entity: null,
 				};
 			}),
+			[MeasureAction.HIGHLIGHT_ENTITY]: ({ event }) => {
+				const entity = pickEntity((event as DrawEvent).drawController.getWorldMouseLocation());
+				setHighlightedEntityIds(entity ? [entity.id] : []);
+			},
+			[MeasureAction.CLEAR_HIGHLIGHT]: () => {
+				setHighlightedEntityIds([]);
+			},
 			[MeasureAction.PICK_ENTITY]: assign(({ event }) => {
 				const entity = pickEntity((event as MouseClickEvent).worldMouseLocation);
 				setSelectedEntityIds(entity ? [entity.id] : []);

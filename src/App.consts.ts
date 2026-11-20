@@ -73,6 +73,12 @@ export let SNAP_ANGLE_DISTANCE = 15;
 export let HIGHLIGHT_ENTITY_DISTANCE = 15;
 
 /**
+ * Line style of the entity under the mouse that will be picked when you click
+ * Long dashes, so it is different from the short dashes of selected entities
+ */
+export const HIGHLIGHT_LINE_STYLE = [16, 6];
+
+/**
  * The size of the snap point indicator shapes that are shown on active snap points
  */
 export let SNAP_POINT_SIZE = 15;

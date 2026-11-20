@@ -2,6 +2,7 @@ import { Arc, Point, type Vector } from '@flatten-js/core';
 import {
 	CANVAS_BACKGROUND_COLOR,
 	CANVAS_FOREGROUND_COLOR,
+	HIGHLIGHT_LINE_STYLE,
 	MOUSE_ZOOM_MULTIPLIER,
 } from '../App.consts';
 import type { Edge } from '../App.types.ts';
@@ -210,12 +211,14 @@ export class ScreenCanvasDrawController implements DrawController {
 		this.context.lineWidth = lineWidth;
 		this.context.setLineDash(dash);
 
-		if (isHighlighted) {
-			this.context.lineWidth = lineWidth + 1;
-		}
-
 		if (isSelected) {
 			this.context.setLineDash([5, 5]);
+		}
+
+		// The entity under the mouse shows what will be picked on click, even when it is already selected
+		if (isHighlighted) {
+			this.context.lineWidth = lineWidth + 1;
+			this.context.setLineDash(HIGHLIGHT_LINE_STYLE);
 		}
 	}
 

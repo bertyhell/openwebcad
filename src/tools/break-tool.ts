@@ -12,6 +12,7 @@ import {
 	setDimmedEntityIds,
 	setEntities,
 	setGhostHelperEntities,
+	setHighlightedEntityIds,
 	setSelectedEntityIds,
 	setShouldDrawHelpers,
 } from '../state';
@@ -38,6 +39,8 @@ export enum BreakState {
 
 export enum BreakAction {
 	INIT_BREAK_TOOL = 'INIT_BREAK_TOOL',
+	HIGHLIGHT_ENTITY = 'HIGHLIGHT_ENTITY',
+	CLEAR_HIGHLIGHT = 'CLEAR_HIGHLIGHT',
 	PICK_ENTITY = 'PICK_ENTITY',
 	DRAW_TEMP_BREAK = 'DRAW_TEMP_BREAK',
 	BREAK_ENTITY = 'BREAK_ENTITY',
@@ -74,7 +77,11 @@ export const breakToolStateMachine = createMachine(
 				meta: {
 					instructions: 'Click a line, arc, circle, rectangle or polyline at the first break point',
 				},
+				exit: BreakAction.CLEAR_HIGHLIGHT,
 				on: {
+					DRAW: {
+						actions: BreakAction.HIGHLIGHT_ENTITY,
+					},
 					MOUSE_CLICK: [
 						{
 							guard: ({ event }) => {
@@ -135,6 +142,13 @@ export const breakToolStateMachine = createMachine(
 					firstPoint: null,
 				};
 			}),
+			[BreakAction.HIGHLIGHT_ENTITY]: ({ event }) => {
+				const entity = pickEntity((event as DrawEvent).drawController.getWorldMouseLocation());
+				setHighlightedEntityIds(entity ? [entity.id] : []);
+			},
+			[BreakAction.CLEAR_HIGHLIGHT]: () => {
+				setHighlightedEntityIds([]);
+			},
 			[BreakAction.PICK_ENTITY]: assign(({ event }) => {
 				const firstPoint = (event as MouseClickEvent).worldMouseLocation;
 				const entity = pickEntity(firstPoint);

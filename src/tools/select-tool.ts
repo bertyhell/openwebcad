@@ -4,6 +4,7 @@ import {
 	getNotSelectedEntities,
 	setEntities,
 	setGhostHelperEntities,
+	setHighlightedEntityIds,
 	setSelectedEntityIds,
 	setShouldDrawHelpers,
 } from '../state';
@@ -11,6 +12,7 @@ import { Tool } from '../tools';
 import {
 	drawTempSelectionRectangle,
 	handleFirstSelectionPoint,
+	highlightHoveredEntity,
 	selectEntitiesInsideRectangle,
 } from './select-tool.helpers';
 import type { DrawEvent, MouseClickEvent, StateEvent, ToolContext } from './tool.types';
@@ -30,6 +32,8 @@ export enum SelectState {
 export enum SelectAction {
 	INIT_SELECT_TOOL = 'INIT_SELECT_TOOL',
 	HANDLE_FIRST_SELECT_POINT = 'HANDLE_FIRST_SELECT_POINT',
+	HIGHLIGHT_HOVERED_ENTITY = 'HIGHLIGHT_HOVERED_ENTITY',
+	CLEAR_HIGHLIGHT = 'CLEAR_HIGHLIGHT',
 	SELECT_ENTITIES_INSIDE_RECTANGLE = 'SELECT_ENTITIES_INSIDE_RECTANGLE',
 	DRAW_TEMP_SELECTION_RECTANGLE = 'DRAW_TEMP_SELECTION_RECTANGLE',
 	DELETE_SELECTED_ENTITIES = 'DELETE_SELECTED_ENTITIES',
@@ -59,7 +63,12 @@ export const selectToolStateMachine = createMachine(
 				meta: {
 					instructions: 'Select a line or start drawing a selection rectangle',
 				},
+				// Only the entity under the mouse is highlighted, not while dragging a selection rectangle
+				exit: SelectAction.CLEAR_HIGHLIGHT,
 				on: {
+					DRAW: {
+						actions: SelectAction.HIGHLIGHT_HOVERED_ENTITY,
+					},
 					MOUSE_CLICK: {
 						actions: SelectAction.HANDLE_FIRST_SELECT_POINT,
 						target: SelectState.CHECK_SELECTION,
@@ -123,6 +132,12 @@ export const selectToolStateMachine = createMachine(
 			INIT_SELECT_TOOL: () => {
 				setShouldDrawHelpers(false);
 				setGhostHelperEntities([]);
+			},
+			HIGHLIGHT_HOVERED_ENTITY: ({ event }: { event: StateEvent }) => {
+				highlightHoveredEntity((event as DrawEvent).drawController.getWorldMouseLocation());
+			},
+			CLEAR_HIGHLIGHT: () => {
+				setHighlightedEntityIds([]);
 			},
 			HANDLE_FIRST_SELECT_POINT: assign(
 				({ context, event }: { context: SelectContext; event: StateEvent }) => {

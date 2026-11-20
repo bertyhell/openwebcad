@@ -1,6 +1,6 @@
 import type { Point, Polygon } from '@flatten-js/core';
 import { assign, createMachine } from 'xstate';
-import { CURSOR_SIZE } from '../App.consts';
+import { CURSOR_SIZE, HIGHLIGHT_LINE_STYLE } from '../App.consts';
 import type { ArcEntity } from '../entities/ArcEntity';
 import type { CircleEntity } from '../entities/CircleEntity';
 import { EntityName } from '../entities/Entity';
@@ -203,10 +203,10 @@ function drawTrimPreview(worldMouseLocation: Point): void {
 		return;
 	}
 
-	// Dim the original entity and draw the parts that will be removed in a dashed line on top
+	// Dim the original entity and draw the parts that will be removed in the highlight dash on top
 	const removedEntities = trimResult.removed.map((entity) => {
 		const preview = entity.clone();
-		preview.lineDash = [4, 4];
+		preview.lineDash = HIGHLIGHT_LINE_STYLE;
 		return preview;
 	});
 	setDimmedEntityIds(trimResult.original.map((entity) => entity.id));

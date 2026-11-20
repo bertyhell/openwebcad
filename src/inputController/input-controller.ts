@@ -9,7 +9,6 @@ import {
 	CANVAS_INPUT_FIELD_MOUSE_OFFSET,
 	CANVAS_INPUT_FIELD_TEXT_COLOR,
 	CANVAS_INPUT_FIELD_WIDTH,
-	HIGHLIGHT_ENTITY_DISTANCE,
 	SNAP_POINT_DISTANCE,
 	TOOLBAR_WIDTH,
 } from '../App.consts.ts';
@@ -17,7 +16,6 @@ import { HtmlEvent, MouseButton, SnapPointType } from '../App.types.ts';
 import { COMMAND_ACTIONS } from '../command-actions.ts';
 import type { ScreenCanvasDrawController } from '../drawControllers/screenCanvas.drawController.ts';
 import { calculateAngleGuidesAndSnapPoints } from '../helpers/calculate-angle-guides-and-snap-points.ts';
-import { findClosestEntity } from '../helpers/find-closest-entity.ts';
 import { getClosestSnapPointWithinRadius } from '../helpers/get-closest-snap-point.ts';
 import { localStorageExport } from '../helpers/import-export-handlers/local-storage.export.ts';
 import {
@@ -37,7 +35,6 @@ import {
 	setActiveToolActor,
 	setGhostHelperEntities,
 	setGridSettings,
-	setHighlightedEntityIds,
 	setPanStartLocation,
 	setSelectedEntityIds,
 	setShouldDrawCursor,
@@ -307,19 +304,6 @@ export class InputController {
 
 		// Calculate angle guides and snap points
 		calculateAngleGuidesAndSnapPoints();
-
-		// Highlight the entity closest to the mouse when the select tool is active
-		if (getActiveToolActor()?.getSnapshot()?.context.type === Tool.SELECT) {
-			const closestEntityInfo = findClosestEntity(
-				screenCanvasDrawController.targetToWorld(newScreenMouseLocation),
-				getEditableEntities()
-			);
-			if (closestEntityInfo.distance < HIGHLIGHT_ENTITY_DISTANCE) {
-				setHighlightedEntityIds([closestEntityInfo.entity.id]);
-			} else {
-				setHighlightedEntityIds([]);
-			}
-		}
 	}
 
 	public handleMouseOut() {

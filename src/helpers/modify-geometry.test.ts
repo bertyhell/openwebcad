@@ -344,6 +344,30 @@ describe('createCorner with an arc', () => {
 		expectPoint(result.edges[1].getStartPoint(), 500, 950);
 	});
 
+	it('fillets the corner closest to the clicks, even when clicking on the part that is cut off', () => {
+		const filletCenterOffset = Math.sqrt(250 ** 2 - 50 ** 2);
+		for (const side of [-1, 1]) {
+			// Click both edges just next to the corner, between the corner and the fillet
+			const result = createCorner(
+				{ edge: diameter, clickPoint: new Point(800 + side * 270, 950) },
+				{
+					edge: halfCircle,
+					clickPoint: new Point(800 + side * 300 * Math.cos(0.15), 950 - 300 * Math.sin(0.15)),
+				},
+				CornerType.FILLET,
+				50
+			);
+			if ('error' in result) throw new Error(result.error);
+			const fillet = result.connector?.getShape() as Arc;
+			expectPoint(fillet.center, 800 + side * filletCenterOffset, 900);
+			expect(fillet.length).toBeLessThan(Math.PI * 50);
+			// The long parts of the line and the arc are kept
+			const [line, arc] = result.edges;
+			expect((line.getShape() as Segment).length).toBeCloseTo(300 + filletCenterOffset);
+			expect((arc.getShape() as Arc).sweep).toBeGreaterThan(Math.PI / 2);
+		}
+	});
+
 	it('extends a line and trims an arc with a value of 0', () => {
 		const arc = new ArcEntity(new Point(0, 0), 10, 0, Math.PI / 2, true);
 		const line = new LineEntity(new Point(15, 5), new Point(30, 5));

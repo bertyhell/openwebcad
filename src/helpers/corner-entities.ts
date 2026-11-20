@@ -625,11 +625,17 @@ interface KeptEdge {
 
 /**
  * Trims or extends the edge, so it ends in the corner point
- * The kept part leaves the corner point in the outward direction and has to contain the click point
- * Returns null if the click point isn't on the kept part
+ * The kept part leaves the corner point in the outward direction
+ * If requireClick is true, the kept part has to contain the click point, otherwise null is returned
+ * An arc is only extended over the shortest way to the corner point, otherwise null is returned
  * The edge keeps its id and its direction
  */
-function keepEdge(target: CornerLine, cornerPoint: Point, outward: Vector): KeptEdge | null {
+function keepEdge(
+	target: CornerLine,
+	cornerPoint: Point,
+	outward: Vector,
+	requireClick = true
+): KeptEdge | null {
 	const { edge, clickPoint } = target;
 	if (edge.getType() === EntityName.Line) {
 		const segment = edge.getShape() as Segment;
@@ -638,7 +644,7 @@ function keepEdge(target: CornerLine, cornerPoint: Point, outward: Vector): Kept
 		const startAlong = new Vector(cornerPoint, segment.start).dot(outward);
 		const endAlong = new Vector(cornerPoint, segment.end).dot(outward);
 		const length = Math.max(startAlong, endAlong);
-		if (clickAlong <= EPSILON || length <= EPSILON) {
+		if ((requireClick && clickAlong <= EPSILON) || length <= EPSILON) {
 			return null;
 		}
 		const entity =
@@ -659,7 +665,12 @@ function keepEdge(target: CornerLine, cornerPoint: Point, outward: Vector): Kept
 	const cornerAngle = getAngle(center, cornerPoint);
 	const clickSweep = getSweep(cornerAngle, getAngle(center, clickPoint), travelCounterClockwise);
 	const keptSweep = getSweep(cornerAngle, keptAngle, travelCounterClockwise);
-	if (clickSweep <= EPSILON || clickSweep >= keptSweep - EPSILON) {
+	if (requireClick && (clickSweep <= EPSILON || clickSweep >= keptSweep - EPSILON)) {
+		return null;
+	}
+	const originalSweep = arc.sweep;
+	const extension = keptSweep - originalSweep;
+	if (keptSweep <= EPSILON || extension > (2 * Math.PI - originalSweep) / 2 + EPSILON) {
 		return null;
 	}
 	const newArc = keepsEnd
@@ -690,10 +701,11 @@ function compareScores(first: number[], second: number[]): number {
 
 /**
  * Fillets or chamfers two edges where at least one is an arc
- * The chosen corner keeps the parts of the edges where the user clicked, and is closest to the click points
  * - fillet: the fillet arc touches both edges, every combination of offset curves gives possible centers
+ *   the chosen fillet is the one that touches the edges closest to the click points
  * - chamfer: both edges are cut off at the given straight distance from the corner where they meet
  * - a value of 0 trims or extends both edges to the corner where they meet
+ * For a chamfer or a value of 0, the parts of the edges where the user clicked are kept
  */
 function createArcCorner(
 	first: CornerLine,
@@ -731,9 +743,16 @@ function createArcCorner(
 						secondOption.outward,
 						chamferDistance
 					);
-					const firstKept = firstCut && keepEdge(first, firstCut.point, firstCut.outward);
-					const secondKept = secondCut && keepEdge(second, secondCut.point, secondCut.outward);
-					if (!firstKept || !secondKept) {
+					// The clicks were checked at the corner, they can be on the part that is cut off
+					const firstKept = firstCut && keepEdge(first, firstCut.point, firstCut.outward, false);
+					const secondKept =
+						secondCut && keepEdge(second, secondCut.point, secondCut.outward, false);
+					if (
+						!firstKept ||
+						!secondKept ||
+						firstKept.length >= firstOption.kept.length ||
+						secondKept.length >= secondOption.kept.length
+					) {
 						isTooLarge = true;
 						continue;
 					}
@@ -765,12 +784,14 @@ function createArcCorner(
 						const firstKept = keepEdge(
 							first,
 							firstEnd,
-							getCircleTangent(center, firstEnd, counterClockwise).multiply(-1)
+							getCircleTangent(center, firstEnd, counterClockwise).multiply(-1),
+							false
 						);
 						const secondKept = keepEdge(
 							second,
 							secondEnd,
-							getCircleTangent(center, secondEnd, counterClockwise)
+							getCircleTangent(center, secondEnd, counterClockwise),
+							false
 						);
 						if (!firstKept || !secondKept) {
 							continue;
@@ -783,8 +804,6 @@ function createArcCorner(
 								new ArcEntity(center, radius, startAngle, endAngle, counterClockwise)
 							),
 							score: [
-								// Prefer fillets that turn less than a half circle
-								sweep > Math.PI + EPSILON ? 1 : 0,
 								firstEnd.distanceTo(first.clickPoint)[0] +
 									secondEnd.distanceTo(second.clickPoint)[0],
 								sweep,

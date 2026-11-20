@@ -99,10 +99,7 @@ export function createCorner(
 		return { error: 'Select two different lines' };
 	}
 	if (first.edge.getType() === EntityName.Arc || second.edge.getType() === EntityName.Arc) {
-		if (cornerType !== CornerType.FILLET) {
-			return { error: 'A chamfer only works between straight lines' };
-		}
-		return createArcFillet(first, second, value);
+		return createArcCorner(first, second, cornerType, value);
 	}
 	const firstSegment = first.edge.getShape() as Segment;
 	const secondSegment = second.edge.getShape() as Segment;
@@ -692,37 +689,67 @@ function compareScores(first: number[], second: number[]): number {
 }
 
 /**
- * Fillets two edges where at least one is an arc
- * The fillet arc touches both edges, every combination of offset curves gives possible centers
- * The chosen fillet keeps the parts of the edges where the user clicked, and is closest to the click points
- * A radius of 0 trims or extends both edges to their closest intersection
+ * Fillets or chamfers two edges where at least one is an arc
+ * The chosen corner keeps the parts of the edges where the user clicked, and is closest to the click points
+ * - fillet: the fillet arc touches both edges, every combination of offset curves gives possible centers
+ * - chamfer: both edges are cut off at the given straight distance from the corner where they meet
+ * - a value of 0 trims or extends both edges to the corner where they meet
  */
-function createArcFillet(first: CornerLine, second: CornerLine, radius: number): CornerResult {
+function createArcCorner(
+	first: CornerLine,
+	second: CornerLine,
+	cornerType: CornerType,
+	value: number
+): CornerResult {
 	const candidates: ArcCornerCandidate[] = [];
+	let isTooLarge = false;
 
-	if (radius <= 0) {
+	if (value <= 0 || cornerType === CornerType.CHAMFER) {
+		const chamferDistance = Math.max(0, value);
 		const firstBase = getBaseCurve(first.edge);
 		const secondBase = getBaseCurve(second.edge);
 		for (const corner of intersectCurves(firstBase, secondBase)) {
 			const distance =
 				corner.distanceTo(first.clickPoint)[0] + corner.distanceTo(second.clickPoint)[0];
-			const firstOptions = getOutwardOptions(first.edge, corner)
-				.map((outward) => keepEdge(first, corner, outward))
-				.filter((kept): kept is KeptEdge => !!kept);
-			const secondOptions = getOutwardOptions(second.edge, corner)
-				.map((outward) => keepEdge(second, corner, outward))
-				.filter((kept): kept is KeptEdge => !!kept);
-			for (const firstKept of firstOptions) {
-				for (const secondKept of secondOptions) {
+			const firstOptions = getKeptOptions(first, corner);
+			const secondOptions = getKeptOptions(second, corner);
+			for (const firstOption of firstOptions) {
+				for (const secondOption of secondOptions) {
+					const score = [distance, firstOption.kept.length + secondOption.kept.length];
+					if (!chamferDistance) {
+						candidates.push({
+							edges: [firstOption.kept.entity, secondOption.kept.entity],
+							connector: null,
+							score,
+						});
+						continue;
+					}
+					const firstCut = moveAlongEdge(first.edge, corner, firstOption.outward, chamferDistance);
+					const secondCut = moveAlongEdge(
+						second.edge,
+						corner,
+						secondOption.outward,
+						chamferDistance
+					);
+					const firstKept = firstCut && keepEdge(first, firstCut.point, firstCut.outward);
+					const secondKept = secondCut && keepEdge(second, secondCut.point, secondCut.outward);
+					if (!firstKept || !secondKept) {
+						isTooLarge = true;
+						continue;
+					}
 					candidates.push({
 						edges: [firstKept.entity, secondKept.entity],
-						connector: null,
-						score: [distance, firstKept.length + secondKept.length],
+						connector: copyEntityBaseProperties(
+							first.edge,
+							new LineEntity(firstCut.point, secondCut.point)
+						),
+						score,
 					});
 				}
 			}
 		}
 	} else {
+		const radius = value;
 		for (const firstOffset of getOffsetCurves(first.edge, radius)) {
 			for (const secondOffset of getOffsetCurves(second.edge, radius)) {
 				for (const center of intersectCurves(firstOffset, secondOffset)) {
@@ -771,9 +798,15 @@ function createArcFillet(first: CornerLine, second: CornerLine, radius: number):
 
 	const best = candidates.sort((a, b) => compareScores(a.score, b.score))[0];
 	if (!best) {
+		if (isTooLarge) {
+			return { error: 'The distance is too large for these edges' };
+		}
+		if (value <= 0) {
+			return { error: 'The edges have no corner, click the parts you want to keep' };
+		}
 		return {
 			error:
-				radius > 0
+				cornerType === CornerType.FILLET
 					? 'No fillet with this radius fits, click the parts of the edges you want to keep'
 					: 'The edges have no corner, click the parts you want to keep',
 		};
@@ -793,4 +826,49 @@ function getOutwardOptions(edge: CornerEdgeEntity, point: Point): Vector[] {
 		direction = getCircleTangent((edge.getShape() as Arc).center, point, true);
 	}
 	return [direction, direction.multiply(-1)];
+}
+
+interface KeptOption {
+	/**
+	 * Direction from the corner along the kept part of the edge
+	 */
+	outward: Vector;
+	kept: KeptEdge;
+}
+
+/**
+ * The ways the edge can be trimmed or extended to the corner while keeping the clicked part
+ */
+function getKeptOptions(target: CornerLine, corner: Point): KeptOption[] {
+	return getOutwardOptions(target.edge, corner).flatMap((outward) => {
+		const kept = keepEdge(target, corner, outward);
+		return kept ? [{ outward, kept }] : [];
+	});
+}
+
+/**
+ * Point on the edge at the given straight distance from the start point, in the outward direction
+ * For an arc this is a chord, returns null if the distance is larger than the diameter
+ */
+function moveAlongEdge(
+	edge: CornerEdgeEntity,
+	start: Point,
+	outward: Vector,
+	distance: number
+): { point: Point; outward: Vector } | null {
+	if (edge.getType() === EntityName.Line) {
+		return { point: start.translate(outward.multiply(distance)), outward };
+	}
+	const arc = edge.getShape() as Arc;
+	const radius = arc.r.valueOf();
+	if (distance > 2 * radius) {
+		return null;
+	}
+	const counterClockwise = new Vector(arc.center, start).cross(outward) > 0;
+	const sweep = 2 * Math.asin(distance / (2 * radius));
+	const angle = getAngle(arc.center, start) + (counterClockwise ? sweep : -sweep);
+	const point = arc.center.translate(
+		new Vector(Math.cos(angle) * radius, Math.sin(angle) * radius)
+	);
+	return { point, outward: getCircleTangent(arc.center, point, counterClockwise) };
 }

@@ -362,13 +362,33 @@ describe('createCorner with an arc', () => {
 		expectPoint(result.edges[1].getEndPoint(), corner.x, corner.y);
 	});
 
-	it('does not chamfer an arc', () => {
+	it('chamfers a line and an arc at the given distance from the corner', () => {
+		const result = createCorner(
+			{ edge: diameter, clickPoint: new Point(700, 950) },
+			{ edge: halfCircle, clickPoint: new Point(800, 650) },
+			CornerType.CHAMFER,
+			50
+		);
+		if ('error' in result) throw new Error(result.error);
+		const chamfer = result.connector?.getShape() as Segment;
+		const [line, arc] = result.edges;
+		expectPoint(line.getStartPoint(), 550, 950);
+		expectPoint(chamfer.start, 550, 950);
+		// The arc is cut 50 away from the corner at (500, 950), measured in a straight line
+		expect(chamfer.end.distanceTo(new Point(500, 950))[0]).toBeCloseTo(50);
+		expect(chamfer.end.distanceTo(new Point(800, 950))[0]).toBeCloseTo(300);
+		expect(chamfer.end.y).toBeLessThan(950);
+		expectPoint(arc.getStartPoint(), chamfer.end.x, chamfer.end.y);
+		expectPoint(arc.getEndPoint(), 1100, 950);
+	});
+
+	it('reports a chamfer distance that does not fit', () => {
 		expect(
 			createCorner(
 				{ edge: diameter, clickPoint: new Point(700, 950) },
 				{ edge: halfCircle, clickPoint: new Point(800, 650) },
 				CornerType.CHAMFER,
-				50
+				700
 			)
 		).toHaveProperty('error');
 	});

@@ -1,4 +1,4 @@
-import type { Point } from '@flatten-js/core';
+import { Point } from '@flatten-js/core';
 import { toast } from 'react-toastify';
 import { assign, createMachine } from 'xstate';
 import { GUIDE_LINE_COLOR, GUIDE_LINE_STYLE, GUIDE_LINE_WIDTH } from '../App.consts.ts';
@@ -61,6 +61,8 @@ export enum CircleAction {
 	DRAW_TEMP_CIRCLE = 'DRAW_TEMP_CIRCLE',
 	DRAW_FINAL_CIRCLE = 'DRAW_FINAL_CIRCLE',
 	SET_MODE = 'SET_MODE',
+	CENTER_TO_FIRST_POINT = 'CENTER_TO_FIRST_POINT',
+	FIRST_POINT_TO_CENTER = 'FIRST_POINT_TO_CENTER',
 	RECORD_POINT = 'RECORD_POINT',
 	DRAW_TEMP_LINE = 'DRAW_TEMP_LINE',
 	DRAW_TEMP_THREE_POINT_CIRCLE = 'DRAW_TEMP_THREE_POINT_CIRCLE',
@@ -162,9 +164,17 @@ export const circleToolStateMachine = createMachine(
 			[CircleState.WAITING_FOR_POINT_ON_CIRCLE]: {
 				description: 'Select a point on the circle',
 				meta: {
-					instructions: 'Select the point on the circle or type the radius',
+					instructions:
+						'Select the point on the circle or type the radius, or [T]hree points to use the center as the first of 3 points',
+					instantOptions: [THREE_POINT_OPTION],
 				},
 				on: {
+					TEXT_INPUT: {
+						guard: ({ event }) =>
+							(event as TextInputEvent).value.toUpperCase() === THREE_POINT_OPTION,
+						actions: [CircleAction.SET_MODE, CircleAction.CENTER_TO_FIRST_POINT],
+						target: CircleState.WAITING_FOR_SECOND_POINT,
+					},
 					DRAW: {
 						actions: CircleAction.DRAW_TEMP_CIRCLE,
 					},
@@ -216,9 +226,17 @@ export const circleToolStateMachine = createMachine(
 			[CircleState.WAITING_FOR_SECOND_POINT]: {
 				description: 'Select the second point on the circle',
 				meta: {
-					instructions: 'Select the second point on the circle',
+					instructions:
+						'Select the second point on the circle, or [C]enter and radius to use the first point as the center',
+					instantOptions: [CENTER_RADIUS_OPTION],
 				},
 				on: {
+					TEXT_INPUT: {
+						guard: ({ event }) =>
+							(event as TextInputEvent).value.toUpperCase() === CENTER_RADIUS_OPTION,
+						actions: [CircleAction.SET_MODE, CircleAction.FIRST_POINT_TO_CENTER],
+						target: CircleState.WAITING_FOR_POINT_ON_CIRCLE,
+					},
 					DRAW: {
 						actions: CircleAction.DRAW_TEMP_LINE,
 					},
@@ -285,6 +303,20 @@ export const circleToolStateMachine = createMachine(
 				lastMode =
 					option === THREE_POINT_OPTION ? CircleMode.THREE_POINT : CircleMode.CENTER_RADIUS;
 			},
+			[CircleAction.CENTER_TO_FIRST_POINT]: assign(({ context }) => {
+				setGhostHelperEntities([]);
+				return {
+					points: context.centerPoint ? [context.centerPoint] : [],
+					centerPoint: null,
+				};
+			}),
+			[CircleAction.FIRST_POINT_TO_CENTER]: assign(({ context }) => {
+				setGhostHelperEntities([]);
+				return {
+					centerPoint: context.points[0] ?? null,
+					points: [],
+				};
+			}),
 			[CircleAction.RECORD_START_POINT]: assign(({ event }) => {
 				const startPoint = getPointFromEvent(null, event as PointInputEvent);
 				setAngleGuideOriginPoint(startPoint);
@@ -334,7 +366,15 @@ export const circleToolStateMachine = createMachine(
 				const firstPoint = getLastPoint(context);
 				if (!firstPoint) return;
 				const mouseLocation = (event as DrawEvent).drawController.getWorldMouseLocation();
-				setGhostHelperEntities([createGuideLine(firstPoint, mouseLocation)]);
+				// Until the third point is known, the 2 points are the diameter of the circle
+				const center = new Point(
+					(firstPoint.x + mouseLocation.x) / 2,
+					(firstPoint.y + mouseLocation.y) / 2
+				);
+				setGhostHelperEntities([
+					createGuideLine(firstPoint, mouseLocation),
+					createCircle(center, pointDistance(firstPoint, mouseLocation) / 2),
+				]);
 			},
 			[CircleAction.DRAW_TEMP_THREE_POINT_CIRCLE]: ({ context, event }) => {
 				const [p1, p2] = context.points;

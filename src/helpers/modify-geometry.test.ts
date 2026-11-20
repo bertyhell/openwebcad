@@ -179,28 +179,28 @@ describe('createCorner', () => {
 
 	it('makes a sharp corner with a value of 0', () => {
 		const result = createCorner(
-			{ line: horizontal, clickPoint: new Point(2, 0) },
-			{ line: vertical, clickPoint: new Point(12, 8) },
+			{ edge: horizontal, clickPoint: new Point(2, 0) },
+			{ edge: vertical, clickPoint: new Point(12, 8) },
 			CornerType.FILLET,
 			0
 		);
 		if ('error' in result) throw new Error(result.error);
-		expectPoint(result.lines[0].getEndPoint(), 12, 0);
-		expectPoint(result.lines[1].getEndPoint(), 12, 0);
+		expectPoint(result.edges[0].getEndPoint(), 12, 0);
+		expectPoint(result.edges[1].getEndPoint(), 12, 0);
 		expect(result.connector).toBeNull();
-		expect(result.lines[0].id).toBe(horizontal.id);
+		expect(result.edges[0].id).toBe(horizontal.id);
 	});
 
 	it('rounds the corner with a fillet arc', () => {
 		const result = createCorner(
-			{ line: horizontal, clickPoint: new Point(2, 0) },
-			{ line: vertical, clickPoint: new Point(12, 8) },
+			{ edge: horizontal, clickPoint: new Point(2, 0) },
+			{ edge: vertical, clickPoint: new Point(12, 8) },
 			CornerType.FILLET,
 			2
 		);
 		if ('error' in result) throw new Error(result.error);
-		expectPoint(result.lines[0].getEndPoint(), 10, 0);
-		expectPoint(result.lines[1].getEndPoint(), 12, 2);
+		expectPoint(result.edges[0].getEndPoint(), 10, 0);
+		expectPoint(result.edges[1].getEndPoint(), 12, 2);
 		const arc = result.connector?.getShape() as Arc;
 		expectPoint(arc.center, 10, 2);
 		expect(arc.r.valueOf()).toBeCloseTo(2);
@@ -209,8 +209,8 @@ describe('createCorner', () => {
 
 	it('cuts the corner with a chamfer line', () => {
 		const result = createCorner(
-			{ line: horizontal, clickPoint: new Point(2, 0) },
-			{ line: vertical, clickPoint: new Point(12, 8) },
+			{ edge: horizontal, clickPoint: new Point(2, 0) },
+			{ edge: vertical, clickPoint: new Point(12, 8) },
 			CornerType.CHAMFER,
 			3
 		);
@@ -224,16 +224,16 @@ describe('createCorner', () => {
 		const parallel = new LineEntity(new Point(0, 5), new Point(10, 5));
 		expect(
 			createCorner(
-				{ line: horizontal, clickPoint: new Point(1, 0) },
-				{ line: parallel, clickPoint: new Point(1, 5) },
+				{ edge: horizontal, clickPoint: new Point(1, 0) },
+				{ edge: parallel, clickPoint: new Point(1, 5) },
 				CornerType.FILLET,
 				1
 			)
 		).toHaveProperty('error');
 		expect(
 			createCorner(
-				{ line: horizontal, clickPoint: new Point(1, 0) },
-				{ line: vertical, clickPoint: new Point(12, 8) },
+				{ edge: horizontal, clickPoint: new Point(1, 0) },
+				{ edge: vertical, clickPoint: new Point(12, 8) },
 				CornerType.FILLET,
 				50
 			)
@@ -282,11 +282,112 @@ describe('applyCorner', () => {
 		expect(result.some((entity) => entity.id === rectangle.id)).toBe(false);
 	});
 
-	it('ignores the arcs of a polyline', () => {
+	it('only uses the arcs of a polyline when arcs are allowed', () => {
 		const arc = new ArcEntity(new Point(0, 0), 5, 0, Math.PI / 2, true);
 		const polyLine = new PolyLineEntity([arc, new LineEntity(new Point(0, 5), new Point(-10, 5))]);
 		expect(getCornerTarget(polyLine, new Point(5, 0.1))).toBeNull();
+		expect(getCornerTarget(polyLine, new Point(5, 0.1), true)?.segmentIndex).toBe(0);
 		expect(getCornerTarget(polyLine, new Point(-5, 5))?.segmentIndex).toBe(1);
+	});
+});
+
+describe('createCorner with an arc', () => {
+	// Half circle on top of its diameter line, meeting in sharp corners at (500, 950) and (1100, 950)
+	const halfCircle = new ArcEntity(new Point(800, 950), 300, Math.PI, 0, true);
+	const diameter = new LineEntity(new Point(500, 950), new Point(1100, 950));
+
+	it('fillets a line and an arc in the corner closest to the clicks', () => {
+		const result = createCorner(
+			{ edge: diameter, clickPoint: new Point(700, 950) },
+			{ edge: halfCircle, clickPoint: new Point(800, 650) },
+			CornerType.FILLET,
+			50
+		);
+		if ('error' in result) throw new Error(result.error);
+		const fillet = result.connector?.getShape() as Arc;
+		const centerX = 800 - Math.sqrt(250 ** 2 - 50 ** 2);
+		expectPoint(fillet.center, centerX, 900);
+		expect(fillet.r.valueOf()).toBeCloseTo(50);
+
+		const [line, arc] = result.edges;
+		expect(line.id).toBe(diameter.id);
+		expect(arc.id).toBe(halfCircle.id);
+		expectPoint(line.getStartPoint(), centerX, 950);
+		expectPoint(line.getEndPoint(), 1100, 950);
+		// The arc is trimmed where it touches the fillet and keeps its direction
+		const tangentScale = 300 / 250;
+		const tangentPoint = new Point(800 + (centerX - 800) * tangentScale, 950 - 50 * tangentScale);
+		expectPoint(arc.getStartPoint(), tangentPoint.x, tangentPoint.y);
+		expectPoint(arc.getEndPoint(), 1100, 950);
+		expect((arc.getShape() as Arc).counterClockwise).toBe(true);
+
+		// The fillet connects the trimmed edges
+		expect(fillet.start.distanceTo(line.getStartPoint())[0]).toBeCloseTo(0);
+		expect(fillet.end.distanceTo(arc.getStartPoint())[0]).toBeCloseTo(0);
+		expect(fillet.length).toBeLessThan(Math.PI * 50);
+	});
+
+	it('fillets the other corner when clicking closer to it', () => {
+		const result = createCorner(
+			{ edge: halfCircle, clickPoint: new Point(800, 650) },
+			{ edge: diameter, clickPoint: new Point(900, 950) },
+			CornerType.FILLET,
+			50
+		);
+		if ('error' in result) throw new Error(result.error);
+		expectPoint(
+			(result.connector?.getShape() as Arc).center,
+			800 + Math.sqrt(250 ** 2 - 50 ** 2),
+			900
+		);
+		expectPoint(result.edges[0].getStartPoint(), 500, 950);
+		expectPoint(result.edges[1].getStartPoint(), 500, 950);
+	});
+
+	it('extends a line and trims an arc with a value of 0', () => {
+		const arc = new ArcEntity(new Point(0, 0), 10, 0, Math.PI / 2, true);
+		const line = new LineEntity(new Point(15, 5), new Point(30, 5));
+		const result = createCorner(
+			{ edge: line, clickPoint: new Point(25, 5) },
+			{ edge: arc, clickPoint: new Point(10 * Math.cos(0.2), 10 * Math.sin(0.2)) },
+			CornerType.FILLET,
+			0
+		);
+		if ('error' in result) throw new Error(result.error);
+		expect(result.connector).toBeNull();
+		const corner = new Point(Math.sqrt(75), 5);
+		expectPoint(result.edges[0].getStartPoint(), corner.x, corner.y);
+		expectPoint(result.edges[0].getEndPoint(), 30, 5);
+		expectPoint(result.edges[1].getStartPoint(), 10, 0);
+		expectPoint(result.edges[1].getEndPoint(), corner.x, corner.y);
+	});
+
+	it('does not chamfer an arc', () => {
+		expect(
+			createCorner(
+				{ edge: diameter, clickPoint: new Point(700, 950) },
+				{ edge: halfCircle, clickPoint: new Point(800, 650) },
+				CornerType.CHAMFER,
+				50
+			)
+		).toHaveProperty('error');
+	});
+
+	it('fillets a line with the arc of a polyline', () => {
+		const polyArc = new ArcEntity(new Point(800, 950), 300, Math.PI, 0, true);
+		const polyLine = new PolyLineEntity([
+			polyArc,
+			new LineEntity(new Point(1100, 950), new Point(1100, 1200)),
+		]);
+		const first = getCornerTarget(diameter, new Point(700, 950), true);
+		const second = getCornerTarget(polyLine, new Point(800, 650), true);
+		if (!first || !second) throw new Error('No corner target');
+		const corner = createCorner(first, second, CornerType.FILLET, 50);
+		if ('error' in corner) throw new Error(corner.error);
+		const result = applyCorner([diameter, polyLine], first, second, corner);
+		// The line, the 2 exploded polyline parts and the fillet
+		expect(result).toHaveLength(4);
+		expect(result.filter((entity) => entity.id === diameter.id)).toHaveLength(1);
 	});
 });
 

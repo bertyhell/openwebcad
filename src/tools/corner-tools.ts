@@ -63,14 +63,17 @@ const CORNER_ENTITY_TYPES = [EntityName.Line, EntityName.Rectangle, EntityName.P
 
 /**
  * The line, or straight segment of a rectangle or polyline, under the mouse
+ * A fillet can also use an arc, or an arc segment of a polyline
  * Other entities can't be filleted or chamfered
  */
-function pickLine(worldPoint: Point): CornerTarget | null {
+function pickLine(worldPoint: Point, cornerType: CornerType): CornerTarget | null {
+	const allowArcs = cornerType === CornerType.FILLET;
+	const entityTypes = allowArcs ? [...CORNER_ENTITY_TYPES, EntityName.Arc] : CORNER_ENTITY_TYPES;
 	const candidates = getEditableEntities().filter((entity) =>
-		CORNER_ENTITY_TYPES.includes(entity.getType())
+		entityTypes.includes(entity.getType())
 	);
 	const entity = pickEntity(worldPoint, candidates);
-	return entity ? getCornerTarget(entity, worldPoint) : null;
+	return entity ? getCornerTarget(entity, worldPoint, allowArcs) : null;
 }
 
 /**
@@ -85,7 +88,7 @@ function getBoxCorners(context: CornerContext, cornerType: CornerType, boxEndPoi
 }
 
 function getCorner(context: CornerContext, cornerType: CornerType, secondClickPoint: Point) {
-	const secondLine = pickLine(secondClickPoint);
+	const secondLine = pickLine(secondClickPoint, cornerType);
 	if (!context.firstLine || !secondLine) {
 		return null;
 	}
@@ -95,6 +98,7 @@ function getCorner(context: CornerContext, cornerType: CornerType, secondClickPo
 /**
  * Creates the fillet or chamfer tool
  * The user types a radius or distance (or keeps the last one) and clicks two lines on the parts that should be kept
+ * The fillet tool also accepts arcs, eg: to round the corner between a line and an arc
  * Straight segments of rectangles and polylines count as lines
  * Clicking next to the lines starts a selection box, every corner where two selected lines meet is rounded or cut off
  * The lines are trimmed or extended to the corner, which is rounded (fillet) or cut off (chamfer)
@@ -134,7 +138,8 @@ function createCornerToolStateMachine(tool: Tool, cornerType: CornerType, valueN
 						},
 						MOUSE_CLICK: [
 							{
-								guard: ({ event }) => !!pickLine((event as MouseClickEvent).worldMouseLocation),
+								guard: ({ event }) =>
+									!!pickLine((event as MouseClickEvent).worldMouseLocation, cornerType),
 								actions: CornerAction.RECORD_FIRST_LINE,
 								target: CornerState.WAITING_FOR_SECOND_LINE,
 							},
@@ -167,7 +172,8 @@ function createCornerToolStateMachine(tool: Tool, cornerType: CornerType, valueN
 					on: {
 						DRAW: { actions: CornerAction.DRAW_PREVIEW },
 						MOUSE_CLICK: {
-							guard: ({ event }) => !!pickLine((event as MouseClickEvent).worldMouseLocation),
+							guard: ({ event }) =>
+								!!pickLine((event as MouseClickEvent).worldMouseLocation, cornerType),
 							actions: CornerAction.CREATE_CORNER,
 							target: CornerState.INIT,
 						},
@@ -191,11 +197,14 @@ function createCornerToolStateMachine(tool: Tool, cornerType: CornerType, valueN
 					return { value };
 				}),
 				[CornerAction.HIGHLIGHT_LINE]: ({ event }) => {
-					const line = pickLine((event as DrawEvent).drawController.getWorldMouseLocation());
+					const line = pickLine(
+						(event as DrawEvent).drawController.getWorldMouseLocation(),
+						cornerType
+					);
 					setHighlightedEntityIds(line ? [line.entity.id] : []);
 				},
 				[CornerAction.RECORD_FIRST_LINE]: assign(({ event }) => {
-					return { firstLine: pickLine((event as MouseClickEvent).worldMouseLocation) };
+					return { firstLine: pickLine((event as MouseClickEvent).worldMouseLocation, cornerType) };
 				}),
 				[CornerAction.RECORD_BOX_START]: assign(({ event }) => {
 					setHighlightedEntityIds([]);
@@ -241,7 +250,7 @@ function createCornerToolStateMachine(tool: Tool, cornerType: CornerType, valueN
 				},
 				[CornerAction.DRAW_PREVIEW]: ({ context, event }) => {
 					const mouseLocation = (event as DrawEvent).drawController.getWorldMouseLocation();
-					const secondLine = pickLine(mouseLocation);
+					const secondLine = pickLine(mouseLocation, cornerType);
 					setHighlightedEntityIds(
 						[context.firstLine?.entity.id, secondLine?.entity.id].filter((id): id is string => !!id)
 					);
@@ -250,7 +259,7 @@ function createCornerToolStateMachine(tool: Tool, cornerType: CornerType, valueN
 						setGhostHelperEntities([]);
 						return;
 					}
-					const preview = [...corner.lines, ...(corner.connector ? [corner.connector] : [])];
+					const preview = [...corner.edges, ...(corner.connector ? [corner.connector] : [])];
 					for (const entity of preview) {
 						entity.lineDash = [4, 4];
 					}
@@ -259,7 +268,7 @@ function createCornerToolStateMachine(tool: Tool, cornerType: CornerType, valueN
 				[CornerAction.CREATE_CORNER]: ({ context, event }) => {
 					const clickPoint = (event as MouseClickEvent).worldMouseLocation;
 					const corner = getCorner(context, cornerType, clickPoint);
-					const secondLine = pickLine(clickPoint);
+					const secondLine = pickLine(clickPoint, cornerType);
 					if (!corner || !context.firstLine || !secondLine) {
 						return;
 					}

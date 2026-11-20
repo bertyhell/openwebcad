@@ -1,4 +1,4 @@
-import { Line, type Point, type Segment, Vector } from '@flatten-js/core';
+import { type Arc, Circle, Line, type Point, type Segment, Vector } from '@flatten-js/core';
 import type { StartAndEndpointEntity } from '../App.types';
 import { ArcEntity } from '../entities/ArcEntity';
 import { type Entity, EntityName } from '../entities/Entity';
@@ -12,17 +12,25 @@ export enum CornerType {
 	CHAMFER = 'CHAMFER',
 }
 
+/**
+ * A straight line or a circle arc that can be filleted
+ */
+export type CornerEdgeEntity = LineEntity | ArcEntity;
+
 export interface CornerLine {
-	line: LineEntity;
+	edge: CornerEdgeEntity;
 	/**
-	 * Where the user clicked the line, this part of the line is kept
+	 * Where the user clicked the edge, this part of the edge is kept
 	 */
 	clickPoint: Point;
 }
 
 export type CornerResult =
 	| {
-			lines: [LineEntity, LineEntity];
+			/**
+			 * The trimmed or extended edges, a line or an arc
+			 */
+			edges: [CornerEdgeEntity, CornerEdgeEntity];
 			/**
 			 * Arc for a fillet, line for a chamfer, null for a sharp corner
 			 */
@@ -51,7 +59,7 @@ interface TrimmedLine {
  * Finds which end of the line is kept, based on the side of the corner where the user clicked
  */
 function getTrimmedLine(cornerLine: CornerLine, corner: Point): TrimmedLine | null {
-	const segment = cornerLine.line.getShape() as Segment;
+	const segment = cornerLine.edge.getShape() as Segment;
 	const clickProjection = cornerLine.clickPoint.projectionOn(new Line(segment.start, segment.end));
 	if (clickProjection.equalTo(corner)) {
 		return null;
@@ -87,11 +95,17 @@ export function createCorner(
 	cornerType: CornerType,
 	value: number
 ): CornerResult {
-	if (first.line.id === second.line.id) {
+	if (first.edge.id === second.edge.id) {
 		return { error: 'Select two different lines' };
 	}
-	const firstSegment = first.line.getShape() as Segment;
-	const secondSegment = second.line.getShape() as Segment;
+	if (first.edge.getType() === EntityName.Arc || second.edge.getType() === EntityName.Arc) {
+		if (cornerType !== CornerType.FILLET) {
+			return { error: 'A chamfer only works between straight lines' };
+		}
+		return createArcFillet(first, second, value);
+	}
+	const firstSegment = first.edge.getShape() as Segment;
+	const secondSegment = second.edge.getShape() as Segment;
 	const corner = new Line(firstSegment.start, firstSegment.end).intersect(
 		new Line(secondSegment.start, secondSegment.end)
 	)[0];
@@ -107,9 +121,9 @@ export function createCorner(
 
 	if (value <= 0) {
 		return {
-			lines: [
-				createLineLike(first.line, firstTrimmed.keptPoint, corner),
-				createLineLike(second.line, secondTrimmed.keptPoint, corner),
+			edges: [
+				createLineLike(first.edge, firstTrimmed.keptPoint, corner),
+				createLineLike(second.edge, secondTrimmed.keptPoint, corner),
 			],
 			connector: null,
 		};
@@ -131,11 +145,11 @@ export function createCorner(
 		};
 	}
 	return {
-		lines: [
-			createLineLike(first.line, firstTrimmed.keptPoint, geometry.firstEnd),
-			createLineLike(second.line, secondTrimmed.keptPoint, geometry.secondEnd),
+		edges: [
+			createLineLike(first.edge, firstTrimmed.keptPoint, geometry.firstEnd),
+			createLineLike(second.edge, secondTrimmed.keptPoint, geometry.secondEnd),
 		],
-		connector: copyEntityBaseProperties(first.line, geometry.connector),
+		connector: copyEntityBaseProperties(first.edge, geometry.connector),
 	};
 }
 
@@ -190,9 +204,9 @@ function getCornerGeometry(
 }
 
 /**
- * A straight piece of an entity that can be filleted or chamfered
- * - a line
- * - a straight segment of a rectangle or polyline
+ * A piece of an entity that can be filleted or chamfered
+ * - a line or an arc
+ * - a straight or arc segment of a rectangle or polyline
  */
 export interface CornerTarget extends CornerLine {
 	/**
@@ -200,18 +214,26 @@ export interface CornerTarget extends CornerLine {
 	 */
 	entity: Entity;
 	/**
-	 * Index of the clicked segment in the exploded rectangle or polyline, 0 for a line
+	 * Index of the clicked segment in the exploded rectangle or polyline, 0 for a line or arc
 	 */
 	segmentIndex: number;
 }
 
+const SINGLE_EDGE_TYPES = [EntityName.Line, EntityName.Arc];
+
 /**
- * Finds the straight piece of the entity closest to the click point
- * Returns null if the entity has no straight piece there, eg: a circle or an arc of a polyline
+ * Finds the piece of the entity closest to the click point
+ * Arcs are only allowed if allowArcs is true, since only a fillet can connect to an arc
+ * Returns null if the entity has no usable piece there, eg: a circle
  */
-export function getCornerTarget(entity: Entity, clickPoint: Point): CornerTarget | null {
-	if (entity.getType() === EntityName.Line) {
-		return { entity, segmentIndex: 0, line: entity as LineEntity, clickPoint };
+export function getCornerTarget(
+	entity: Entity,
+	clickPoint: Point,
+	allowArcs = false
+): CornerTarget | null {
+	const allowedEdgeTypes = allowArcs ? SINGLE_EDGE_TYPES : [EntityName.Line];
+	if (allowedEdgeTypes.includes(entity.getType())) {
+		return { entity, segmentIndex: 0, edge: entity as CornerEdgeEntity, clickPoint };
 	}
 	if (![EntityName.Rectangle, EntityName.PolyLine].includes(entity.getType())) {
 		return null;
@@ -227,12 +249,17 @@ export function getCornerTarget(entity: Entity, clickPoint: Point): CornerTarget
 		}
 	});
 	const segment = segments[closestIndex];
-	if (!segment || segment.getType() !== EntityName.Line) {
+	if (!segment || !allowedEdgeTypes.includes(segment.getType())) {
 		return null;
 	}
 	// Unique id per segment, so two segments of the same rectangle count as different lines
 	segment.id = `${entity.id}-${closestIndex}`;
-	return { entity, segmentIndex: closestIndex, line: segment as LineEntity, clickPoint };
+	return {
+		entity,
+		segmentIndex: closestIndex,
+		edge: segment as CornerEdgeEntity,
+		clickPoint,
+	};
 }
 
 function sharesEndpoint(first: StartAndEndpointEntity, second: StartAndEndpointEntity): boolean {
@@ -250,11 +277,11 @@ export function applyCorner(
 	entities: Entity[],
 	first: CornerTarget,
 	second: CornerTarget,
-	corner: { lines: [LineEntity, LineEntity]; connector: Entity | null }
+	corner: { edges: [CornerEdgeEntity, CornerEdgeEntity]; connector: Entity | null }
 ): Entity[] {
-	const [firstLine, secondLine] = corner.lines;
+	const [firstLine, secondLine] = corner.edges;
 	const isSameMultiSegmentEntity =
-		first.entity.id === second.entity.id && first.entity.getType() !== EntityName.Line;
+		first.entity.id === second.entity.id && !SINGLE_EDGE_TYPES.includes(first.entity.getType());
 
 	if (isSameMultiSegmentEntity) {
 		const parts = explodeEntity(first.entity) as StartAndEndpointEntity[];
@@ -285,7 +312,7 @@ export function applyCorner(
 		[first, firstLine],
 		[second, secondLine],
 	] as const) {
-		if (target.entity.getType() === EntityName.Line) {
+		if (SINGLE_EDGE_TYPES.includes(target.entity.getType())) {
 			line.id = target.entity.id;
 			replacements.set(target.entity.id, [line]);
 			continue;
@@ -509,4 +536,261 @@ function applyCut({ segment, atStart }: SegmentEnd, cutDistance: number): void {
 	} else {
 		segment.endCut = cutDistance;
 	}
+}
+
+/**
+ * The full line or circle an edge lies on
+ */
+type BaseCurve = Line | Circle;
+
+function getBaseCurve(edge: CornerEdgeEntity): BaseCurve {
+	if (edge.getType() === EntityName.Line) {
+		const segment = edge.getShape() as Segment;
+		return new Line(segment.start, segment.end);
+	}
+	const arc = edge.getShape() as Arc;
+	return new Circle(arc.center, arc.r.valueOf());
+}
+
+/**
+ * The curves at the given distance from the edge, the center of a fillet arc lies on one of them
+ * - line: the 2 parallel lines
+ * - arc: the 2 concentric circles
+ */
+function getOffsetCurves(edge: CornerEdgeEntity, distance: number): BaseCurve[] {
+	const base = getBaseCurve(edge);
+	if (base instanceof Line) {
+		return [
+			base.translate(base.norm.multiply(distance)),
+			base.translate(base.norm.multiply(-distance)),
+		];
+	}
+	const radius = base.r.valueOf();
+	const curves = [new Circle(base.pc, radius + distance)];
+	if (Math.abs(radius - distance) > EPSILON) {
+		curves.push(new Circle(base.pc, Math.abs(radius - distance)));
+	}
+	return curves;
+}
+
+function intersectCurves(first: BaseCurve, second: BaseCurve): Point[] {
+	return first instanceof Line ? first.intersect(second) : first.intersect(second);
+}
+
+/**
+ * Point where a fillet arc with the given center and radius touches the edge
+ */
+function getTangentPoint(edge: CornerEdgeEntity, center: Point, radius: number): Point {
+	const base = getBaseCurve(edge);
+	if (base instanceof Line) {
+		return center.projectionOn(base);
+	}
+	const direction = new Vector(base.pc, center).normalize();
+	const candidates = [
+		base.pc.translate(direction.multiply(base.r.valueOf())),
+		base.pc.translate(direction.multiply(-base.r.valueOf())),
+	];
+	return candidates.reduce((best, candidate) =>
+		Math.abs(candidate.distanceTo(center)[0] - radius) <
+		Math.abs(best.distanceTo(center)[0] - radius)
+			? candidate
+			: best
+	);
+}
+
+function getAngle(center: Point, point: Point): number {
+	return Math.atan2(point.y - center.y, point.x - center.x);
+}
+
+/**
+ * Angle swept when going from one angle to another in the given direction, between 0 and 2π
+ */
+function getSweep(fromAngle: number, toAngle: number, counterClockwise: boolean): number {
+	const sweep = counterClockwise ? toAngle - fromAngle : fromAngle - toAngle;
+	return ((sweep % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+}
+
+/**
+ * Unit vector along the circle in the direction of travel
+ */
+function getCircleTangent(center: Point, point: Point, counterClockwise: boolean): Vector {
+	const tangent = new Vector(-(point.y - center.y), point.x - center.x).normalize();
+	return counterClockwise ? tangent : tangent.multiply(-1);
+}
+
+interface KeptEdge {
+	entity: CornerEdgeEntity;
+	/**
+	 * Length of the kept edge, used to choose the smallest change if multiple corners are possible
+	 */
+	length: number;
+}
+
+/**
+ * Trims or extends the edge, so it ends in the corner point
+ * The kept part leaves the corner point in the outward direction and has to contain the click point
+ * Returns null if the click point isn't on the kept part
+ * The edge keeps its id and its direction
+ */
+function keepEdge(target: CornerLine, cornerPoint: Point, outward: Vector): KeptEdge | null {
+	const { edge, clickPoint } = target;
+	if (edge.getType() === EntityName.Line) {
+		const segment = edge.getShape() as Segment;
+		const base = new Line(segment.start, segment.end);
+		const clickAlong = new Vector(cornerPoint, clickPoint.projectionOn(base)).dot(outward);
+		const startAlong = new Vector(cornerPoint, segment.start).dot(outward);
+		const endAlong = new Vector(cornerPoint, segment.end).dot(outward);
+		const length = Math.max(startAlong, endAlong);
+		if (clickAlong <= EPSILON || length <= EPSILON) {
+			return null;
+		}
+		const entity =
+			startAlong >= endAlong
+				? createLineLike(edge, segment.start, cornerPoint)
+				: createLineLike(edge, cornerPoint, segment.end);
+		return { entity, length };
+	}
+
+	const arc = edge.getShape() as Arc;
+	const center = arc.center;
+	const radius = arc.r.valueOf();
+	// Direction of travel along the circle, away from the corner
+	const travelCounterClockwise = new Vector(center, cornerPoint).cross(outward) > 0;
+	// The kept end is the end of the arc that is reached when traveling from the click point away from the corner
+	const keepsEnd = travelCounterClockwise === arc.counterClockwise;
+	const keptAngle = keepsEnd ? arc.endAngle : arc.startAngle;
+	const cornerAngle = getAngle(center, cornerPoint);
+	const clickSweep = getSweep(cornerAngle, getAngle(center, clickPoint), travelCounterClockwise);
+	const keptSweep = getSweep(cornerAngle, keptAngle, travelCounterClockwise);
+	if (clickSweep <= EPSILON || clickSweep >= keptSweep - EPSILON) {
+		return null;
+	}
+	const newArc = keepsEnd
+		? new ArcEntity(center, radius, cornerAngle, keptAngle, arc.counterClockwise)
+		: new ArcEntity(center, radius, keptAngle, cornerAngle, arc.counterClockwise);
+	const entity = copyEntityBaseProperties(edge, newArc);
+	entity.id = edge.id;
+	return { entity, length: keptSweep * radius };
+}
+
+interface ArcCornerCandidate {
+	edges: [CornerEdgeEntity, CornerEdgeEntity];
+	connector: Entity | null;
+	/**
+	 * Lower is better
+	 */
+	score: number[];
+}
+
+function compareScores(first: number[], second: number[]): number {
+	for (let index = 0; index < first.length; index++) {
+		if (Math.abs(first[index] - second[index]) > 1e-6) {
+			return first[index] - second[index];
+		}
+	}
+	return 0;
+}
+
+/**
+ * Fillets two edges where at least one is an arc
+ * The fillet arc touches both edges, every combination of offset curves gives possible centers
+ * The chosen fillet keeps the parts of the edges where the user clicked, and is closest to the click points
+ * A radius of 0 trims or extends both edges to their closest intersection
+ */
+function createArcFillet(first: CornerLine, second: CornerLine, radius: number): CornerResult {
+	const candidates: ArcCornerCandidate[] = [];
+
+	if (radius <= 0) {
+		const firstBase = getBaseCurve(first.edge);
+		const secondBase = getBaseCurve(second.edge);
+		for (const corner of intersectCurves(firstBase, secondBase)) {
+			const distance =
+				corner.distanceTo(first.clickPoint)[0] + corner.distanceTo(second.clickPoint)[0];
+			const firstOptions = getOutwardOptions(first.edge, corner)
+				.map((outward) => keepEdge(first, corner, outward))
+				.filter((kept): kept is KeptEdge => !!kept);
+			const secondOptions = getOutwardOptions(second.edge, corner)
+				.map((outward) => keepEdge(second, corner, outward))
+				.filter((kept): kept is KeptEdge => !!kept);
+			for (const firstKept of firstOptions) {
+				for (const secondKept of secondOptions) {
+					candidates.push({
+						edges: [firstKept.entity, secondKept.entity],
+						connector: null,
+						score: [distance, firstKept.length + secondKept.length],
+					});
+				}
+			}
+		}
+	} else {
+		for (const firstOffset of getOffsetCurves(first.edge, radius)) {
+			for (const secondOffset of getOffsetCurves(second.edge, radius)) {
+				for (const center of intersectCurves(firstOffset, secondOffset)) {
+					const firstEnd = getTangentPoint(first.edge, center, radius);
+					const secondEnd = getTangentPoint(second.edge, center, radius);
+					if (firstEnd.equalTo(secondEnd)) {
+						continue;
+					}
+					const startAngle = getAngle(center, firstEnd);
+					const endAngle = getAngle(center, secondEnd);
+					for (const counterClockwise of [true, false]) {
+						// The edges continue the fillet arc, so they leave it along its tangents
+						const firstKept = keepEdge(
+							first,
+							firstEnd,
+							getCircleTangent(center, firstEnd, counterClockwise).multiply(-1)
+						);
+						const secondKept = keepEdge(
+							second,
+							secondEnd,
+							getCircleTangent(center, secondEnd, counterClockwise)
+						);
+						if (!firstKept || !secondKept) {
+							continue;
+						}
+						const sweep = getSweep(startAngle, endAngle, counterClockwise);
+						candidates.push({
+							edges: [firstKept.entity, secondKept.entity],
+							connector: copyEntityBaseProperties(
+								first.edge,
+								new ArcEntity(center, radius, startAngle, endAngle, counterClockwise)
+							),
+							score: [
+								// Prefer fillets that turn less than a half circle
+								sweep > Math.PI + EPSILON ? 1 : 0,
+								firstEnd.distanceTo(first.clickPoint)[0] +
+									secondEnd.distanceTo(second.clickPoint)[0],
+								sweep,
+							],
+						});
+					}
+				}
+			}
+		}
+	}
+
+	const best = candidates.sort((a, b) => compareScores(a.score, b.score))[0];
+	if (!best) {
+		return {
+			error:
+				radius > 0
+					? 'No fillet with this radius fits, click the parts of the edges you want to keep'
+					: 'The edges have no corner, click the parts you want to keep',
+		};
+	}
+	return { edges: best.edges, connector: best.connector };
+}
+
+/**
+ * Both directions along the edge at the given point
+ */
+function getOutwardOptions(edge: CornerEdgeEntity, point: Point): Vector[] {
+	let direction: Vector;
+	if (edge.getType() === EntityName.Line) {
+		const segment = edge.getShape() as Segment;
+		direction = new Vector(segment.start, segment.end).normalize();
+	} else {
+		direction = getCircleTangent((edge.getShape() as Arc).center, point, true);
+	}
+	return [direction, direction.multiply(-1)];
 }

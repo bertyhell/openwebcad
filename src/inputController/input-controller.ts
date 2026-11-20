@@ -124,10 +124,12 @@ function activeToolIsAtStart(): boolean {
 		return false;
 	}
 	const always = machine.states?.[initialState]?.config?.always;
-	const startTarget = Array.isArray(always) ? undefined : always?.target;
-	const startState =
-		typeof startTarget === 'string' ? startTarget.replace(/^\./, '') : initialState;
-	return activeToolState === startState || activeToolState === initialState;
+	// A tool can start in different states, eg: the circle tool remembers its center/radius or 3 point mode
+	const startStates = (Array.isArray(always) ? always : [always])
+		.map((transition) => transition?.target)
+		.filter((target): target is string => typeof target === 'string')
+		.map((target) => target.replace(/^\./, ''));
+	return activeToolState === initialState || startStates.includes(activeToolState);
 }
 
 /**

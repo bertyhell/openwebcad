@@ -1,5 +1,5 @@
 import type * as Flatten from '@flatten-js/core';
-import { Box, type Point, type Segment } from '@flatten-js/core';
+import { Arc, Box, type Point, type Segment } from '@flatten-js/core';
 import { mapLimit } from 'blend-promise-utils';
 import { compact, maxBy } from 'es-toolkit';
 import { minBy } from 'es-toolkit/compat';
@@ -7,6 +7,7 @@ import type { Edge, Shape, SnapPoint, StartAndEndpointEntity } from '../App.type
 import type { DrawController } from '../drawControllers/DrawController';
 import { checkClosedPolygon } from '../helpers/check-closed-polygon.ts';
 import { copyEntityBaseProperties } from '../helpers/copy-entity-base-properties';
+import { getExportColor } from '../helpers/get-export-color';
 import { getEntityIntersections } from '../helpers/get-intersection-points';
 import { orderEdgeBoundary } from '../helpers/order-edge-boundary.ts';
 import { getActiveLayerId, isEntityHighlighted, isEntitySelected } from '../state.ts';
@@ -39,16 +40,27 @@ export class PolyLineEntity implements Entity {
 		parentHighlighted?: boolean,
 		parentSelected?: boolean
 	): void {
-		for (const entity of this.entities) {
-			entity.lineWidth = this.lineWidth;
-			entity.lineDash = this.lineDash;
-			entity.layerId = this.layerId;
-			entity.lineColor = this.lineColor;
-			entity.draw(
-				drawController,
-				parentHighlighted ?? isEntityHighlighted(this),
-				parentSelected ?? isEntitySelected(this)
-			);
+		// The segments are drawn in the style of the polyline without changing the segments,
+		// so segments that are shared with other code (eg: the undo history) keep their own style
+		drawController.setLineStyles(
+			parentHighlighted ?? isEntityHighlighted(this),
+			parentSelected ?? isEntitySelected(this),
+			this.lineColor,
+			this.lineWidth,
+			this.lineDash
+		);
+		for (const edge of this.getEdges()) {
+			if (edge instanceof Arc) {
+				drawController.drawArc(
+					edge.center,
+					edge.r.valueOf(),
+					edge.startAngle,
+					edge.endAngle,
+					edge.counterClockwise
+				);
+			} else {
+				drawController.drawLine(edge.start, edge.end);
+			}
 		}
 	}
 
@@ -143,7 +155,10 @@ export class PolyLineEntity implements Entity {
 	}
 
 	public getSvgString(): string | null {
-		const svgTexts = this.entities.map((entity) => entity.getSvgString());
+		// Like when drawing, the segments use the style of the polyline
+		const svgTexts = this.getEdges().map((edge) =>
+			edge.svg({ strokeWidth: this.lineWidth, stroke: getExportColor(this.lineColor) })
+		);
 		return compact(svgTexts).join('\n');
 	}
 

@@ -37,6 +37,19 @@ function getSelectionDescription(entities: Entity[]): string {
 		.join(', ');
 }
 
+const ENTITY_TYPES_WITHOUT_LENGTH = new Set([EntityName.Fill, EntityName.Image]);
+
+/**
+ * Total length of all edges (perimeter for closed shapes, circumference for circles), or null when there is none
+ */
+function getSelectionLength(entities: Entity[]): number | null {
+	const length = entities
+		.filter((entity) => !ENTITY_TYPES_WITHOUT_LENGTH.has(entity.getType()))
+		.flatMap((entity) => entity.getEdges())
+		.reduce((total, edge) => total + edge.length, 0);
+	return length > 0 ? length : null;
+}
+
 interface FieldProps<T> {
 	label: string;
 	value: T;
@@ -276,6 +289,7 @@ export const PropertiesPanel: FC<PropertiesPanelProps> = ({ selectedEntities, la
 	const fillColor = fills.length
 		? getSharedValue(fills, (entity) => (entity as FillEntity).fillColor)
 		: null;
+	const length = getSelectionLength(selectedEntities);
 	const geometry = selectedEntities.length === 1 ? getEntityGeometry(selectedEntities[0]) : null;
 
 	return (
@@ -338,6 +352,13 @@ export const PropertiesPanel: FC<PropertiesPanelProps> = ({ selectedEntities, la
 					</select>
 				</label>
 			</div>
+
+			{length !== null && (
+				<div className="flex items-center justify-between text-xs" data-id="property-length">
+					<PopoverLabel label="Length" className="mb-0" />
+					<span className="font-semibold text-hw-paper">{formatNumber(length)}</span>
+				</div>
+			)}
 
 			{geometry && <GeometryFields geometry={geometry} />}
 		</div>

@@ -128,9 +128,29 @@ export class MeasurementEntity implements Entity {
 	}
 
 	/**
-	 * Draws an arrow head which ends at the endPoint
+	 * Corners of the arrow head that ends at the endPoint: the tip, the left corner and the right corner
 	 * The start point doesn't really matter, only the direction
-	 * the size of the arrow is determined by ARROW_HEAD_SIZE
+	 * The size is ARROW_HEAD_LENGTH by ARROW_HEAD_WIDTH in world units, so the arrow heads zoom and export like the label
+	 */
+	public static getArrowHeadCorners(startPoint: Point, endPoint: Point): [Point, Point, Point] {
+		const vectorFromEndToStart = new Vector(endPoint, startPoint);
+		const vectorFromEndToStartUnit = vectorFromEndToStart.normalize();
+		const baseOfArrow = endPoint
+			.clone()
+			.translate(vectorFromEndToStartUnit.multiply(ARROW_HEAD_LENGTH));
+		const perpendicularVector1 = vectorFromEndToStartUnit.rotate(90 * TO_RADIANS);
+		const perpendicularVector2 = vectorFromEndToStartUnit.rotate(-90 * TO_RADIANS);
+		const leftCornerOfArrow = baseOfArrow
+			.clone()
+			.translate(perpendicularVector1.multiply(ARROW_HEAD_WIDTH));
+		const rightCornerOfArrow = baseOfArrow
+			.clone()
+			.translate(perpendicularVector2.multiply(ARROW_HEAD_WIDTH));
+		return [endPoint, leftCornerOfArrow, rightCornerOfArrow];
+	}
+
+	/**
+	 * Draws an arrow head which ends at the endPoint
 	 * @param drawController
 	 * @param startPoint
 	 * @param endPoint
@@ -142,20 +162,10 @@ export class MeasurementEntity implements Entity {
 		isHighlighted: boolean,
 		isSelected: boolean
 	): void => {
-		const screenScale = drawController.getScreenScale();
-		const vectorFromEndToStart = new Vector(endPoint, startPoint);
-		const vectorFromEndToStartUnit = vectorFromEndToStart.normalize();
-		const baseOfArrow = endPoint
-			.clone()
-			.translate(vectorFromEndToStartUnit.multiply(ARROW_HEAD_LENGTH * screenScale));
-		const perpendicularVector1 = vectorFromEndToStartUnit.rotate(90 * TO_RADIANS);
-		const perpendicularVector2 = vectorFromEndToStartUnit.rotate(-90 * TO_RADIANS);
-		const leftCornerOfArrow = baseOfArrow
-			.clone()
-			.translate(perpendicularVector1.multiply(ARROW_HEAD_WIDTH * screenScale));
-		const rightCornerOfArrow = baseOfArrow
-			.clone()
-			.translate(perpendicularVector2.multiply(ARROW_HEAD_WIDTH * screenScale));
+		const [, leftCornerOfArrow, rightCornerOfArrow] = MeasurementEntity.getArrowHeadCorners(
+			startPoint,
+			endPoint
+		);
 
 		drawController.setLineStyles(
 			isHighlighted,

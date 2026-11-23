@@ -2,6 +2,7 @@ import { Point } from '@flatten-js/core';
 import { describe, expect, it } from 'vitest';
 import { CircleEntity } from '../entities/CircleEntity.ts';
 import { EntityName } from '../entities/Entity.ts';
+import type { FillEntity } from '../entities/FillEntity.ts';
 import { flattenGroups, GroupEntity } from '../entities/GroupEntity.ts';
 import { LineEntity } from '../entities/LineEntity.ts';
 import { MeasurementEntity } from '../entities/MeasurementEntity.ts';
@@ -94,14 +95,34 @@ describe('explodeEntity', () => {
 		expect(explodeEntity(polyLine)).toHaveLength(2);
 	});
 
-	it('splits a measurement into 3 lines and a text', () => {
+	it('splits a measurement into 3 lines, a text and 2 filled arrow heads', () => {
 		const measurement = new MeasurementEntity(
 			new Point(0, 0),
 			new Point(100, 0),
 			new Point(50, 20)
 		);
-		const types = explodeEntity(measurement)?.map((part) => part.getType());
-		expect(types).toEqual([EntityName.Line, EntityName.Line, EntityName.Line, EntityName.Text]);
+		measurement.lineColor = '#ff0000';
+		const parts = explodeEntity(measurement) ?? [];
+		expect(parts.map((part) => part.getType())).toEqual([
+			EntityName.Line,
+			EntityName.Line,
+			EntityName.Line,
+			EntityName.Text,
+			EntityName.Fill,
+			EntityName.Fill,
+		]);
+		const arrowHeads = parts.filter((part) => part.getType() === EntityName.Fill) as FillEntity[];
+		for (const arrowHead of arrowHeads) {
+			expect(arrowHead.fillColor).toBe('#ff0000');
+			expect(arrowHead.lineColor).toBe('#ff0000');
+			expect(arrowHead.getEdges()).toHaveLength(3);
+		}
+		// The tips of the arrow heads are at both ends of the measurement line
+		const tips = arrowHeads.map((arrowHead) => arrowHead.getEdges()[0].start);
+		expect(tips.map((tip) => [Math.round(tip.x), Math.round(tip.y)])).toEqual([
+			[100, 20],
+			[0, 20],
+		]);
 	});
 
 	it('ungroups a group', () => {

@@ -303,13 +303,16 @@ function rebuildPolyLines(source: Entity, parts: Entity[]): Entity[] {
 		chains[0] = [...lastChain, ...chains[0]];
 	}
 
-	return chains.map((chain, index) => {
+	let hasKeptId = false;
+	return chains.map((chain) => {
 		if (chain.length === 1 && chains.length > 1) {
 			return chain[0];
 		}
 		const polyLine = copyEntityBaseProperties(source, new PolyLineEntity(chain));
-		if (index === 0) {
+		// The first polyline keeps the id, even when a loose segment comes before it
+		if (!hasKeptId) {
 			polyLine.id = source.id;
+			hasKeptId = true;
 		}
 		return polyLine;
 	});

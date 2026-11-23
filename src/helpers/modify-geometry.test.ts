@@ -317,6 +317,21 @@ describe('applyCorner', () => {
 		expect(result.filter((entity) => entity instanceof PolyLineEntity)).toHaveLength(1);
 	});
 
+	it('keeps the id on the polyline when the loose segment comes first', () => {
+		const polyLine = new PolyLineEntity([
+			new LineEntity(new Point(10, 10), new Point(10, 0)),
+			new LineEntity(new Point(10, 0), new Point(0, 0)),
+			new LineEntity(new Point(0, 0), new Point(0, 10)),
+		]);
+		const line = new LineEntity(new Point(20, 5), new Point(30, 5));
+		const result = chamfer(polyLine, new Point(10, 8), line, new Point(28, 5), [polyLine, line]);
+		// The first segment is trimmed at the end it shares with the second segment
+		expect(result).toHaveLength(4);
+		const keptPolyLine = result.find((entity) => entity.id === polyLine.id) as PolyLineEntity;
+		expect(keptPolyLine).toBeInstanceOf(PolyLineEntity);
+		expect(keptPolyLine.numberOfSegments()).toBe(2);
+	});
+
 	it('only uses the arcs of a polyline when arcs are allowed', () => {
 		const arc = new ArcEntity(new Point(0, 0), 5, 0, Math.PI / 2, true);
 		const polyLine = new PolyLineEntity([arc, new LineEntity(new Point(0, 5), new Point(-10, 5))]);

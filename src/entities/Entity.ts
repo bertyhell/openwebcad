@@ -85,6 +85,10 @@ export interface JsonEntity<TShapeJsonData = ShapeJsonData> {
 	type: EntityName;
 	lineColor: string;
 	lineWidth: number;
+	/**
+	 * Optional, since drawings saved before the line dash was stored don't have it
+	 */
+	lineDash?: number[];
 	layerId: string;
 	shapeData: TShapeJsonData | null;
 	children?: JsonEntity<ShapeJsonData>[];

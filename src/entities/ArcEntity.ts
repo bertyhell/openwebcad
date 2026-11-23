@@ -10,6 +10,7 @@ import {
 import type { DrawController } from '../drawControllers/DrawController.ts';
 import { copyEntityBaseProperties } from '../helpers/copy-entity-base-properties';
 import { getExportColor } from '../helpers/get-export-color';
+import { getEntityIntersections } from '../helpers/get-intersection-points';
 import { isPointEqual } from '../helpers/is-point-equal';
 import { mirrorPointOverAxis } from '../helpers/mirror-point-over-axis.ts';
 import { scalePoint } from '../helpers/scale-point';
@@ -158,11 +159,7 @@ export class ArcEntity implements Entity, StartAndEndpointEntity {
 	}
 
 	public getIntersections(entity: Entity): Point[] {
-		const otherShape = entity.getShape();
-		if (!otherShape) {
-			return [];
-		}
-		return this.arc.intersect(otherShape);
+		return getEntityIntersections(this, entity);
 	}
 
 	public getFirstPoint(): Point | null {
@@ -196,7 +193,13 @@ export class ArcEntity implements Entity, StartAndEndpointEntity {
 	public cutAtPoints(pointsOnShape: Point[]): ArcEntity[] {
 		const points = uniqWith([this.arc.start, this.arc.end, ...pointsOnShape], isPointEqual);
 
-		const sortedPoints = sortPointsOnArc(points, this.arc.center, this.arc.start);
+		// The pieces go in the direction of this arc, so the points have to be sorted in that direction too
+		const sortedPoints = sortPointsOnArc(
+			points,
+			this.arc.center,
+			this.arc.start,
+			this.arc.counterClockwise
+		);
 
 		const segmentArcs: ArcEntity[] = [];
 		for (let i = 0; i < sortedPoints.length - 1; i++) {
@@ -213,9 +216,7 @@ export class ArcEntity implements Entity, StartAndEndpointEntity {
 				endAngle,
 				this.arc.counterClockwise
 			);
-			newArc.lineColor = this.lineColor;
-			newArc.lineWidth = this.lineWidth;
-			segmentArcs.push(newArc);
+			segmentArcs.push(copyEntityBaseProperties(this, newArc));
 		}
 		return segmentArcs;
 	}
@@ -229,6 +230,7 @@ export class ArcEntity implements Entity, StartAndEndpointEntity {
 			type: EntityName.Arc,
 			lineColor: this.lineColor,
 			lineWidth: this.lineWidth,
+			lineDash: this.lineDash,
 			layerId: this.layerId,
 			shapeData: {
 				center: { x: this.arc.center.x, y: this.arc.center.y },
@@ -260,6 +262,10 @@ export class ArcEntity implements Entity, StartAndEndpointEntity {
 		arcEntity.id = jsonEntity.id;
 		arcEntity.lineColor = jsonEntity.lineColor;
 		arcEntity.lineWidth = jsonEntity.lineWidth;
+		// Drawings saved before the line dash was stored keep the default line dash
+		if (jsonEntity.lineDash) {
+			arcEntity.lineDash = [...jsonEntity.lineDash];
+		}
 		return arcEntity;
 	}
 

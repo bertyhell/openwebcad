@@ -3,6 +3,8 @@ import { mapLimit } from 'blend-promise-utils';
 import { compact, minBy } from 'es-toolkit';
 import type { Edge, Shape, SnapPoint } from '../App.types';
 import type { DrawController } from '../drawControllers/DrawController.ts';
+import { copyEntityBaseProperties } from '../helpers/copy-entity-base-properties';
+import { getEntityIntersections } from '../helpers/get-intersection-points';
 import { getActiveLayerId, isEntityHighlighted, isEntitySelected } from '../state.ts';
 import { type Entity, EntityName, type JsonEntity } from './Entity';
 import type { LineEntity } from './LineEntity.ts';
@@ -76,14 +78,14 @@ export class FillEntity implements Entity {
 	}
 
 	public clone(): FillEntity {
-		const fillEntity = new FillEntity(
-			this.fillBorder.clone(),
-			this.holes.map((hole) => hole.clone())
+		const fillEntity = copyEntityBaseProperties(
+			this,
+			new FillEntity(
+				this.fillBorder.clone(),
+				this.holes.map((hole) => hole.clone())
+			)
 		);
-		fillEntity.layerId = this.layerId;
 		fillEntity.fillColor = this.fillColor;
-		fillEntity.lineColor = this.lineColor;
-		fillEntity.lineWidth = this.lineWidth;
 		return fillEntity;
 	}
 
@@ -112,7 +114,7 @@ export class FillEntity implements Entity {
 	}
 
 	public getIntersections(entity: Entity): Point[] {
-		return this.getPolylines().flatMap((polyline) => polyline.getIntersections(entity));
+		return getEntityIntersections(this, entity);
 	}
 
 	public getFirstPoint(): Point | null {
@@ -149,6 +151,7 @@ export class FillEntity implements Entity {
 			layerId: this.layerId,
 			lineColor: this.lineColor,
 			lineWidth: this.lineWidth,
+			lineDash: this.lineDash,
 			shapeData: {
 				fillColor: this.fillColor,
 				fillBorderPolyline: fillBorderJson as JsonEntity<PolyLineJsonData>,
@@ -183,6 +186,10 @@ export class FillEntity implements Entity {
 		fillEntity.id = jsonEntity.id;
 		fillEntity.lineColor = jsonEntity.lineColor;
 		fillEntity.lineWidth = jsonEntity.lineWidth;
+		// Drawings saved before the line dash was stored keep the default line dash
+		if (jsonEntity.lineDash) {
+			fillEntity.lineDash = [...jsonEntity.lineDash];
+		}
 		fillEntity.fillColor = jsonEntity.shapeData.fillColor;
 		return fillEntity;
 	}

@@ -6,6 +6,7 @@ import { sortPointsOnArc } from './sort-points-on-arc';
 
 /**
  * Find the closest points on the arc on both sides of the clicked point
+ * The start and end point of the arc are used when there is no other point on that side
  * @param clickedPointOnShape
  * @param arc
  * @param pointsOnShape
@@ -15,11 +16,14 @@ export function findNeighboringPointsOnArc(
 	arc: ArcEntity,
 	pointsOnShape: Point[]
 ): [Point, Point] {
-	// Sort points from start point to endpoint
+	const arcShape = arc.getShape() as Arc;
+	// Sort points from start point to endpoint in the direction of the arc
+	// Unlike a circle, an arc doesn't continue past its end, so the start and end point limit the part that is removed
 	const sortedPoints = sortPointsOnArc(
-		uniqWith([...pointsOnShape, clickedPointOnShape], isPointEqual),
-		(arc.getShape() as Arc).center,
-		(arc.getShape() as Arc).start
+		uniqWith([arcShape.start, ...pointsOnShape, clickedPointOnShape, arcShape.end], isPointEqual),
+		arcShape.center,
+		arcShape.start,
+		arcShape.counterClockwise
 	);
 
 	const indexOfClickedPoint: number = sortedPoints.findIndex((point) =>
@@ -29,10 +33,8 @@ export function findNeighboringPointsOnArc(
 		throw new Error('Clicked point not found on line in function findNeighboringPointsOnArc');
 	}
 
-	// We must make sure that points lying on both sides of the 0 angle are still considered neighbors
-	// So we add the number of points and take the modulo of the number of points again (so index -1 becomes length - 1)
 	return [
-		sortedPoints[(indexOfClickedPoint + sortedPoints.length - 1) % sortedPoints.length],
-		sortedPoints[(indexOfClickedPoint + sortedPoints.length + 1) % sortedPoints.length],
+		sortedPoints[indexOfClickedPoint - 1] ?? arcShape.start,
+		sortedPoints[indexOfClickedPoint + 1] ?? arcShape.end,
 	];
 }

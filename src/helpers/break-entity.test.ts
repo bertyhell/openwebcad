@@ -49,4 +49,24 @@ describe('breakEntity', () => {
 		const length = polyLine.getEdges().reduce((sum, edge) => sum + edge.length, 0);
 		expect(length).toBeCloseTo(34);
 	});
+
+	it('refuses to break a circle at a single point', () => {
+		const circle = new CircleEntity(new Point(0, 0), 10);
+		expect(breakEntity(circle, new Point(0, 10), new Point(0, 10))).toBeNull();
+	});
+
+	it('refuses to break a rectangle at a single point, also where its path starts and ends', () => {
+		const rectangle = new RectangleEntity(new Point(0, 0), new Point(10, 10));
+		expect(breakEntity(rectangle, new Point(5, 0), new Point(5, 0))).toBeNull();
+		const firstCorner = rectangle.getEdges()[0].start;
+		expect(breakEntity(rectangle, firstCorner, firstCorner)).toBeNull();
+	});
+
+	it('splits a line in two when both points are the same', () => {
+		const line = new LineEntity(new Point(0, 0), new Point(10, 0));
+		const pieces = breakEntity(line, new Point(4, 0), new Point(4, 0)) as LineEntity[];
+		expect(pieces).toHaveLength(2);
+		expectPoint(pieces[0].getEndPoint(), 4, 0);
+		expectPoint(pieces[1].getStartPoint(), 4, 0);
+	});
 });

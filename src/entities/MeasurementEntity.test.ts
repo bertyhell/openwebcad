@@ -2,6 +2,8 @@ import { type Box, Line, Point, Vector } from '@flatten-js/core'; // Added Box, 
 import { round } from 'es-toolkit'; // 1. Mocking for ../state.ts
 import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 import {
+	ARROW_HEAD_LENGTH,
+	ARROW_HEAD_WIDTH,
 	EPSILON,
 	MEASUREMENT_DECIMAL_PLACES,
 	MEASUREMENT_FONT_SIZE,
@@ -443,5 +445,44 @@ describe('MeasurementEntity draw() styling for selection', () => {
 		}
 		expect(mockDrawController.drawLine).toHaveBeenCalledTimes(9);
 		expect(mockDrawController.fillPolygon).toHaveBeenCalledTimes(2);
+	});
+});
+
+describe('MeasurementEntity arrow heads', () => {
+	function getArrowHeadPolygons(screenScale: number): Point[][] {
+		const fillPolygon = vi.fn();
+		const drawController = {
+			drawText: vi.fn(),
+			setLineStyles: vi.fn(),
+			setFillStyles: vi.fn(),
+			drawLine: vi.fn(),
+			fillPolygon,
+			getScreenScale: vi.fn().mockReturnValue(screenScale),
+		};
+		const measurement = new MeasurementEntity(
+			new Point(0, 0),
+			new Point(100, 0),
+			new Point(50, 20)
+		);
+		measurement.draw(drawController as unknown as DrawController);
+		return fillPolygon.mock.calls as Point[][];
+	}
+
+	it('have the same size in world units at every zoom level, like the label', () => {
+		const zoomedOut = getArrowHeadPolygons(1);
+		const zoomedIn = getArrowHeadPolygons(4);
+		expect(zoomedIn).toHaveLength(2);
+		zoomedIn.forEach((polygon, polygonIndex) => {
+			polygon.forEach((point, pointIndex) => {
+				expectPointToBeCloseTo(point, zoomedOut[polygonIndex][pointIndex]);
+			});
+		});
+	});
+
+	it('are as long and wide as the arrow head settings in world units', () => {
+		const [tip, leftCorner, rightCorner] = getArrowHeadPolygons(4)[0];
+		const base = new Point((leftCorner.x + rightCorner.x) / 2, (leftCorner.y + rightCorner.y) / 2);
+		expect(tip.distanceTo(base)[0]).toBeCloseTo(ARROW_HEAD_LENGTH);
+		expect(leftCorner.distanceTo(rightCorner)[0]).toBeCloseTo(2 * ARROW_HEAD_WIDTH);
 	});
 });

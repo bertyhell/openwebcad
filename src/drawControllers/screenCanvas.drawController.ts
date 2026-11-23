@@ -414,11 +414,12 @@ export class ScreenCanvasDrawController implements DrawController {
 	/**
 	 * Draw an image to the canvas using world coordinates
 	 * @param imageElement
-	 * @param xMin
-	 * @param yMin
+	 * @param xMin left side of the image before it is rotated
+	 * @param yMin bottom side of the image before it is rotated
 	 * @param width
 	 * @param height
-	 * @param angle
+	 * @param angle counterclockwise rotation around the center of the image
+	 * @param mirrored flips the image upside down before it is rotated
 	 */
 	public drawImage(
 		imageElement: HTMLImageElement,
@@ -426,7 +427,8 @@ export class ScreenCanvasDrawController implements DrawController {
 		yMin: number,
 		width: number,
 		height: number,
-		angle: number
+		angle: number,
+		mirrored = false
 	): void {
 		const screenCenter = this.worldToTarget(new Point(xMin + width / 2, yMin + height / 2));
 		const screenWidth = width * this.screenScale;
@@ -434,9 +436,13 @@ export class ScreenCanvasDrawController implements DrawController {
 		const screenCenterX = screenCenter.x;
 		const screenCenterY = this.canvasSize.y - screenCenter.y;
 
-		// Rotate and translate context
+		this.context.save();
 		this.context.translate(screenCenterX, screenCenterY);
-		this.context.rotate(angle);
+		// The canvas y axis points down, so a counterclockwise angle in the world is a negative angle on the canvas
+		this.context.rotate(-angle);
+		if (mirrored) {
+			this.context.scale(1, -1);
+		}
 
 		// Draw image
 		this.context.drawImage(
@@ -447,9 +453,7 @@ export class ScreenCanvasDrawController implements DrawController {
 			screenHeight
 		);
 
-		// Reset context
-		this.context.rotate(-angle);
-		this.context.translate(-screenCenterX, -screenCenterY);
+		this.context.restore();
 	}
 
 	public fillRect(xMin: number, yMin: number, width: number, height: number, color: string) {

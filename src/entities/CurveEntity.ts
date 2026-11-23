@@ -3,7 +3,7 @@ import { compact } from 'es-toolkit';
 import { minBy } from 'es-toolkit/compat';
 import type { Edge, Shape, SnapPoint } from '../App.types';
 import type { DrawController } from '../drawControllers/DrawController';
-import { isPointEqual } from '../helpers/is-point-equal.ts';
+import { getEntityIntersections } from '../helpers/get-intersection-points';
 import { mirrorPointOverAxis } from '../helpers/mirror-point-over-axis.ts';
 import { scalePoint } from '../helpers/scale-point.ts';
 import { getActiveLayerId, isEntityHighlighted, isEntitySelected } from '../state.ts';
@@ -127,16 +127,7 @@ export abstract class CurveEntity implements Entity {
 	}
 
 	public getIntersections(entity: Entity): Point[] {
-		const otherShape = entity.getShape();
-		if (!otherShape) {
-			return [];
-		}
-		const intersections = this.getSegments().flatMap((segment) => segment.intersect(otherShape));
-		// A curve that crosses where two segments meet would otherwise give the same point twice
-		return intersections.filter(
-			(point, index) =>
-				intersections.findIndex((otherPoint) => isPointEqual(point, otherPoint)) === index
-		);
+		return getEntityIntersections(this, entity);
 	}
 
 	public getFirstPoint(): Point | null {

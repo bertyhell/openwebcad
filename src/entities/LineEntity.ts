@@ -12,6 +12,7 @@ import { copyEntityBaseProperties } from '../helpers/copy-entity-base-properties
 import { pointDistance } from '../helpers/distance-between-points';
 import { getAngleWithXAxis } from '../helpers/get-angle-with-x-axis.ts';
 import { getExportColor } from '../helpers/get-export-color';
+import { getEntityIntersections } from '../helpers/get-intersection-points';
 import { isPointEqual } from '../helpers/is-point-equal';
 import { mirrorPointOverAxis } from '../helpers/mirror-point-over-axis.ts';
 import { scalePoint } from '../helpers/scale-point';
@@ -115,11 +116,7 @@ export class LineEntity implements Entity, StartAndEndpointEntity {
 	}
 
 	public getIntersections(entity: Entity): Point[] {
-		const otherShape = entity.getShape();
-		if (!otherShape) {
-			return [];
-		}
-		return this.segment.intersect(otherShape);
+		return getEntityIntersections(this, entity);
 	}
 
 	public getFirstPoint(): Point | null {
@@ -169,7 +166,10 @@ export class LineEntity implements Entity, StartAndEndpointEntity {
 		// Until length - 2, so we can combine start points with endpoints
 		for (let i = 0; i < sortLinesByDistanceToStartPoint.length - 1; i++) {
 			lineSegments.push(
-				new LineEntity(sortLinesByDistanceToStartPoint[i], sortLinesByDistanceToStartPoint[i + 1])
+				copyEntityBaseProperties(
+					this,
+					new LineEntity(sortLinesByDistanceToStartPoint[i], sortLinesByDistanceToStartPoint[i + 1])
+				)
 			);
 		}
 		return lineSegments;
@@ -181,6 +181,7 @@ export class LineEntity implements Entity, StartAndEndpointEntity {
 			type: EntityName.Line,
 			lineColor: this.lineColor,
 			lineWidth: this.lineWidth,
+			lineDash: this.lineDash,
 			layerId: this.layerId,
 			shapeData: {
 				startPoint: {
@@ -206,6 +207,10 @@ export class LineEntity implements Entity, StartAndEndpointEntity {
 		lineEntity.id = jsonEntity.id;
 		lineEntity.lineColor = jsonEntity.lineColor;
 		lineEntity.lineWidth = jsonEntity.lineWidth;
+		// Drawings saved before the line dash was stored keep the default line dash
+		if (jsonEntity.lineDash) {
+			lineEntity.lineDash = [...jsonEntity.lineDash];
+		}
 		return lineEntity;
 	}
 

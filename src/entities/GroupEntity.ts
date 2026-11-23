@@ -4,6 +4,7 @@ import { minBy } from 'es-toolkit/compat';
 import type { Edge, Shape, SnapPoint } from '../App.types';
 import type { DrawController } from '../drawControllers/DrawController';
 import { getBoundingBoxOfMultipleEntities } from '../helpers/get-bounding-box-of-multiple-entities.ts';
+import { getEntityIntersections } from '../helpers/get-intersection-points';
 import { getActiveLayerId, isEntityHighlighted, isEntitySelected } from '../state.ts';
 import { type Entity, EntityName, type JsonEntity } from './Entity';
 import type { LineEntity } from './LineEntity.ts';
@@ -138,7 +139,7 @@ export class GroupEntity implements Entity {
 	}
 
 	public getIntersections(entity: Entity): Point[] {
-		return this.entities.flatMap((groupEntity) => groupEntity.getIntersections(entity));
+		return getEntityIntersections(this, entity);
 	}
 
 	public getFirstPoint(): Point | null {

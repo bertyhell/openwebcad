@@ -259,7 +259,8 @@ export class SvgDrawController implements DrawController {
 		yMin: number,
 		width: number,
 		height: number,
-		angle: number
+		angle: number,
+		mirrored = false
 	): void {
 		const canvas = document.createElement('canvas');
 		canvas.width = imageElement.width;
@@ -285,11 +286,19 @@ export class SvgDrawController implements DrawController {
 		const svgX = targetCenter.x - svgWidth / 2;
 		const svgY = targetCenter.y - svgHeight / 2;
 
-		let transformAttribute = '';
+		// SVG applies the transforms from right to left: first flip the image around its center, then rotate it
+		const transforms: string[] = [];
 		if (angle !== 0) {
-			const svgAngleDegrees = angle * (180 / Math.PI);
-			transformAttribute = `transform="rotate(${svgAngleDegrees}, ${targetCenter.x}, ${targetCenter.y})"`;
+			// The svg y axis points down, so a counterclockwise angle in the world is a negative angle in the svg
+			const svgAngleDegrees = -angle * TO_DEGREES;
+			transforms.push(`rotate(${svgAngleDegrees}, ${targetCenter.x}, ${targetCenter.y})`);
 		}
+		if (mirrored) {
+			transforms.push(
+				`translate(${targetCenter.x} ${targetCenter.y}) scale(1 -1) translate(${-targetCenter.x} ${-targetCenter.y})`
+			);
+		}
+		const transformAttribute = transforms.length ? `transform="${transforms.join(' ')}"` : '';
 
 		// noinspection HtmlUnknownAttribute
 		this.svgStrings.push(

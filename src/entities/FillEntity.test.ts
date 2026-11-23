@@ -66,4 +66,15 @@ describe('FillEntity', () => {
 		expect(clone.fillColor).toBe('#ff0000');
 		expect(clone.getEdges()).toHaveLength(5);
 	});
+
+	it('keeps the dashed border when it is cloned, eg: when it is moved, rotated or copied', () => {
+		const fillEntity = createFillWithHole();
+		fillEntity.lineDash = [4, 2];
+		fillEntity.lineColor = '#00ff00';
+		fillEntity.lineWidth = 3;
+		const clone = fillEntity.clone();
+		expect(clone.lineDash).toEqual([4, 2]);
+		expect(clone.lineColor).toBe('#00ff00');
+		expect(clone.lineWidth).toBe(3);
+	});
 });

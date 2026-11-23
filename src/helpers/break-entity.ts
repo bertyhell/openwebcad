@@ -21,14 +21,14 @@ export function isBreakable(entity: Entity): boolean {
 	return BREAKABLE_TYPES.includes(entity.getType());
 }
 
-function getPathLength(edges: Edge[]): number {
+export function getPathLength(edges: Edge[]): number {
 	return edges.reduce((length, edge) => length + edge.length, 0);
 }
 
 /**
  * Part of an edge from its start up to the point
  */
-function getLengthUpToPoint(edge: Edge, point: Point): number {
+export function getLengthUpToPoint(edge: Edge, point: Point): number {
 	if (edge instanceof Segment) {
 		return edge.start.distanceTo(point)[0];
 	}
@@ -84,7 +84,7 @@ export function getSubPath(edges: Edge[], from: number, to: number): Edge[] {
 	return subPath;
 }
 
-function edgesToEntity(edges: Edge[], original: Entity): Entity | null {
+export function edgesToEntity(edges: Edge[], original: Entity): Entity | null {
 	const entities = edges.map((edge) =>
 		edge instanceof Segment ? new LineEntity(edge) : new ArcEntity(edge)
 	);
@@ -95,7 +95,7 @@ function edgesToEntity(edges: Edge[], original: Entity): Entity | null {
 	return copyEntityBaseProperties(original, entity);
 }
 
-function isClosedPath(edges: Edge[]): boolean {
+export function isClosedPath(edges: Edge[]): boolean {
 	return edges.length > 0 && isPointEqual(edges[0].start, (edges.at(-1) as Edge).end);
 }
 
@@ -120,6 +120,7 @@ function reversePath(edges: Edge[]): Edge[] {
  * Removes the part of the entity between the two points
  * For closed entities (eg: circles) the part from the first point counterclockwise to the second point is removed
  * Returns the remaining pieces, or null if the entity can't be broken
+ * A closed entity can't be broken at a single point, like in AutoCAD, since that would remove nothing
  */
 export function breakEntity(
 	entity: Entity,
@@ -138,6 +139,11 @@ export function breakEntity(
 
 	let remainingPaths: Edge[][];
 	if (isClosed) {
+		// The start and the end of a closed path are the same point, so a distance of 0 and the path length are the same point too
+		const distanceBetweenPoints = Math.abs(second - first);
+		if (distanceBetweenPoints <= EPSILON || pathLength - distanceBetweenPoints <= EPSILON) {
+			return null;
+		}
 		// The remaining part runs from the second point to the first point, possibly across the start of the path
 		remainingPaths =
 			first <= second

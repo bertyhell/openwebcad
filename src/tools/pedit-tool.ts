@@ -4,7 +4,7 @@ import type { StartAndEndpointEntity } from '../App.types';
 import { type Entity, EntityName } from '../entities/Entity';
 import { PolyLineEntity } from '../entities/PolyLineEntity.ts';
 import { copyEntityBaseProperties } from '../helpers/copy-entity-base-properties';
-import { chainSegments } from '../helpers/order-edge-boundary';
+import { joinConnectedSegments } from '../helpers/order-edge-boundary';
 import {
 	getEntities,
 	getSelectedEntities,
@@ -137,23 +137,32 @@ export const peditToolStateMachine = createMachine(
 					toast.info('Select lines or arcs to combine into a polyline');
 					return {};
 				}
-				// Only the lines and arcs become part of the polyline, other selected entities are kept
-				const segmentIds = new Set(segments.map((segment) => segment.id));
-				// The polyline styles its segments when drawing, use clones so the undo history keeps the original lines and arcs
-				const newPolyLine = copyEntityBaseProperties(
-					segments[0],
-					new PolyLineEntity(
-						chainSegments(
-							segments.map((segment) => segment.clone() as Entity & StartAndEndpointEntity)
-						)
-					)
+				// Use clones, so the undo history keeps the original lines and arcs
+				const clones = segments.map(
+					(segment) => segment.clone() as Entity & StartAndEndpointEntity
 				);
+				// Only segments that connect end to end are joined, a polyline with gaps would be drawn and exported as one path
+				const { chain, unconnected } = joinConnectedSegments(clones);
+				const unconnectedClones = new Set(unconnected);
+				const joinedSegments = segments.filter(
+					(_segment, index) => !unconnectedClones.has(clones[index])
+				);
+				// Only the joined lines and arcs are replaced by the polyline, other selected entities are kept
+				const joinedIds = new Set(joinedSegments.map((segment) => segment.id));
+				const newPolyLine = copyEntityBaseProperties(joinedSegments[0], new PolyLineEntity(chain));
 				const newEntities = [
-					...getEntities().filter((entity) => !segmentIds.has(entity.id)),
+					...getEntities().filter((entity) => !joinedIds.has(entity.id)),
 					newPolyLine,
 				];
 				setEntities(newEntities, true);
 				toast.success(`Created polyline with ${newPolyLine.numberOfSegments()} segments`);
+				if (unconnected.length === 1) {
+					toast.info("1 selected segment doesn't connect to the polyline and was left out");
+				} else if (unconnected.length > 1) {
+					toast.info(
+						`${unconnected.length} selected segments don't connect to the polyline and were left out`
+					);
+				}
 				return {};
 			}),
 			...selectToolStateMachine.implementations.actions,

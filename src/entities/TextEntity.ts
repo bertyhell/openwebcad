@@ -1,5 +1,6 @@
 import { Box, Point, Polygon, Segment, Vector } from '@flatten-js/core';
 import { cloneDeep } from 'es-toolkit/compat';
+import { EPSILON } from '../App.consts';
 import { type Edge, type Shape, type SnapPoint, SnapPointType } from '../App.types';
 import { DEFAULT_TEXT_OPTIONS, type DrawController } from '../drawControllers/DrawController';
 import { copyEntityBaseProperties } from '../helpers/copy-entity-base-properties';
@@ -101,12 +102,43 @@ export class TextEntity implements Entity {
 		this.options.textDirection = this.options.textDirection.rotate(angle);
 	}
 
+	/**
+	 * Like AutoCAD with MIRRTEXT set to 0, the text moves to the mirrored area but stays readable, instead of becoming mirror writing
+	 */
 	public mirror(mirrorAxis: LineEntity) {
-		this.basePoint = mirrorPointOverAxis(this.basePoint, mirrorAxis);
-		this.options.textDirection = new Vector(
-			new Point(0, 0),
-			new Point(this.options.textDirection.x, this.options.textDirection.y)
-		);
+		const direction = this.options.textDirection.normalize();
+		const axisAngle = mirrorAxis.getAngle();
+		const axisDirection = new Vector(Math.cos(axisAngle), Math.sin(axisAngle));
+		const mirroredDirection = axisDirection
+			.multiply(2 * direction.dot(axisDirection))
+			.subtract(direction);
+		const mirroredBasePoint = mirrorPointOverAxis(this.basePoint, mirrorAxis);
+
+		// Text that would read backwards is turned around, so it reads in a direction close to the original direction
+		const similarity = mirroredDirection.dot(direction);
+		const readsBackwards =
+			similarity < -EPSILON ||
+			(Math.abs(similarity) <= EPSILON &&
+				(mirroredDirection.x < -EPSILON ||
+					(Math.abs(mirroredDirection.x) <= EPSILON && mirroredDirection.y < 0)));
+
+		if (readsBackwards) {
+			// The mirrored text runs in the opposite direction, so it ends where the mirrored text would start
+			this.options.textDirection = mirroredDirection.invert();
+			if (this.options.textAlign === 'left') {
+				this.options.textAlign = 'right';
+			} else if (this.options.textAlign === 'right') {
+				this.options.textAlign = 'left';
+			}
+			this.basePoint = mirroredBasePoint;
+		} else {
+			// The mirrored lines would be above each other in reverse order, so start the first line where the mirrored last line is
+			this.options.textDirection = mirroredDirection;
+			const extraLinesHeight = (this.getLines().length - 1) * this.options.fontSize * LINE_SPACING;
+			this.basePoint = mirroredBasePoint.translate(
+				mirroredDirection.rotate90CCW().multiply(extraLinesHeight)
+			);
+		}
 	}
 
 	public clone(): TextEntity {
@@ -117,7 +149,14 @@ export class TextEntity implements Entity {
 	}
 
 	public intersectsWithBox(box: Box): boolean {
-		return box.intersect(this.getBoundingBox());
+		const corners = this.getOutlineCorners();
+		const outline = new Polygon(corners);
+		return (
+			corners.some((corner) => box.contains(corner)) ||
+			// The box lies completely inside the text
+			outline.contains(box.center) ||
+			[...outline.edges].some((edge) => edge.shape.intersect(box).length > 0)
+		);
 	}
 
 	public isContainedInBox(box: Box): boolean {
@@ -145,27 +184,44 @@ export class TextEntity implements Entity {
 	}
 
 	/**
-	 * Approximate bounds of the text, without measuring the font
-	 * The text is vertically centered on the base point, like it is drawn
+	 * Approximate corners of the area the text covers, without measuring the font
+	 * The area follows the text direction, and the text is vertically centered on the base point, like it is drawn
 	 */
-	public getBoundingBox(): Box {
+	private getOutlineCorners(): Point[] {
 		const lines = this.getLines();
 		const longestLineLength = Math.max(...lines.map((line) => line.length));
 		const width = this.options.fontSize * AVERAGE_CHARACTER_WIDTH * longestLineLength;
 		const halfHeight = this.options.fontSize / 2;
 		const extraLinesHeight = (lines.length - 1) * this.options.fontSize * LINE_SPACING;
-		let minX = this.basePoint.x;
+		let start = 0;
 		if (this.options.textAlign === 'center') {
-			minX -= width / 2;
+			start -= width / 2;
 		} else if (this.options.textAlign === 'right') {
-			minX -= width;
+			start -= width;
 		}
-		return new Box(
-			minX,
-			this.basePoint.y - halfHeight - extraLinesHeight,
-			minX + width,
-			this.basePoint.y + halfHeight
-		);
+		const direction = this.options.textDirection.normalize();
+		const up = direction.rotate90CCW();
+		const corner = (alongText: number, aboveBasePoint: number): Point =>
+			this.basePoint
+				.translate(direction.multiply(alongText))
+				.translate(up.multiply(aboveBasePoint));
+		return [
+			corner(start, -halfHeight - extraLinesHeight),
+			corner(start + width, -halfHeight - extraLinesHeight),
+			corner(start + width, halfHeight),
+			corner(start, halfHeight),
+		];
+	}
+
+	/**
+	 * Approximate bounds of the text, without measuring the font
+	 * Rotated text is included completely
+	 */
+	public getBoundingBox(): Box {
+		const corners = this.getOutlineCorners();
+		const xs = corners.map((corner) => corner.x);
+		const ys = corners.map((corner) => corner.y);
+		return new Box(Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys));
 	}
 
 	public getShape(): Shape | null {
@@ -190,11 +246,12 @@ export class TextEntity implements Entity {
 	}
 
 	public distanceTo(shape: Shape): [number, Segment] | null {
-		const boundingBox = this.getBoundingBox();
-		if (shape instanceof Point && boundingBox.contains(shape)) {
+		// Use the area of the text in its own direction, so rotated text is picked where it is drawn
+		const outline = new Polygon(this.getOutlineCorners());
+		if (shape instanceof Point && outline.contains(shape)) {
 			return [0, new Segment(shape, shape)];
 		}
-		return new Polygon(boundingBox).distanceTo(shape);
+		return outline.distanceTo(shape);
 	}
 
 	public getSvgString(): string | null {
@@ -216,6 +273,7 @@ export class TextEntity implements Entity {
 			type: EntityName.Text,
 			lineColor: this.lineColor,
 			lineWidth: this.lineWidth,
+			lineDash: this.lineDash,
 			layerId: this.layerId,
 			shapeData: {
 				label: this.label,
@@ -256,6 +314,10 @@ export class TextEntity implements Entity {
 		textEntity.id = jsonEntity.id;
 		textEntity.lineColor = jsonEntity.lineColor;
 		textEntity.lineWidth = jsonEntity.lineWidth;
+		// Drawings saved before the line dash was stored keep the default line dash
+		if (jsonEntity.lineDash) {
+			textEntity.lineDash = [...jsonEntity.lineDash];
+		}
 		return textEntity;
 	}
 }

@@ -1,10 +1,11 @@
 import { MEASUREMENT_FONT_SIZE } from '../App.consts.ts';
 import type { Entity } from '../entities/Entity';
 import { EntityName } from '../entities/Entity';
+import { FillEntity } from '../entities/FillEntity.ts';
 import type { GroupEntity } from '../entities/GroupEntity.ts';
 import { LineEntity } from '../entities/LineEntity.ts';
-import type { MeasurementEntity } from '../entities/MeasurementEntity.ts';
-import type { PolyLineEntity } from '../entities/PolyLineEntity.ts';
+import { MeasurementEntity } from '../entities/MeasurementEntity.ts';
+import { PolyLineEntity } from '../entities/PolyLineEntity.ts';
 import { TextEntity } from '../entities/TextEntity.ts';
 import { copyEntityBaseProperties } from './copy-entity-base-properties.ts';
 
@@ -13,7 +14,7 @@ import { copyEntityBaseProperties } from './copy-entity-base-properties.ts';
  * - polyline => lines and arcs
  * - rectangle => 4 lines
  * - group => its members
- * - measurement => lines and a text
+ * - measurement => lines, a text and filled arrow heads
  * Returns null if the entity can't be split
  */
 export function explodeEntity(entity: Entity): Entity[] | null {
@@ -55,7 +56,23 @@ function explodeMeasurement(measurement: MeasurementEntity): Entity[] | null {
 		textDirection: label.textDirection,
 		fontSize: MEASUREMENT_FONT_SIZE,
 	});
-	return [...lines, text].map((entity) => copyEntityBaseProperties(measurement, entity));
+	// The arrow heads become filled triangles, which are saved and loaded with the drawing like any other fill
+	const arrowHeads = [
+		MeasurementEntity.getArrowHeadCorners(drawPoints.offsetStartPoint, drawPoints.offsetEndPoint),
+		MeasurementEntity.getArrowHeadCorners(drawPoints.offsetEndPoint, drawPoints.offsetStartPoint),
+	].map(([tip, leftCorner, rightCorner]) => {
+		const outline = new PolyLineEntity([
+			new LineEntity(tip, leftCorner),
+			new LineEntity(leftCorner, rightCorner),
+			new LineEntity(rightCorner, tip),
+		]);
+		const arrowHead = new FillEntity(copyEntityBaseProperties(measurement, outline));
+		arrowHead.fillColor = measurement.lineColor;
+		return arrowHead;
+	});
+	return [...lines, text, ...arrowHeads].map((entity) =>
+		copyEntityBaseProperties(measurement, entity)
+	);
 }
 
 /**

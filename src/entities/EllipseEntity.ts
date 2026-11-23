@@ -96,6 +96,7 @@ export class EllipseEntity extends CurveEntity {
 			type: EntityName.Ellipse,
 			lineColor: this.lineColor,
 			lineWidth: this.lineWidth,
+			lineDash: this.lineDash,
 			layerId: this.layerId,
 			shapeData: {
 				center: { x: this.center.x, y: this.center.y },
@@ -119,6 +120,10 @@ export class EllipseEntity extends CurveEntity {
 		ellipseEntity.id = jsonEntity.id;
 		ellipseEntity.lineColor = jsonEntity.lineColor;
 		ellipseEntity.lineWidth = jsonEntity.lineWidth;
+		// Drawings saved before the line dash was stored keep the default line dash
+		if (jsonEntity.lineDash) {
+			ellipseEntity.lineDash = [...jsonEntity.lineDash];
+		}
 		return ellipseEntity;
 	}
 }

@@ -1,6 +1,7 @@
 import type { Point } from '@flatten-js/core';
 import { toast } from 'react-toastify';
 import { Actor, assign, createMachine } from 'xstate';
+import { getSnappedMouseLocation } from '../helpers/get-closest-snap-point.ts';
 import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
 import { formatDistanceInfo, getDistanceInfo } from '../helpers/inquiry.ts';
 import {
@@ -12,7 +13,7 @@ import {
 } from '../state';
 import { Tool } from '../tools';
 import { selectToolStateMachine } from './select-tool.ts';
-import type { DrawEvent, PointInputEvent, StateEvent, ToolContext } from './tool.types';
+import type { PointInputEvent, StateEvent, ToolContext } from './tool.types';
 import { createGuideLine } from './transform-tool.helpers.ts';
 
 export interface DistContext extends ToolContext {
@@ -121,14 +122,10 @@ export const distToolStateMachine = createMachine(
 					startPoint,
 				};
 			}),
-			[DistAction.DRAW_GUIDE_LINE]: ({ context, event }) => {
+			[DistAction.DRAW_GUIDE_LINE]: ({ context }) => {
 				if (!context.startPoint) return;
-				setGhostHelperEntities([
-					createGuideLine(
-						context.startPoint,
-						(event as DrawEvent).drawController.getWorldMouseLocation()
-					),
-				]);
+				// End the guide where a click would measure to, so it follows the snap marker
+				setGhostHelperEntities([createGuideLine(context.startPoint, getSnappedMouseLocation())]);
 			},
 			[DistAction.SHOW_DISTANCE]: ({ context, event }) => {
 				if (!context.startPoint) return;

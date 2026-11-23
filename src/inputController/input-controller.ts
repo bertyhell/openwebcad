@@ -1,7 +1,7 @@
 import { Point } from '@flatten-js/core';
-import { compact, round } from 'es-toolkit';
+import { round } from 'es-toolkit';
 import { toast } from 'react-toastify';
-import { Actor } from 'xstate';
+import { Actor, type AnyActorRef } from 'xstate';
 import {
 	CANVAS_INPUT_FIELD_BACKGROUND_COLOR,
 	CANVAS_INPUT_FIELD_HEIGHT,
@@ -9,30 +9,31 @@ import {
 	CANVAS_INPUT_FIELD_MOUSE_OFFSET,
 	CANVAS_INPUT_FIELD_TEXT_COLOR,
 	CANVAS_INPUT_FIELD_WIDTH,
-	SNAP_POINT_DISTANCE,
+	MOUSE_ZOOM_MULTIPLIER,
 	TOOLBAR_WIDTH,
 } from '../App.consts.ts';
-import { HtmlEvent, MouseButton, SnapPointType } from '../App.types.ts';
+import { HtmlEvent, MouseButton } from '../App.types.ts';
 import { COMMAND_ACTIONS } from '../command-actions.ts';
 import type { ScreenCanvasDrawController } from '../drawControllers/screenCanvas.drawController.ts';
 import { calculateAngleGuidesAndSnapPoints } from '../helpers/calculate-angle-guides-and-snap-points.ts';
-import { getClosestSnapPointWithinRadius } from '../helpers/get-closest-snap-point.ts';
+import { getSnappedMouseLocation } from '../helpers/get-closest-snap-point.ts';
 import { localStorageExport } from '../helpers/import-export-handlers/local-storage.export.ts';
 import {
 	getActiveToolActor,
 	getCanvas,
 	getEditableEntities,
+	getEditableSelectedEntities,
+	getEntities,
 	getGridSettings,
 	getLastStateInstructions,
 	getPanStartLocation,
 	getScreenCanvasDrawController,
 	getSelectedEntities,
 	getShouldDrawHelpers,
-	getSnapPoint,
-	getSnapPointOnAngleGuide,
 	redo,
 	requestRedraw,
 	setActiveToolActor,
+	setEntities,
 	setGhostHelperEntities,
 	setGridSettings,
 	setPanStartLocation,
@@ -40,6 +41,7 @@ import {
 	setShouldDrawCursor,
 	undo,
 } from '../state.ts';
+import { SelectState } from '../tools/select-tool.ts';
 import { TOOL_STATE_MACHINES } from '../tools/tool.consts.ts';
 import {
 	type AbsolutePointInputEvent,
@@ -47,9 +49,10 @@ import {
 	type MouseClickEvent,
 	type NumberInputEvent,
 	type RelativePointInputEvent,
+	type StateEvent,
 	type TextInputEvent,
 } from '../tools/tool.types.ts';
-import { zoomIn, zoomOut, zoomToBounds } from '../tools/zoom-tool.helpers.ts';
+import { isValidScreenScale, zoomIn, zoomOut, zoomToBounds } from '../tools/zoom-tool.helpers.ts';
 import { isZoomOption } from '../tools/zoom-tool.ts';
 import { Tool } from '../tools.ts';
 import { getCommandNamesFromPrefixText, parseCommandInput } from './command-parser.ts';
@@ -60,6 +63,26 @@ import { getCommandNamesFromPrefixText, parseCommandInput } from './command-pars
  */
 function getCanvasOffsetLeft(): number {
 	return getCanvas()?.getBoundingClientRect().left ?? TOOLBAR_WIDTH;
+}
+
+/**
+ * Location of the mouse event on the canvas in screen coordinates
+ */
+function getScreenLocationFromEvent(evt: MouseEvent): Point {
+	return new Point(
+		evt.clientX - getCanvasOffsetLeft(),
+		getScreenCanvasDrawController().getCanvasSize().y - evt.clientY
+	);
+}
+
+/**
+ * Bits of MouseEvent.buttons for the buttons that pan: the left button, while holding space or in the pan tool, and the middle button
+ */
+const PAN_BUTTONS = 1 | 4;
+
+function isPanButtonHeld(evt: MouseEvent): boolean {
+	// An event without information about the buttons can't tell, so keep panning
+	return typeof evt.buttons !== 'number' || (evt.buttons & PAN_BUTTONS) !== 0;
 }
 
 /**
@@ -81,6 +104,21 @@ function shouldLetElementHandleKey(evt: KeyboardEvent): boolean {
 }
 
 /**
+ * Ctrl, or Cmd on macOS, is held for a keyboard shortcut
+ * Windows reports AltGr as Ctrl+Alt, keyboard layouts like AZERTY need AltGr to type characters like @ and [
+ */
+function isShortcutModifierPressed(evt: KeyboardEvent): boolean {
+	const isAltGraph = !!evt.getModifierState?.('AltGraph') || (evt.ctrlKey && evt.altKey);
+	return (evt.ctrlKey || evt.metaKey) && !isAltGraph;
+}
+
+/**
+ * Letters that do something in the drawing together with Ctrl or Cmd
+ * Other Ctrl or Cmd shortcuts are left to the browser, eg: Ctrl+C, Ctrl+P or Ctrl+R
+ */
+const CTRL_SHORTCUT_KEYS = ['z', 'y', 'a', 's', 'v'];
+
+/**
  * Whether the active tool is asking for text, eg: the label of a text or a zoom option
  */
 function activeToolAcceptsTextInput(): boolean {
@@ -90,10 +128,35 @@ function activeToolAcceptsTextInput(): boolean {
 }
 
 /**
+ * Whether the active tool is asking for any text, eg: the label of a text
+ * A tool that only offers single key options, eg: [I]nvert in the arc tool, doesn't,
+ * so keys like space, + and [ keep their own meaning there
+ */
+function activeToolWantsFreeText(): boolean {
+	return activeToolAcceptsTextInput() && getActiveToolInstantOptions().length === 0;
+}
+
+/**
+ * The select tool that the active tool runs while it waits for a selection, eg: MOVE before anything is selected
+ */
+function getSelectToolInsideActiveTool(): AnyActorRef | undefined {
+	const children: Record<string, AnyActorRef | undefined> =
+		getActiveToolActor()?.getSnapshot()?.children ?? {};
+	return Object.values(children).find(
+		(child) => child?.getSnapshot()?.context?.type === Tool.SELECT
+	);
+}
+
+/**
  * Whether the active tool's current state reacts to this event, eg: the arrow keys in the polygon tool
  */
-function activeToolHandlesEvent(type: ActorEvent.ARROW_UP | ActorEvent.ARROW_DOWN): boolean {
-	return !!getActiveToolActor()?.getSnapshot()?.can({ type });
+function activeToolHandlesEvent(event: StateEvent): boolean {
+	try {
+		return !!getActiveToolActor()?.getSnapshot()?.can(event);
+	} catch {
+		// A guard can throw for input that doesn't fit the current step, the tool can't use that input either
+		return false;
+	}
 }
 
 /**
@@ -106,6 +169,18 @@ function getActiveToolInstantOptions(): string[] {
 }
 
 /**
+ * Whether the text is a single key option that the active tool can apply right now
+ * An option that isn't possible yet is typed like other text instead. eg: [C]lose in the line tool needs 2 segments
+ */
+function activeToolTakesInstantOption(text: string): boolean {
+	const option = text.trim().toUpperCase();
+	return (
+		getActiveToolInstantOptions().includes(option) &&
+		activeToolHandlesEvent({ type: ActorEvent.TEXT_INPUT, value: option })
+	);
+}
+
+/**
  * Whether the active tool is waiting for its first input, eg: the line tool waiting for the start point
  * The first waiting state is the one the INIT state moves to
  */
@@ -115,6 +190,14 @@ function activeToolIsAtStart(): boolean {
 	const machine = activeToolSnapshot?.machine;
 	if (!machine || typeof activeToolState !== 'string') {
 		return false;
+	}
+	// A tool that waits for a selection is at its start until the user starts a selection window,
+	// eg: MOVE, which also goes back to waiting for a selection after every move
+	const selectToolInsideActiveTool = getSelectToolInsideActiveTool();
+	if (selectToolInsideActiveTool) {
+		return (
+			selectToolInsideActiveTool.getSnapshot().value === SelectState.WAITING_FOR_FIRST_SELECT_POINT
+		);
 	}
 	const initialState = machine.config.initial;
 	if (typeof initialState !== 'string') {
@@ -163,10 +246,30 @@ export class InputController {
 	private isSpaceHeld = false;
 
 	/**
+	 * The last tool the user started from the command line or the sidebar, ENTER at the idle prompt starts it again
+	 */
+	private lastTool: Tool | null = null;
+
+	/**
 	 * Text the user is typing in the input field next to the cursor
 	 */
 	public getText(): string {
 		return this.text;
+	}
+
+	/**
+	 * Remember the tool the user started, so ENTER at the idle prompt can repeat it
+	 */
+	public rememberLastTool(tool: Tool): void {
+		// Repeating the select tool does nothing, and the image import tool needs a file from the file picker
+		if (tool === Tool.SELECT || tool === Tool.IMAGE_IMPORT) {
+			return;
+		}
+		this.lastTool = tool;
+	}
+
+	public getLastTool(): Tool | null {
+		return this.lastTool;
 	}
 
 	constructor() {
@@ -189,6 +292,8 @@ export class InputController {
 		canvas?.addEventListener('mousedown', (evt: MouseEvent) => this.handleMouseDown(evt));
 		canvas?.addEventListener('mousemove', (evt: MouseEvent) => this.handleMouseMove(evt));
 		canvas?.addEventListener('mouseup', (evt: MouseEvent) => this.handleMouseUp(evt));
+		// A pan ends wherever the button is released, eg: above the sidebar
+		window.addEventListener('mouseup', (evt: MouseEvent) => this.handleWindowMouseUp(evt));
 		canvas?.addEventListener('wheel', (evt: WheelEvent) => this.handleMouseWheel(evt));
 		canvas?.addEventListener('mouseout', () => this.handleMouseOut());
 		canvas?.addEventListener('mouseenter', () => this.handleMouseEnter());
@@ -266,23 +371,11 @@ export class InputController {
 		}
 		if (evt.button === MouseButton.Left) {
 			const screenCanvasDrawController = getScreenCanvasDrawController();
-			// A grid snap point is always used, it can be further away than the snap distance when zoomed out
-			const gridSnapPoint = getSnapPoint()?.type === SnapPointType.Grid ? getSnapPoint() : null;
-			const closestSnapPoint =
-				gridSnapPoint ??
-				getClosestSnapPointWithinRadius(
-					compact([getSnapPoint(), getSnapPointOnAngleGuide()]),
-					screenCanvasDrawController.getWorldMouseLocation(),
-					SNAP_POINT_DISTANCE / screenCanvasDrawController.getScreenScale()
-				);
-
-			const worldMouseLocationTemp = getScreenCanvasDrawController().targetToWorld(
-				new Point(
-					evt.clientX - getCanvasOffsetLeft(),
-					getScreenCanvasDrawController().getCanvasSize().y - evt.clientY
-				)
-			);
-			const worldMouseLocation = closestSnapPoint ? closestSnapPoint.point : worldMouseLocationTemp;
+			// Snap to what is under the mouse at the moment of the click,
+			// the view can have changed since the mouse last moved. eg: after zooming with the keyboard
+			screenCanvasDrawController.setScreenMouseLocation(getScreenLocationFromEvent(evt));
+			calculateAngleGuidesAndSnapPoints();
+			const worldMouseLocation = getSnappedMouseLocation();
 
 			const activeToolActor = getActiveToolActor();
 			activeToolActor?.send({
@@ -302,15 +395,15 @@ export class InputController {
 	public handleMouseMove(evt: MouseEvent) {
 		setShouldDrawCursor(true);
 		const screenCanvasDrawController = getScreenCanvasDrawController();
-		const newScreenMouseLocation = new Point(
-			evt.clientX - getCanvasOffsetLeft(),
-			getScreenCanvasDrawController().getCanvasSize().y - evt.clientY
-		);
+		const newScreenMouseLocation = getScreenLocationFromEvent(evt);
 		screenCanvasDrawController.setScreenMouseLocation(newScreenMouseLocation);
 
 		// If the middle mouse button is pressed, pan the screen
 		const panStartLocation = getPanStartLocation();
-		if (panStartLocation) {
+		if (panStartLocation && !isPanButtonHeld(evt)) {
+			// The button was released where no mouseup reached us, eg: outside the window
+			setPanStartLocation(null);
+		} else if (panStartLocation) {
 			screenCanvasDrawController.panScreen(
 				newScreenMouseLocation.x - panStartLocation.x,
 				newScreenMouseLocation.y - panStartLocation.y
@@ -335,7 +428,24 @@ export class InputController {
 			return; // We can't zoom by zero delta
 		}
 		const drawController = getScreenCanvasDrawController();
+		// Same zoom step as the draw controller, stop at the zoom limits instead of zooming to 0 or infinity
+		const newScreenScale =
+			drawController.getScreenScale() * (1 - MOUSE_ZOOM_MULTIPLIER * Math.sign(evt.deltaY));
+		if (!isValidScreenScale(newScreenScale)) {
+			return;
+		}
 		drawController.zoomScreen(evt.deltaY);
+		// The grid spacing and the snap distance in world units change with the zoom level
+		calculateAngleGuidesAndSnapPoints();
+	}
+
+	/**
+	 * Mouse buttons released anywhere in the window, the canvas handles its own clicks first
+	 */
+	public handleWindowMouseUp(evt: MouseEvent) {
+		if (evt.button === MouseButton.Middle || evt.button === MouseButton.Left) {
+			setPanStartLocation(null);
+		}
 	}
 
 	public handleMouseDown(evt: MouseEvent) {
@@ -346,12 +456,7 @@ export class InputController {
 			(evt.button === MouseButton.Left && (this.isSpaceHeld || isPanToolActive));
 		if (!isPanButton) return;
 
-		setPanStartLocation(
-			new Point(
-				evt.clientX - getCanvasOffsetLeft(),
-				getScreenCanvasDrawController().getCanvasSize().y - evt.clientY
-			)
-		);
+		setPanStartLocation(getScreenLocationFromEvent(evt));
 	}
 
 	/**
@@ -383,6 +488,15 @@ export class InputController {
 		}
 	}
 
+	private panScreenWithArrowKey(
+		direction: 'up' | 'right' | 'down' | 'left',
+		shiftPressed: boolean
+	) {
+		getScreenCanvasDrawController().setScreenOffset(this.getScreenPanStep(direction, shiftPressed));
+		// The drawing moved under the mouse, so the snap point under the mouse changed as well
+		calculateAngleGuidesAndSnapPoints();
+	}
+
 	private setSpaceHeld(isSpaceHeld: boolean) {
 		this.isSpaceHeld = isSpaceHeld;
 		const canvas = getCanvas();
@@ -395,7 +509,14 @@ export class InputController {
 		if (shouldLetElementHandleKey(evt)) {
 			return;
 		}
-		if (evt.key === ' ' && this.text === '' && !activeToolAcceptsTextInput()) {
+		// Cmd on macOS behaves like Ctrl on other platforms
+		const isCtrl = isShortcutModifierPressed(evt);
+		const key = evt.key?.toLowerCase() ?? '';
+		if (isCtrl && key.length === 1 && !CTRL_SHORTCUT_KEYS.includes(key)) {
+			// Leave other shortcuts to the browser, they never type text or pick an option of the active tool. eg: Ctrl+C
+			return;
+		}
+		if (evt.key === ' ' && this.text === '' && !activeToolWantsFreeText()) {
 			// Space without typed text starts panning with the left mouse button, instead of typing a space
 			evt.preventDefault();
 			this.setSpaceHeld(true);
@@ -421,16 +542,13 @@ export class InputController {
 		}
 		evt.preventDefault();
 		evt.stopPropagation();
-		// Cmd on macOS behaves like Ctrl on other platforms
-		const isCtrl = evt.ctrlKey || evt.metaKey;
-		const key = evt.key.toLowerCase();
 		if (isCtrl && key === 'v') {
 			// User wants to paste the clipboard
 		} else if (isCtrl && key === 's') {
 			// User wants to save the drawing to local storage
 			localStorageExport().then((isSaved) => isSaved && toast.success('Saved'));
-		} else if (evt.key === '[' && this.text === '') {
-			// User wants to collapse or expand the sidebar
+		} else if (evt.key === '[' && this.text === '' && !activeToolWantsFreeText()) {
+			// User wants to collapse or expand the sidebar, a tool that asks for text gets the [ instead. eg: TEXT
 			window.dispatchEvent(new CustomEvent(HtmlEvent.TOGGLE_SIDEBAR));
 		} else if (isCtrl && !evt.shiftKey && key === 'z') {
 			// User wants to undo the last action
@@ -451,9 +569,7 @@ export class InputController {
 		} else if (evt.key === 'Delete') {
 			// User wants to delete the current selection
 			evt.preventDefault();
-			getActiveToolActor()?.send({
-				type: ActorEvent.DELETE,
-			});
+			this.handleDeleteKey();
 		} else if (evt.key === 'Escape') {
 			// User wants to cancel the current action
 			this.handleEscapeKey();
@@ -464,7 +580,9 @@ export class InputController {
 			this.handleEnterKey();
 		} else if (
 			(evt.key === 'ArrowUp' || evt.key === 'ArrowDown') &&
-			activeToolHandlesEvent(evt.key === 'ArrowUp' ? ActorEvent.ARROW_UP : ActorEvent.ARROW_DOWN)
+			activeToolHandlesEvent({
+				type: evt.key === 'ArrowUp' ? ActorEvent.ARROW_UP : ActorEvent.ARROW_DOWN,
+			})
 		) {
 			// The active tool uses the up and down arrows, eg: to change the number of sides in the polygon tool
 			evt.preventDefault();
@@ -473,24 +591,24 @@ export class InputController {
 			});
 		} else if (evt.key === 'ArrowDown') {
 			// Move the screen down
-			getScreenCanvasDrawController().setScreenOffset(this.getScreenPanStep('down', evt.shiftKey));
+			this.panScreenWithArrowKey('down', evt.shiftKey);
 		} else if (evt.key === 'ArrowUp') {
 			// Move the screen up
-			getScreenCanvasDrawController().setScreenOffset(this.getScreenPanStep('up', evt.shiftKey));
+			this.panScreenWithArrowKey('up', evt.shiftKey);
 		} else if (evt.key === 'ArrowLeft') {
 			// Move the screen left
-			getScreenCanvasDrawController().setScreenOffset(this.getScreenPanStep('left', evt.shiftKey));
+			this.panScreenWithArrowKey('left', evt.shiftKey);
 		} else if (evt.key === 'ArrowRight') {
 			// Move the screen right
-			getScreenCanvasDrawController().setScreenOffset(this.getScreenPanStep('right', evt.shiftKey));
-		} else if (evt.key === '+' && this.text === '' && !activeToolAcceptsTextInput()) {
+			this.panScreenWithArrowKey('right', evt.shiftKey);
+		} else if (evt.key === '+' && this.text === '' && !activeToolWantsFreeText()) {
 			// Zoom in around the center of the screen
 			zoomIn();
 		} else if (
 			evt.key === '-' &&
 			this.text === '' &&
 			!getShouldDrawHelpers() &&
-			!activeToolAcceptsTextInput()
+			!activeToolWantsFreeText()
 		) {
 			// Zoom out around the center of the screen
 			// While picking points, minus starts a negative number instead
@@ -504,11 +622,7 @@ export class InputController {
 		} else if (evt.key === 'Home') {
 			// Zoom to show the whole drawing
 			zoomToBounds();
-		} else if (
-			evt.key?.length === 1 &&
-			this.text === '' &&
-			getActiveToolInstantOptions().includes(evt.key.toUpperCase())
-		) {
+		} else if (evt.key?.length === 1 && this.text === '' && activeToolTakesInstantOption(evt.key)) {
 			// The active tool has a single key option, apply it instantly instead of typing it
 			getActiveToolActor()?.send({
 				type: ActorEvent.TEXT_INPUT,
@@ -520,26 +634,78 @@ export class InputController {
 		}
 	}
 
+	/**
+	 * ESC cancels one thing at a time, the most recent first:
+	 * 1. the typed text
+	 * 2. the step the active tool is busy with, eg: a selection window or the line that follows the mouse
+	 * 3. the selection
+	 * 4. the active tool, the select tool takes over
+	 */
 	public handleEscapeKey() {
+		if (this.text !== '') {
+			// Clear the input field
+			this.text = '';
+			return;
+		}
+
+		const activeTool = getActiveToolActor();
+		const selectToolInsideActiveTool = getSelectToolInsideActiveTool();
+		if (
+			selectToolInsideActiveTool?.getSnapshot().value ===
+			SelectState.WAITING_FOR_SECOND_SELECT_POINT
+		) {
+			// The tools that wait for a selection don't pass ESC on to their select tool, so cancel the selection window here
+			selectToolInsideActiveTool.send({ type: ActorEvent.ESC });
+			return;
+		}
+
+		if (!activeToolIsAtStart() && activeToolHandlesEvent({ type: ActorEvent.ESC })) {
+			// Cancel the step the active tool is busy with
+			activeTool?.send({ type: ActorEvent.ESC });
+			return;
+		}
+
 		if (getSelectedEntities().length > 0) {
 			// Deselect entities
 			setSelectedEntityIds([]);
-		} else if (
-			this.text === '' &&
-			getActiveToolActor()?.getSnapshot()?.context.type !== Tool.SELECT &&
-			activeToolIsAtStart()
-		) {
+			return;
+		}
+
+		if (activeTool?.getSnapshot()?.context.type !== Tool.SELECT) {
 			// Nothing to cancel in the active tool, go back to selecting
 			setActiveToolActor(new Actor(TOOL_STATE_MACHINES[Tool.SELECT]));
-		} else if (this.text === '') {
-			// Cancel tool action
-			getActiveToolActor()?.send({
-				type: ActorEvent.ESC,
-			});
-		} else {
-			// clear the input field
-			this.text = '';
+			return;
 		}
+
+		// Let the select tool clear what is left of its previews
+		activeTool?.send({ type: ActorEvent.ESC });
+	}
+
+	/**
+	 * DELETE erases the selection in every tool, eg: after selecting everything with Ctrl+A while drawing lines
+	 */
+	public handleDeleteKey() {
+		const selectedEntities = getEditableSelectedEntities();
+		if (selectedEntities.length === 0) {
+			getActiveToolActor()?.send({ type: ActorEvent.DELETE });
+			return;
+		}
+		// Erase all selected entities in a single undo step
+		const selectedIds = new Set(selectedEntities.map((entity) => entity.id));
+		setEntities(
+			getEntities().filter((entity) => !selectedIds.has(entity.id)),
+			true
+		);
+		setSelectedEntityIds([]);
+	}
+
+	/**
+	 * Start a tool, eg: after typing its name
+	 */
+	public startTool(tool: Tool): void {
+		getActiveToolActor()?.stop();
+		setActiveToolActor(new Actor(TOOL_STATE_MACHINES[tool]));
+		this.rememberLastTool(tool);
 	}
 
 	public handleEnterKey() {
@@ -550,6 +716,14 @@ export class InputController {
 		this.text = '';
 
 		if (text === '') {
+			if (activeTool?.getSnapshot()?.context.type === Tool.SELECT) {
+				// ENTER at the idle prompt repeats the last command, like in AutoCAD.
+				// The select tool doesn't get the ENTER, that would finish it, so it would stop selecting
+				if (this.lastTool && activeToolIsAtStart()) {
+					this.startTool(this.lastTool);
+				}
+				return;
+			}
 			// Send the ENTER event to the active tool
 			activeTool?.send({
 				type: ActorEvent.ENTER,
@@ -563,7 +737,13 @@ export class InputController {
 		// A tool that only asks for single key options gets those options, other text is a command. eg: AREA => [O]bject
 		const instantOptions = getActiveToolInstantOptions();
 		const isOtherThanInstantOption =
-			instantOptions.length > 0 && !instantOptions.includes(text.trim().toUpperCase());
+			instantOptions.length > 0 && !activeToolTakesInstantOption(text);
+		if (instantOptions.includes(text.trim().toUpperCase()) && isOtherThanInstantOption) {
+			// An option of the active tool that isn't possible yet is not a command either,
+			// eg: C in the line tool with one segment would otherwise start CIRCLE
+			toast.warn(`Invalid input: ${text.trim()}`);
+			return;
+		}
 		if (
 			activeToolCanHandleTextInput &&
 			!isNumberForTool &&
@@ -582,8 +762,7 @@ export class InputController {
 		switch (command.type) {
 			case 'tool':
 				// User entered a command. eg: L or LINE
-				activeTool?.stop();
-				setActiveToolActor(new Actor(TOOL_STATE_MACHINES[command.tool]));
+				this.startTool(command.tool);
 				break;
 
 			case 'action':
@@ -593,39 +772,56 @@ export class InputController {
 
 			case 'number':
 				// User entered a number. eg: 100
-				activeTool?.send({
-					type: ActorEvent.NUMBER_INPUT,
-					value: command.value,
-					worldMouseLocation:
-						getSnapPointOnAngleGuide()?.point ||
-						getSnapPoint()?.point ||
-						getScreenCanvasDrawController().getWorldMouseLocation(),
-				} as NumberInputEvent);
+				this.sendInputToActiveTool(
+					{
+						type: ActorEvent.NUMBER_INPUT,
+						value: command.value,
+						// The typed distance goes in the direction of the point a click would pick
+						worldMouseLocation: getSnappedMouseLocation(),
+					} as NumberInputEvent,
+					text
+				);
 				break;
 
 			case 'absolutePoint':
-				// User entered coordinates to an absolute point on the canvas. eg: 100, 200
-				activeTool?.send({
-					type: ActorEvent.ABSOLUTE_POINT_INPUT,
-					value: new Point(command.x, command.y),
-				} as AbsolutePointInputEvent);
+				// User entered coordinates to an absolute point on the canvas. eg: 100, 200 or 100<45
+				this.sendInputToActiveTool(
+					{
+						type: ActorEvent.ABSOLUTE_POINT_INPUT,
+						value: new Point(command.x, command.y),
+					} as AbsolutePointInputEvent,
+					text
+				);
 				break;
 
 			case 'relativePoint':
-				// User entered coordinates relative to the last point. eg: @100, 200
-				activeTool?.send({
-					type: ActorEvent.RELATIVE_POINT_INPUT,
-					value: new Point(command.x, command.y),
-				} as RelativePointInputEvent);
+				// User entered coordinates relative to the last point. eg: @100, 200 or @100<45
+				this.sendInputToActiveTool(
+					{
+						type: ActorEvent.RELATIVE_POINT_INPUT,
+						value: new Point(command.x, command.y),
+					} as RelativePointInputEvent,
+					text
+				);
 				break;
 
 			case 'text':
-				activeTool?.send({
-					type: ActorEvent.TEXT_INPUT,
-					value: command.value,
-				} as TextInputEvent);
+				// The text is not a command and the active tool doesn't ask for text, keep the tool as it is
+				toast.warn(`Unknown command: ${command.value}`);
 				break;
 		}
+	}
+
+	/**
+	 * Send typed input to the active tool, or tell the user when the tool can't use it right now
+	 * eg: a relative point before there is a point to be relative to
+	 */
+	private sendInputToActiveTool(event: StateEvent, text: string): void {
+		if (!activeToolHandlesEvent(event)) {
+			toast.warn(`Invalid input: ${text.trim()}`);
+			return;
+		}
+		getActiveToolActor()?.send(event);
 	}
 
 	public handleUndo(evt?: KeyboardEvent) {

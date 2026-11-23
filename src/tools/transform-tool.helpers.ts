@@ -3,13 +3,11 @@ import { assign, createMachine, sendTo } from 'xstate';
 import { GUIDE_LINE_COLOR, GUIDE_LINE_STYLE, GUIDE_LINE_WIDTH } from '../App.consts';
 import type { Entity } from '../entities/Entity';
 import { LineEntity } from '../entities/LineEntity';
+import { getSnappedMouseLocation } from '../helpers/get-closest-snap-point';
 import {
 	addEntities,
 	getEditableSelectedEntities,
 	getEntities,
-	getScreenCanvasDrawController,
-	getSnapPoint,
-	getSnapPointOnAngleGuide,
 	setAngleGuideOriginPoint,
 	setDimmedEntityIds,
 	setEntities,
@@ -105,17 +103,6 @@ export function createGuideLine(startPoint: Point, endPoint: Point): LineEntity 
 	guideLine.lineWidth = GUIDE_LINE_WIDTH;
 	guideLine.lineDash = GUIDE_LINE_STYLE;
 	return guideLine;
-}
-
-/**
- * Location the mouse would click right now, taking snap points into account
- */
-function getSnappedMouseLocation(): Point {
-	return (
-		getSnapPointOnAngleGuide()?.point ||
-		getSnapPoint()?.point ||
-		getScreenCanvasDrawController().getWorldMouseLocation()
-	);
 }
 
 /**

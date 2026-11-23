@@ -1,5 +1,9 @@
 import { compact } from 'es-toolkit';
-import { HOVERED_SNAP_POINT_TIME, SNAP_POINT_DISTANCE } from '../App.consts.ts';
+import {
+	HOVERED_SNAP_POINT_TIME,
+	SNAP_ANGLE_DISTANCE,
+	SNAP_POINT_DISTANCE,
+} from '../App.consts.ts';
 import { SnapPointType } from '../App.types.ts';
 import {
 	getAngleGuideOriginPoint,
@@ -20,7 +24,8 @@ import { getDrawHelpers } from './get-draw-guides.ts';
 import { getClosestGridPoint, getGridSpacing } from './grid.ts';
 
 /**
- * Calculate angle guides and snap points
+ * Calculate angle guides and snap points for the current mouse location
+ * Use getActiveSnapPoint to know which of them a click uses
  */
 export function calculateAngleGuidesAndSnapPoints() {
 	const angleStep = getAngleStep();
@@ -49,6 +54,7 @@ export function calculateAngleGuidesAndSnapPoints() {
 			worldMouseLocation,
 			angleStep,
 			SNAP_POINT_DISTANCE / screenScale,
+			SNAP_ANGLE_DISTANCE / screenScale,
 			getSnapPointConfig()
 		);
 		// Points the active tool already placed (eg: the first point of a spline that is being drawn) aren't entities yet

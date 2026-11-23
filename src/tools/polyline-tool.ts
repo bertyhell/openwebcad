@@ -3,6 +3,7 @@ import { assign, createMachine } from 'xstate';
 import { LineEntity } from '../entities/LineEntity';
 import { PolyLineEntity } from '../entities/PolyLineEntity';
 import { applyActiveStyle } from '../helpers/apply-active-style';
+import { getSnappedMouseLocation } from '../helpers/get-closest-snap-point';
 import { getPointFromEvent } from '../helpers/get-point-from-event';
 import {
 	addEntities,
@@ -12,7 +13,7 @@ import {
 	setShouldDrawHelpers,
 } from '../state';
 import { Tool } from '../tools';
-import type { DrawEvent, PointInputEvent, StateEvent, ToolContext } from './tool.types';
+import type { PointInputEvent, StateEvent, TextInputEvent, ToolContext } from './tool.types';
 
 export interface PolyLineContext extends ToolContext {
 	points: Point[];
@@ -51,6 +52,13 @@ export function createPolyLineThroughPoints(points: Point[]): PolyLineEntity {
 	return applyActiveStyle(new PolyLineEntity(lines));
 }
 
+const CLOSE_OPTION = 'C';
+const UNDO_OPTION = 'U';
+
+function isOption(event: StateEvent, option: string): boolean {
+	return (event as TextInputEvent).value?.toUpperCase() === option;
+}
+
 /**
  * Clicking the first point again closes the polyline
  */
@@ -64,7 +72,7 @@ function isClosingClick({ context, event }: { context: PolyLineContext; event: S
 /**
  * Polyline tool state machine
  * The user clicks (or types) points, every point adds a segment
- * ENTER finishes the polyline, clicking the first point closes it
+ * ENTER finishes the polyline, clicking the first point or [C]lose closes it, [U]ndo or Ctrl+Z removes the last point
  */
 export const polyLineToolStateMachine = createMachine(
 	{
@@ -104,9 +112,28 @@ export const polyLineToolStateMachine = createMachine(
 			[PolyLineState.WAITING_FOR_NEXT_POINT]: {
 				description: 'Select the next point of the polyline',
 				meta: {
-					instructions: 'Select the next point, ENTER to finish, click the first point to close',
+					instructions: 'Select the next point, ENTER to finish, [C]lose or [U]ndo',
+					instantOptions: [CLOSE_OPTION, UNDO_OPTION],
 				},
 				on: {
+					TEXT_INPUT: [
+						{
+							// Closing needs at least 2 segments, like clicking the first point
+							guard: ({ context, event }) =>
+								isOption(event, CLOSE_OPTION) && context.points.length >= 3,
+							actions: PolyLineAction.CLOSE_POLYLINE,
+							target: PolyLineState.INIT,
+						},
+						{
+							guard: ({ context, event }) =>
+								isOption(event, UNDO_OPTION) && context.points.length > 1,
+							actions: PolyLineAction.REMOVE_LAST_POINT,
+						},
+						{
+							guard: ({ event }) => isOption(event, UNDO_OPTION),
+							target: PolyLineState.INIT,
+						},
+					],
 					DRAW: { actions: PolyLineAction.DRAW_TEMP_POLYLINE },
 					...Object.fromEntries(
 						POINT_EVENTS.map((eventType) => [
@@ -163,9 +190,11 @@ export const polyLineToolStateMachine = createMachine(
 				setAngleGuideOriginPoint(points.at(-1) ?? null);
 				return { points };
 			}),
-			[PolyLineAction.DRAW_TEMP_POLYLINE]: ({ context, event }) => {
-				const mouseLocation = (event as DrawEvent).drawController.getWorldMouseLocation();
-				setGhostHelperEntities([createPolyLineThroughPoints([...context.points, mouseLocation])]);
+			[PolyLineAction.DRAW_TEMP_POLYLINE]: ({ context }) => {
+				// End the preview where a click would add the next point, so it follows the snap marker
+				setGhostHelperEntities([
+					createPolyLineThroughPoints([...context.points, getSnappedMouseLocation()]),
+				]);
 			},
 			[PolyLineAction.FINISH_POLYLINE]: ({ context }) => {
 				setGhostHelperEntities([]);

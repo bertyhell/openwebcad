@@ -1,8 +1,6 @@
 import type { Point } from '@flatten-js/core';
 import { assign, createMachine } from 'xstate';
 import {
-	getNotSelectedEntities,
-	setEntities,
 	setGhostHelperEntities,
 	setHighlightedEntityIds,
 	setSelectedEntityIds,
@@ -36,7 +34,6 @@ export enum SelectAction {
 	CLEAR_HIGHLIGHT = 'CLEAR_HIGHLIGHT',
 	SELECT_ENTITIES_INSIDE_RECTANGLE = 'SELECT_ENTITIES_INSIDE_RECTANGLE',
 	DRAW_TEMP_SELECTION_RECTANGLE = 'DRAW_TEMP_SELECTION_RECTANGLE',
-	DELETE_SELECTED_ENTITIES = 'DELETE_SELECTED_ENTITIES',
 }
 
 export const selectToolStateMachine = createMachine(
@@ -76,12 +73,11 @@ export const selectToolStateMachine = createMachine(
 					ESC: {
 						actions: SelectAction.INIT_SELECT_TOOL,
 					},
+					// Tools that wait for a selection run this tool and continue when it finishes, eg: MOVE.
+					// The input controller doesn't send ENTER to the select tool on its own, so that one keeps selecting.
+					// The input controller also handles DELETE, the same way for every tool
 					ENTER: {
 						target: SelectState.SELECTION_COMPLETED,
-					},
-					DELETE: {
-						actions: SelectAction.DELETE_SELECTED_ENTITIES,
-						target: SelectState.INIT,
 					},
 				},
 			},
@@ -177,11 +173,6 @@ export const selectToolStateMachine = createMachine(
 					(event as MouseClickEvent).holdingCtrl,
 					(event as MouseClickEvent).holdingShift
 				);
-				setGhostHelperEntities([]);
-			},
-			DELETE_SELECTED_ENTITIES: () => {
-				setEntities(getNotSelectedEntities(), true);
-				setSelectedEntityIds([]);
 				setGhostHelperEntities([]);
 			},
 			RESET_SELECTION: assign(() => {

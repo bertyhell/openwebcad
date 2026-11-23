@@ -2,6 +2,7 @@ import type { Point } from '@flatten-js/core';
 import { toast } from 'react-toastify';
 import { Actor, assign, createMachine } from 'xstate';
 import { createBoundaryPicker } from '../helpers/boundary-picker.ts';
+import { getSnappedMouseLocation } from '../helpers/get-closest-snap-point.ts';
 import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
 import { formatAreaInfo, getBoundaryAreaInfo, getPolygonAreaInfo } from '../helpers/inquiry.ts';
 import {
@@ -172,9 +173,9 @@ export const areaToolStateMachine = createMachine(
 					points: [...context.points, point],
 				};
 			}),
-			[AreaAction.DRAW_TEMP_POLYGON]: ({ context, event }) => {
-				const mouseLocation = (event as DrawEvent).drawController.getWorldMouseLocation();
-				setGhostHelperEntities(getGuideLines([...context.points, mouseLocation]));
+			[AreaAction.DRAW_TEMP_POLYGON]: ({ context }) => {
+				// End the preview where a click would add the next corner, so it follows the snap marker
+				setGhostHelperEntities(getGuideLines([...context.points, getSnappedMouseLocation()]));
 			},
 			[AreaAction.SHOW_POLYGON_AREA]: ({ context }) => {
 				if (context.points.length < 3) {

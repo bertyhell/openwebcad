@@ -36,8 +36,13 @@ export enum ZoomAction {
 	EXECUTE_ZOOM = 'EXECUTE_ZOOM',
 }
 
+/**
+ * A zoom percentage, eg: 50 or 12.5
+ * A percentage of 0 would make everything infinitely small, so it isn't one
+ */
 function isZoomAmount(text: string): boolean {
-	return /^[0-9]+(?:[.][0-9]+)?$/.test(text);
+	const trimmedText = text.trim();
+	return /^(?:[0-9]+(?:[.][0-9]*)?|[.][0-9]+)$/.test(trimmedText) && Number(trimmedText) > 0;
 }
 
 /**
@@ -74,14 +79,18 @@ export const zoomToolStateMachine = createMachine(
 			[ZoomState.INIT]: {
 				description: 'Initializing the zoom tool',
 				always: {
-					actions: assign(() => {
-						return {
-							zoomMode: null,
-							amount: '',
-							firstPoint: null,
-							lastPoint: null,
-						};
-					}),
+					actions: [
+						// Remove the angle guides and previews of the previous tool
+						ZoomAction.INIT_ZOOM_TOOL,
+						assign(() => {
+							return {
+								zoomMode: null,
+								amount: '',
+								firstPoint: null,
+								lastPoint: null,
+							};
+						}),
+					],
 					target: ZoomState.WAIT_FOR_INPUT,
 				},
 			},

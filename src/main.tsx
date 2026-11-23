@@ -13,7 +13,11 @@ import { getDefaultActiveLayerId } from './helpers/import-export-handlers/json.i
 import type { JsonDrawingFileDeserialized } from './helpers/import-export-handlers/json.types.ts';
 import { localStorageExport } from './helpers/import-export-handlers/local-storage.export.ts';
 import { getEntitiesAndLayersFromLocalStorage } from './helpers/import-export-handlers/local-storage.import.ts';
-import { trackHoveredSnapPoint } from './helpers/track-hovered-snap-points';
+import {
+	forgetHoveredSnapPointsWhenToolChanges,
+	isSnapPointInDrawing,
+	trackHoveredSnapPoint,
+} from './helpers/track-hovered-snap-points';
 import { InputController } from './inputController/input-controller.ts';
 import {
 	clearRedrawRequest,
@@ -62,12 +66,14 @@ function startDrawLoop(
 	 * Track hovered snap points, a snap point that is hovered long enough gets marked
 	 */
 	const wasMarked = isLastHoveredSnapPointMarked();
+	forgetHoveredSnapPointsWhenToolChanges(getActiveToolActor(), setHoveredSnapPoints);
 	trackHoveredSnapPoint(
 		getSnapPoint(),
 		getHoveredSnapPoints(),
 		setHoveredSnapPoints,
 		SNAP_POINT_DISTANCE / screenCanvasDrawController.getScreenScale(),
-		elapsedTime
+		elapsedTime,
+		isSnapPointInDrawing
 	);
 	if (wasMarked !== isLastHoveredSnapPointMarked()) {
 		requestRedraw();
@@ -147,6 +153,7 @@ function initApplication() {
 			}
 			setEntities(file.entities);
 			setLayers(layers);
+			// New entities on a hidden or locked layer would be invisible or impossible to change
 			setActiveLayerId(getDefaultActiveLayerId(layers));
 			resetUndoHistory();
 

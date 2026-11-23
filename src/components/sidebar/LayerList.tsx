@@ -1,10 +1,10 @@
 import { type FC, useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import type { Layer } from '../../App.types.ts';
-import { setActiveLayerId } from '../../state.ts';
 import { PathIcon } from '../PathIcon.tsx';
 import { toFullHexColor } from './color.helpers.ts';
 import {
+	activateLayer,
 	createLayer,
 	deleteLayer,
 	moveSelectionToLayer,
@@ -139,7 +139,7 @@ export const LayerList: FC<LayerListProps> = ({ layers, activeLayerId }) => {
 							<button
 								type="button"
 								title="Make active layer, double click or F2 to rename"
-								onClick={() => setActiveLayerId(layer.id)}
+								onClick={() => activateLayer(layer.id)}
 								onDoubleClick={() => setRenamingLayerId(layer.id)}
 								onKeyDown={(evt) => {
 									if (evt.key === 'F2') {

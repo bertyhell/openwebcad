@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { CommandAction } from '../commands.ts';
 import { Tool } from '../tools.ts';
-import { getCommandNamesFromPrefixText, parseCommandInput } from './command-parser.ts';
+import {
+	getCommandNamesFromPrefixText,
+	getExactCommandName,
+	parseCommandInput,
+} from './command-parser.ts';
 
 describe('getCommandNamesFromPrefixText', () => {
 	it('returns nothing for empty text', () => {
@@ -51,6 +55,22 @@ describe('parseCommandInput', () => {
 		expect(parseCommandInput('-2.5')).toEqual({ type: 'number', value: -2.5 });
 	});
 
+	it('parses numbers without a leading or trailing digit, with a plus sign or an exponent', () => {
+		expect(parseCommandInput('.5')).toEqual({ type: 'number', value: 0.5 });
+		expect(parseCommandInput('-.5')).toEqual({ type: 'number', value: -0.5 });
+		expect(parseCommandInput('5.')).toEqual({ type: 'number', value: 5 });
+		expect(parseCommandInput('+5')).toEqual({ type: 'number', value: 5 });
+		expect(parseCommandInput('1e3')).toEqual({ type: 'number', value: 1000 });
+		expect(parseCommandInput('2.5E-1')).toEqual({ type: 'number', value: 0.25 });
+		expect(parseCommandInput('.5,+1e1')).toEqual({ type: 'absolutePoint', x: 0.5, y: 10 });
+	});
+
+	it('does not parse a lone dot, sign or exponent as a number', () => {
+		expect(parseCommandInput('.')).toEqual({ type: 'text', value: '.' });
+		expect(parseCommandInput('-')).toEqual({ type: 'text', value: '-' });
+		expect(parseCommandInput('e3')).toEqual({ type: 'text', value: 'e3' });
+	});
+
 	it('parses absolute points', () => {
 		expect(parseCommandInput('10, -20.5')).toEqual({ type: 'absolutePoint', x: 10, y: -20.5 });
 	});
@@ -59,8 +79,52 @@ describe('parseCommandInput', () => {
 		expect(parseCommandInput('@-10,20')).toEqual({ type: 'relativePoint', x: -10, y: 20 });
 	});
 
+	it('parses polar points relative to the last point, counterclockwise from the x axis', () => {
+		expect(parseCommandInput('@100<0')).toEqual({ type: 'relativePoint', x: 100, y: 0 });
+		expect(parseCommandInput('@100<90')).toEqual({ type: 'relativePoint', x: 0, y: 100 });
+		expect(parseCommandInput('@ 50 < 180')).toEqual({ type: 'relativePoint', x: -50, y: 0 });
+		expect(parseCommandInput('@10<-90')).toEqual({ type: 'relativePoint', x: 0, y: -10 });
+
+		const diagonal = parseCommandInput('@2<45');
+		expect(diagonal.type).toBe('relativePoint');
+		if (diagonal.type === 'relativePoint') {
+			expect(diagonal.x).toBeCloseTo(Math.SQRT2);
+			expect(diagonal.y).toBeCloseTo(Math.SQRT2);
+		}
+	});
+
+	it('parses polar points relative to the origin', () => {
+		expect(parseCommandInput('100<90')).toEqual({ type: 'absolutePoint', x: 0, y: 100 });
+		expect(parseCommandInput('.5<270')).toEqual({ type: 'absolutePoint', x: 0, y: -0.5 });
+	});
+
 	it('passes other text to the tool', () => {
 		expect(parseCommandInput('hello world')).toEqual({ type: 'text', value: 'hello world' });
 		expect(parseCommandInput('1,2,3')).toEqual({ type: 'text', value: '1,2,3' });
+		expect(parseCommandInput('1<2<3')).toEqual({ type: 'text', value: '1<2<3' });
+	});
+
+	it('only runs a command for an exact name or alias, not for a partial name', () => {
+		expect(parseCommandInput('D')).toEqual({ type: 'text', value: 'D' });
+		expect(parseCommandInput('CIRC')).toEqual({ type: 'text', value: 'CIRC' });
+		expect(parseCommandInput('xyz')).toEqual({ type: 'text', value: 'xyz' });
+		expect(parseCommandInput('circle')).toEqual({ type: 'tool', tool: Tool.CIRCLE });
+		expect(parseCommandInput(' c ')).toEqual({ type: 'tool', tool: Tool.CIRCLE });
+		expect(parseCommandInput('FILL')).toEqual({ type: 'tool', tool: Tool.HATCH });
+		expect(parseCommandInput('FILLET')).toEqual({ type: 'tool', tool: Tool.FILLET });
+	});
+});
+
+describe('getExactCommandName', () => {
+	it('finds a command by its exact alias or name', () => {
+		expect(getExactCommandName('dli')).toBe(Tool.DIMLINEAR);
+		expect(getExactCommandName('DIMLINEAR')).toBe(Tool.DIMLINEAR);
+		expect(getExactCommandName('exp')).toBe(CommandAction.EXPORT);
+	});
+
+	it('returns null for partial names and empty text', () => {
+		expect(getExactCommandName('DIML')).toBeNull();
+		expect(getExactCommandName('')).toBeNull();
+		expect(getExactCommandName('  ')).toBeNull();
 	});
 });

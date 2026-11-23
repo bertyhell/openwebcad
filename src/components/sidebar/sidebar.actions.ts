@@ -1,3 +1,4 @@
+import { toast } from 'react-toastify';
 import { Actor } from 'xstate';
 import type { Layer } from '../../App.types.ts';
 import { type Entity, EntityName } from '../../entities/Entity.ts';
@@ -7,7 +8,6 @@ import { getNewLayer } from '../../helpers/get-new-layer.ts';
 import { imageImport } from '../../helpers/import-export-handlers/image.import.ts';
 import {
 	getActiveLayerId,
-	getActiveToolActor,
 	getEditableEntities,
 	getEditableSelectedEntities,
 	getEntities,
@@ -23,14 +23,13 @@ import {
 	setSelectedEntityIds,
 } from '../../state.ts';
 import { imageImportToolStateMachine } from '../../tools/image-import-tool.ts';
-import { TOOL_STATE_MACHINES } from '../../tools/tool.consts.ts';
 import { ActorEvent } from '../../tools/tool.types.ts';
 import { zoomToBounds, zoomToScale } from '../../tools/zoom-tool.helpers.ts';
 import type { Tool } from '../../tools.ts';
 
 export function activateTool(tool: Tool): void {
-	getActiveToolActor()?.stop();
-	setActiveToolActor(new Actor(TOOL_STATE_MACHINES[tool]));
+	// ENTER at the idle prompt repeats the last tool, also when it was started from the sidebar
+	getInputController().startTool(tool);
 }
 
 export async function startImageImport(file: File | undefined): Promise<void> {
@@ -82,18 +81,71 @@ function updateLayer(layerId: string, update: Partial<Layer>): Layer | undefined
 	return updatedLayer;
 }
 
+function isLayerEditable(layer: Layer | undefined): boolean {
+	return !!layer && layer.isVisible && !layer.isLocked;
+}
+
+/**
+ * The layer that should become active when the active layer can't be used, eg: when the drawing is loaded
+ * A hidden or locked layer would make new entities invisible or impossible to change
+ */
+export function getFirstEditableLayer(layers: Layer[]): Layer | undefined {
+	return layers.find(isLayerEditable) ?? layers[0];
+}
+
+/**
+ * Tell the user when new entities end up on a hidden or locked layer, because there is no other layer to put them on
+ */
+function warnWhenActiveLayerIsNotEditable(): void {
+	const activeLayer = getLayers().find((layer) => layer.id === getActiveLayerId());
+	if (!activeLayer || isLayerEditable(activeLayer)) {
+		return;
+	}
+	if (!activeLayer.isVisible) {
+		toast.warn(`Layer ${activeLayer.name} is hidden, show it to see what you draw`);
+	} else {
+		toast.warn(`Layer ${activeLayer.name} is locked, unlock it to change what you draw`);
+	}
+}
+
 /**
  * Hidden or locked layers can't receive new entities, so move the active layer to another layer
  */
 function ensureActiveLayerIsEditable(): void {
 	const activeLayer = getLayers().find((layer) => layer.id === getActiveLayerId());
-	if (activeLayer?.isVisible && !activeLayer.isLocked) {
+	if (isLayerEditable(activeLayer)) {
 		return;
 	}
-	const editableLayer = getLayers().find((layer) => layer.isVisible && !layer.isLocked);
+	const editableLayer = getLayers().find(isLayerEditable);
 	if (editableLayer) {
 		setActiveLayerId(editableLayer.id);
+	} else {
+		warnWhenActiveLayerIsNotEditable();
 	}
+}
+
+/**
+ * Make the layer the one that new entities are added to
+ * A hidden or locked layer can't be made active, new entities on it would be invisible or impossible to change
+ * @returns whether the layer is active now
+ */
+export function activateLayer(layerId: string): boolean {
+	const layer = getLayers().find((layer) => layer.id === layerId);
+	if (!layer) {
+		return false;
+	}
+	// Double clicking the layer name to rename it also clicks it twice, show the message only once
+	const toastOptions = { toastId: `activate-layer-${layerId}` };
+	if (!layer.isVisible) {
+		toast.info(`Show layer ${layer.name} to draw on it`, toastOptions);
+		return false;
+	}
+	if (layer.isLocked) {
+		toast.info(`Unlock layer ${layer.name} to draw on it`, toastOptions);
+		return false;
+	}
+	setActiveLayerId(layerId);
+	return true;
 }
 
 /**
@@ -164,7 +216,8 @@ export function deleteLayer(layerId: string): void {
 	setEntities(getEntities().filter((entity) => entity.layerId !== layerId));
 	setLayers(remainingLayers, true, true);
 	if (getActiveLayerId() === layerId) {
-		setActiveLayerId(remainingLayers[0].id);
+		setActiveLayerId((getFirstEditableLayer(remainingLayers) ?? remainingLayers[0]).id);
+		warnWhenActiveLayerIsNotEditable();
 	}
 }
 

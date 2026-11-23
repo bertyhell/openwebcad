@@ -54,6 +54,7 @@ export enum CornerAction {
 	RECORD_FIRST_LINE = 'RECORD_FIRST_LINE',
 	DRAW_PREVIEW = 'DRAW_PREVIEW',
 	CREATE_CORNER = 'CREATE_CORNER',
+	SHOW_CORNER_ERROR = 'SHOW_CORNER_ERROR',
 	RECORD_BOX_START = 'RECORD_BOX_START',
 	DRAW_BOX_PREVIEW = 'DRAW_BOX_PREVIEW',
 	CREATE_BOX_CORNERS = 'CREATE_BOX_CORNERS',
@@ -181,11 +182,26 @@ function createCornerToolStateMachine(tool: Tool, cornerType: CornerType, valueN
 					},
 					on: {
 						DRAW: { actions: CornerAction.DRAW_PREVIEW },
-						MOUSE_CLICK: {
-							guard: ({ event }) => !!pickLine((event as MouseClickEvent).worldMouseLocation),
-							actions: CornerAction.CREATE_CORNER,
-							target: CornerState.INIT,
-						},
+						MOUSE_CLICK: [
+							{
+								guard: ({ context, event }) => {
+									const corner = getCorner(
+										context,
+										cornerType,
+										(event as MouseClickEvent).worldMouseLocation
+									);
+									return !!corner && !('error' in corner);
+								},
+								actions: CornerAction.CREATE_CORNER,
+								target: CornerState.INIT,
+							},
+							{
+								// Keep the first line, eg: after picking a parallel line or a line that is too short for the radius,
+								// so the user only has to pick another second line
+								guard: ({ event }) => !!pickLine((event as MouseClickEvent).worldMouseLocation),
+								actions: CornerAction.SHOW_CORNER_ERROR,
+							},
+						],
 						ESC: { target: CornerState.INIT },
 					},
 				},
@@ -284,6 +300,16 @@ function createCornerToolStateMachine(tool: Tool, cornerType: CornerType, valueN
 						return;
 					}
 					setEntities(applyCorner(getEntities(), context.firstLine, secondLine, corner), true);
+				},
+				[CornerAction.SHOW_CORNER_ERROR]: ({ context, event }) => {
+					const corner = getCorner(
+						context,
+						cornerType,
+						(event as MouseClickEvent).worldMouseLocation
+					);
+					if (corner && 'error' in corner) {
+						toast.info(corner.error);
+					}
 				},
 			},
 		}

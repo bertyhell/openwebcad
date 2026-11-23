@@ -4,7 +4,10 @@
  */
 export function imageImport(file: File | null | undefined): Promise<HTMLImageElement> {
 	return new Promise<HTMLImageElement>((resolve, reject) => {
-		if (!file) return;
+		if (!file) {
+			reject(new Error('No image file was selected'));
+			return;
+		}
 
 		const reader = new FileReader();
 		reader.addEventListener('load', () => {

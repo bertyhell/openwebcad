@@ -3,6 +3,7 @@ import { compact } from 'es-toolkit';
 import { toast } from 'react-toastify';
 import type { Layer } from '../../App.types.ts';
 import { ArcEntity, type ArcJsonData } from '../../entities/ArcEntity';
+import { ArrowHeadEntity, type ArrowHeadJsonData } from '../../entities/ArrowHeadEntity.ts';
 import { CircleEntity, type CircleJsonData } from '../../entities/CircleEntity';
 import { EllipseEntity, type EllipseJsonData } from '../../entities/EllipseEntity.ts';
 import { type Entity, EntityName, type JsonEntity } from '../../entities/Entity';
@@ -115,6 +116,8 @@ export function entityFromJson(entity: JsonEntity): Promise<Entity | null> {
 			return EllipseEntity.fromJson(entity as JsonEntity<EllipseJsonData>);
 		case EntityName.Spline:
 			return SplineEntity.fromJson(entity as JsonEntity<SplineJsonData>);
+		case EntityName.ArrowHead:
+			return ArrowHeadEntity.fromJson(entity as JsonEntity<ArrowHeadJsonData>);
 		case EntityName.Group:
 			return GroupEntity.fromJson(entity as JsonEntity<GroupJsonData>, entityFromJson);
 

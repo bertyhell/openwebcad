@@ -611,7 +611,8 @@ function restoreUndoState(undoState: UndoState) {
 	entities = undoState.entities;
 	layers = undoState.layers;
 	if (!layers.some((layer) => layer.id === activeLayerId)) {
-		activeLayerId = layers[0]?.id;
+		// New entities on a hidden or locked layer would be invisible or impossible to change
+		activeLayerId = (layers.find((layer) => layer.isVisible && !layer.isLocked) ?? layers[0])?.id;
 	}
 	requestRedraw();
 	triggerReactUpdate(StateVariable.layers);

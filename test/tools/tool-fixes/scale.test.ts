@@ -27,6 +27,8 @@ describe('scale', () => {
 		typePoint(10, 0);
 		click(0, 0);
 
+		// The tool keeps waiting for a new length instead of starting over
+		expect(getToolState()).toBe('WAITING_FOR_POINT_2');
 		expect(getLineEnd().x).toBeCloseTo(20);
 		expect(getEntities()[0].getBoundingBox().width).toBeCloseTo(10);
 	});
@@ -41,11 +43,10 @@ describe('scale', () => {
 		expect(getLineEnd().x).toBeCloseTo(40);
 	});
 
-	it('refuses a typed scale factor when the reference length is 0', () => {
+	it('refuses a reference length of 0', () => {
 		typePoint(0, 0);
-		typeNumber(2);
 
-		expect(getToolState()).toBe('WAITING_FOR_POINT_2');
+		expect(getToolState()).toBe('WAITING_FOR_POINT_1');
 		expect(getLineEnd().x).toBeCloseTo(20);
 	});
 });

@@ -65,6 +65,11 @@ export interface TransformToolConfig {
 	 */
 	numberToPoint?: (value: number, points: Point[], mouseLocation: Point) => Point | null;
 	/**
+	 * Whether a picked point can be used, the tool keeps waiting for another point when it can't
+	 * eg: scaling to the origin would collapse the selection into a point
+	 */
+	isValidPoint?: (point: Point, points: Point[]) => boolean;
+	/**
 	 * Dashed helper lines drawn while previewing the transformation
 	 */
 	getGuideEntities?: (points: Point[]) => Entity[];
@@ -79,6 +84,7 @@ export enum TransformState {
 export enum TransformAction {
 	INIT_TOOL = 'INIT_TOOL',
 	CAPTURE_SELECTION = 'CAPTURE_SELECTION',
+	DIM_CAPTURED_ENTITIES = 'DIM_CAPTURED_ENTITIES',
 	ENABLE_HELPERS = 'ENABLE_HELPERS',
 	RECORD_POINT = 'RECORD_POINT',
 	START_PREVIEW = 'START_PREVIEW',
@@ -193,14 +199,20 @@ export function createTransformToolStateMachine(config: TransformToolConfig) {
 				: TransformState.INIT
 			: getPointState(index + 1);
 		const pointTransition = {
-			guard: ({ context, event }: { context: TransformContext; event: StateEvent }) =>
-				!!getPointFromEvent(event, context, config),
+			guard: ({ context, event }: { context: TransformContext; event: StateEvent }) => {
+				const point = getPointFromEvent(event, context, config);
+				return !!point && (config.isValidPoint?.(point, context.points) ?? true);
+			},
 			actions: isLastPoint ? TransformAction.APPLY_TRANSFORMATION : TransformAction.RECORD_POINT,
 			target: nextState,
 		};
 		const on: Record<string, unknown> = {
 			ESC: { actions: TransformAction.DESELECT_ENTITIES, target: TransformState.INIT },
 		};
+		if (isLastPoint && config.repeat) {
+			// ENTER stops repeating, like ESC. eg: placing copies
+			on.ENTER = { actions: TransformAction.DESELECT_ENTITIES, target: TransformState.INIT };
+		}
 		for (const eventType of pointInputEvents) {
 			on[eventType] = pointTransition;
 		}
@@ -243,7 +255,9 @@ export function createTransformToolStateMachine(config: TransformToolConfig) {
 					always: [
 						{
 							guard: () => getEditableSelectedEntities().length > 0,
-							actions: TransformAction.CAPTURE_SELECTION,
+							// The dimming is a separate action, the assign of CAPTURE_SELECTION can run while the actor is created,
+							// before the previous tool's dimmed entities are cleared
+							actions: [TransformAction.CAPTURE_SELECTION, TransformAction.DIM_CAPTURED_ENTITIES],
 							target: getPointState(0),
 						},
 						{
@@ -299,6 +313,9 @@ export function createTransformToolStateMachine(config: TransformToolConfig) {
 						originalEntities,
 					};
 				}),
+				[TransformAction.DIM_CAPTURED_ENTITIES]: ({ context }) => {
+					setDimmedEntityIds(context.originalEntities.map((entity) => entity.id));
+				},
 				[TransformAction.DESELECT_ENTITIES]: () => {
 					setSelectedEntityIds([]);
 				},

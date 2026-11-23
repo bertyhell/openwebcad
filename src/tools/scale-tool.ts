@@ -1,3 +1,4 @@
+import { isPointEqual } from '../helpers/is-point-equal';
 import { Tool } from '../tools';
 import { getPointForTypedScaleFactor, scaleEntities } from './scale-tool.helpers';
 import { createGuideLine, createTransformToolStateMachine } from './transform-tool.helpers';
@@ -20,6 +21,8 @@ export const scaleToolStateMachine = createTransformToolStateMachine({
 		scaleEntities(entities, origin, referenceEndPoint, newEndPoint),
 	numberToPoint: (scaleFactor, [origin, referenceEndPoint]) =>
 		getPointForTypedScaleFactor(origin, referenceEndPoint, scaleFactor),
+	// A reference length or new length of zero would collapse the selection into a point
+	isValidPoint: (point, [origin]) => !origin || !isPointEqual(point, origin),
 	getGuideEntities: ([origin, referenceEndPoint, newEndPoint]) => [
 		createGuideLine(origin, referenceEndPoint),
 		createGuideLine(origin, newEndPoint),

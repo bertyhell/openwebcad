@@ -33,7 +33,17 @@ export function activateTool(tool: Tool): void {
 }
 
 export async function startImageImport(file: File | undefined): Promise<void> {
-	const image: HTMLImageElement = await imageImport(file);
+	if (!file) {
+		return; // The file dialog was closed without choosing a file
+	}
+	let image: HTMLImageElement;
+	try {
+		image = await imageImport(file);
+	} catch (error) {
+		console.error('Failed to import the image', error);
+		toast.error(`The image could not be loaded: ${file.name}`);
+		return;
+	}
 	const imageImportActor = new Actor(imageImportToolStateMachine);
 	imageImportActor.start();
 	imageImportActor.send({

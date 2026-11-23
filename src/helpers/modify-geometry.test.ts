@@ -485,6 +485,51 @@ describe('createCorner with an arc', () => {
 		const keptPolyLine = result.find((entity) => entity.id === polyLine.id) as PolyLineEntity;
 		expect(keptPolyLine.numberOfSegments()).toBe(2);
 	});
+
+	describe('a line and a short arc that meet in a corner', () => {
+		const corner = new Point(753.4478361009269, 671.9839521245943);
+		const line = new LineEntity(corner, new Point(799.939958525973, 625.4918296995481));
+		// About 28 long, it starts in the corner
+		const shortArc = new ArcEntity(
+			new Point(683.2459825406172, 726.148874285819),
+			88.66870381388631,
+			5.626028159947936,
+			5.94315494194634,
+			true
+		);
+		const lineClick = new Point(780, 645);
+		const arcClick = (shortArc.getShape() as Arc).middle();
+
+		it('trims both edges with a radius that fits', () => {
+			const result = createCorner(
+				{ edge: line, clickPoint: lineClick },
+				{ edge: shortArc, clickPoint: arcClick },
+				CornerType.FILLET,
+				20
+			);
+			if ('error' in result) throw new Error(result.error);
+			const [keptLine, keptArc] = result.edges;
+			expect((keptLine.getShape() as Segment).length).toBeLessThan(
+				(line.getShape() as Segment).length
+			);
+			expect((keptArc.getShape() as Arc).sweep).toBeLessThan((shortArc.getShape() as Arc).sweep);
+			expect((result.connector?.getShape() as Arc).sweep).toBeLessThan(Math.PI);
+		});
+
+		it('reports a radius that is too large for the arc instead of looping a fillet around it', () => {
+			for (const radius of [50, 100, 300]) {
+				const result = createCorner(
+					{ edge: line, clickPoint: lineClick },
+					{ edge: shortArc, clickPoint: arcClick },
+					CornerType.FILLET,
+					radius
+				);
+				expect(result).toEqual({
+					error: 'No fillet with this radius fits, click the parts of the edges you want to keep',
+				});
+			}
+		});
+	});
 });
 
 describe('createCornersAtSharedPoints', () => {

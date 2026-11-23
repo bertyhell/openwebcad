@@ -634,6 +634,20 @@ function intersectCurves(first: BaseCurve, second: BaseCurve): Point[] {
 }
 
 /**
+ * Points where the edges cross or touch, except where both edges end, like the other corner of a half circle and its diameter
+ */
+function getEdgeCrossings(first: CornerEdgeEntity, second: CornerEdgeEntity): Point[] {
+	const firstShape = first.getShape() as Segment | Arc;
+	const secondShape = second.getShape() as Segment | Arc;
+	const isEndOf = (point: Point, edge: CornerEdgeEntity) =>
+		point.distanceTo(edge.getStartPoint())[0] < 1e-6 ||
+		point.distanceTo(edge.getEndPoint())[0] < 1e-6;
+	return firstShape
+		.intersect(secondShape)
+		.filter((point) => !isEndOf(point, first) || !isEndOf(point, second));
+}
+
+/**
  * Point where a fillet arc with the given center and radius touches the edge
  */
 function getTangentPoint(edge: CornerEdgeEntity, center: Point, radius: number): Point {
@@ -852,10 +866,16 @@ function createArcCorner(
 							getCircleTangent(center, secondEnd, counterClockwise),
 							false
 						);
-						if (!firstKept || !secondKept) {
+						const sweep = getSweep(startAngle, endAngle, counterClockwise);
+						// A fillet rounds off a corner, so it turns less than half a circle
+						// A longer fillet loops around the outside of the edges, eg: when the radius is too large for a short arc
+						if (!firstKept || !secondKept || sweep >= Math.PI - EPSILON) {
 							continue;
 						}
-						const sweep = getSweep(startAngle, endAngle, counterClockwise);
+						// Edges that still cross each other were extended past their corner instead of trimmed
+						if (getEdgeCrossings(firstKept.entity, secondKept.entity).length) {
+							continue;
+						}
 						candidates.push({
 							edges: [firstKept.entity, secondKept.entity],
 							connector: copyEntityBaseProperties(

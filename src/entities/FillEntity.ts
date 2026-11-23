@@ -3,6 +3,7 @@ import { mapLimit } from 'blend-promise-utils';
 import { compact, minBy } from 'es-toolkit';
 import type { Edge, Shape, SnapPoint } from '../App.types';
 import type { DrawController } from '../drawControllers/DrawController.ts';
+import { copyEntityBaseProperties } from '../helpers/copy-entity-base-properties';
 import { getEntityIntersections } from '../helpers/get-intersection-points';
 import { getActiveLayerId, isEntityHighlighted, isEntitySelected } from '../state.ts';
 import { type Entity, EntityName, type JsonEntity } from './Entity';
@@ -77,14 +78,14 @@ export class FillEntity implements Entity {
 	}
 
 	public clone(): FillEntity {
-		const fillEntity = new FillEntity(
-			this.fillBorder.clone(),
-			this.holes.map((hole) => hole.clone())
+		const fillEntity = copyEntityBaseProperties(
+			this,
+			new FillEntity(
+				this.fillBorder.clone(),
+				this.holes.map((hole) => hole.clone())
+			)
 		);
-		fillEntity.layerId = this.layerId;
 		fillEntity.fillColor = this.fillColor;
-		fillEntity.lineColor = this.lineColor;
-		fillEntity.lineWidth = this.lineWidth;
 		return fillEntity;
 	}
 

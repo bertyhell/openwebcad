@@ -169,7 +169,14 @@ export const breakToolStateMachine = createMachine(
 				if (!context.entity || !context.firstPoint) return;
 				const secondPoint = getPointFromEvent(context.firstPoint, event as PointInputEvent);
 				const pieces = breakEntity(context.entity, context.firstPoint, secondPoint);
-				if (!pieces) return;
+				if (!pieces) {
+					// Only closed entities can't be broken here, entities that can't be broken at all are refused when they are clicked
+					// The message is shown on click only, since the preview calls breakEntity on every mouse move
+					toast.info(
+						`A ${context.entity.getType().toLowerCase()} can't be broken at a single point, pick two different points`
+					);
+					return;
+				}
 				const brokenEntityId = context.entity.id;
 				setEntities(
 					getEntities().flatMap((entity) => (entity.id === brokenEntityId ? pieces : [entity])),

@@ -120,6 +120,7 @@ function reversePath(edges: Edge[]): Edge[] {
  * Removes the part of the entity between the two points
  * For closed entities (eg: circles) the part from the first point counterclockwise to the second point is removed
  * Returns the remaining pieces, or null if the entity can't be broken
+ * A closed entity can't be broken at a single point, like in AutoCAD, since that would remove nothing
  */
 export function breakEntity(
 	entity: Entity,
@@ -138,6 +139,11 @@ export function breakEntity(
 
 	let remainingPaths: Edge[][];
 	if (isClosed) {
+		// The start and the end of a closed path are the same point, so a distance of 0 and the path length are the same point too
+		const distanceBetweenPoints = Math.abs(second - first);
+		if (distanceBetweenPoints <= EPSILON || pathLength - distanceBetweenPoints <= EPSILON) {
+			return null;
+		}
 		// The remaining part runs from the second point to the first point, possibly across the start of the path
 		remainingPaths =
 			first <= second

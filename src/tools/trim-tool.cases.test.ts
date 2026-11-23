@@ -296,6 +296,33 @@ describe('trim entities that are not lines, arcs or circles', () => {
 		]);
 	});
 
+	it('trims the arc of a rounded polyline, also when the arc is stored in the opposite direction', () => {
+		// A rectangle with a rounded right side, the arc goes clockwise from the top to the bottom
+		const roundedPolyLine = new PolyLineEntity([
+			line(0, 0, 10, 0),
+			new ArcEntity(new Point(10, 5), 5, Math.PI / 2, -Math.PI / 2, false),
+			line(10, 10, 0, 10),
+			line(0, 10, 0, 0),
+		]);
+		setDrawing([roundedPolyLine, line(5, 7, 20, 7)]);
+		handleMouseClick(new Point(10 + 5 * Math.cos(-Math.PI / 4), 5 + 5 * Math.sin(-Math.PI / 4)), 1);
+
+		const polyLines = getEntities().filter((entity) => entity.getType() === EntityName.PolyLine);
+		expect(polyLines).toHaveLength(1);
+		const crossingX = Math.round((10 + Math.sqrt(21)) * 1000) / 1000;
+		expect(pathPoints(polyLines[0])).toEqual([
+			[crossingX, 7],
+			[10, 10],
+			[0, 10],
+			[0, 0],
+			[10, 0],
+		]);
+		// The remaining part of the arc runs from the crossing up to the top of the arc
+		const remainingArc = polyLines[0].getEdges()[0] as Arc;
+		expect(remainingArc.center).toEqual(new Point(10, 5));
+		expect(remainingArc.sweep * TO_DEGREES).toBeCloseTo(90 - Math.asin(2 / 5) * TO_DEGREES);
+	});
+
 	it('trims a rectangle into one open polyline', () => {
 		setDrawing([
 			new RectangleEntity(new Point(0, 0), new Point(20, -20)),

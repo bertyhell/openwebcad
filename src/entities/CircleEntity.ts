@@ -3,6 +3,7 @@ import { type Edge, type Shape, type SnapPoint, SnapPointType } from '../App.typ
 import type { DrawController } from '../drawControllers/DrawController';
 import { copyEntityBaseProperties } from '../helpers/copy-entity-base-properties';
 import { getExportColor } from '../helpers/get-export-color';
+import { getEntityIntersections } from '../helpers/get-intersection-points';
 import { mirrorPointOverAxis } from '../helpers/mirror-point-over-axis.ts';
 import { scalePoint } from '../helpers/scale-point';
 import { getActiveLayerId, isEntityHighlighted, isEntitySelected } from '../state.ts';
@@ -125,11 +126,7 @@ export class CircleEntity implements Entity {
 	}
 
 	public getIntersections(entity: Entity): Point[] {
-		const otherShape = entity.getShape();
-		if (!this.circle || !otherShape) {
-			return [];
-		}
-		return this.circle.intersect(otherShape);
+		return getEntityIntersections(this, entity);
 	}
 
 	public getFirstPoint(): Point | null {

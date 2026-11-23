@@ -7,6 +7,7 @@ import type { Edge, Shape, SnapPoint, StartAndEndpointEntity } from '../App.type
 import type { DrawController } from '../drawControllers/DrawController';
 import { checkClosedPolygon } from '../helpers/check-closed-polygon.ts';
 import { copyEntityBaseProperties } from '../helpers/copy-entity-base-properties';
+import { getEntityIntersections } from '../helpers/get-intersection-points';
 import { orderEdgeBoundary } from '../helpers/order-edge-boundary.ts';
 import { getActiveLayerId, isEntityHighlighted, isEntitySelected } from '../state.ts';
 import { ArcEntity, type ArcJsonData } from './ArcEntity.ts';
@@ -134,7 +135,7 @@ export class PolyLineEntity implements Entity {
 	}
 
 	public getIntersections(entity: Entity): Point[] {
-		return this.entities.flatMap((polyLineEntity) => polyLineEntity.getIntersections(entity));
+		return getEntityIntersections(this, entity);
 	}
 
 	public getFirstPoint(): Point | null {

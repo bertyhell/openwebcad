@@ -5,6 +5,7 @@ import type { DrawController } from '../drawControllers/DrawController';
 import { twoPointBoxToPolygon } from '../helpers/box-to-polygon';
 import { copyEntityBaseProperties } from '../helpers/copy-entity-base-properties';
 import { getExportColor } from '../helpers/get-export-color';
+import { getEntityIntersections } from '../helpers/get-intersection-points';
 import { mirrorPointOverAxis } from '../helpers/mirror-point-over-axis.ts';
 import { polygonToSegments } from '../helpers/polygon-to-segments';
 import { scalePoint } from '../helpers/scale-point';
@@ -120,13 +121,7 @@ export class RectangleEntity implements Entity {
 	}
 
 	public getIntersections(entity: Entity): Point[] {
-		const otherShape = entity.getShape();
-		if (!otherShape) {
-			return [];
-		}
-		return polygonToSegments(this.polygon).flatMap((segment) => {
-			return segment.intersect(otherShape);
-		});
+		return getEntityIntersections(this, entity);
 	}
 
 	public getFirstPoint(): Point | null {

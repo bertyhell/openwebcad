@@ -1,7 +1,8 @@
 import type { Point } from '@flatten-js/core';
 import { type SnapPoint, SnapPointType } from '../App.types';
 import type { Entity } from '../entities/Entity';
-import { getIntersectionPoints } from './get-intersection-points';
+import { flattenGroups } from '../entities/GroupEntity';
+import { getIntersectionPoints, getSelfIntersectionPoints } from './get-intersection-points';
 
 /**
  * Snap points sorted by their x coordinate, so the points near the mouse can be found
@@ -73,9 +74,15 @@ export function getEntitySnapPointIndex(entities: Entity[]): SnapPointIndex {
 	if (cachedIndex) {
 		return cachedIndex;
 	}
+	// Members of a group can cross each other, so intersect them as separate entities
+	const flatEntities = flattenGroups(entities);
+	const intersectionPoints = [
+		...getIntersectionPoints(flatEntities),
+		...flatEntities.flatMap((entity) => getSelfIntersectionPoints(entity)),
+	];
 	const index = new SnapPointIndex([
 		...entities.flatMap((entity) => entity.getSnapPoints()),
-		...getIntersectionPoints(entities).map((point) => ({
+		...intersectionPoints.map((point) => ({
 			point,
 			type: SnapPointType.Intersection,
 		})),

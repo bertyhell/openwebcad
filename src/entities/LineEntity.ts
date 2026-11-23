@@ -12,6 +12,7 @@ import { copyEntityBaseProperties } from '../helpers/copy-entity-base-properties
 import { pointDistance } from '../helpers/distance-between-points';
 import { getAngleWithXAxis } from '../helpers/get-angle-with-x-axis.ts';
 import { getExportColor } from '../helpers/get-export-color';
+import { getEntityIntersections } from '../helpers/get-intersection-points';
 import { isPointEqual } from '../helpers/is-point-equal';
 import { mirrorPointOverAxis } from '../helpers/mirror-point-over-axis.ts';
 import { scalePoint } from '../helpers/scale-point';
@@ -115,11 +116,7 @@ export class LineEntity implements Entity, StartAndEndpointEntity {
 	}
 
 	public getIntersections(entity: Entity): Point[] {
-		const otherShape = entity.getShape();
-		if (!otherShape) {
-			return [];
-		}
-		return this.segment.intersect(otherShape);
+		return getEntityIntersections(this, entity);
 	}
 
 	public getFirstPoint(): Point | null {

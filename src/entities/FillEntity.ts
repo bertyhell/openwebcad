@@ -3,6 +3,7 @@ import { mapLimit } from 'blend-promise-utils';
 import { compact, minBy } from 'es-toolkit';
 import type { Edge, Shape, SnapPoint } from '../App.types';
 import type { DrawController } from '../drawControllers/DrawController.ts';
+import { getEntityIntersections } from '../helpers/get-intersection-points';
 import { getActiveLayerId, isEntityHighlighted, isEntitySelected } from '../state.ts';
 import { type Entity, EntityName, type JsonEntity } from './Entity';
 import type { LineEntity } from './LineEntity.ts';
@@ -112,7 +113,7 @@ export class FillEntity implements Entity {
 	}
 
 	public getIntersections(entity: Entity): Point[] {
-		return this.getPolylines().flatMap((polyline) => polyline.getIntersections(entity));
+		return getEntityIntersections(this, entity);
 	}
 
 	public getFirstPoint(): Point | null {

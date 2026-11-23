@@ -37,8 +37,15 @@ export interface DxfLibrary {
 
 interface DxfLayerTable {
 	name: string;
+	/**
+	 * A negative color means the layer is turned off
+	 */
 	colorNumber?: number;
+	flags?: number;
 }
+
+const FROZEN_LAYER_FLAG = 1;
+const LOCKED_LAYER_FLAG = 4;
 
 interface DxfVertex {
 	x: number;
@@ -345,10 +352,15 @@ export function convertDxfToEntities(
 			return existingLayerId;
 		}
 		const layerTable = layerTables.find((table) => table.name === layerName);
+		const layerColorNumber = layerTable?.colorNumber ?? 0;
+		const layerFlags = layerTable?.flags ?? 0;
 		const newLayer: Layer = {
 			...getNewLayer(layers),
 			name: layerName,
-			color: aciToHex(dxfLibrary.colors, Math.abs(layerTable?.colorNumber ?? 0)) ?? undefined,
+			// Layers that are turned off or frozen aren't shown in cad applications, so they start hidden
+			isVisible: layerColorNumber >= 0 && !(layerFlags & FROZEN_LAYER_FLAG),
+			isLocked: !!(layerFlags & LOCKED_LAYER_FLAG),
+			color: aciToHex(dxfLibrary.colors, Math.abs(layerColorNumber)) ?? undefined,
 		};
 		layers.push(newLayer);
 		newLayers.push(newLayer);
@@ -422,6 +434,14 @@ export const importEntitiesFromDxfFile = async (file?: File): Promise<void> => {
 		setEntities([...getEntities(), ...entities], true);
 		zoomToBounds();
 		toast.success(`Imported ${entities.length} entities from ${file.name}`);
+		const hiddenLayerNames = newLayers
+			.filter((layer) => !layer.isVisible)
+			.map((layer) => layer.name);
+		if (hiddenLayerNames.length) {
+			toast.info(
+				`These layers are turned off in the DXF file and are hidden: ${hiddenLayerNames.join(', ')}`
+			);
+		}
 		if (unsupportedTypes.length) {
 			toast.info(`Skipped unsupported DXF entities: ${unsupportedTypes.join(', ')}`);
 		}

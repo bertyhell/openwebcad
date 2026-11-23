@@ -77,8 +77,15 @@ describe('dxf import', () => {
 /**
  * Builds a dxf file from the group code and value pairs of its blocks and entities
  */
-function createDxf(entities: (string | number)[], blocks: (string | number)[] = []): string {
+function createDxf(
+	entities: (string | number)[],
+	blocks: (string | number)[] = [],
+	layers: (string | number)[] = []
+): string {
 	const pairs = [
+		...(layers.length
+			? [0, 'SECTION', 2, 'TABLES', 0, 'TABLE', 2, 'LAYER', ...layers, 0, 'ENDTAB', 0, 'ENDSEC']
+			: []),
 		...(blocks.length ? [0, 'SECTION', 2, 'BLOCKS', ...blocks, 0, 'ENDSEC'] : []),
 		0,
 		'SECTION',
@@ -275,6 +282,44 @@ describe('dxf import of mirrored entities', () => {
 		// The bulge turns counterclockwise from 1,0 to 3,0 through 2,-1, mirrored it goes through -2,-1
 		expect(arc.contains(new Point(-2, -1))).toBe(true);
 		expect(arc.contains(new Point(-2, 1))).toBe(false);
+	});
+});
+
+describe('dxf import of layers', () => {
+	it('hides layers that are off or frozen, and locks locked layers', () => {
+		const layer = (name: string, flags: number, color: number) => [
+			0,
+			'LAYER',
+			2,
+			name,
+			70,
+			flags,
+			62,
+			color,
+		];
+		const line = (layerName: string) => [0, 'LINE', 8, layerName, 10, 0, 20, 0, 11, 1, 21, 1];
+		const dxf = createDxf(
+			[...line('normal'), ...line('off'), ...line('frozen'), ...line('locked')],
+			[],
+			[
+				...layer('normal', 0, 5),
+				...layer('off', 0, -1),
+				...layer('frozen', 1, 3),
+				...layer('locked', 4, 3),
+			]
+		);
+		const { entities, newLayers } = convertDxfToEntities(dxf, library, []);
+		expect(
+			newLayers.map(({ name, isVisible, isLocked }) => ({ name, isVisible, isLocked }))
+		).toEqual([
+			{ name: 'normal', isVisible: true, isLocked: false },
+			{ name: 'off', isVisible: false, isLocked: false },
+			{ name: 'frozen', isVisible: false, isLocked: false },
+			{ name: 'locked', isVisible: true, isLocked: true },
+		]);
+		// A layer that is off keeps its color
+		expect(newLayers[1].color).toBe('#ff0000');
+		expect(entities[1].lineColor).toBe('#ff0000');
 	});
 });
 

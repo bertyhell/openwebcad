@@ -5,9 +5,13 @@ import { toast } from 'react-toastify';
 import type { Layer } from '../../App.types.ts';
 import { ArcEntity } from '../../entities/ArcEntity.ts';
 import { CircleEntity } from '../../entities/CircleEntity.ts';
+import { EllipseEntity } from '../../entities/EllipseEntity.ts';
 import type { Entity } from '../../entities/Entity.ts';
+import { FillEntity } from '../../entities/FillEntity.ts';
 import { LineEntity } from '../../entities/LineEntity.ts';
+import { PointEntity } from '../../entities/PointEntity.ts';
 import { PolyLineEntity } from '../../entities/PolyLineEntity.ts';
+import { SplineEntity } from '../../entities/SplineEntity.ts';
 import { TextEntity } from '../../entities/TextEntity.ts';
 import {
 	getActiveLineColor,
@@ -236,6 +240,153 @@ function convertVertices(vertices: DxfVertex[], closed: boolean): Entity | null 
 }
 
 /**
+ * Largest angle between two points that are used to approximate a partial ellipse with a spline
+ */
+const ELLIPSE_SAMPLE_ANGLE = Math.PI / 16;
+
+/**
+ * Number of points per knot span that are used to approximate a dxf spline
+ */
+const SPLINE_SAMPLES_PER_SPAN = 8;
+
+/**
+ * EllipseEntity is always a full ellipse, so a partial ellipse becomes a spline through points on the ellipse
+ * Ellipses are in world coordinates, a downward extrusion direction only makes their parameter go clockwise
+ */
+function convertEllipse(dxfEntity: DxfEntity): Entity | null {
+	const number = (key: string): number => Number(dxfEntity[key] ?? 0);
+	const center = new Point(number('x'), number('y'));
+	const majorAxis = new Vector(number('majorX'), number('majorY'));
+	const ratio = number('axisRatio');
+	if (majorAxis.length === 0 || !(ratio > 0)) {
+		return null;
+	}
+	const startParameter = Number(dxfEntity.startAngle ?? 0);
+	const endParameter = Number(dxfEntity.endAngle ?? 2 * Math.PI);
+	let sweep = (endParameter - startParameter) % (2 * Math.PI);
+	if (sweep <= 1e-9) {
+		sweep += 2 * Math.PI;
+	}
+	if (sweep >= 2 * Math.PI - 1e-9) {
+		return new EllipseEntity(center, center.translate(majorAxis), ratio);
+	}
+	const minorAxis = (
+		dxfEntity.extrusionZ !== undefined && dxfEntity.extrusionZ < 0
+			? majorAxis.rotate90CW()
+			: majorAxis.rotate90CCW()
+	).multiply(ratio);
+	const stepCount = Math.max(2, Math.ceil(sweep / ELLIPSE_SAMPLE_ANGLE));
+	return new SplineEntity(
+		Array.from({ length: stepCount + 1 }, (_, index) => {
+			const parameter = startParameter + (sweep * index) / stepCount;
+			return center
+				.translate(majorAxis.multiply(Math.cos(parameter)))
+				.translate(minorAxis.multiply(Math.sin(parameter)));
+		})
+	);
+}
+
+/**
+ * Point on a (rational) b-spline at parameter u, using de Boor's algorithm
+ * The control points are combined in homogeneous coordinates, so their weights pull the curve towards them
+ */
+function getBSplinePoint(
+	u: number,
+	degree: number,
+	controlPoints: Point[],
+	weights: number[],
+	knots: number[]
+): Point {
+	// Knot span that contains u, at the end of the spline this is the last span
+	let span = degree;
+	while (span < controlPoints.length - 1 && u >= knots[span + 1]) {
+		span++;
+	}
+	const points = Array.from({ length: degree + 1 }, (_, index) => {
+		const controlPointIndex = span - degree + index;
+		const weight = weights[controlPointIndex] ?? 1;
+		const { x, y } = controlPoints[controlPointIndex];
+		return [x * weight, y * weight, weight];
+	});
+	for (let level = 1; level <= degree; level++) {
+		for (let index = degree; index >= level; index--) {
+			const knotIndex = span - degree + index;
+			const knotDistance = knots[knotIndex + degree - level + 1] - knots[knotIndex];
+			const alpha = knotDistance === 0 ? 0 : (u - knots[knotIndex]) / knotDistance;
+			points[index] = points[index].map(
+				(value, coordinate) => (1 - alpha) * points[index - 1][coordinate] + alpha * value
+			);
+		}
+	}
+	const [x, y, weight] = points[degree];
+	return new Point(x / weight, y / weight);
+}
+
+/**
+ * SplineEntity goes through its points, but a dxf spline only follows its control points,
+ * so the spline becomes a SplineEntity through points on the dxf spline
+ */
+function convertSpline(dxfEntity: DxfEntity): Entity | null {
+	const controlPoints = ((dxfEntity.controlPoints as DxfVertex[] | undefined) ?? []).map(
+		(controlPoint) => new Point(controlPoint.x, controlPoint.y)
+	);
+	const knots = (dxfEntity.knots as number[] | undefined) ?? [];
+	const degree = Number(dxfEntity.degree ?? 0);
+	const dxfWeights = (dxfEntity.weights as number[] | undefined) ?? [];
+	const weights = dxfWeights.length === controlPoints.length ? dxfWeights : [];
+	if (
+		degree < 1 ||
+		controlPoints.length <= degree ||
+		knots.length !== controlPoints.length + degree + 1
+	) {
+		return null;
+	}
+	if (degree === 1) {
+		return convertVertices(controlPoints, false);
+	}
+	const points: Point[] = [];
+	for (let span = degree; span < controlPoints.length; span++) {
+		const spanStart = knots[span];
+		const spanEnd = knots[span + 1];
+		if (!(spanEnd > spanStart)) {
+			continue;
+		}
+		for (let step = 0; step < SPLINE_SAMPLES_PER_SPAN; step++) {
+			const u = spanStart + ((spanEnd - spanStart) * step) / SPLINE_SAMPLES_PER_SPAN;
+			points.push(getBSplinePoint(u, degree, controlPoints, weights, knots));
+		}
+	}
+	points.push(getBSplinePoint(knots[controlPoints.length], degree, controlPoints, weights, knots));
+	return points.length >= 2 ? new SplineEntity(points) : null;
+}
+
+/**
+ * A solid is a filled triangle or quadrilateral, its outline goes from the first to the second, fourth and third corner
+ */
+function convertSolid(dxfEntity: DxfEntity): FillEntity | null {
+	const corners = ((dxfEntity.corners as Partial<DxfVertex>[] | undefined) ?? [])
+		.filter(
+			(corner): corner is DxfVertex => typeof corner.x === 'number' && typeof corner.y === 'number'
+		)
+		.map((corner) => new Point(corner.x, corner.y));
+	const outline = corners.length === 4 ? [corners[0], corners[1], corners[3], corners[2]] : corners;
+	// Triangles repeat their last corner
+	const uniqueCorners = outline.filter(
+		(corner, index) => !corner.equalTo(outline[(index + 1) % outline.length])
+	);
+	if (uniqueCorners.length < 3) {
+		return null;
+	}
+	return new FillEntity(
+		new PolyLineEntity(
+			uniqueCorners.map(
+				(corner, index) => new LineEntity(corner, uniqueCorners[(index + 1) % uniqueCorners.length])
+			)
+		)
+	);
+}
+
+/**
  * Removes MTEXT formatting codes, eg: {\fArial;Hello}\PWorld => Hello World
  */
 export function stripMTextFormatting(text: string): string {
@@ -388,6 +539,14 @@ function convertEntity(dxfEntity: DxfEntity): Entity | null {
 				(dxfEntity.vertices as DxfVertex[] | undefined) ?? [],
 				!!dxfEntity.closed
 			);
+		case 'POINT':
+			return new PointEntity(new Point(number('x'), number('y')));
+		case 'ELLIPSE':
+			return convertEllipse(dxfEntity);
+		case 'SPLINE':
+			return convertSpline(dxfEntity);
+		case 'SOLID':
+			return convertSolid(dxfEntity);
 		case 'TEXT':
 			return convertText(dxfEntity);
 		case 'MTEXT':
@@ -464,6 +623,9 @@ export function convertDxfToEntities(
 				: null) ??
 			aciToHex(dxfLibrary.colors, Math.abs(layerColorNumber ?? 0)) ??
 			getActiveLineColor();
+		if (entity instanceof FillEntity) {
+			entity.fillColor = entity.lineColor;
+		}
 		entity.lineWidth = getActiveLineWidth();
 		entities.push(entity);
 	}

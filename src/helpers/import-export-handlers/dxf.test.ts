@@ -7,7 +7,9 @@ import { ArcEntity } from '../../entities/ArcEntity.ts';
 import { CircleEntity } from '../../entities/CircleEntity.ts';
 import type { EllipseEntity } from '../../entities/EllipseEntity.ts';
 import { EntityName } from '../../entities/Entity.ts';
+import { FillEntity } from '../../entities/FillEntity.ts';
 import { LineEntity } from '../../entities/LineEntity.ts';
+import { PointEntity } from '../../entities/PointEntity.ts';
 import { PolyLineEntity } from '../../entities/PolyLineEntity.ts';
 import type { SplineEntity } from '../../entities/SplineEntity.ts';
 import { TextEntity } from '../../entities/TextEntity.ts';
@@ -166,6 +168,8 @@ describe('dxf import of blocks', () => {
 		const line = entities.find((entity) => entity instanceof LineEntity) as LineEntity;
 		expectPoint(line.getStartPoint(), 100, 5);
 		expectPoint(line.getEndPoint(), 100, 15);
+		const point = entities.find((entity) => entity instanceof PointEntity) as PointEntity;
+		expectPoint(point.point, 98, 0);
 		const text = entities.find((entity) => entity instanceof TextEntity) as TextEntity;
 		expectPoint(text.getBasePoint(), 100, 0);
 	});
@@ -282,6 +286,130 @@ describe('dxf import of mirrored entities', () => {
 		// The bulge turns counterclockwise from 1,0 to 3,0 through 2,-1, mirrored it goes through -2,-1
 		expect(arc.contains(new Point(-2, -1))).toBe(true);
 		expect(arc.contains(new Point(-2, 1))).toBe(false);
+	});
+});
+
+describe('dxf import of points, ellipses, splines and solids', () => {
+	it('imports points', () => {
+		const { entities, unsupportedTypes } = convertDxfToEntities(
+			createDxf([0, 'POINT', 8, '0', 10, 3, 20, 4]),
+			library,
+			[]
+		);
+		expect(unsupportedTypes).toEqual([]);
+		expectPoint((entities[0] as PointEntity).point, 3, 4);
+	});
+
+	it('imports full ellipses as ellipses', () => {
+		const dxf = createDxf([
+			...[0, 'ELLIPSE', 8, '0', 10, 1, 20, 2, 11, 10, 21, 0, 40, 0.5],
+			...[41, 0, 42, 2 * Math.PI],
+		]);
+		const ellipse = convertDxfToEntities(dxf, library, []).entities[0] as EllipseEntity;
+		expect(ellipse.getType()).toBe(EntityName.Ellipse);
+		expectPoint(ellipse.getCenter(), 1, 2);
+		expectPoint(ellipse.getMajorAxisEnd(), 11, 2);
+		expect(ellipse.getRatio()).toBe(0.5);
+	});
+
+	it('imports partial ellipses as splines, on the side given by the extrusion direction', () => {
+		const halfEllipse = [
+			0,
+			'ELLIPSE',
+			8,
+			'0',
+			10,
+			0,
+			20,
+			0,
+			11,
+			10,
+			21,
+			0,
+			40,
+			0.5,
+			41,
+			0,
+			42,
+			Math.PI,
+		];
+		const { entities } = convertDxfToEntities(
+			createDxf([...halfEllipse, ...halfEllipse, 210, 0, 220, 0, 230, -1]),
+			library,
+			[]
+		);
+		const [upperHalf, lowerHalf] = entities.map((entity) =>
+			(entity as SplineEntity).getFitPoints()
+		);
+		expectPoint(upperHalf[0], 10, 0);
+		expectPoint(upperHalf[upperHalf.length - 1], -10, 0);
+		for (const point of [...upperHalf, ...lowerHalf]) {
+			expect((point.x / 10) ** 2 + (point.y / 5) ** 2).toBeCloseTo(1);
+		}
+		expect(upperHalf.every((point) => point.y >= -1e-9)).toBe(true);
+		expect(lowerHalf.every((point) => point.y <= 1e-9)).toBe(true);
+	});
+
+	it('imports splines by following their control points', () => {
+		const dxf = createDxf([
+			...[0, 'SPLINE', 8, '0', 70, 8, 71, 3, 72, 8, 73, 4],
+			...[40, 0, 40, 0, 40, 0, 40, 0, 40, 1, 40, 1, 40, 1, 40, 1],
+			...[10, 0, 20, 0, 10, 1, 20, 1, 10, 2, 20, 1, 10, 3, 20, 0],
+		]);
+		const fitPoints = (
+			convertDxfToEntities(dxf, library, []).entities[0] as SplineEntity
+		).getFitPoints();
+		expectPoint(fitPoints[0], 0, 0);
+		expectPoint(fitPoints[fitPoints.length - 1], 3, 0);
+		// A cubic spline with 4 control points is a bezier curve, which is at 1.5,0.75 halfway
+		expect(fitPoints.some((point) => point.distanceTo(new Point(1.5, 0.75))[0] < 1e-9)).toBe(true);
+	});
+
+	it('imports rational splines using their weights', () => {
+		// Quarter of a circle with radius 1 as a rational quadratic spline
+		const dxf = createDxf([
+			...[0, 'SPLINE', 8, '0', 70, 12, 71, 2, 72, 6, 73, 3],
+			...[40, 0, 40, 0, 40, 0, 40, 1, 40, 1, 40, 1],
+			...[10, 1, 20, 0, 41, 1, 10, 1, 20, 1, 41, Math.SQRT1_2, 10, 0, 20, 1, 41, 1],
+		]);
+		const fitPoints = (
+			convertDxfToEntities(dxf, library, []).entities[0] as SplineEntity
+		).getFitPoints();
+		expect(fitPoints.length).toBeGreaterThan(2);
+		for (const point of fitPoints) {
+			expect(Math.hypot(point.x, point.y)).toBeCloseTo(1);
+		}
+	});
+
+	it('imports splines of degree 1 as straight lines', () => {
+		const dxf = createDxf([
+			...[0, 'SPLINE', 8, '0', 70, 8, 71, 1, 72, 5, 73, 3],
+			...[40, 0, 40, 0, 40, 1, 40, 2, 40, 2],
+			...[10, 0, 20, 0, 10, 1, 20, 1, 10, 2, 20, 0],
+		]);
+		const polyLine = convertDxfToEntities(dxf, library, []).entities[0] as PolyLineEntity;
+		expect(polyLine.entities.map((segment) => segment.getType())).toEqual([
+			EntityName.Line,
+			EntityName.Line,
+		]);
+	});
+
+	it('imports solids as fills, with their third and fourth corner swapped', () => {
+		const dxf = createDxf([
+			...[0, 'SOLID', 8, '0', 62, 1, 10, 0, 20, 0, 11, 1, 21, 0, 12, 0, 22, 1, 13, 1, 23, 1],
+			// A triangle repeats its third corner
+			...[0, 'SOLID', 8, '0', 10, 5, 20, 0, 11, 6, 21, 0, 12, 5, 22, 1, 13, 5, 23, 1],
+		]);
+		const { entities, unsupportedTypes } = convertDxfToEntities(dxf, library, []);
+		expect(unsupportedTypes).toEqual([]);
+		const [square, triangle] = entities as FillEntity[];
+		expect(square).toBeInstanceOf(FillEntity);
+		expect(square.fillColor).toBe('#ff0000');
+		const squareEdges = square.getEdges() as Segment[];
+		expect(squareEdges).toHaveLength(4);
+		// The outline goes around the square instead of crossing it
+		expect(squareEdges.every((edge) => edge.length === 1)).toBe(true);
+		expect(triangle.getEdges()).toHaveLength(3);
 	});
 });
 

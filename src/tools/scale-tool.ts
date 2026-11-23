@@ -1,5 +1,5 @@
 import { Tool } from '../tools';
-import { getPointForScaleFactor, scaleEntities } from './scale-tool.helpers';
+import { getPointForTypedScaleFactor, scaleEntities } from './scale-tool.helpers';
 import { createGuideLine, createTransformToolStateMachine } from './transform-tool.helpers';
 
 /**
@@ -19,7 +19,7 @@ export const scaleToolStateMachine = createTransformToolStateMachine({
 	transform: (entities, [origin, referenceEndPoint, newEndPoint]) =>
 		scaleEntities(entities, origin, referenceEndPoint, newEndPoint),
 	numberToPoint: (scaleFactor, [origin, referenceEndPoint]) =>
-		scaleFactor > 0 ? getPointForScaleFactor(origin, referenceEndPoint, scaleFactor) : null,
+		getPointForTypedScaleFactor(origin, referenceEndPoint, scaleFactor),
 	getGuideEntities: ([origin, referenceEndPoint, newEndPoint]) => [
 		createGuideLine(origin, referenceEndPoint),
 		createGuideLine(origin, newEndPoint),

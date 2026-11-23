@@ -1,11 +1,12 @@
 import { toast } from 'react-toastify';
 import { assign, createMachine, sendTo } from 'xstate';
 import type { StartAndEndpointEntity } from '../App.types';
-import { EntityName } from '../entities/Entity';
+import { type Entity, EntityName } from '../entities/Entity';
 import { PolyLineEntity } from '../entities/PolyLineEntity.ts';
+import { copyEntityBaseProperties } from '../helpers/copy-entity-base-properties';
 import { chainSegments } from '../helpers/order-edge-boundary';
 import {
-	getNotSelectedEntities,
+	getEntities,
 	getSelectedEntities,
 	getSelectedEntityIds,
 	setAngleGuideOriginPoint,
@@ -130,11 +131,28 @@ export const peditToolStateMachine = createMachine(
 				// Lines and arcs can be selected in any order and direction, connect them into one chain
 				const segments = getSelectedEntities().filter((entity) =>
 					[EntityName.Line, EntityName.Arc].includes(entity.getType())
-				) as StartAndEndpointEntity[];
-				const newPolyLine = new PolyLineEntity(chainSegments(segments));
-				const newEntities = [...getNotSelectedEntities(), newPolyLine];
-				setEntities(newEntities, true);
+				) as (Entity & StartAndEndpointEntity)[];
 				setSelectedEntityIds([]);
+				if (segments.length === 0) {
+					toast.info('Select lines or arcs to combine into a polyline');
+					return {};
+				}
+				// Only the lines and arcs become part of the polyline, other selected entities are kept
+				const segmentIds = new Set(segments.map((segment) => segment.id));
+				// The polyline styles its segments when drawing, use clones so the undo history keeps the original lines and arcs
+				const newPolyLine = copyEntityBaseProperties(
+					segments[0],
+					new PolyLineEntity(
+						chainSegments(
+							segments.map((segment) => segment.clone() as Entity & StartAndEndpointEntity)
+						)
+					)
+				);
+				const newEntities = [
+					...getEntities().filter((entity) => !segmentIds.has(entity.id)),
+					newPolyLine,
+				];
+				setEntities(newEntities, true);
 				toast.success(`Created polyline with ${newPolyLine.numberOfSegments()} segments`);
 				return {};
 			}),

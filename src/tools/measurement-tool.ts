@@ -1,4 +1,5 @@
 import { type Point, Vector } from '@flatten-js/core';
+import { toast } from 'react-toastify';
 import { assign, createMachine } from 'xstate';
 import { MEASUREMENT_DEFAULT_OFFSET, TO_RADIANS } from '../App.consts';
 import { MeasurementEntity } from '../entities/MeasurementEntity';
@@ -35,6 +36,27 @@ export enum MeasurementAction {
 	DRAW_TEMP_MEASUREMENT = 'DRAW_TEMP_MEASUREMENT',
 	DRAW_FINAL_MEASUREMENT = 'DRAW_FINAL_MEASUREMENT',
 }
+
+/**
+ * Record the end point, or keep waiting when it is on the start point, since a zero length measurement can't be drawn
+ */
+const recordEndPointTransitions = [
+	{
+		guard: ({ context, event }: { context: MeasurementContext; event: StateEvent }) =>
+			!!context.startPoint &&
+			!isPointEqual(
+				context.startPoint,
+				getPointFromEvent(context.startPoint, event as PointInputEvent)
+			),
+		actions: MeasurementAction.RECORD_END_POINT,
+		target: MeasurementState.WAITING_FOR_OFFSET,
+	},
+	{
+		actions: () => {
+			toast.info('The end point has to be different from the start point');
+		},
+	},
+];
 
 export const measurementToolStateMachine = createMachine(
 	{
@@ -81,22 +103,10 @@ export const measurementToolStateMachine = createMachine(
 					DRAW: {
 						actions: MeasurementAction.DRAW_TEMP_MEASUREMENT,
 					},
-					MOUSE_CLICK: {
-						actions: MeasurementAction.RECORD_END_POINT,
-						target: MeasurementState.WAITING_FOR_OFFSET,
-					},
-					NUMBER_INPUT: {
-						actions: MeasurementAction.RECORD_END_POINT,
-						target: MeasurementState.WAITING_FOR_OFFSET,
-					},
-					ABSOLUTE_POINT_INPUT: {
-						actions: MeasurementAction.RECORD_END_POINT,
-						target: MeasurementState.WAITING_FOR_OFFSET,
-					},
-					RELATIVE_POINT_INPUT: {
-						actions: MeasurementAction.RECORD_END_POINT,
-						target: MeasurementState.WAITING_FOR_OFFSET,
-					},
+					MOUSE_CLICK: recordEndPointTransitions,
+					NUMBER_INPUT: recordEndPointTransitions,
+					ABSOLUTE_POINT_INPUT: recordEndPointTransitions,
+					RELATIVE_POINT_INPUT: recordEndPointTransitions,
 					ESC: {
 						target: MeasurementState.INIT,
 					},

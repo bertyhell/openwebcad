@@ -30,6 +30,7 @@ export enum PolyLineAction {
 	DRAW_TEMP_POLYLINE = 'DRAW_TEMP_POLYLINE',
 	FINISH_POLYLINE = 'FINISH_POLYLINE',
 	CLOSE_POLYLINE = 'CLOSE_POLYLINE',
+	REMOVE_LAST_POINT = 'REMOVE_LAST_POINT',
 }
 
 const POINT_EVENTS = [
@@ -124,6 +125,14 @@ export const polyLineToolStateMachine = createMachine(
 						actions: PolyLineAction.FINISH_POLYLINE,
 						target: PolyLineState.INIT,
 					},
+					// Undo removes the last point, undoing the first point starts over
+					UNDO: [
+						{
+							guard: ({ context }) => context.points.length > 1,
+							actions: PolyLineAction.REMOVE_LAST_POINT,
+						},
+						{ target: PolyLineState.INIT },
+					],
 					ESC: {
 						actions: PolyLineAction.FINISH_POLYLINE,
 						target: PolyLineState.INIT,
@@ -148,6 +157,11 @@ export const polyLineToolStateMachine = createMachine(
 				}
 				setAngleGuideOriginPoint(point);
 				return { points: [...context.points, point] };
+			}),
+			[PolyLineAction.REMOVE_LAST_POINT]: assign(({ context }) => {
+				const points = context.points.slice(0, -1);
+				setAngleGuideOriginPoint(points.at(-1) ?? null);
+				return { points };
 			}),
 			[PolyLineAction.DRAW_TEMP_POLYLINE]: ({ context, event }) => {
 				const mouseLocation = (event as DrawEvent).drawController.getWorldMouseLocation();

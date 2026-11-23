@@ -42,4 +42,8 @@ export type JsonDrawingFileSerialized =
 export interface JsonDrawingFileDeserialized {
 	entities: Entity[];
 	layers: Layer[];
+	/**
+	 * Number of entities that could not be loaded, eg: an unknown entity type
+	 */
+	skippedEntityCount?: number;
 }

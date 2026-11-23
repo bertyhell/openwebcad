@@ -106,41 +106,16 @@ export class RectangleEntity implements Entity {
 	}
 
 	public getSnapPoints(): SnapPoint[] {
-		const corners = this.polygon.vertices;
-		const edges = polygonToSegments(this.polygon);
+		// A rectangle without a width or height has fewer than 4 corners and edges
 		return [
-			{
-				point: corners[0],
+			...this.polygon.vertices.map((corner) => ({
+				point: corner,
 				type: SnapPointType.LineEndPoint,
-			},
-			{
-				point: corners[1],
-				type: SnapPointType.LineEndPoint,
-			},
-			{
-				point: corners[2],
-				type: SnapPointType.LineEndPoint,
-			},
-			{
-				point: corners[3],
-				type: SnapPointType.LineEndPoint,
-			},
-			{
-				point: edges[0].middle(),
+			})),
+			...polygonToSegments(this.polygon).map((edge) => ({
+				point: edge.middle(),
 				type: SnapPointType.LineMidPoint,
-			},
-			{
-				point: edges[1].middle(),
-				type: SnapPointType.LineMidPoint,
-			},
-			{
-				point: edges[2].middle(),
-				type: SnapPointType.LineMidPoint,
-			},
-			{
-				point: edges[3].middle(),
-				type: SnapPointType.LineMidPoint,
-			},
+			})),
 		];
 	}
 

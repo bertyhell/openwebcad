@@ -1,5 +1,6 @@
 import { Arc, Point, Segment } from '@flatten-js/core';
 import { compact } from 'es-toolkit';
+import { toast } from 'react-toastify';
 import type { Layer } from '../../App.types.ts';
 import { ArcEntity, type ArcJsonData } from '../../entities/ArcEntity';
 import { CircleEntity, type CircleJsonData } from '../../entities/CircleEntity';
@@ -39,6 +40,9 @@ export function importEntitiesFromJsonFile(file: File | null | undefined) {
 		reader.addEventListener('load', async () => {
 			const json = reader.result as string;
 			const file = await getEntitiesAndLayersFromJsonString(json);
+			if (file.skippedEntityCount) {
+				toast.warning(`${file.skippedEntityCount} entities in the file could not be loaded`);
+			}
 			setEntities(file.entities);
 			setLayers(file.layers, true, true);
 			setActiveLayerId(file.layers[0].id);
@@ -91,6 +95,7 @@ export async function getEntitiesAndLayersFromJsonObject(
 ): Promise<JsonDrawingFileDeserialized> {
 	let entities: Entity[];
 	let layers: Layer[];
+	let skippedEntityCount = 0;
 	if (Array.isArray(data)) {
 		// raw flatten js json array of segments and arcs
 		// Useful when debugging segments and arcs that were copied out of the dev tools
@@ -136,7 +141,16 @@ export async function getEntitiesAndLayersFromJsonObject(
 		);
 	} else {
 		// open web cad format
-		const entityPromises = data.entities.map(entityFromJson);
+		// One entity that can't be loaded shouldn't lose the rest of the drawing
+		const entityPromises = data.entities.map(async (jsonEntity) => {
+			try {
+				return await entityFromJson(jsonEntity);
+			} catch (error) {
+				console.error('Failed to load entity', { jsonEntity, error });
+				skippedEntityCount++;
+				return null;
+			}
+		});
 		entities = compact(await Promise.all(entityPromises));
 		layers = data.layers;
 		if (data.layers.length === 0) {
@@ -147,6 +161,7 @@ export async function getEntitiesAndLayersFromJsonObject(
 	return {
 		entities,
 		layers,
+		skippedEntityCount,
 	};
 }
 

@@ -1,7 +1,9 @@
 import type { Point } from '@flatten-js/core';
+import { toast } from 'react-toastify';
 import { assign, createMachine } from 'xstate';
 import { RectangleEntity } from '../entities/RectangleEntity';
 import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
+import { isApproxEqual } from '../helpers/is-approx-equal.ts';
 import {
 	addEntities,
 	getActiveLineColor,
@@ -30,6 +32,34 @@ export enum RectangleAction {
 	DRAW_TEMP_RECTANGLE = 'DRAW_TEMP_RECTANGLE',
 	DRAW_FINAL_RECTANGLE = 'DRAW_FINAL_RECTANGLE',
 }
+
+/**
+ * A rectangle needs a width and a height, a flat rectangle has fewer than 4 corners
+ */
+function hasWidthAndHeight(startPoint: Point | null, event: StateEvent): boolean {
+	if (!startPoint) {
+		return false;
+	}
+	const endPoint = getPointFromEvent(startPoint, event as PointInputEvent);
+	return !isApproxEqual(startPoint.x, endPoint.x) && !isApproxEqual(startPoint.y, endPoint.y);
+}
+
+/**
+ * Finish the rectangle, or keep waiting for a better end point when the rectangle would be flat
+ */
+const finishRectangleTransitions = [
+	{
+		guard: ({ context, event }: { context: RectangleContext; event: StateEvent }) =>
+			hasWidthAndHeight(context.startPoint, event),
+		actions: RectangleAction.DRAW_FINAL_RECTANGLE,
+		target: RectangleState.INIT,
+	},
+	{
+		actions: () => {
+			toast.info('A rectangle needs a width and a height');
+		},
+	},
+];
 
 export const rectangleToolStateMachine = createMachine(
 	{
@@ -75,22 +105,11 @@ export const rectangleToolStateMachine = createMachine(
 					DRAW: {
 						actions: RectangleAction.DRAW_TEMP_RECTANGLE,
 					},
-					MOUSE_CLICK: {
-						actions: RectangleAction.DRAW_FINAL_RECTANGLE,
-						target: RectangleState.INIT,
-					},
-					NUMBER_INPUT: {
-						actions: RectangleAction.DRAW_FINAL_RECTANGLE, // TODO see if we want to add a flow where you enter the width and then the height if one of the dimensions of the "direction + distance" comes out to 0
-						target: RectangleState.INIT,
-					},
-					ABSOLUTE_POINT_INPUT: {
-						actions: RectangleAction.DRAW_FINAL_RECTANGLE,
-						target: RectangleState.INIT,
-					},
-					RELATIVE_POINT_INPUT: {
-						actions: RectangleAction.DRAW_FINAL_RECTANGLE,
-						target: RectangleState.INIT,
-					},
+					MOUSE_CLICK: finishRectangleTransitions,
+					// TODO see if we want to add a flow where you enter the width and then the height if one of the dimensions of the "direction + distance" comes out to 0
+					NUMBER_INPUT: finishRectangleTransitions,
+					ABSOLUTE_POINT_INPUT: finishRectangleTransitions,
+					RELATIVE_POINT_INPUT: finishRectangleTransitions,
 					ESC: {
 						target: RectangleState.INIT,
 					},

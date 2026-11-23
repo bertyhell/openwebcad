@@ -138,6 +138,22 @@ function activeToolAcceptsNumberInput(): boolean {
 	return !!activeToolSnapshot?.machine?.states?.[activeToolState]?.config?.on?.NUMBER_INPUT;
 }
 
+/**
+ * Start the active tool again from its first step, without finishing what it was busy with
+ */
+function restartActiveTool(): void {
+	// Clear the selection first, tools that act on the selection would otherwise act on it again when they start. eg: erase
+	setSelectedEntityIds([]);
+	setGhostHelperEntities([]);
+	const activeToolType = getActiveToolActor()?.getSnapshot()?.context?.type as Tool | undefined;
+	if (!activeToolType || !TOOL_STATE_MACHINES[activeToolType]) {
+		return;
+	}
+	// The image import tool would wait for a file without opening the file picker
+	const toolType = activeToolType === Tool.IMAGE_IMPORT ? Tool.SELECT : activeToolType;
+	setActiveToolActor(new Actor(TOOL_STATE_MACHINES[toolType]));
+}
+
 export class InputController {
 	private text = '';
 
@@ -614,22 +630,20 @@ export class InputController {
 
 	public handleUndo(evt?: KeyboardEvent) {
 		evt?.preventDefault();
+		if (getActiveToolActor()?.getSnapshot()?.can({ type: ActorEvent.UNDO })) {
+			// The active tool undoes its own last step, eg: the last point of the polyline that is being drawn
+			getActiveToolActor()?.send({ type: ActorEvent.UNDO });
+			return;
+		}
+		// Discard what the active tool is busy with before undoing, sending ESC could finish it instead. eg: a polyline
+		restartActiveTool();
 		undo();
-		setGhostHelperEntities([]);
-		setSelectedEntityIds([]);
-		getActiveToolActor()?.send({
-			type: ActorEvent.ESC,
-		});
 	}
 
 	public handleRedo(evt?: KeyboardEvent) {
 		evt?.preventDefault();
+		restartActiveTool();
 		redo();
-		setGhostHelperEntities([]);
-		setSelectedEntityIds([]);
-		getActiveToolActor()?.send({
-			type: ActorEvent.ESC,
-		});
 	}
 
 	private drawListBelowInputField(

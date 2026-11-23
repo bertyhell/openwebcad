@@ -38,6 +38,7 @@ export enum ActorEvent {
 	RELATIVE_POINT_INPUT = 'RELATIVE_POINT_INPUT',
 	ARROW_UP = 'ARROW_UP',
 	ARROW_DOWN = 'ARROW_DOWN',
+	UNDO = 'UNDO',
 }
 
 export interface MouseClickEvent extends EventObject {
@@ -54,6 +55,10 @@ export interface KeyboardEscEvent extends EventObject {
 
 export interface KeyboardEnterEvent extends EventObject {
 	type: ActorEvent.ENTER;
+}
+
+export interface UndoEvent extends EventObject {
+	type: ActorEvent.UNDO;
 }
 
 export interface KeyboardDeleteEvent extends EventObject {
@@ -110,6 +115,7 @@ export type StateEvent =
 	| MouseClickEvent
 	| KeyboardEscEvent
 	| KeyboardEnterEvent
+	| UndoEvent
 	| KeyboardDeleteEvent
 	| KeyboardArrowUpEvent
 	| KeyboardArrowDownEvent

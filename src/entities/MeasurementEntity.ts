@@ -349,7 +349,13 @@ export class MeasurementEntity implements Entity {
 		const drawPoints = this.getDrawPoints();
 
 		if (!drawPoints) {
-			throw new Error('Failed to get draw points from measurement entity');
+			// A zero length measurement isn't drawn, use the points that define it so zoom to fit and export keep working
+			return new Box(
+				Math.min(this.startPoint.x, this.offsetPoint.x),
+				Math.min(this.startPoint.y, this.offsetPoint.y),
+				Math.max(this.startPoint.x, this.offsetPoint.x),
+				Math.max(this.startPoint.y, this.offsetPoint.y)
+			);
 		}
 
 		const lineExtremePoints = [

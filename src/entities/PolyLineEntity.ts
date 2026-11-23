@@ -200,11 +200,14 @@ export class PolyLineEntity implements Entity {
 			}
 		);
 
-		const closedEntities = checkClosedPolygon(compact(entities));
-		if (!closedEntities) {
+		const segments = compact(entities);
+		if (segments.length === 0) {
 			return null;
 		}
-		const polyLineEntity = new PolyLineEntity(closedEntities as unknown as Entity[]);
+		// Closed polylines are ordered so each segment's end meets the next segment's start
+		// Open polylines are kept in the order they were saved in, which is the order they were drawn in
+		const orderedSegments = checkClosedPolygon(segments) ?? segments;
+		const polyLineEntity = new PolyLineEntity(orderedSegments as unknown as Entity[]);
 		polyLineEntity.layerId = jsonEntity.layerId || getActiveLayerId();
 		polyLineEntity.id = jsonEntity.id;
 		polyLineEntity.lineColor = jsonEntity.lineColor;

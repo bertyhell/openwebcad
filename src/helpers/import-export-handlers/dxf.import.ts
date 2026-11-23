@@ -1,4 +1,4 @@
-import { Point, Vector } from '@flatten-js/core';
+import { Matrix, Point, Vector } from '@flatten-js/core';
 import type { Entities as DxfEntities } from 'dxf';
 import { uniqBy } from 'es-toolkit';
 import { toast } from 'react-toastify';
@@ -20,6 +20,7 @@ import {
 import { zoomToBounds } from '../../tools/zoom-tool.helpers.ts';
 import { getNewLayer } from '../get-new-layer.ts';
 import { toHex } from '../rgb-to-hex-color.ts';
+import { transformEntity } from './transform-entity.ts';
 
 /**
  * Subset of the dxf library that is needed to convert a file, so it can be loaded lazily
@@ -46,6 +47,18 @@ interface DxfVertex {
 }
 
 /**
+ * Transformation of a block insert, the dxf library adds them to the entities of the block
+ */
+interface DxfTransform {
+	x?: number;
+	y?: number;
+	scaleX?: number;
+	scaleY?: number;
+	rotation?: number;
+	extrusionZ?: number;
+}
+
+/**
  * Loosely typed dxf entity, the typings of the dxf library don't cover every property it returns
  */
 interface DxfEntity {
@@ -54,7 +67,18 @@ interface DxfEntity {
 	colorNumber?: number;
 	visible?: boolean;
 	paperSpace?: number;
+	extrusionZ?: number;
+	/**
+	 * Transformations of the blocks the entity is inserted with, starting with the innermost block
+	 */
+	transforms?: DxfTransform[];
 	[key: string]: unknown;
+}
+
+interface DxfBlock {
+	x?: number;
+	y?: number;
+	entities?: DxfEntity[];
 }
 
 const BY_BLOCK_COLOR = 0;
@@ -88,6 +112,73 @@ function getLayerTables(parsed: unknown): DxfLayerTable[] {
 		return [];
 	}
 	return (Array.isArray(layers) ? layers : Object.values(layers)) as DxfLayerTable[];
+}
+
+/**
+ * Entities whose coordinates are in their object coordinate system (OCS) instead of the world coordinate system
+ */
+const OCS_ENTITY_TYPES = ['ARC', 'CIRCLE', 'LWPOLYLINE', 'POLYLINE', 'TEXT', 'SOLID'];
+
+/**
+ * Converts the object coordinate system of a 2d entity to world coordinates
+ * Entities that are mirrored in AutoCAD get an extrusion direction pointing down, which mirrors their x axis
+ */
+function getObjectCoordinateSystemMatrix(extrusionZ: number | undefined): Matrix {
+	return extrusionZ !== undefined && extrusionZ < 0 ? new Matrix(-1, 0, 0, 1, 0, 0) : new Matrix();
+}
+
+/**
+ * Combines the transformations of the blocks an entity is inserted with
+ * Each insert scales, rotates and moves the block to its insertion point, which is in the object coordinate system of the insert
+ */
+function getInsertMatrix(transforms: DxfTransform[] = []): Matrix {
+	return transforms.reduce((matrix, transform) => {
+		// A missing scale is 1, the dxf library treats a scale of 0 the same way
+		const insertMatrix = getObjectCoordinateSystemMatrix(transform.extrusionZ)
+			.translate(transform.x ?? 0, transform.y ?? 0)
+			.rotate(((transform.rotation ?? 0) * Math.PI) / 180)
+			.scale(transform.scaleX || 1, transform.scaleY || 1);
+		return insertMatrix.multiply(matrix);
+	}, new Matrix());
+}
+
+/**
+ * The dxf library moves the lines, polylines, circles, ellipses, arcs and splines of a block relative to the base point of the block,
+ * but not its texts, points, solids and nested inserts, so those are moved here before the library inserts the blocks
+ */
+function moveBlockEntitiesToBasePoint(parsed: unknown): void {
+	const blocks = (parsed as { blocks?: DxfBlock[] } | null)?.blocks ?? [];
+	for (const block of blocks) {
+		const baseX = block.x ?? 0;
+		const baseY = block.y ?? 0;
+		if (!baseX && !baseY) {
+			continue;
+		}
+		const move = (target: Record<string, unknown>, xKey: string, yKey: string) => {
+			if (typeof target[xKey] === 'number' && typeof target[yKey] === 'number') {
+				target[xKey] = (target[xKey] as number) - baseX;
+				target[yKey] = (target[yKey] as number) - baseY;
+			}
+		};
+		for (const entity of block.entities ?? []) {
+			switch (entity.type) {
+				case 'TEXT':
+					move(entity, 'x', 'y');
+					move(entity, 'x2', 'y2');
+					break;
+				case 'MTEXT':
+				case 'POINT':
+				case 'INSERT':
+					move(entity, 'x', 'y');
+					break;
+				case 'SOLID':
+					for (const corner of (entity.corners as Record<string, unknown>[] | undefined) ?? []) {
+						move(corner, 'x', 'y');
+					}
+					break;
+			}
+		}
+	}
 }
 
 /**
@@ -240,6 +331,8 @@ export function convertDxfToEntities(
 	existingLayers: Layer[]
 ): DxfConversionResult {
 	const helper = new dxfLibrary.Helper(contents);
+	// The blocks have to be corrected before the library inserts them, which happens the first time denormalised is read
+	moveBlockEntitiesToBasePoint(helper.parsed);
 	const dxfEntities = (helper.denormalised ?? []) as unknown as DxfEntity[];
 	const layerTables = getLayerTables(helper.parsed);
 
@@ -269,11 +362,18 @@ export function convertDxfToEntities(
 		if (dxfEntity.paperSpace || dxfEntity.visible === false) {
 			continue; // Only import what is visible in model space
 		}
-		const entity = convertEntity(dxfEntity);
-		if (!entity) {
+		const convertedEntity = convertEntity(dxfEntity);
+		if (!convertedEntity) {
 			unsupportedTypes.add(dxfEntity.type);
 			continue;
 		}
+		const objectMatrix = OCS_ENTITY_TYPES.includes(dxfEntity.type)
+			? getObjectCoordinateSystemMatrix(dxfEntity.extrusionZ)
+			: new Matrix();
+		const entity = transformEntity(
+			convertedEntity,
+			getInsertMatrix(dxfEntity.transforms).multiply(objectMatrix)
+		);
 		const layerName = dxfEntity.layer ?? '0';
 		entity.layerId = getLayerId(layerName);
 		const layerColorNumber = layerTables.find((table) => table.name === layerName)?.colorNumber;

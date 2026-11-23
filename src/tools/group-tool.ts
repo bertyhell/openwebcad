@@ -1,4 +1,6 @@
+import { toast } from 'react-toastify';
 import { groupEntities } from '../helpers/group-entities.ts';
+import { getSelectedEntityIds } from '../state';
 import { Tool } from '../tools';
 import { createSelectionActionToolStateMachine } from './selection-action-tool.helpers.ts';
 
@@ -10,9 +12,17 @@ export const groupToolStateMachine = createSelectionActionToolStateMachine({
 	verb: 'group',
 	apply: (selectedEntities, entities) => {
 		const result = groupEntities(selectedEntities, entities);
+		if (!result.group) {
+			// Keep the selection, so the user can add to it instead of starting over
+			toast.info('Select at least 2 entities on unlocked layers to group');
+			return {
+				entities,
+				selectedEntityIds: getSelectedEntityIds(),
+			};
+		}
 		return {
 			entities: result.entities,
-			selectedEntityIds: result.group ? [result.group.id] : [],
+			selectedEntityIds: [result.group.id],
 		};
 	},
 });

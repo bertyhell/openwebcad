@@ -1,8 +1,10 @@
 import type { Point } from '@flatten-js/core';
+import { toast } from 'react-toastify';
 import { Actor, assign, createMachine } from 'xstate';
 import { SnapPointType } from '../App.types.ts';
 import { SplineEntity } from '../entities/SplineEntity.ts';
 import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
+import { isPointEqual } from '../helpers/is-point-equal.ts';
 import {
 	addEntities,
 	getActiveLineColor,
@@ -42,6 +44,25 @@ function createSpline(fitPoints: Point[]): SplineEntity {
 	spline.lineWidth = getActiveLineWidth();
 	return spline;
 }
+
+/**
+ * A point on top of the previous point doesn't add a direction to the curve, eg: a double click
+ */
+function isNewPoint(context: SplineContext, event: StateEvent): boolean {
+	const lastPoint = context.fitPoints.at(-1);
+	return (
+		!lastPoint || !isPointEqual(lastPoint, getPointFromEvent(lastPoint, event as PointInputEvent))
+	);
+}
+
+/**
+ * Record the point, duplicate points are ignored without a message, since a double click is a common way to place a point
+ */
+const recordPointTransition = {
+	guard: ({ context, event }: { context: SplineContext; event: StateEvent }) =>
+		isNewPoint(context, event),
+	actions: SplineAction.RECORD_POINT,
+};
 
 /**
  * Spline tool state machine
@@ -94,22 +115,23 @@ export const splineToolStateMachine = createMachine(
 					DRAW: {
 						actions: SplineAction.DRAW_TEMP_SPLINE,
 					},
-					MOUSE_CLICK: {
-						actions: SplineAction.RECORD_POINT,
-					},
-					NUMBER_INPUT: {
-						actions: SplineAction.RECORD_POINT,
-					},
-					ABSOLUTE_POINT_INPUT: {
-						actions: SplineAction.RECORD_POINT,
-					},
-					RELATIVE_POINT_INPUT: {
-						actions: SplineAction.RECORD_POINT,
-					},
-					ENTER: {
-						actions: SplineAction.DRAW_FINAL_SPLINE,
-						target: SplineState.INIT,
-					},
+					MOUSE_CLICK: recordPointTransition,
+					NUMBER_INPUT: recordPointTransition,
+					ABSOLUTE_POINT_INPUT: recordPointTransition,
+					RELATIVE_POINT_INPUT: recordPointTransition,
+					ENTER: [
+						{
+							// Duplicate points are never recorded, so 2 points are always 2 different points
+							guard: ({ context }) => context.fitPoints.length >= 2,
+							actions: SplineAction.DRAW_FINAL_SPLINE,
+							target: SplineState.INIT,
+						},
+						{
+							actions: () => {
+								toast.info('A spline needs at least 2 different points, ESC to stop');
+							},
+						},
+					],
 					ESC: {
 						target: SplineState.INIT,
 					},
@@ -145,7 +167,6 @@ export const splineToolStateMachine = createMachine(
 				setGhostHelperEntities([createSpline([...context.fitPoints, mouseLocation])]);
 			},
 			[SplineAction.DRAW_FINAL_SPLINE]: ({ context }) => {
-				if (context.fitPoints.length < 2) return;
 				addEntities([createSpline(context.fitPoints)], true);
 			},
 			[SplineAction.SWITCH_TO_SELECT_TOOL]: () => {

@@ -1,7 +1,7 @@
 import type { Point } from '@flatten-js/core';
 import { toast } from 'react-toastify';
 import { Actor, assign, createMachine } from 'xstate';
-import { GUIDE_LINE_COLOR, GUIDE_LINE_STYLE, GUIDE_LINE_WIDTH } from '../App.consts.ts';
+import { EPSILON, GUIDE_LINE_COLOR, GUIDE_LINE_STYLE, GUIDE_LINE_WIDTH } from '../App.consts.ts';
 import { CircleEntity } from '../entities/CircleEntity.ts';
 import type { Entity } from '../entities/Entity.ts';
 import { LineEntity } from '../entities/LineEntity';
@@ -92,14 +92,44 @@ function getRadius(center: Point, point: Point): number {
 }
 
 /**
- * The second radius is typed as a number or picked as a point on the second circle
+ * The radius is typed as a number or picked as a point on the circle
+ * A typed radius is used as is, so a negative radius can be refused instead of silently flipping it
  */
-function getSecondRadius(center: Point, event: PointInputEvent): number {
+function getRadiusFromEvent(center: Point, event: PointInputEvent): number {
 	if (event.type === ActorEvent.NUMBER_INPUT) {
-		return Math.abs((event as NumberInputEvent).value);
+		return (event as NumberInputEvent).value;
 	}
 	return getRadius(center, getPointFromEvent(center, event));
 }
+
+/**
+ * Keep waiting for another radius when the radius would be 0, a star needs both circles to have a size
+ */
+function getRadiusTransitions(action: StarAction, target: StarState) {
+	return [
+		{
+			guard: ({ context, event }: { context: StarContext; event: StateEvent }) =>
+				!!context.center && getRadiusFromEvent(context.center, event as PointInputEvent) > EPSILON,
+			actions: action,
+			target,
+		},
+		{
+			actions: () => {
+				toast.info('The radius has to be larger than 0');
+			},
+		},
+	];
+}
+
+const recordFirstRadiusTransitions = getRadiusTransitions(
+	StarAction.RECORD_FIRST_RADIUS,
+	StarState.WAITING_FOR_SECOND_RADIUS
+);
+
+const finishStarTransitions = getRadiusTransitions(
+	StarAction.DRAW_FINAL_STAR,
+	StarState.WAITING_FOR_CENTER
+);
 
 function createStar(
 	center: Point,
@@ -224,22 +254,10 @@ export const starToolStateMachine = createMachine(
 					DRAW: {
 						actions: StarAction.DRAW_TEMP_FIRST_CIRCLE,
 					},
-					MOUSE_CLICK: {
-						actions: StarAction.RECORD_FIRST_RADIUS,
-						target: StarState.WAITING_FOR_SECOND_RADIUS,
-					},
-					NUMBER_INPUT: {
-						actions: StarAction.RECORD_FIRST_RADIUS,
-						target: StarState.WAITING_FOR_SECOND_RADIUS,
-					},
-					ABSOLUTE_POINT_INPUT: {
-						actions: StarAction.RECORD_FIRST_RADIUS,
-						target: StarState.WAITING_FOR_SECOND_RADIUS,
-					},
-					RELATIVE_POINT_INPUT: {
-						actions: StarAction.RECORD_FIRST_RADIUS,
-						target: StarState.WAITING_FOR_SECOND_RADIUS,
-					},
+					MOUSE_CLICK: recordFirstRadiusTransitions,
+					NUMBER_INPUT: recordFirstRadiusTransitions,
+					ABSOLUTE_POINT_INPUT: recordFirstRadiusTransitions,
+					RELATIVE_POINT_INPUT: recordFirstRadiusTransitions,
 					ESC: {
 						target: StarState.INIT,
 					},
@@ -254,22 +272,10 @@ export const starToolStateMachine = createMachine(
 					DRAW: {
 						actions: StarAction.DRAW_TEMP_STAR,
 					},
-					MOUSE_CLICK: {
-						actions: StarAction.DRAW_FINAL_STAR,
-						target: StarState.WAITING_FOR_CENTER,
-					},
-					NUMBER_INPUT: {
-						actions: StarAction.DRAW_FINAL_STAR,
-						target: StarState.WAITING_FOR_CENTER,
-					},
-					ABSOLUTE_POINT_INPUT: {
-						actions: StarAction.DRAW_FINAL_STAR,
-						target: StarState.WAITING_FOR_CENTER,
-					},
-					RELATIVE_POINT_INPUT: {
-						actions: StarAction.DRAW_FINAL_STAR,
-						target: StarState.WAITING_FOR_CENTER,
-					},
+					MOUSE_CLICK: finishStarTransitions,
+					NUMBER_INPUT: finishStarTransitions,
+					ABSOLUTE_POINT_INPUT: finishStarTransitions,
+					RELATIVE_POINT_INPUT: finishStarTransitions,
 					ESC: {
 						target: StarState.INIT,
 					},
@@ -327,7 +333,7 @@ export const starToolStateMachine = createMachine(
 			},
 			[StarAction.DRAW_TEMP_STAR]: ({ context, event }) => {
 				if (!context.center || !context.firstRadiusPoint) return;
-				const secondRadius = getSecondRadius(context.center, event as PointInputEvent);
+				const secondRadius = getRadiusFromEvent(context.center, event as PointInputEvent);
 				const ghostEntities: Entity[] = [
 					createGuideCircle(context.center, getRadius(context.center, context.firstRadiusPoint)),
 					createGuideCircle(context.center, secondRadius),
@@ -337,7 +343,7 @@ export const starToolStateMachine = createMachine(
 			},
 			[StarAction.DRAW_FINAL_STAR]: ({ context, event }) => {
 				if (!context.center || !context.firstRadiusPoint) return;
-				const secondRadius = getSecondRadius(context.center, event as PointInputEvent);
+				const secondRadius = getRadiusFromEvent(context.center, event as PointInputEvent);
 				const firstRadius = getRadius(context.center, context.firstRadiusPoint);
 				if (firstRadius > 0) {
 					lastSecondRadiusRatio = secondRadius / firstRadius;

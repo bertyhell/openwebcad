@@ -1,9 +1,11 @@
 import type { Point } from '@flatten-js/core';
 import { toast } from 'react-toastify';
 import { Actor, assign, createMachine } from 'xstate';
+import { EPSILON } from '../App.consts.ts';
 import { LineEntity } from '../entities/LineEntity';
 import { PolyLineEntity } from '../entities/PolyLineEntity.ts';
 import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
+import { isPointEqual } from '../helpers/is-point-equal.ts';
 import { getRegularPolygonPoints, PolygonMode } from '../helpers/polygon-points.ts';
 import {
 	addEntities,
@@ -17,13 +19,14 @@ import {
 } from '../state';
 import { Tool } from '../tools';
 import { selectToolStateMachine } from './select-tool.ts';
-import type {
-	DrawEvent,
-	NumberInputEvent,
-	PointInputEvent,
-	StateEvent,
-	TextInputEvent,
-	ToolContext,
+import {
+	ActorEvent,
+	type DrawEvent,
+	type NumberInputEvent,
+	type PointInputEvent,
+	type StateEvent,
+	type TextInputEvent,
+	type ToolContext,
 } from './tool.types';
 
 const MIN_SIDE_COUNT = 3;
@@ -82,6 +85,35 @@ function changeSideCount(context: PolygonContext, delta: number): Partial<Polygo
 		sideCount: lastSideCount,
 	};
 }
+
+/**
+ * A polygon with a radius of 0 collapses into a point
+ * A typed radius is checked as is, since a negative number would silently turn the polygon around
+ */
+function hasValidRadius(context: PolygonContext, event: StateEvent): boolean {
+	if (!context.center) return false;
+	if (event.type === ActorEvent.NUMBER_INPUT) {
+		return (event as NumberInputEvent).value > EPSILON;
+	}
+	return !isPointEqual(context.center, getPointFromEvent(context.center, event as PointInputEvent));
+}
+
+/**
+ * Draw the polygon, or keep waiting for another radius when the polygon would have no size
+ */
+const finishPolygonTransitions = [
+	{
+		guard: ({ context, event }: { context: PolygonContext; event: StateEvent }) =>
+			hasValidRadius(context, event),
+		actions: PolygonAction.DRAW_FINAL_POLYGON,
+		target: PolygonState.WAITING_FOR_CENTER,
+	},
+	{
+		actions: () => {
+			toast.info('The radius has to be larger than 0');
+		},
+	},
+];
 
 function createPolygon(context: PolygonContext, radiusPoint: Point): PolyLineEntity {
 	const corners = getRegularPolygonPoints(
@@ -201,22 +233,10 @@ export const polygonToolStateMachine = createMachine(
 					TEXT_INPUT: {
 						actions: PolygonAction.SET_MODE,
 					},
-					MOUSE_CLICK: {
-						actions: PolygonAction.DRAW_FINAL_POLYGON,
-						target: PolygonState.WAITING_FOR_CENTER,
-					},
-					NUMBER_INPUT: {
-						actions: PolygonAction.DRAW_FINAL_POLYGON,
-						target: PolygonState.WAITING_FOR_CENTER,
-					},
-					ABSOLUTE_POINT_INPUT: {
-						actions: PolygonAction.DRAW_FINAL_POLYGON,
-						target: PolygonState.WAITING_FOR_CENTER,
-					},
-					RELATIVE_POINT_INPUT: {
-						actions: PolygonAction.DRAW_FINAL_POLYGON,
-						target: PolygonState.WAITING_FOR_CENTER,
-					},
+					MOUSE_CLICK: finishPolygonTransitions,
+					NUMBER_INPUT: finishPolygonTransitions,
+					ABSOLUTE_POINT_INPUT: finishPolygonTransitions,
+					RELATIVE_POINT_INPUT: finishPolygonTransitions,
 					ESC: {
 						target: PolygonState.INIT,
 					},

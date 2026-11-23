@@ -1,12 +1,13 @@
 import { Point } from '@flatten-js/core';
 import { toast } from 'react-toastify';
 import { assign, createMachine } from 'xstate';
-import { GUIDE_LINE_COLOR, GUIDE_LINE_STYLE, GUIDE_LINE_WIDTH } from '../App.consts.ts';
+import { EPSILON, GUIDE_LINE_COLOR, GUIDE_LINE_STYLE, GUIDE_LINE_WIDTH } from '../App.consts.ts';
 import { CircleEntity } from '../entities/CircleEntity';
 import { LineEntity } from '../entities/LineEntity';
 import { getCircleCenterThroughPoints } from '../helpers/arc-through-points.ts';
 import { pointDistance } from '../helpers/distance-between-points';
 import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
+import { isPointEqual } from '../helpers/is-point-equal.ts';
 import {
 	addEntities,
 	getActiveLineColor,
@@ -17,12 +18,14 @@ import {
 	setShouldDrawHelpers,
 } from '../state';
 import { Tool } from '../tools';
-import type {
-	DrawEvent,
-	PointInputEvent,
-	StateEvent,
-	TextInputEvent,
-	ToolContext,
+import {
+	ActorEvent,
+	type DrawEvent,
+	type NumberInputEvent,
+	type PointInputEvent,
+	type StateEvent,
+	type TextInputEvent,
+	type ToolContext,
 } from './tool.types';
 
 const THREE_POINT_OPTION = 'T';
@@ -104,6 +107,49 @@ function getLastPoint(context: CircleContext): Point | null {
 	return context.points[context.points.length - 1] ?? null;
 }
 
+/**
+ * Radius from a typed number or from a point on the circle
+ * A typed number is used as is, so a negative radius can be refused instead of silently flipping it
+ */
+function getRadius(centerPoint: Point, event: StateEvent): number {
+	if (event.type === ActorEvent.NUMBER_INPUT) {
+		return (event as NumberInputEvent).value;
+	}
+	return pointDistance(centerPoint, getPointFromEvent(centerPoint, event as PointInputEvent));
+}
+
+function hasValidRadius(context: CircleContext, event: StateEvent): boolean {
+	return !!context.centerPoint && getRadius(context.centerPoint, event) > EPSILON;
+}
+
+/**
+ * Draw the circle, or keep waiting for another point when the circle would have no size
+ */
+const finishCircleTransitions = [
+	{
+		guard: ({ context, event }: { context: CircleContext; event: StateEvent }) =>
+			hasValidRadius(context, event),
+		actions: CircleAction.DRAW_FINAL_CIRCLE,
+		target: CircleState.INIT,
+	},
+	{
+		actions: () => {
+			toast.info('The radius has to be larger than 0');
+		},
+	},
+];
+
+/**
+ * The second point has to differ from the first, otherwise every third point is on one line with them
+ */
+function isSecondPointValid(context: CircleContext, event: StateEvent): boolean {
+	const firstPoint = getLastPoint(context);
+	return (
+		!!firstPoint &&
+		!isPointEqual(firstPoint, getPointFromEvent(firstPoint, event as PointInputEvent))
+	);
+}
+
 function isThirdPointValid(context: CircleContext, event: StateEvent): boolean {
 	const [p1, p2] = context.points;
 	const p3 = getPointFromEvent(getLastPoint(context), event as PointInputEvent);
@@ -178,22 +224,10 @@ export const circleToolStateMachine = createMachine(
 					DRAW: {
 						actions: CircleAction.DRAW_TEMP_CIRCLE,
 					},
-					MOUSE_CLICK: {
-						actions: CircleAction.DRAW_FINAL_CIRCLE,
-						target: CircleState.INIT,
-					},
-					NUMBER_INPUT: {
-						actions: CircleAction.DRAW_FINAL_CIRCLE,
-						target: CircleState.INIT,
-					},
-					ABSOLUTE_POINT_INPUT: {
-						actions: CircleAction.DRAW_FINAL_CIRCLE,
-						target: CircleState.INIT,
-					},
-					RELATIVE_POINT_INPUT: {
-						actions: CircleAction.DRAW_FINAL_CIRCLE,
-						target: CircleState.INIT,
-					},
+					MOUSE_CLICK: finishCircleTransitions,
+					NUMBER_INPUT: finishCircleTransitions,
+					ABSOLUTE_POINT_INPUT: finishCircleTransitions,
+					RELATIVE_POINT_INPUT: finishCircleTransitions,
 					ESC: {
 						target: CircleState.INIT,
 					},
@@ -243,10 +277,18 @@ export const circleToolStateMachine = createMachine(
 					...Object.fromEntries(
 						POINT_EVENTS.map((eventType) => [
 							eventType,
-							{
-								actions: CircleAction.RECORD_POINT,
-								target: CircleState.WAITING_FOR_THIRD_POINT,
-							},
+							[
+								{
+									guard: ({ context, event }: { context: CircleContext; event: StateEvent }) =>
+										isSecondPointValid(context, event),
+									actions: CircleAction.RECORD_POINT,
+									target: CircleState.WAITING_FOR_THIRD_POINT,
+								},
+								{
+									actions: () =>
+										toast.info('The second point has to be different from the first point'),
+								},
+							],
 						])
 					),
 					ESC: {
@@ -340,13 +382,9 @@ export const circleToolStateMachine = createMachine(
 						'Trying to DRAW_FINAL_CIRCLE when centerPoint is not yet defined in circle tool'
 					);
 				}
-				const pointOnCircle: Point = getPointFromEvent(
-					context.centerPoint,
-					event as PointInputEvent
-				);
 				const activeCircle = createCircle(
-					context.centerPoint as Point,
-					pointDistance(pointOnCircle, context.centerPoint as Point)
+					context.centerPoint,
+					getRadius(context.centerPoint, event)
 				);
 				addEntities([activeCircle], true);
 

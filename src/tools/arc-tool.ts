@@ -1,8 +1,11 @@
 import type { Point } from '@flatten-js/core';
+import { toast } from 'react-toastify';
 import { assign, createMachine } from 'xstate';
+import { EPSILON } from '../App.consts';
 import { ArcEntity } from '../entities/ArcEntity';
 import { applyActiveStyle } from '../helpers/apply-active-style';
 import { getPointFromEvent } from '../helpers/get-point-from-event';
+import { isPointEqual } from '../helpers/is-point-equal';
 import {
 	addEntities,
 	setAngleGuideOriginPoint,
@@ -11,13 +14,14 @@ import {
 	setShouldDrawHelpers,
 } from '../state';
 import { Tool } from '../tools';
-import type {
-	DrawEvent,
-	NumberInputEvent,
-	PointInputEvent,
-	StateEvent,
-	TextInputEvent,
-	ToolContext,
+import {
+	ActorEvent,
+	type DrawEvent,
+	type NumberInputEvent,
+	type PointInputEvent,
+	type StateEvent,
+	type TextInputEvent,
+	type ToolContext,
 } from './tool.types';
 import { createGuideLine } from './transform-tool.helpers';
 
@@ -55,6 +59,72 @@ const END_ANGLE_EVENTS = ['MOUSE_CLICK', 'NUMBER_INPUT', 'ABSOLUTE_POINT_INPUT']
 function getAngle(centerPoint: Point, point: Point): number {
 	return Math.atan2(point.y - centerPoint.y, point.x - centerPoint.x);
 }
+
+/**
+ * The start point defines the radius, so it can't be on the center
+ * A typed radius is checked as is, since a negative number would silently flip the start point to the other side
+ */
+function hasValidRadius(context: ArcContext, event: StateEvent): boolean {
+	if (!context.centerPoint) return false;
+	if (event.type === ActorEvent.NUMBER_INPUT) {
+		return (event as NumberInputEvent).value > EPSILON;
+	}
+	return !isPointEqual(
+		context.centerPoint,
+		getPointFromEvent(context.centerPoint, event as PointInputEvent)
+	);
+}
+
+/**
+ * A typed arc angle can't be 0, and a full circle has no end that differs from its start
+ */
+function isValidArcAngle(degrees: number): boolean {
+	return Math.abs(degrees) > EPSILON && Math.abs(degrees) < 360 - EPSILON;
+}
+
+/**
+ * The end point gives the end angle, it can't be on the center or on the line from the center through the start point
+ */
+function hasValidSweep(context: ArcContext, event: StateEvent): boolean {
+	if (!context.centerPoint || !context.startPoint) return false;
+	if (event.type === ActorEvent.NUMBER_INPUT) {
+		return isValidArcAngle((event as NumberInputEvent).value);
+	}
+	const endPoint = getPointFromEvent(context.centerPoint, event as PointInputEvent);
+	if (isPointEqual(context.centerPoint, endPoint)) return false;
+	const startAngle = getAngle(context.centerPoint, context.startPoint);
+	const endAngle = getAngle(context.centerPoint, endPoint);
+	const sweep = (((endAngle - startAngle) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+	return sweep > EPSILON && sweep < 2 * Math.PI - EPSILON;
+}
+
+const recordStartPointTransitions = [
+	{
+		guard: ({ context, event }: { context: ArcContext; event: StateEvent }) =>
+			hasValidRadius(context, event),
+		actions: ArcAction.RECORD_START_POINT,
+		target: ArcState.WAITING_FOR_END_ANGLE,
+	},
+	{
+		actions: () => {
+			toast.info('The radius has to be larger than 0');
+		},
+	},
+];
+
+const finishArcTransitions = [
+	{
+		guard: ({ context, event }: { context: ArcContext; event: StateEvent }) =>
+			hasValidSweep(context, event),
+		actions: ArcAction.DRAW_FINAL_ARC,
+		target: ArcState.INIT,
+	},
+	{
+		actions: () => {
+			toast.info('The end of the arc has to be at another angle than the start');
+		},
+	},
+];
 
 /**
  * Creates the arc from the center, the start point (radius + start angle) and the end angle
@@ -130,13 +200,7 @@ export const arcToolStateMachine = createMachine(
 				on: {
 					DRAW: { actions: ArcAction.DRAW_TEMP_RADIUS },
 					...Object.fromEntries(
-						POINT_EVENTS.map((eventType) => [
-							eventType,
-							{
-								actions: ArcAction.RECORD_START_POINT,
-								target: ArcState.WAITING_FOR_END_ANGLE,
-							},
-						])
+						POINT_EVENTS.map((eventType) => [eventType, recordStartPointTransitions])
 					),
 					ESC: { target: ArcState.INIT },
 				},
@@ -155,13 +219,7 @@ export const arcToolStateMachine = createMachine(
 						actions: assign(({ context }) => ({ inverted: !context.inverted })),
 					},
 					...Object.fromEntries(
-						END_ANGLE_EVENTS.map((eventType) => [
-							eventType,
-							{
-								actions: ArcAction.DRAW_FINAL_ARC,
-								target: ArcState.INIT,
-							},
-						])
+						END_ANGLE_EVENTS.map((eventType) => [eventType, finishArcTransitions])
 					),
 					ESC: { target: ArcState.INIT },
 				},

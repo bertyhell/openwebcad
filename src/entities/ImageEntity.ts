@@ -54,7 +54,8 @@ export class ImageEntity implements Entity {
 		if (endPointOrAngle instanceof Point) {
 			this.angle = angle;
 		} else {
-			this.angle = endPointOrAngle as number;
+			// The image import tool passes only the outline, an image without an angle isn't rotated
+			this.angle = endPointOrAngle ?? 0;
 		}
 	}
 

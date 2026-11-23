@@ -1,4 +1,4 @@
-import { Point } from '@flatten-js/core';
+import { Point, Polygon } from '@flatten-js/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { DrawController } from '../drawControllers/DrawController.ts';
 import { ScreenCanvasDrawController } from '../drawControllers/screenCanvas.drawController.ts';
@@ -87,6 +87,17 @@ describe('ImageEntity', () => {
 			bottomRight: [100, 0],
 			topLeft: [0, 50],
 		});
+	});
+
+	it('draws an image that is created from an outline without an angle, like the image import tool does', () => {
+		const image = new ImageEntity(
+			imageElement,
+			new Polygon([new Point(0, 0), new Point(0, 50), new Point(100, 50), new Point(100, 0)])
+		);
+		expect(getCorners(image)).toEqual(getCorners(createImage()));
+		image.rotate(new Point(0, 0), Math.PI / 2);
+		const { width, height, angle } = getDrawImageCall(image);
+		expect([width, height, angle].every(Number.isFinite)).toBe(true);
 	});
 
 	it('draws a rotated image at its own size, turned the same way as its outline', () => {

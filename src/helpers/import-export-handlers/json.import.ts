@@ -27,30 +27,63 @@ import type {
 } from './json.types.ts';
 
 /**
- * Open a file selection dialog to select *.json files
- * Parse the JSON file
+ * Parse the JSON file selected in the file dialog
  * Generate entities from the JSON data
- * Set the entities in the state
+ * Replace the drawing with the entities and layers of the file
  */
-export function importEntitiesFromJsonFile(file: File | null | undefined) {
-	return new Promise<void>((resolve) => {
-		if (!file) return;
+export async function importEntitiesFromJsonFile(file: File | null | undefined): Promise<void> {
+	if (!file) {
+		return;
+	}
+	try {
+		const drawing = await getEntitiesAndLayersFromJsonString(await file.text());
+		if (drawing.skippedEntityCount) {
+			toast.warning(`${drawing.skippedEntityCount} entities in the file could not be loaded`);
+		}
+		setEntities(drawing.entities);
+		setLayers(drawing.layers, true, true);
+		setActiveLayerId(getDefaultActiveLayerId(drawing.layers));
+		zoomToBounds();
+	} catch (error) {
+		console.error('Failed to load the JSON file', error);
+		toast.error('The JSON file could not be loaded. See console for details.');
+	}
+}
 
-		const reader = new FileReader();
-		reader.addEventListener('load', async () => {
-			const json = reader.result as string;
-			const file = await getEntitiesAndLayersFromJsonString(json);
-			if (file.skippedEntityCount) {
-				toast.warning(`${file.skippedEntityCount} entities in the file could not be loaded`);
-			}
-			setEntities(file.entities);
-			setLayers(file.layers, true, true);
-			setActiveLayerId(file.layers[0].id);
-			zoomToBounds();
-			resolve();
-		});
-		reader.readAsText(file, 'utf-8');
-	});
+/**
+ * Layer to draw on after loading a drawing: the first layer that is visible and unlocked,
+ * since new entities on a hidden or locked layer can't be seen or changed
+ */
+export function getDefaultActiveLayerId(layers: Layer[]): string {
+	return (layers.find((layer) => layer.isVisible && !layer.isLocked) ?? layers[0]).id;
+}
+
+/**
+ * Entities on a layer that doesn't exist are saved, but never drawn and can't be selected,
+ * so every missing layer is added as a new visible and unlocked layer
+ */
+function addMissingLayers(entities: Entity[], layers: Layer[]): Layer[] {
+	const allLayers = [...layers];
+	const layerIds = new Set(layers.map((layer) => layer.id));
+	const addedLayerIds = new Map<string, string>();
+	for (const entity of entities) {
+		if (layerIds.has(entity.layerId)) {
+			continue;
+		}
+		let layerId = addedLayerIds.get(entity.layerId);
+		if (!layerId) {
+			// The layer keeps the id of the entities, unless they have no layer id at all
+			const layer: Layer = {
+				...getNewLayer(allLayers),
+				...(entity.layerId ? { id: entity.layerId } : {}),
+			};
+			allLayers.push(layer);
+			addedLayerIds.set(entity.layerId, layer.id);
+			layerId = layer.id;
+		}
+		entity.layerId = layerId;
+	}
+	return allLayers;
 }
 
 /**
@@ -141,6 +174,9 @@ export async function getEntitiesAndLayersFromJsonObject(
 		);
 	} else {
 		// open web cad format
+		if (!Array.isArray(data?.entities)) {
+			throw new Error('Invalid json file, it has no list of entities');
+		}
 		// One entity that can't be loaded shouldn't lose the rest of the drawing
 		const entityPromises = data.entities.map(async (jsonEntity) => {
 			try {
@@ -152,10 +188,8 @@ export async function getEntitiesAndLayersFromJsonObject(
 			}
 		});
 		entities = compact(await Promise.all(entityPromises));
-		layers = data.layers;
-		if (data.layers.length === 0) {
-			layers = [getNewLayer([])];
-		}
+		layers = Array.isArray(data.layers) && data.layers.length ? data.layers : [getNewLayer([])];
+		layers = addMissingLayers(entities, layers);
 	}
 
 	return {

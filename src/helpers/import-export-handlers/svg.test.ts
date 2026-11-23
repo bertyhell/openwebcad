@@ -161,6 +161,24 @@ describe('svg import of transformations', () => {
 		expect((entities[0] as EllipseEntity).getRatio()).toBeCloseTo(0.5);
 	});
 
+	it('imports the rectangle, circle, polygon and paths of the svg import mock', () => {
+		const mock = readFileSync(
+			resolve(__dirname, '../../../test/mocks/test-svg-import.svg'),
+			'utf-8'
+		);
+		const entities = convertSvgToEntities(mock);
+		const types = entities.map((entity) => entity.getType());
+		expect(types.slice(0, 2)).toEqual([EntityName.Rectangle, EntityName.Circle]);
+		expect((entities[1].getShape() as Circle).r.valueOf()).toBeCloseTo(33.689);
+		expect(types.slice(2).every((type) => type === EntityName.Line)).toBe(true);
+		// The triangle has 3 sides, the polygon 9 and the curved path is approximated by several lines
+		expect(types.length - 2).toBeGreaterThan(3 + 9);
+		const [minX, minY, maxX, maxY] = getBounds(entities);
+		expect([minX, minY]).toEqual([37.923, 12.15]);
+		expect(maxX).toBeCloseTo(236.745);
+		expect(maxY).toBeCloseTo(198.085);
+	});
+
 	it('imports the floorplan mock, which uses a matrix on every path', () => {
 		const floorplan = readFileSync(
 			resolve(__dirname, '../../../test/mocks/floorplan.svg'),

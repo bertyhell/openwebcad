@@ -6,6 +6,7 @@ import { CircleEntity } from '../entities/CircleEntity';
 import { LineEntity } from '../entities/LineEntity';
 import { getCircleCenterThroughPoints } from '../helpers/arc-through-points.ts';
 import { pointDistance } from '../helpers/distance-between-points';
+import { getSnappedMouseLocation } from '../helpers/get-closest-snap-point.ts';
 import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
 import { isPointEqual } from '../helpers/is-point-equal.ts';
 import {
@@ -20,7 +21,6 @@ import {
 import { Tool } from '../tools';
 import {
 	ActorEvent,
-	type DrawEvent,
 	type NumberInputEvent,
 	type PointInputEvent,
 	type StateEvent,
@@ -366,13 +366,10 @@ export const circleToolStateMachine = createMachine(
 					centerPoint: startPoint,
 				};
 			}),
-			[CircleAction.DRAW_TEMP_CIRCLE]: ({ context, event }) => {
+			[CircleAction.DRAW_TEMP_CIRCLE]: ({ context }) => {
 				const activeCircle = createCircle(
 					context.centerPoint as Point,
-					pointDistance(
-						(event as DrawEvent).drawController.getWorldMouseLocation(),
-						context.centerPoint as Point
-					)
+					pointDistance(getSnappedMouseLocation(), context.centerPoint as Point)
 				);
 				setGhostHelperEntities([activeCircle]);
 			},
@@ -400,10 +397,10 @@ export const circleToolStateMachine = createMachine(
 					points: [...context.points, point],
 				};
 			}),
-			[CircleAction.DRAW_TEMP_LINE]: ({ context, event }) => {
+			[CircleAction.DRAW_TEMP_LINE]: ({ context }) => {
 				const firstPoint = getLastPoint(context);
 				if (!firstPoint) return;
-				const mouseLocation = (event as DrawEvent).drawController.getWorldMouseLocation();
+				const mouseLocation = getSnappedMouseLocation();
 				// Until the third point is known, the 2 points are the diameter of the circle
 				const center = new Point(
 					(firstPoint.x + mouseLocation.x) / 2,
@@ -414,10 +411,10 @@ export const circleToolStateMachine = createMachine(
 					createCircle(center, pointDistance(firstPoint, mouseLocation) / 2),
 				]);
 			},
-			[CircleAction.DRAW_TEMP_THREE_POINT_CIRCLE]: ({ context, event }) => {
+			[CircleAction.DRAW_TEMP_THREE_POINT_CIRCLE]: ({ context }) => {
 				const [p1, p2] = context.points;
 				if (!p1 || !p2) return;
-				const mouseLocation = (event as DrawEvent).drawController.getWorldMouseLocation();
+				const mouseLocation = getSnappedMouseLocation();
 				const circle = createCircleThroughPoints(p1, p2, mouseLocation);
 				setGhostHelperEntities([
 					createGuideLine(p1, p2),

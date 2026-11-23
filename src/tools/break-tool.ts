@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 import { Actor, assign, createMachine } from 'xstate';
 import type { Entity } from '../entities/Entity.ts';
 import { breakEntity, isBreakable } from '../helpers/break-entity.ts';
+import { getSnappedMouseLocation } from '../helpers/get-closest-snap-point.ts';
 import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
 import { pickEntity } from '../helpers/pick-entity.ts';
 import {
@@ -18,13 +19,7 @@ import {
 } from '../state';
 import { Tool } from '../tools';
 import { selectToolStateMachine } from './select-tool.ts';
-import type {
-	DrawEvent,
-	MouseClickEvent,
-	PointInputEvent,
-	StateEvent,
-	ToolContext,
-} from './tool.types';
+import type { MouseClickEvent, PointInputEvent, StateEvent, ToolContext } from './tool.types';
 
 export interface BreakContext extends ToolContext {
 	entity: Entity | null;
@@ -142,8 +137,8 @@ export const breakToolStateMachine = createMachine(
 					firstPoint: null,
 				};
 			}),
-			[BreakAction.HIGHLIGHT_ENTITY]: ({ event }) => {
-				const entity = pickEntity((event as DrawEvent).drawController.getWorldMouseLocation());
+			[BreakAction.HIGHLIGHT_ENTITY]: () => {
+				const entity = pickEntity(getSnappedMouseLocation());
 				setHighlightedEntityIds(entity ? [entity.id] : []);
 			},
 			[BreakAction.CLEAR_HIGHLIGHT]: () => {
@@ -158,9 +153,9 @@ export const breakToolStateMachine = createMachine(
 					firstPoint,
 				};
 			}),
-			[BreakAction.DRAW_TEMP_BREAK]: ({ context, event }) => {
+			[BreakAction.DRAW_TEMP_BREAK]: ({ context }) => {
 				if (!context.entity || !context.firstPoint) return;
-				const mouseLocation = (event as DrawEvent).drawController.getWorldMouseLocation();
+				const mouseLocation = getSnappedMouseLocation();
 				setGhostHelperEntities(
 					breakEntity(context.entity, context.firstPoint, mouseLocation) ?? []
 				);

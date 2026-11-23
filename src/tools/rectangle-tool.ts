@@ -2,6 +2,7 @@ import type { Point } from '@flatten-js/core';
 import { toast } from 'react-toastify';
 import { assign, createMachine } from 'xstate';
 import { RectangleEntity } from '../entities/RectangleEntity';
+import { getSnappedMouseLocation } from '../helpers/get-closest-snap-point.ts';
 import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
 import { isApproxEqual } from '../helpers/is-approx-equal.ts';
 import {
@@ -14,7 +15,7 @@ import {
 	setShouldDrawHelpers,
 } from '../state';
 import { Tool } from '../tools';
-import type { DrawEvent, PointInputEvent, StateEvent, ToolContext } from './tool.types';
+import type { PointInputEvent, StateEvent, ToolContext } from './tool.types';
 
 export interface RectangleContext extends ToolContext {
 	startPoint: Point | null;
@@ -132,13 +133,13 @@ export const rectangleToolStateMachine = createMachine(
 					startPoint,
 				};
 			}),
-			[RectangleAction.DRAW_TEMP_RECTANGLE]: ({ context, event }) => {
+			[RectangleAction.DRAW_TEMP_RECTANGLE]: ({ context }) => {
 				if (!context.startPoint) {
 					throw new Error('[RECTANGLE]: calling draw without start point being set');
 				}
 				const activeRectangle = new RectangleEntity(
 					context.startPoint as Point,
-					(event as DrawEvent).drawController.getWorldMouseLocation()
+					getSnappedMouseLocation()
 				);
 				activeRectangle.lineColor = getActiveLineColor();
 				activeRectangle.lineWidth = getActiveLineWidth();

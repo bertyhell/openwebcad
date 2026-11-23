@@ -2,6 +2,7 @@ import { Box, Point } from '@flatten-js/core';
 import { toast } from 'react-toastify';
 import { Actor, assign, createMachine } from 'xstate';
 import type { Entity } from '../entities/Entity.ts';
+import { getSnappedMouseLocation } from '../helpers/get-closest-snap-point.ts';
 import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
 import { isEntityInStretchWindow, stretchEntity } from '../helpers/stretch-entity.ts';
 import {
@@ -19,7 +20,7 @@ import {
 } from '../state';
 import { Tool } from '../tools';
 import { selectToolStateMachine } from './select-tool.ts';
-import type { DrawEvent, PointInputEvent, StateEvent, ToolContext } from './tool.types';
+import type { PointInputEvent, StateEvent, ToolContext } from './tool.types';
 import { createGuideLine, replaceEntities } from './transform-tool.helpers.ts';
 
 export interface StretchContext extends ToolContext {
@@ -260,9 +261,9 @@ export const stretchToolStateMachine = createMachine(
 					firstCorner: getPointFromEvent(null, event as PointInputEvent),
 				};
 			}),
-			[StretchAction.DRAW_TEMP_WINDOW]: ({ context, event }) => {
+			[StretchAction.DRAW_TEMP_WINDOW]: ({ context }) => {
 				if (!context.firstCorner) return;
-				const mouseLocation = (event as DrawEvent).drawController.getWorldMouseLocation();
+				const mouseLocation = getSnappedMouseLocation();
 				setGhostHelperEntities(getWindowGuideLines(context.firstCorner, mouseLocation));
 			},
 			[StretchAction.RECORD_WINDOW]: assign(({ context, event }) => {
@@ -292,9 +293,9 @@ export const stretchToolStateMachine = createMachine(
 					basePoint,
 				};
 			}),
-			[StretchAction.DRAW_TEMP_STRETCH]: ({ context, event }) => {
+			[StretchAction.DRAW_TEMP_STRETCH]: ({ context }) => {
 				if (!context.basePoint) return;
-				const mouseLocation = (event as DrawEvent).drawController.getWorldMouseLocation();
+				const mouseLocation = getSnappedMouseLocation();
 				setGhostHelperEntities([
 					createGuideLine(context.basePoint, mouseLocation),
 					...getStretchedEntities(context, mouseLocation),

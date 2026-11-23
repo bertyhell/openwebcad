@@ -4,6 +4,7 @@ import { Actor, assign, createMachine } from 'xstate';
 import { EPSILON } from '../App.consts.ts';
 import { EllipseEntity } from '../entities/EllipseEntity.ts';
 import { pointDistance } from '../helpers/distance-between-points.ts';
+import { getSnappedMouseLocation } from '../helpers/get-closest-snap-point.ts';
 import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
 import {
 	addEntities,
@@ -17,13 +18,7 @@ import {
 } from '../state';
 import { Tool } from '../tools';
 import { selectToolStateMachine } from './select-tool.ts';
-import type {
-	DrawEvent,
-	NumberInputEvent,
-	PointInputEvent,
-	StateEvent,
-	ToolContext,
-} from './tool.types';
+import type { NumberInputEvent, PointInputEvent, StateEvent, ToolContext } from './tool.types';
 
 export interface EllipseContext extends ToolContext {
 	center: Point | null;
@@ -231,9 +226,9 @@ export const ellipseToolStateMachine = createMachine(
 					majorAxisEnd,
 				};
 			}),
-			[EllipseAction.DRAW_TEMP_FIRST_AXIS]: ({ context, event }) => {
+			[EllipseAction.DRAW_TEMP_FIRST_AXIS]: ({ context }) => {
 				if (!context.center) return;
-				const mouseLocation = (event as DrawEvent).drawController.getWorldMouseLocation();
+				const mouseLocation = getSnappedMouseLocation();
 				if (pointDistance(context.center, mouseLocation) === 0) return;
 				// Preview a circle until the second axis is known
 				setGhostHelperEntities([
@@ -244,9 +239,9 @@ export const ellipseToolStateMachine = createMachine(
 					),
 				]);
 			},
-			[EllipseAction.DRAW_TEMP_ELLIPSE]: ({ context, event }) => {
+			[EllipseAction.DRAW_TEMP_ELLIPSE]: ({ context }) => {
 				if (!context.center || !context.majorAxisEnd) return;
-				const mouseLocation = (event as DrawEvent).drawController.getWorldMouseLocation();
+				const mouseLocation = getSnappedMouseLocation();
 				setGhostHelperEntities([
 					createEllipse(
 						context.center,

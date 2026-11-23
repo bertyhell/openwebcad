@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 import { Actor, assign, createMachine } from 'xstate';
 import { SnapPointType } from '../App.types.ts';
 import { SplineEntity } from '../entities/SplineEntity.ts';
+import { getSnappedMouseLocation } from '../helpers/get-closest-snap-point.ts';
 import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
 import { isPointEqual } from '../helpers/is-point-equal.ts';
 import {
@@ -18,7 +19,7 @@ import {
 } from '../state';
 import { Tool } from '../tools';
 import { selectToolStateMachine } from './select-tool.ts';
-import type { DrawEvent, PointInputEvent, StateEvent, ToolContext } from './tool.types';
+import type { PointInputEvent, StateEvent, ToolContext } from './tool.types';
 
 export interface SplineContext extends ToolContext {
 	fitPoints: Point[];
@@ -162,8 +163,8 @@ export const splineToolStateMachine = createMachine(
 					fitPoints,
 				};
 			}),
-			[SplineAction.DRAW_TEMP_SPLINE]: ({ context, event }) => {
-				const mouseLocation = (event as DrawEvent).drawController.getWorldMouseLocation();
+			[SplineAction.DRAW_TEMP_SPLINE]: ({ context }) => {
+				const mouseLocation = getSnappedMouseLocation();
 				setGhostHelperEntities([createSpline([...context.fitPoints, mouseLocation])]);
 			},
 			[SplineAction.DRAW_FINAL_SPLINE]: ({ context }) => {

@@ -4,6 +4,7 @@ import { assign, createMachine, sendTo } from 'xstate';
 import { GUIDE_LINE_COLOR, GUIDE_LINE_STYLE, GUIDE_LINE_WIDTH, TO_RADIANS } from '../App.consts.ts';
 import type { Entity } from '../entities/Entity';
 import { LineEntity } from '../entities/LineEntity.ts';
+import { getSnappedMouseLocation } from '../helpers/get-closest-snap-point.ts';
 import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
 import { isPointEqual } from '../helpers/is-point-equal.ts';
 import {
@@ -18,7 +19,6 @@ import {
 import { Tool } from '../tools';
 import { selectToolStateMachine } from './select-tool.ts';
 import type {
-	DrawEvent,
 	NumberInputEvent,
 	PointInputEvent,
 	StateEvent,
@@ -367,12 +367,12 @@ export const arrayToolStateMachine = createMachine(
 				angleStep: (event as NumberInputEvent).value,
 			})),
 
-			[ArrayAction.DRAW_TEMP_DISTANCE_LINE]: ({ context, event }) => {
+			[ArrayAction.DRAW_TEMP_DISTANCE_LINE]: ({ context }) => {
 				if (!context.startDistanceVector) {
 					throw new Error('[ARRAY] Calling draw temp distance line without a start point');
 				}
 
-				const endPointTemp = (event as DrawEvent).drawController.getWorldMouseLocation();
+				const endPointTemp = getSnappedMouseLocation();
 
 				// Draw the array entities to show the result
 				// Draw all selected entities according to distance vector and number of copies, so the user gets visual feedback of where the entities will be copied;

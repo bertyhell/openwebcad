@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 import { assign, createMachine } from 'xstate';
 import { MEASUREMENT_DEFAULT_OFFSET, TO_RADIANS } from '../App.consts';
 import { MeasurementEntity } from '../entities/MeasurementEntity';
+import { getSnappedMouseLocation } from '../helpers/get-closest-snap-point.ts';
 import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
 import { isPointEqual } from '../helpers/is-point-equal.ts';
 import {
@@ -17,7 +18,6 @@ import {
 import { Tool } from '../tools';
 import {
 	ActorEvent,
-	type DrawEvent,
 	type NumberInputEvent,
 	type PointInputEvent,
 	type StateEvent,
@@ -194,7 +194,7 @@ export const measurementToolStateMachine = createMachine(
 					endPoint,
 				};
 			}),
-			[MeasurementAction.DRAW_TEMP_MEASUREMENT]: ({ context, event }) => {
+			[MeasurementAction.DRAW_TEMP_MEASUREMENT]: ({ context }) => {
 				const startPoint = context.startPoint as Point;
 
 				let endPoint: Point;
@@ -202,7 +202,7 @@ export const measurementToolStateMachine = createMachine(
 				if (!context.endPoint) {
 					// User has drawn startPoint, but not yet endPoint
 					// Endpoint should be the mouse location and offset should be MEASUREMENT_DEFAULT_OFFSET to either direction
-					endPoint = (event as DrawEvent).drawController.getWorldMouseLocation();
+					endPoint = getSnappedMouseLocation();
 
 					if (isPointEqual(startPoint, endPoint)) {
 						return; // Cannot draw temp measurement when start and endpoint are equal
@@ -218,7 +218,7 @@ export const measurementToolStateMachine = createMachine(
 					// User has already selected a startPoint and endPoint
 					// The offsetPoint should be set to the mouse location
 					endPoint = context.endPoint as Point;
-					offsetPoint = (event as DrawEvent).drawController.getWorldMouseLocation();
+					offsetPoint = getSnappedMouseLocation();
 				}
 
 				const activeMeasurement = new MeasurementEntity(

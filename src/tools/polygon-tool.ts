@@ -4,6 +4,7 @@ import { Actor, assign, createMachine } from 'xstate';
 import { EPSILON } from '../App.consts.ts';
 import { LineEntity } from '../entities/LineEntity';
 import { PolyLineEntity } from '../entities/PolyLineEntity.ts';
+import { getSnappedMouseLocation } from '../helpers/get-closest-snap-point.ts';
 import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
 import { isPointEqual } from '../helpers/is-point-equal.ts';
 import { getRegularPolygonPoints, PolygonMode } from '../helpers/polygon-points.ts';
@@ -21,7 +22,6 @@ import { Tool } from '../tools';
 import { selectToolStateMachine } from './select-tool.ts';
 import {
 	ActorEvent,
-	type DrawEvent,
 	type NumberInputEvent,
 	type PointInputEvent,
 	type StateEvent,
@@ -285,9 +285,9 @@ export const polygonToolStateMachine = createMachine(
 					mode: lastMode,
 				};
 			}),
-			[PolygonAction.DRAW_TEMP_POLYGON]: ({ context, event }) => {
+			[PolygonAction.DRAW_TEMP_POLYGON]: ({ context }) => {
 				if (!context.center) return;
-				const mouseLocation = (event as DrawEvent).drawController.getWorldMouseLocation();
+				const mouseLocation = getSnappedMouseLocation();
 				setGhostHelperEntities([createPolygon(context, mouseLocation)]);
 			},
 			[PolygonAction.DRAW_FINAL_POLYGON]: ({ context, event }) => {

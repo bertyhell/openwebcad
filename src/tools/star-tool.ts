@@ -6,6 +6,7 @@ import { CircleEntity } from '../entities/CircleEntity.ts';
 import type { Entity } from '../entities/Entity.ts';
 import { LineEntity } from '../entities/LineEntity';
 import { PolyLineEntity } from '../entities/PolyLineEntity.ts';
+import { getSnappedMouseLocation } from '../helpers/get-closest-snap-point.ts';
 import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
 import { getStarPoints } from '../helpers/star-points.ts';
 import {
@@ -22,7 +23,6 @@ import { Tool } from '../tools';
 import { selectToolStateMachine } from './select-tool.ts';
 import {
 	ActorEvent,
-	type DrawEvent,
 	type NumberInputEvent,
 	type PointInputEvent,
 	type StateEvent,
@@ -316,9 +316,9 @@ export const starToolStateMachine = createMachine(
 					firstRadiusPoint: getPointFromEvent(context.center, event as PointInputEvent),
 				};
 			}),
-			[StarAction.DRAW_TEMP_FIRST_CIRCLE]: ({ context, event }) => {
+			[StarAction.DRAW_TEMP_FIRST_CIRCLE]: ({ context }) => {
 				if (!context.center) return;
-				const mouseLocation = (event as DrawEvent).drawController.getWorldMouseLocation();
+				const mouseLocation = getSnappedMouseLocation();
 				const firstRadius = getRadius(context.center, mouseLocation);
 				// Preview the star with the circle ratio of the last star
 				setGhostHelperEntities([

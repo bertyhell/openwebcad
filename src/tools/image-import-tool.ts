@@ -4,6 +4,7 @@ import { Actor, assign, createMachine } from 'xstate';
 import { ImageEntity } from '../entities/ImageEntity';
 import { RectangleEntity } from '../entities/RectangleEntity';
 import { boxToPolygon, twoPointBoxToPolygon } from '../helpers/box-to-polygon';
+import { getSnappedMouseLocation } from '../helpers/get-closest-snap-point.ts';
 import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
 import { isPointEqual } from '../helpers/is-point-equal.ts';
 import {
@@ -23,7 +24,6 @@ import {
 import { selectToolStateMachine } from './select-tool';
 import {
 	ActorEvent,
-	type DrawEvent,
 	type FileSelectedEvent,
 	type NumberInputEvent,
 	type PointInputEvent,
@@ -218,12 +218,7 @@ export const imageImportToolStateMachine = createMachine(
 						'[IMAGE_IMPORT] imageElement is not set when calling DRAW_TEMP_IMAGE_IMPORT'
 					);
 				}
-				if (
-					isPointEqual(
-						context.startPoint,
-						(event as DrawEvent).drawController.getWorldMouseLocation()
-					)
-				) {
+				if (isPointEqual(context.startPoint, getSnappedMouseLocation())) {
 					return; // Can't draw an image that is 0 pixels wide
 				}
 				const endPoint = getPointFromEvent(context.startPoint, event as PointInputEvent);

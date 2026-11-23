@@ -4,6 +4,7 @@ import { assign, createMachine } from 'xstate';
 import { EPSILON } from '../App.consts';
 import { ArcEntity } from '../entities/ArcEntity';
 import { applyActiveStyle } from '../helpers/apply-active-style';
+import { getSnappedMouseLocation } from '../helpers/get-closest-snap-point.ts';
 import { getPointFromEvent } from '../helpers/get-point-from-event';
 import { isPointEqual } from '../helpers/is-point-equal';
 import {
@@ -16,7 +17,6 @@ import {
 import { Tool } from '../tools';
 import {
 	ActorEvent,
-	type DrawEvent,
 	type NumberInputEvent,
 	type PointInputEvent,
 	type StateEvent,
@@ -248,14 +248,14 @@ export const arcToolStateMachine = createMachine(
 				const startPoint = getPointFromEvent(context.centerPoint, event as PointInputEvent);
 				return { startPoint };
 			}),
-			[ArcAction.DRAW_TEMP_RADIUS]: ({ context, event }) => {
+			[ArcAction.DRAW_TEMP_RADIUS]: ({ context }) => {
 				if (!context.centerPoint) return;
-				const mouseLocation = (event as DrawEvent).drawController.getWorldMouseLocation();
+				const mouseLocation = getSnappedMouseLocation();
 				setGhostHelperEntities([createGuideLine(context.centerPoint, mouseLocation)]);
 			},
-			[ArcAction.DRAW_TEMP_ARC]: ({ context, event }) => {
+			[ArcAction.DRAW_TEMP_ARC]: ({ context }) => {
 				if (!context.centerPoint || !context.startPoint) return;
-				const mouseLocation = (event as DrawEvent).drawController.getWorldMouseLocation();
+				const mouseLocation = getSnappedMouseLocation();
 				const arc = createArc(
 					context.centerPoint,
 					context.startPoint,

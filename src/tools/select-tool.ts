@@ -74,8 +74,8 @@ export const selectToolStateMachine = createMachine(
 						actions: SelectAction.INIT_SELECT_TOOL,
 					},
 					// Tools that wait for a selection run this tool and continue when it finishes, eg: MOVE.
-					// The input controller doesn't send ENTER to the select tool on its own, so it keeps selecting.
-					// DELETE is handled by the input controller for every tool
+					// The input controller doesn't send ENTER to the select tool on its own, so that one keeps selecting.
+					// The input controller also handles DELETE, the same way for every tool
 					ENTER: {
 						target: SelectState.SELECTION_COMPLETED,
 					},

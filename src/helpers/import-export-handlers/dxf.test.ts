@@ -2,25 +2,31 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { type Arc, type Circle, Point, type Segment } from '@flatten-js/core';
 import * as dxfLibrary from 'dxf';
-import { describe, expect, it } from 'vitest';
+import { saveAs } from 'file-saver';
+import { describe, expect, it, vi } from 'vitest';
+import { MEASUREMENT_FONT_SIZE } from '../../App.consts.ts';
+import type { Layer } from '../../App.types.ts';
 import { ArcEntity } from '../../entities/ArcEntity.ts';
 import { CircleEntity } from '../../entities/CircleEntity.ts';
 import type { EllipseEntity } from '../../entities/EllipseEntity.ts';
-import { EntityName } from '../../entities/Entity.ts';
+import { type Entity, EntityName } from '../../entities/Entity.ts';
 import { FillEntity } from '../../entities/FillEntity.ts';
 import { LineEntity } from '../../entities/LineEntity.ts';
+import { MeasurementEntity } from '../../entities/MeasurementEntity.ts';
 import { PointEntity } from '../../entities/PointEntity.ts';
 import { PolyLineEntity } from '../../entities/PolyLineEntity.ts';
 import type { SplineEntity } from '../../entities/SplineEntity.ts';
 import { TextEntity } from '../../entities/TextEntity.ts';
-import { createTestLayer } from '../../test-helpers/reset-state.ts';
-import { convertEntitiesToDxf, hexToAci } from './dxf.export.ts';
+import { createTestLayer, resetState } from '../../test-helpers/reset-state.ts';
+import { convertEntitiesToDxf, exportEntitiesToDxfFile, hexToAci } from './dxf.export.ts';
 import {
 	convertDxfToEntities,
 	createArcFromBulge,
 	type DxfLibrary,
 	stripMTextFormatting,
 } from './dxf.import.ts';
+
+vi.mock('file-saver', () => ({ saveAs: vi.fn() }));
 
 const library = dxfLibrary as unknown as DxfLibrary;
 const aciColors = dxfLibrary.colors as unknown as number[][];
@@ -590,5 +596,114 @@ describe('dxf export', () => {
 		expect((importedText as TextEntity).getLabel()).toBe('Kitchen');
 		expect((importedText as TextEntity).getFontSize()).toBe(12);
 		expect(importedText.layerId).toBe(newLayers[1].id);
+	});
+});
+
+describe('dxf export of points, dimensions and fills', () => {
+	const layer = createTestLayer('layer', { name: 'Layer 1' });
+
+	function exportAndImport(entities: Entity[]) {
+		for (const entity of entities) {
+			entity.layerId = layer.id;
+		}
+		const { dxf, skippedTypes } = convertEntitiesToDxf(entities, [layer], aciColors);
+		return { skippedTypes, ...convertDxfToEntities(dxf, library, []) };
+	}
+
+	it('exports points', () => {
+		const { skippedTypes, entities } = exportAndImport([new PointEntity(3, 4)]);
+		expect(skippedTypes).toEqual([]);
+		expectPoint((entities[0] as PointEntity).point, 3, 4);
+	});
+
+	it('exports dimensions as their lines and their label', () => {
+		const measurement = new MeasurementEntity(
+			new Point(0, 0),
+			new Point(100, 0),
+			new Point(50, 50)
+		);
+		const { skippedTypes, entities } = exportAndImport([measurement]);
+		expect(skippedTypes).toEqual([]);
+		const drawPoints = measurement.getDrawPoints();
+		if (!drawPoints) {
+			throw new Error('The measurement should have draw points');
+		}
+		const lines = entities.filter((entity) => entity instanceof LineEntity) as LineEntity[];
+		const lineEnds = lines.map((line) => [line.getStartPoint(), line.getEndPoint()]);
+		expect(lineEnds).toHaveLength(3);
+		const expectedLineEnds = [
+			[drawPoints.offsetStartPoint, drawPoints.offsetEndPoint],
+			[drawPoints.offsetStartPointMargin, drawPoints.offsetStartPointExtend],
+			[drawPoints.offsetEndPointMargin, drawPoints.offsetEndPointExtend],
+		];
+		lineEnds.forEach(([start, end], index) => {
+			expectPoint(start, expectedLineEnds[index][0].x, expectedLineEnds[index][0].y);
+			expectPoint(end, expectedLineEnds[index][1].x, expectedLineEnds[index][1].y);
+		});
+		const label = measurement.getLabel(drawPoints);
+		const text = entities.find((entity) => entity instanceof TextEntity) as TextEntity;
+		expect(text.getLabel()).toBe('100');
+		expect(text.getFontSize()).toBe(MEASUREMENT_FONT_SIZE);
+		expect(text.getOptions().textAlign).toBe('center');
+		expectPoint(text.getBasePoint(), label.basePoint.x, label.basePoint.y);
+	});
+
+	it('exports the outline and holes of fills as closed polylines in the fill color', () => {
+		const square = (size: number) =>
+			new PolyLineEntity([
+				new LineEntity(new Point(0, 0), new Point(size, 0)),
+				new LineEntity(new Point(size, 0), new Point(size, size)),
+				new LineEntity(new Point(size, size), new Point(0, size)),
+				new LineEntity(new Point(0, size), new Point(0, 0)),
+			]);
+		const hole = square(2);
+		hole.move(4, 4);
+		const fill = new FillEntity(square(10), [hole]);
+		fill.fillColor = '#ff0000';
+		const { skippedTypes, entities } = exportAndImport([fill]);
+		expect(skippedTypes).toEqual([]);
+		expect(entities).toHaveLength(2);
+		const [outline, importedHole] = entities as PolyLineEntity[];
+		expect(outline.lineColor).toBe('#ff0000');
+		expect(outline.entities).toHaveLength(4);
+		expect(outline.getBoundingBox().xmax).toBeCloseTo(10);
+		expect(importedHole.entities).toHaveLength(4);
+		expect(importedHole.getBoundingBox().xmin).toBeCloseTo(4);
+	});
+});
+
+describe('dxf export of layers', () => {
+	it('always defines layer 0', () => {
+		const walls = createTestLayer('walls', { name: 'Walls' });
+		const getLayerNames = (layers: Layer[]) => {
+			const lines = convertEntitiesToDxf([], layers, aciColors).dxf.split('\n');
+			// The name of a layer table entry follows its LAYER line and group code 2
+			return lines.flatMap((line, index) =>
+				line === 'LAYER' && lines[index - 1] === '0' && lines[index + 1] === '2'
+					? [lines[index + 2]]
+					: []
+			);
+		};
+		expect(getLayerNames([walls])).toEqual(['Walls', '0']);
+		expect(getLayerNames([createTestLayer('zero', { name: '0' }), walls])).toEqual(['0', 'Walls']);
+	});
+
+	it('exports the entities on hidden layers on a layer that is off', async () => {
+		const visibleLayer = createTestLayer('visible', { name: 'Visible' });
+		const hiddenLayer = createTestLayer('hidden', { name: 'Hidden', isVisible: false });
+		const visibleLine = new LineEntity(new Point(0, 0), new Point(1, 0));
+		visibleLine.layerId = visibleLayer.id;
+		const hiddenLine = new LineEntity(new Point(0, 5), new Point(1, 5));
+		hiddenLine.layerId = hiddenLayer.id;
+		resetState([visibleLayer, hiddenLayer], [visibleLine, hiddenLine]);
+
+		await exportEntitiesToDxfFile();
+
+		const blob = vi.mocked(saveAs).mock.lastCall?.[0] as Blob;
+		const { entities, newLayers } = convertDxfToEntities(await blob.text(), library, []);
+		expect(entities).toHaveLength(2);
+		const importedHiddenLayer = newLayers.find((layer) => layer.name === 'Hidden');
+		expect(importedHiddenLayer?.isVisible).toBe(false);
+		expect(entities[1].layerId).toBe(importedHiddenLayer?.id);
 	});
 });

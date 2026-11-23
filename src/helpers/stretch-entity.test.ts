@@ -43,8 +43,13 @@ describe('stretchEntity', () => {
 		expectPoint((stretchEntity(circle, box, 0, 3) as CircleEntity).getCenter(), 10, 3);
 	});
 
-	it('leaves a circle that is only partly inside the box', () => {
-		const circle = new CircleEntity(new Point(5, 0), 3);
-		expectPoint((stretchEntity(circle, box, 0, 3) as CircleEntity).getCenter(), 5, 0);
+	it('leaves a circle that is only partly inside the box when its center is outside', () => {
+		const circle = new CircleEntity(new Point(2, 0), 4);
+		expectPoint((stretchEntity(circle, box, 0, 3) as CircleEntity).getCenter(), 2, 0);
+	});
+
+	it('moves a circle that is only partly inside the box when its center is inside', () => {
+		const circle = new CircleEntity(new Point(6, 0), 4);
+		expectPoint((stretchEntity(circle, box, 0, 3) as CircleEntity).getCenter(), 6, 3);
 	});
 });

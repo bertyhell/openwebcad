@@ -219,11 +219,10 @@ describe('snapping', () => {
 		});
 
 		it('snaps to the grid point under the mouse after zooming with the keyboard', () => {
-			setActiveTool(Tool.SELECT);
 			const screenLocation = moveMouseTo(inputController, 333, 177);
 			pressKey(inputController, '+');
-			setActiveTool(Tool.LINE);
 			const expectedPoint = getExpectedGridPoint(screenLocation);
+			expect(expectedPoint.equalTo(new Point(340, 180))).toBe(false);
 
 			clickAtScreenLocation(inputController, screenLocation);
 			typeCommand(inputController, '@50,0');

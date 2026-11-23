@@ -738,6 +738,12 @@ export class InputController {
 		const instantOptions = getActiveToolInstantOptions();
 		const isOtherThanInstantOption =
 			instantOptions.length > 0 && !activeToolTakesInstantOption(text);
+		if (instantOptions.includes(text.trim().toUpperCase()) && isOtherThanInstantOption) {
+			// An option of the active tool that isn't possible yet is not a command either,
+			// eg: C in the line tool with one segment would otherwise start CIRCLE
+			toast.warn(`Invalid input: ${text.trim()}`);
+			return;
+		}
 		if (
 			activeToolCanHandleTextInput &&
 			!isNumberForTool &&

@@ -1,4 +1,5 @@
 import { Point } from '@flatten-js/core';
+import { toast } from 'react-toastify';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CircleEntity } from '../../../src/entities/CircleEntity';
 import type { LineEntity } from '../../../src/entities/LineEntity';
@@ -81,12 +82,23 @@ describe('line and polyline options', () => {
 			expect(inputController.getText()).toBe('');
 		});
 
-		it('types the C like other text while there is only one segment', () => {
+		it('types the C like other text while there is only one segment, so a command can still be typed', () => {
 			typePoints(inputController, '0,0', '100,0');
 
 			typeCommand(inputController, 'circle');
 
 			expect(getToolType()).toBe(Tool.CIRCLE);
+			expect(getLines()).toHaveLength(1);
+		});
+
+		it('does not start CIRCLE when C is typed before the line can be closed', () => {
+			typePoints(inputController, '0,0', '100,0');
+
+			typeCommand(inputController, 'c');
+
+			expect(getToolType()).toBe(Tool.LINE);
+			expect(getToolState()).toBe('WAITING_FOR_END_POINT');
+			expect(toast.warn).toHaveBeenCalledWith('Invalid input: c');
 			expect(getLines()).toHaveLength(1);
 		});
 
@@ -204,6 +216,11 @@ describe('line and polyline options', () => {
 
 			expect(inputController.getText()).toBe('c');
 			expect(getToolState()).toBe('WAITING_FOR_NEXT_POINT');
+
+			// ENTER doesn't turn the C into the circle command
+			pressKey(inputController, 'Enter');
+			expect(getToolType()).toBe(Tool.POLYLINE);
+			expect(toast.warn).toHaveBeenCalledWith('Invalid input: c');
 		});
 	});
 });

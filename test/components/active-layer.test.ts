@@ -37,14 +37,17 @@ describe('active layer', () => {
 			expect(activateLayer('hidden')).toBe(false);
 
 			expect(getActiveLayerId()).toBe('visible');
-			expect(toast.info).toHaveBeenCalledWith('Show layer hidden to draw on it');
+			expect(toast.info).toHaveBeenCalledWith('Show layer hidden to draw on it', expect.anything());
 		});
 
 		it('refuses a locked layer and tells the user', () => {
 			expect(activateLayer('locked')).toBe(false);
 
 			expect(getActiveLayerId()).toBe('visible');
-			expect(toast.info).toHaveBeenCalledWith('Unlock layer locked to draw on it');
+			expect(toast.info).toHaveBeenCalledWith(
+				'Unlock layer locked to draw on it',
+				expect.anything()
+			);
 		});
 
 		it('makes a visible and unlocked layer active', () => {

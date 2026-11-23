@@ -134,12 +134,14 @@ export function activateLayer(layerId: string): boolean {
 	if (!layer) {
 		return false;
 	}
+	// Double clicking the layer name to rename it also clicks it twice, show the message only once
+	const toastOptions = { toastId: `activate-layer-${layerId}` };
 	if (!layer.isVisible) {
-		toast.info(`Show layer ${layer.name} to draw on it`);
+		toast.info(`Show layer ${layer.name} to draw on it`, toastOptions);
 		return false;
 	}
 	if (layer.isLocked) {
-		toast.info(`Unlock layer ${layer.name} to draw on it`);
+		toast.info(`Unlock layer ${layer.name} to draw on it`, toastOptions);
 		return false;
 	}
 	setActiveLayerId(layerId);

@@ -9,6 +9,7 @@ import {
 	CANVAS_INPUT_FIELD_MOUSE_OFFSET,
 	CANVAS_INPUT_FIELD_TEXT_COLOR,
 	CANVAS_INPUT_FIELD_WIDTH,
+	MOUSE_ZOOM_MULTIPLIER,
 	TOOLBAR_WIDTH,
 } from '../App.consts.ts';
 import { HtmlEvent, MouseButton } from '../App.types.ts';
@@ -51,7 +52,7 @@ import {
 	type StateEvent,
 	type TextInputEvent,
 } from '../tools/tool.types.ts';
-import { zoomIn, zoomOut, zoomToBounds } from '../tools/zoom-tool.helpers.ts';
+import { isValidScreenScale, zoomIn, zoomOut, zoomToBounds } from '../tools/zoom-tool.helpers.ts';
 import { isZoomOption } from '../tools/zoom-tool.ts';
 import { Tool } from '../tools.ts';
 import { getCommandNamesFromPrefixText, parseCommandInput } from './command-parser.ts';
@@ -72,6 +73,16 @@ function getScreenLocationFromEvent(evt: MouseEvent): Point {
 		evt.clientX - getCanvasOffsetLeft(),
 		getScreenCanvasDrawController().getCanvasSize().y - evt.clientY
 	);
+}
+
+/**
+ * Bits of MouseEvent.buttons for the buttons that pan: the left button, while holding space or in the pan tool, and the middle button
+ */
+const PAN_BUTTONS = 1 | 4;
+
+function isPanButtonHeld(evt: MouseEvent): boolean {
+	// An event without information about the buttons can't tell, so keep panning
+	return typeof evt.buttons !== 'number' || (evt.buttons & PAN_BUTTONS) !== 0;
 }
 
 /**
@@ -281,6 +292,8 @@ export class InputController {
 		canvas?.addEventListener('mousedown', (evt: MouseEvent) => this.handleMouseDown(evt));
 		canvas?.addEventListener('mousemove', (evt: MouseEvent) => this.handleMouseMove(evt));
 		canvas?.addEventListener('mouseup', (evt: MouseEvent) => this.handleMouseUp(evt));
+		// A pan ends wherever the button is released, eg: above the sidebar
+		window.addEventListener('mouseup', (evt: MouseEvent) => this.handleWindowMouseUp(evt));
 		canvas?.addEventListener('wheel', (evt: WheelEvent) => this.handleMouseWheel(evt));
 		canvas?.addEventListener('mouseout', () => this.handleMouseOut());
 		canvas?.addEventListener('mouseenter', () => this.handleMouseEnter());
@@ -387,7 +400,10 @@ export class InputController {
 
 		// If the middle mouse button is pressed, pan the screen
 		const panStartLocation = getPanStartLocation();
-		if (panStartLocation) {
+		if (panStartLocation && !isPanButtonHeld(evt)) {
+			// The button was released where no mouseup reached us, eg: outside the window
+			setPanStartLocation(null);
+		} else if (panStartLocation) {
 			screenCanvasDrawController.panScreen(
 				newScreenMouseLocation.x - panStartLocation.x,
 				newScreenMouseLocation.y - panStartLocation.y
@@ -412,9 +428,24 @@ export class InputController {
 			return; // We can't zoom by zero delta
 		}
 		const drawController = getScreenCanvasDrawController();
+		// Same zoom step as the draw controller, stop at the zoom limits instead of zooming to 0 or infinity
+		const newScreenScale =
+			drawController.getScreenScale() * (1 - MOUSE_ZOOM_MULTIPLIER * Math.sign(evt.deltaY));
+		if (!isValidScreenScale(newScreenScale)) {
+			return;
+		}
 		drawController.zoomScreen(evt.deltaY);
 		// The grid spacing and the snap distance in world units change with the zoom level
 		calculateAngleGuidesAndSnapPoints();
+	}
+
+	/**
+	 * Mouse buttons released anywhere in the window, the canvas handles its own clicks first
+	 */
+	public handleWindowMouseUp(evt: MouseEvent) {
+		if (evt.button === MouseButton.Middle || evt.button === MouseButton.Left) {
+			setPanStartLocation(null);
+		}
 	}
 
 	public handleMouseDown(evt: MouseEvent) {

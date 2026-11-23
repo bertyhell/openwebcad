@@ -1,4 +1,4 @@
-import { type Point, Vector } from '@flatten-js/core';
+import { Point, Vector } from '@flatten-js/core';
 import { toast } from 'react-toastify';
 import { assign, createMachine } from 'xstate';
 import { MEASUREMENT_DEFAULT_OFFSET, TO_RADIANS } from '../App.consts';
@@ -15,7 +15,14 @@ import {
 	setShouldDrawHelpers,
 } from '../state';
 import { Tool } from '../tools';
-import type { DrawEvent, PointInputEvent, StateEvent, ToolContext } from './tool.types';
+import {
+	ActorEvent,
+	type DrawEvent,
+	type NumberInputEvent,
+	type PointInputEvent,
+	type StateEvent,
+	type ToolContext,
+} from './tool.types';
 
 export interface MeasurementContext extends ToolContext {
 	startPoint: Point | null;
@@ -57,6 +64,22 @@ const recordEndPointTransitions = [
 		},
 	},
 ];
+
+/**
+ * The offset point from a clicked or typed point, or from a typed distance
+ * A typed distance is measured perpendicular to the measured line, on the side of the mouse,
+ * a negative distance puts the dimension line on the other side
+ */
+function getOffsetPoint(startPoint: Point, endPoint: Point, event: StateEvent): Point {
+	if (event.type !== ActorEvent.NUMBER_INPUT) {
+		return getPointFromEvent(endPoint, event as PointInputEvent);
+	}
+	const { value, worldMouseLocation } = event as NumberInputEvent;
+	const normal = new Vector(startPoint, endPoint).normalize().rotate90CCW();
+	const side = new Vector(startPoint, worldMouseLocation).dot(normal) < 0 ? -1 : 1;
+	const middle = new Point((startPoint.x + endPoint.x) / 2, (startPoint.y + endPoint.y) / 2);
+	return middle.translate(normal.multiply(side * value));
+}
 
 export const measurementToolStateMachine = createMachine(
 	{
@@ -208,7 +231,11 @@ export const measurementToolStateMachine = createMachine(
 				setGhostHelperEntities([activeMeasurement]);
 			},
 			[MeasurementAction.DRAW_FINAL_MEASUREMENT]: ({ context, event }) => {
-				const offsetPoint = getPointFromEvent(context.endPoint, event as PointInputEvent);
+				const offsetPoint = getOffsetPoint(
+					context.startPoint as Point,
+					context.endPoint as Point,
+					event
+				);
 				const activeMeasurement = new MeasurementEntity(
 					context.startPoint as Point,
 					context.endPoint as Point,

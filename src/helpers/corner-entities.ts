@@ -266,9 +266,59 @@ function sharesEndpoint(first: StartAndEndpointEntity, second: StartAndEndpointE
 }
 
 /**
+ * Puts a rectangle or polyline back together after one or two of its segments were trimmed or extended
+ * - the parts that still connect stay one polyline, with the id of the original entity
+ * - a trimmed segment can leave a gap, the polyline is then split at the gap, so every polyline stays connected
+ * - a piece with a single segment becomes a loose line or arc
+ */
+function rebuildPolyLines(source: Entity, parts: Entity[]): Entity[] {
+	const chains: Entity[][] = [];
+	for (const part of parts) {
+		const chain = chains.at(-1);
+		const previousPart = chain?.at(-1);
+		if (
+			chain &&
+			previousPart &&
+			sharesEndpoint(
+				previousPart as unknown as StartAndEndpointEntity,
+				part as unknown as StartAndEndpointEntity
+			)
+		) {
+			chain.push(part);
+		} else {
+			chains.push([part]);
+		}
+	}
+	// A closed shape that was cut open: the last piece continues in the first piece
+	const lastChain = chains.at(-1);
+	if (
+		chains.length > 1 &&
+		lastChain &&
+		sharesEndpoint(
+			lastChain[lastChain.length - 1] as unknown as StartAndEndpointEntity,
+			chains[0][0] as unknown as StartAndEndpointEntity
+		)
+	) {
+		chains.pop();
+		chains[0] = [...lastChain, ...chains[0]];
+	}
+
+	return chains.map((chain, index) => {
+		if (chain.length === 1 && chains.length > 1) {
+			return chain[0];
+		}
+		const polyLine = copyEntityBaseProperties(source, new PolyLineEntity(chain));
+		if (index === 0) {
+			polyLine.id = source.id;
+		}
+		return polyLine;
+	});
+}
+
+/**
  * Replaces the clicked lines by the trimmed lines and adds the connector
  * - two connected segments of the same rectangle or polyline: the result is a polyline with the corner in it
- * - otherwise: rectangles and polylines are exploded, so their clicked segment can be trimmed
+ * - otherwise: only the clicked segment of a rectangle or polyline is replaced, the rest stays a polyline
  */
 export function applyCorner(
 	entities: Entity[],
@@ -319,7 +369,13 @@ export function applyCorner(
 		parts[target.segmentIndex] = line;
 		replacements.set(target.entity.id, parts);
 	}
-	const newEntities = entities.flatMap((entity) => replacements.get(entity.id) ?? [entity]);
+	const newEntities = entities.flatMap((entity) => {
+		const parts = replacements.get(entity.id);
+		if (!parts) {
+			return [entity];
+		}
+		return SINGLE_EDGE_TYPES.includes(entity.getType()) ? parts : rebuildPolyLines(entity, parts);
+	});
 	return corner.connector ? [...newEntities, corner.connector] : newEntities;
 }
 

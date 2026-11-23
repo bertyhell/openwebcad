@@ -272,14 +272,49 @@ describe('applyCorner', () => {
 		expect(hasPoint(0, 2)).toBe(true);
 	});
 
-	it('explodes a rectangle when chamfering it with a line', () => {
+	function expectConnected(polyLine: PolyLineEntity) {
+		polyLine.entities.slice(1).forEach((part, index) => {
+			const previous = polyLine.entities[index];
+			const previousEnds = [previous.getStartPoint(), previous.getEndPoint()];
+			expect(
+				[part.getStartPoint(), part.getEndPoint()].some((point) =>
+					previousEnds.some((end) => end.equalTo(point))
+				)
+			).toBe(true);
+		});
+	}
+
+	it('keeps the rest of a rectangle as a polyline when chamfering it with a line', () => {
 		const rectangle = new RectangleEntity(new Point(0, 0), new Point(10, 10));
 		const line = new LineEntity(new Point(20, 5), new Point(30, 5));
 		const result = chamfer(rectangle, new Point(10, 2), line, new Point(28, 5), [rectangle, line]);
-		// 4 rectangle sides, the line and the chamfer
-		expect(result).toHaveLength(6);
+		// The rectangle as an open polyline, the line and the chamfer
+		expect(result).toHaveLength(3);
 		expect(result.filter((entity) => entity.id === line.id)).toHaveLength(1);
-		expect(result.some((entity) => entity.id === rectangle.id)).toBe(false);
+		const polyLine = result.find((entity) => entity.id === rectangle.id) as PolyLineEntity;
+		expect(polyLine).toBeInstanceOf(PolyLineEntity);
+		expect(polyLine.numberOfSegments()).toBe(4);
+		expectConnected(polyLine);
+		const hasPoint = (x: number, y: number) =>
+			polyLine.getSnapPoints().some((snap) => snap.point.equalTo(new Point(x, y)));
+		expect(hasPoint(10, 3)).toBe(true);
+		expect(hasPoint(10, 5)).toBe(false);
+	});
+
+	it('splits a polyline where the trimmed segment no longer connects', () => {
+		const polyLine = new PolyLineEntity([
+			new LineEntity(new Point(0, 0), new Point(10, 0)),
+			new LineEntity(new Point(10, 0), new Point(10, 10)),
+			new LineEntity(new Point(10, 10), new Point(0, 10)),
+		]);
+		const line = new LineEntity(new Point(20, 5), new Point(30, 5));
+		const result = chamfer(polyLine, new Point(10, 2), line, new Point(28, 5), [polyLine, line]);
+		// The first 2 segments stay a polyline, the last segment is loose, the line and the chamfer
+		expect(result).toHaveLength(4);
+		const keptPolyLine = result.find((entity) => entity.id === polyLine.id) as PolyLineEntity;
+		expect(keptPolyLine.numberOfSegments()).toBe(2);
+		expectConnected(keptPolyLine);
+		expect(result.filter((entity) => entity instanceof PolyLineEntity)).toHaveLength(1);
 	});
 
 	it('only uses the arcs of a polyline when arcs are allowed', () => {
@@ -429,9 +464,11 @@ describe('createCorner with an arc', () => {
 		const corner = createCorner(first, second, CornerType.FILLET, 50);
 		if ('error' in corner) throw new Error(corner.error);
 		const result = applyCorner([diameter, polyLine], first, second, corner);
-		// The line, the 2 exploded polyline parts and the fillet
-		expect(result).toHaveLength(4);
+		// The line, the polyline with the trimmed arc and the fillet
+		expect(result).toHaveLength(3);
 		expect(result.filter((entity) => entity.id === diameter.id)).toHaveLength(1);
+		const keptPolyLine = result.find((entity) => entity.id === polyLine.id) as PolyLineEntity;
+		expect(keptPolyLine.numberOfSegments()).toBe(2);
 	});
 });
 

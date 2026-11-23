@@ -97,6 +97,10 @@ export function combineSelection(
  * The editable entities that a selection rectangle from the start point to the end point selects
  */
 export function getEntitiesInsideRectangle(startPoint: Point, endPoint: Point): Entity[] {
+	// A box of zero size has no bounding box, eg: when the mouse hasn't moved since the first click
+	if (startPoint.equalTo(endPoint)) {
+		return [];
+	}
 	const activeSelectionRectangle = new RectangleEntity(startPoint, endPoint);
 	const intersectionSelection = getIsIntersectionSelection(activeSelectionRectangle, startPoint);
 	const selectionBox = activeSelectionRectangle.getBoundingBox() as Box;

@@ -1,5 +1,6 @@
 import { Point } from '@flatten-js/core';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Actor, assign, createMachine } from 'xstate';
 import {
 	createLayer,
 	deleteLayer,
@@ -14,6 +15,7 @@ import { createStack } from './helpers/undo-stack.ts';
 import {
 	addEntities,
 	getActiveLayerId,
+	getActiveToolActor,
 	getEditableEntities,
 	getEntities,
 	getLayers,
@@ -21,6 +23,7 @@ import {
 	getVisibleEntities,
 	redo,
 	setActiveLayerId,
+	setActiveToolActor,
 	setSelectedEntityIds,
 	undo,
 } from './state.ts';
@@ -163,5 +166,43 @@ describe('undo stack', () => {
 		// The first state can't be undone
 		stack.undo();
 		expect(stack.peek()?.layers[0].id).toBe('layer-2');
+	});
+});
+
+describe('a tool action that throws an error', () => {
+	const failingToolMachine = createMachine({
+		initial: 'FIRST',
+		context: { clicks: 0 },
+		states: {
+			FIRST: { on: { NEXT: 'SECOND' } },
+			SECOND: {
+				on: {
+					FAIL: {
+						actions: () => {
+							throw new Error('Illegal Parameters');
+						},
+					},
+					CLICK: { actions: assign({ clicks: ({ context }) => context.clicks + 1 }) },
+				},
+			},
+		},
+	});
+
+	it('keeps the tool in the state before the error, so the user can try again', () => {
+		const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+		setActiveToolActor(new Actor(failingToolMachine));
+		getActiveToolActor()?.send({ type: 'NEXT' });
+		getActiveToolActor()?.send({ type: 'CLICK' });
+		getActiveToolActor()?.send({ type: 'FAIL' });
+
+		const snapshot = getActiveToolActor()?.getSnapshot();
+		expect(snapshot.status).toBe('active');
+		expect(snapshot.value).toBe('SECOND');
+		expect(snapshot.context.clicks).toBe(1);
+		getActiveToolActor()?.send({ type: 'CLICK' });
+		expect(getActiveToolActor()?.getSnapshot().context.clicks).toBe(2);
+		expect(consoleError).toHaveBeenCalled();
+		consoleError.mockRestore();
+		getActiveToolActor()?.stop();
 	});
 });

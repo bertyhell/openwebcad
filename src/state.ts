@@ -1,7 +1,7 @@
 import type { Point } from '@flatten-js/core';
 import { isEqual } from 'es-toolkit';
 import { toast } from 'react-toastify';
-import type { Actor, MachineSnapshot } from 'xstate';
+import { Actor, type MachineSnapshot } from 'xstate';
 import {
 	type GridSettings,
 	type HoverPoint,
@@ -319,10 +319,7 @@ export const clearRedrawRequest = () => {
 export const setCanvas = (newCanvas: HTMLCanvasElement) => {
 	canvas = newCanvas;
 };
-// biome-ignore lint/suspicious/noExplicitAny: xstate snapshot of any tool state machine
-const updateInstructionsFromSnapshot = (
-	state: MachineSnapshot<any, any, any, any, any, any, any, any>
-) => {
+const updateInstructionsFromSnapshot = (state: ToolSnapshot) => {
 	const stateInstructions = Object.values(state?.getMeta() as Record<string, StateMetaData>)[0]
 		?.instructions;
 
@@ -331,6 +328,30 @@ const updateInstructionsFromSnapshot = (
 	}
 
 	setLastStateInstructions(stateInstructions || null);
+};
+// biome-ignore lint/suspicious/noExplicitAny: xstate snapshot of any tool state machine
+type ToolSnapshot = MachineSnapshot<any, any, any, any, any, any, any, any>;
+/**
+ * An action of the tool threw an error, eg: flatten-js rejecting illegal parameters for a degenerate shape
+ * The tool goes back to the last state that worked, so the user can try again, instead of the tool being stuck
+ */
+const recoverToolActor = (
+	// biome-ignore lint/suspicious/noExplicitAny: every tool has its own context and event types
+	failedToolActor: Actor<any>,
+	lastActiveSnapshot: ToolSnapshot | null
+) => {
+	if (!lastActiveSnapshot) {
+		// The tool failed while starting, starting it again would fail again
+		toast.error('The tool could not be started, pick another tool');
+		return;
+	}
+	try {
+		const persistedSnapshot = failedToolActor.logic.getPersistedSnapshot(lastActiveSnapshot);
+		setActiveToolActor(new Actor(failedToolActor.logic, { snapshot: persistedSnapshot }), false);
+	} catch (err) {
+		console.error('Could not restore the tool, starting it over', err);
+		setActiveToolActor(new Actor(failedToolActor.logic), false);
+	}
 };
 export const setActiveToolActor = (
 	// biome-ignore lint/suspicious/noExplicitAny: every tool has its own context and event types
@@ -347,18 +368,28 @@ export const setActiveToolActor = (
 	setHighlightedEntityIds([]);
 
 	activeToolActor = newToolActor;
+	// The last state of the tool that worked, the tool goes back to it when an action fails
+	let lastActiveSnapshot: ToolSnapshot | null = null;
 	activeToolActor.subscribe({
 		next: (state) => {
 			// A tool can switch to another tool during its own transition, ignore its snapshots after that
 			if (activeToolActor !== newToolActor) return;
+			if (state.status === 'active') {
+				lastActiveSnapshot = state;
+			}
 			updateInstructionsFromSnapshot(state);
 		},
 		error: (err) => {
-			toast.error(`Error in tool actor: ${(err as Error | undefined)?.message || 'unknown error'}`);
 			console.error('Error in tool actor', { err, newToolActor });
+			if (activeToolActor !== newToolActor) return;
+			recoverToolActor(newToolActor, lastActiveSnapshot);
 		},
 	});
 	activeToolActor.start();
+	const startSnapshot = activeToolActor.getSnapshot();
+	if (startSnapshot.status === 'active') {
+		lastActiveSnapshot = startSnapshot;
+	}
 	// Subscribers only receive later snapshots, so read the instructions of the initial state here
 	updateInstructionsFromSnapshot(activeToolActor.getSnapshot());
 

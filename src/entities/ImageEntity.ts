@@ -28,7 +28,15 @@ export class ImageEntity implements Entity {
 
 	private imageElement: HTMLImageElement;
 	private polygon: Polygon;
+	/**
+	 * Counterclockwise rotation of the image in radians
+	 */
 	private angle: number;
+	/**
+	 * Whether the image is shown as its mirror image
+	 * The pixels are flipped upside down before the image is rotated, together with the mirrored angle this gives the mirror image
+	 */
+	private mirrored = false;
 
 	constructor(
 		imgData: HTMLImageElement,
@@ -66,18 +74,34 @@ export class ImageEntity implements Entity {
 			drawController.drawLine(edge.start, edge.end);
 		}
 
-		const width = this.polygon.box.width;
-		const height = this.polygon.box.height;
-
-		// Draw image
+		// The outline of a rotated image is larger than the image, so draw the image at its own size
+		const { center, width, height } = this.getImageFrame();
 		drawController.drawImage(
 			this.imageElement,
-			this.polygon.box.xmin,
-			this.polygon.box.ymin,
+			center.x - width / 2,
+			center.y - height / 2,
 			width,
 			height,
-			this.angle
+			this.angle,
+			this.mirrored
 		);
+	}
+
+	/**
+	 * Center, width and height of the image before it is rotated
+	 * The outline of the image is a rectangle with one pair of sides along the angle of the image
+	 */
+	private getImageFrame(): { center: Point; width: number; height: number } {
+		const [corner1, corner2, corner3] = this.polygon.vertices;
+		const alongImage = new Vector(Math.cos(this.angle), Math.sin(this.angle));
+		const acrossImage = alongImage.rotate90CCW();
+		const side1 = new Vector(corner1, corner2);
+		const side2 = new Vector(corner2, corner3);
+		return {
+			center: new Point((corner1.x + corner3.x) / 2, (corner1.y + corner3.y) / 2),
+			width: Math.abs(side1.dot(alongImage)) + Math.abs(side2.dot(alongImage)),
+			height: Math.abs(side1.dot(acrossImage)) + Math.abs(side2.dot(acrossImage)),
+		};
 	}
 
 	public move(x: number, y: number) {
@@ -97,21 +121,21 @@ export class ImageEntity implements Entity {
 
 	public mirror(mirrorAxis: LineEntity) {
 		const mirroredVertices = this.polygon.vertices.map((p) => mirrorPointOverAxis(p, mirrorAxis));
-		const mirroredAngle = mirrorAngleOverAxis(this.angle, mirrorAxis);
-		// TODO mirror image pixels
-		// this.imageElement = new HTMLImageElement(
-		//     this.imageElement.
-		// )
+		// Mirroring turns the bottom side of the image to the mirrored angle and flips the image upside down along that side
+		// Mirroring twice turns the image back to normal
 		this.polygon = new Polygon(mirroredVertices);
-		this.angle = mirroredAngle;
+		this.angle = mirrorAngleOverAxis(this.angle, mirrorAxis);
+		this.mirrored = !this.mirrored;
 	}
 
 	public clone(): ImageEntity {
 		// The image element is never modified, so clones can share it
-		return copyEntityBaseProperties(
+		const clone = copyEntityBaseProperties(
 			this,
 			new ImageEntity(this.imageElement, this.polygon.clone(), this.angle)
 		);
+		clone.mirrored = this.mirrored;
+		return clone;
 	}
 
 	public intersectsWithBox(selectionBox: Box): boolean {
@@ -224,6 +248,7 @@ export class ImageEntity implements Entity {
 				})),
 				imageData: this.imageElement.src,
 				angle: this.angle,
+				mirrored: this.mirrored,
 			},
 		};
 	}
@@ -242,6 +267,7 @@ export class ImageEntity implements Entity {
 		const rectangleEntity = new ImageEntity(image, rectangle, jsonEntity.shapeData.angle ?? 0);
 		rectangleEntity.layerId = jsonEntity.layerId || getActiveLayerId();
 		rectangleEntity.id = jsonEntity.id;
+		rectangleEntity.mirrored = jsonEntity.shapeData.mirrored ?? false;
 		rectangleEntity.lineColor = jsonEntity.lineColor;
 		rectangleEntity.lineWidth = jsonEntity.lineWidth;
 		// Drawings saved before the line dash was stored keep the default line dash
@@ -258,5 +284,9 @@ export interface ImageJsonData {
 	 * Rotation of the image in radians
 	 */
 	angle?: number;
+	/**
+	 * Whether the image is shown as its mirror image, drawings saved before images could be mirrored don't have it
+	 */
+	mirrored?: boolean;
 	imageData: string;
 }

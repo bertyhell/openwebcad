@@ -130,9 +130,10 @@ export class PdfDrawController implements DrawController {
 		yMin: number,
 		width: number,
 		height: number,
-		angle: number
+		angle: number,
+		mirrored = false
 	): void {
-		this.svgDrawController.drawImage(imageElement, xMin, yMin, width, height, angle);
+		this.svgDrawController.drawImage(imageElement, xMin, yMin, width, height, angle, mirrored);
 	}
 
 	public fillPolygon(...points: Point[]) {

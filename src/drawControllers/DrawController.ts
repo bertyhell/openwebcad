@@ -40,13 +40,18 @@ export interface DrawController {
 			fontFamily: string;
 		}>
 	): void;
+	/**
+	 * Draws the image over the rectangle from (xMin, yMin) to (xMin + width, yMin + height),
+	 * flipped upside down when mirrored, then rotated counterclockwise by the angle around the center of that rectangle
+	 */
 	drawImage(
 		imageElement: HTMLImageElement,
 		xMin: number,
 		yMin: number,
 		width: number,
 		height: number,
-		angle: number
+		angle: number,
+		mirrored?: boolean
 	): void;
 	// Fill a polygon consisting of straight lines
 	fillPolygon(...points: Point[]): void;

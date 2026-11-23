@@ -1,5 +1,5 @@
 import { Point } from '@flatten-js/core';
-import { compact, round } from 'es-toolkit';
+import { round } from 'es-toolkit';
 import { toast } from 'react-toastify';
 import { Actor, type AnyActorRef } from 'xstate';
 import {
@@ -9,14 +9,13 @@ import {
 	CANVAS_INPUT_FIELD_MOUSE_OFFSET,
 	CANVAS_INPUT_FIELD_TEXT_COLOR,
 	CANVAS_INPUT_FIELD_WIDTH,
-	SNAP_POINT_DISTANCE,
 	TOOLBAR_WIDTH,
 } from '../App.consts.ts';
-import { HtmlEvent, MouseButton, SnapPointType } from '../App.types.ts';
+import { HtmlEvent, MouseButton } from '../App.types.ts';
 import { COMMAND_ACTIONS } from '../command-actions.ts';
 import type { ScreenCanvasDrawController } from '../drawControllers/screenCanvas.drawController.ts';
 import { calculateAngleGuidesAndSnapPoints } from '../helpers/calculate-angle-guides-and-snap-points.ts';
-import { getClosestSnapPointWithinRadius } from '../helpers/get-closest-snap-point.ts';
+import { getSnappedMouseLocation } from '../helpers/get-closest-snap-point.ts';
 import { localStorageExport } from '../helpers/import-export-handlers/local-storage.export.ts';
 import {
 	getActiveToolActor,
@@ -30,8 +29,6 @@ import {
 	getScreenCanvasDrawController,
 	getSelectedEntities,
 	getShouldDrawHelpers,
-	getSnapPoint,
-	getSnapPointOnAngleGuide,
 	redo,
 	requestRedraw,
 	setActiveToolActor,
@@ -65,6 +62,16 @@ import { getCommandNamesFromPrefixText, parseCommandInput } from './command-pars
  */
 function getCanvasOffsetLeft(): number {
 	return getCanvas()?.getBoundingClientRect().left ?? TOOLBAR_WIDTH;
+}
+
+/**
+ * Location of the mouse event on the canvas in screen coordinates
+ */
+function getScreenLocationFromEvent(evt: MouseEvent): Point {
+	return new Point(
+		evt.clientX - getCanvasOffsetLeft(),
+		getScreenCanvasDrawController().getCanvasSize().y - evt.clientY
+	);
 }
 
 /**
@@ -351,23 +358,11 @@ export class InputController {
 		}
 		if (evt.button === MouseButton.Left) {
 			const screenCanvasDrawController = getScreenCanvasDrawController();
-			// A grid snap point is always used, it can be further away than the snap distance when zoomed out
-			const gridSnapPoint = getSnapPoint()?.type === SnapPointType.Grid ? getSnapPoint() : null;
-			const closestSnapPoint =
-				gridSnapPoint ??
-				getClosestSnapPointWithinRadius(
-					compact([getSnapPoint(), getSnapPointOnAngleGuide()]),
-					screenCanvasDrawController.getWorldMouseLocation(),
-					SNAP_POINT_DISTANCE / screenCanvasDrawController.getScreenScale()
-				);
-
-			const worldMouseLocationTemp = getScreenCanvasDrawController().targetToWorld(
-				new Point(
-					evt.clientX - getCanvasOffsetLeft(),
-					getScreenCanvasDrawController().getCanvasSize().y - evt.clientY
-				)
-			);
-			const worldMouseLocation = closestSnapPoint ? closestSnapPoint.point : worldMouseLocationTemp;
+			// Snap to what is under the mouse at the moment of the click,
+			// the view can have changed since the mouse last moved. eg: after zooming with the keyboard
+			screenCanvasDrawController.setScreenMouseLocation(getScreenLocationFromEvent(evt));
+			calculateAngleGuidesAndSnapPoints();
+			const worldMouseLocation = getSnappedMouseLocation();
 
 			const activeToolActor = getActiveToolActor();
 			activeToolActor?.send({
@@ -387,10 +382,7 @@ export class InputController {
 	public handleMouseMove(evt: MouseEvent) {
 		setShouldDrawCursor(true);
 		const screenCanvasDrawController = getScreenCanvasDrawController();
-		const newScreenMouseLocation = new Point(
-			evt.clientX - getCanvasOffsetLeft(),
-			getScreenCanvasDrawController().getCanvasSize().y - evt.clientY
-		);
+		const newScreenMouseLocation = getScreenLocationFromEvent(evt);
 		screenCanvasDrawController.setScreenMouseLocation(newScreenMouseLocation);
 
 		// If the middle mouse button is pressed, pan the screen
@@ -421,6 +413,8 @@ export class InputController {
 		}
 		const drawController = getScreenCanvasDrawController();
 		drawController.zoomScreen(evt.deltaY);
+		// The grid spacing and the snap distance in world units change with the zoom level
+		calculateAngleGuidesAndSnapPoints();
 	}
 
 	public handleMouseDown(evt: MouseEvent) {
@@ -431,12 +425,7 @@ export class InputController {
 			(evt.button === MouseButton.Left && (this.isSpaceHeld || isPanToolActive));
 		if (!isPanButton) return;
 
-		setPanStartLocation(
-			new Point(
-				evt.clientX - getCanvasOffsetLeft(),
-				getScreenCanvasDrawController().getCanvasSize().y - evt.clientY
-			)
-		);
+		setPanStartLocation(getScreenLocationFromEvent(evt));
 	}
 
 	/**
@@ -466,6 +455,15 @@ export class InputController {
 			case 'left':
 				return new Point(screenOffset.x + step, screenOffset.y);
 		}
+	}
+
+	private panScreenWithArrowKey(
+		direction: 'up' | 'right' | 'down' | 'left',
+		shiftPressed: boolean
+	) {
+		getScreenCanvasDrawController().setScreenOffset(this.getScreenPanStep(direction, shiftPressed));
+		// The drawing moved under the mouse, so the snap point under the mouse changed as well
+		calculateAngleGuidesAndSnapPoints();
 	}
 
 	private setSpaceHeld(isSpaceHeld: boolean) {
@@ -562,16 +560,16 @@ export class InputController {
 			});
 		} else if (evt.key === 'ArrowDown') {
 			// Move the screen down
-			getScreenCanvasDrawController().setScreenOffset(this.getScreenPanStep('down', evt.shiftKey));
+			this.panScreenWithArrowKey('down', evt.shiftKey);
 		} else if (evt.key === 'ArrowUp') {
 			// Move the screen up
-			getScreenCanvasDrawController().setScreenOffset(this.getScreenPanStep('up', evt.shiftKey));
+			this.panScreenWithArrowKey('up', evt.shiftKey);
 		} else if (evt.key === 'ArrowLeft') {
 			// Move the screen left
-			getScreenCanvasDrawController().setScreenOffset(this.getScreenPanStep('left', evt.shiftKey));
+			this.panScreenWithArrowKey('left', evt.shiftKey);
 		} else if (evt.key === 'ArrowRight') {
 			// Move the screen right
-			getScreenCanvasDrawController().setScreenOffset(this.getScreenPanStep('right', evt.shiftKey));
+			this.panScreenWithArrowKey('right', evt.shiftKey);
 		} else if (evt.key === '+' && this.text === '' && !activeToolWantsFreeText()) {
 			// Zoom in around the center of the screen
 			zoomIn();
@@ -741,10 +739,8 @@ export class InputController {
 					{
 						type: ActorEvent.NUMBER_INPUT,
 						value: command.value,
-						worldMouseLocation:
-							getSnapPointOnAngleGuide()?.point ||
-							getSnapPoint()?.point ||
-							getScreenCanvasDrawController().getWorldMouseLocation(),
+						// The typed distance goes in the direction of the point a click would pick
+						worldMouseLocation: getSnappedMouseLocation(),
 					} as NumberInputEvent,
 					text
 				);

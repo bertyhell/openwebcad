@@ -3,6 +3,7 @@ import { assign, createMachine } from 'xstate';
 import { LineEntity } from '../entities/LineEntity';
 import { PolyLineEntity } from '../entities/PolyLineEntity';
 import { applyActiveStyle } from '../helpers/apply-active-style';
+import { getSnappedMouseLocation } from '../helpers/get-closest-snap-point';
 import { getPointFromEvent } from '../helpers/get-point-from-event';
 import {
 	addEntities,
@@ -12,7 +13,7 @@ import {
 	setShouldDrawHelpers,
 } from '../state';
 import { Tool } from '../tools';
-import type { DrawEvent, PointInputEvent, StateEvent, ToolContext } from './tool.types';
+import type { PointInputEvent, StateEvent, ToolContext } from './tool.types';
 
 export interface PolyLineContext extends ToolContext {
 	points: Point[];
@@ -163,9 +164,11 @@ export const polyLineToolStateMachine = createMachine(
 				setAngleGuideOriginPoint(points.at(-1) ?? null);
 				return { points };
 			}),
-			[PolyLineAction.DRAW_TEMP_POLYLINE]: ({ context, event }) => {
-				const mouseLocation = (event as DrawEvent).drawController.getWorldMouseLocation();
-				setGhostHelperEntities([createPolyLineThroughPoints([...context.points, mouseLocation])]);
+			[PolyLineAction.DRAW_TEMP_POLYLINE]: ({ context }) => {
+				// End the preview where a click would add the next point, so it follows the snap marker
+				setGhostHelperEntities([
+					createPolyLineThroughPoints([...context.points, getSnappedMouseLocation()]),
+				]);
 			},
 			[PolyLineAction.FINISH_POLYLINE]: ({ context }) => {
 				setGhostHelperEntities([]);

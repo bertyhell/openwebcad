@@ -1,4 +1,3 @@
-import { compact } from 'es-toolkit';
 import { DIMMED_ENTITY_ALPHA, HOVERED_SNAP_POINT_TIME } from '../App.consts';
 import type { ScreenCanvasDrawController } from '../drawControllers/screenCanvas.drawController';
 import type { Entity } from '../entities/Entity';
@@ -12,8 +11,6 @@ import {
 	getHoveredSnapPoints,
 	getInputController,
 	getShouldDrawCursor,
-	getSnapPoint,
-	getSnapPointOnAngleGuide,
 } from '../state';
 import {
 	drawCursor,
@@ -22,7 +19,7 @@ import {
 	drawHelpers,
 	drawSnapPoint,
 } from './draw-functions';
-import { getClosestSnapPoint } from './get-closest-snap-point';
+import { getActiveSnapPoint } from './get-closest-snap-point';
 import { drawGrid } from './grid';
 import { isPointEqual } from './is-point-equal';
 
@@ -64,10 +61,8 @@ export function draw(drawController: ScreenCanvasDrawController) {
 	drawEntities(drawController, getGhostHelperEntities());
 	drawDebugEntities(drawController, getDebugEntities());
 
-	const { snapPoint: closestSnapPoint } = getClosestSnapPoint(
-		compact([getSnapPoint(), getSnapPointOnAngleGuide()]),
-		drawController.getWorldMouseLocation()
-	);
+	// Show the snap point that a click would use
+	const closestSnapPoint = getActiveSnapPoint();
 	const isMarked =
 		!!closestSnapPoint &&
 		getHoveredSnapPoints().some(

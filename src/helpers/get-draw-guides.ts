@@ -1,5 +1,4 @@
 import type { Point } from '@flatten-js/core';
-import { SNAP_ANGLE_DISTANCE } from '../App.consts';
 import { type SnapPoint, type SnapPointConfig, SnapPointType } from '../App.types';
 import type { Entity } from '../entities/Entity';
 import type { LineEntity } from '../entities/LineEntity';
@@ -15,7 +14,9 @@ import { getEntitySnapPointIndex } from './snap-point-index';
  * @param anglePoints the points that should get angle guides
  * @param worldMouseLocation the current mouse location
  * @param angleStep the angle in degrees at which the angle guides should be drawn
- * @param maxSnapDistance The distance that the mouse can snap to a snap point or angle guide
+ * @param maxSnapDistance The distance in world units that the mouse can snap to a snap point or angle guide
+ * @param maxAngleGuideDistance The distance in world units from the mouse to an angle guide to show it.
+ * Settings are in screen pixels, so divide them by the screen scale, otherwise guides disappear when zoomed out
  * @param snapPointConfig which kinds of snap points are enabled
  */
 export function getDrawHelpers(
@@ -24,6 +25,7 @@ export function getDrawHelpers(
 	worldMouseLocation: Point,
 	angleStep: number,
 	maxSnapDistance: number,
+	maxAngleGuideDistance: number,
 	snapPointConfig?: SnapPointConfig
 ): {
 	angleGuides: LineEntity[];
@@ -42,7 +44,7 @@ export function getDrawHelpers(
 
 		const closestLineInfo = findClosestEntity<LineEntity>(worldMouseLocation, angleGuideLines);
 
-		if (closestLineInfo.distance < SNAP_ANGLE_DISTANCE) {
+		if (closestLineInfo.distance < maxAngleGuideDistance) {
 			angleGuides.push(closestLineInfo.entity);
 			nearestAngleSnapPoints.push({
 				point: closestLineInfo.segment.start,

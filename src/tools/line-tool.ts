@@ -1,6 +1,7 @@
 import type { Point } from '@flatten-js/core';
 import { Actor, assign, createMachine } from 'xstate';
 import { LineEntity } from '../entities/LineEntity';
+import { getSnappedMouseLocation } from '../helpers/get-closest-snap-point.ts';
 import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
 import {
 	addEntities,
@@ -14,7 +15,7 @@ import {
 } from '../state';
 import { Tool } from '../tools';
 import { selectToolStateMachine } from './select-tool.ts';
-import type { DrawEvent, PointInputEvent, StateEvent, ToolContext } from './tool.types';
+import type { PointInputEvent, StateEvent, ToolContext } from './tool.types';
 
 export interface LineContext extends ToolContext {
 	startPoint: Point | null;
@@ -125,11 +126,9 @@ export const lineToolStateMachine = createMachine(
 					startPoint,
 				};
 			}),
-			[LineAction.DRAW_TEMP_LINE]: ({ context, event }) => {
-				const activeLine = new LineEntity(
-					context.startPoint as Point,
-					(event as DrawEvent).drawController.getWorldMouseLocation()
-				);
+			[LineAction.DRAW_TEMP_LINE]: ({ context }) => {
+				// End the preview where a click would end the line, so it follows the snap marker
+				const activeLine = new LineEntity(context.startPoint as Point, getSnappedMouseLocation());
 				activeLine.lineColor = getActiveLineColor();
 				activeLine.lineWidth = getActiveLineWidth();
 				setGhostHelperEntities([activeLine]);

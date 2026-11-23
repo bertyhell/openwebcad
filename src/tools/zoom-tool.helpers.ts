@@ -1,7 +1,19 @@
 import { Point } from '@flatten-js/core';
 import { DEFAULT_ZOOM_MARGIN, ZOOM_STEP_MULTIPLIER } from '../App.consts.ts';
+import { calculateAngleGuidesAndSnapPoints } from '../helpers/calculate-angle-guides-and-snap-points.ts';
 import { getBoundingBoxOfMultipleEntities } from '../helpers/get-bounding-box-of-multiple-entities.ts';
 import { getScreenCanvasDrawController, getVisibleEntities } from '../state.ts';
+
+/**
+ * Apply a new zoom level and offset
+ * The drawing moved under the mouse, so the snap point under the mouse is calculated again
+ */
+function setView(screenScale: number, screenOffset: Point): void {
+	const screenCanvasDrawController = getScreenCanvasDrawController();
+	screenCanvasDrawController.setScreenScale(screenScale);
+	screenCanvasDrawController.setScreenOffset(screenOffset);
+	calculateAngleGuidesAndSnapPoints();
+}
 
 /**
  * Zoom in by the default zoom step multiplier, keeping the center of the screen fixed
@@ -41,8 +53,7 @@ export function zoomToScale(newScreenScale: number) {
 	const newOffsetX = centerWorldX - canvasSize.x / newScreenScale / 2;
 	const newOffsetY = centerWorldY - canvasSize.y / newScreenScale / 2;
 
-	screenCanvasDrawController.setScreenScale(newScreenScale);
-	screenCanvasDrawController.setScreenOffset(new Point(newOffsetX, newOffsetY));
+	setView(newScreenScale, new Point(newOffsetX, newOffsetY));
 }
 
 export function zoomToBounds() {
@@ -102,6 +113,5 @@ export function zoomRectangle(corner1: Point, corner2: Point, margin = 0) {
 	const newOffsetY = centerY - visibleWorldHeight / 2;
 
 	// Apply the new scale and offset
-	screenCanvasDrawController.setScreenScale(newScreenScale);
-	screenCanvasDrawController.setScreenOffset(new Point(newOffsetX, newOffsetY));
+	setView(newScreenScale, new Point(newOffsetX, newOffsetY));
 }

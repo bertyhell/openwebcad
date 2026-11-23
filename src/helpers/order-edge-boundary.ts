@@ -3,6 +3,7 @@ import { compact } from 'es-toolkit';
 import type { Edge, StartAndEndpointEntity } from '../App.types.ts';
 import { ArcEntity } from '../entities/ArcEntity.ts';
 import { LineEntity } from '../entities/LineEntity.ts';
+import { copyEntityBaseProperties } from './copy-entity-base-properties.ts';
 import { isPointEqual } from './is-point-equal.ts';
 
 /**
@@ -101,19 +102,22 @@ export function orderEntityBoundary(boundary: StartAndEndpointEntity[]): StartAn
 	return orderedBoundary;
 }
 
+/**
+ * Copy of the line or arc that runs in the opposite direction, with the same style and layer
+ */
 function flipEntity(entity: StartAndEndpointEntity): StartAndEndpointEntity {
 	if (entity instanceof LineEntity) {
 		// Flip next segment
-		return new LineEntity(entity.getEndPoint(), entity.getStartPoint());
+		return copyEntityBaseProperties(
+			entity,
+			new LineEntity(entity.getEndPoint(), entity.getStartPoint())
+		);
 	}
 	// Flip next arc
 	const arc = entity.getShape() as Arc;
-	return new ArcEntity(
-		arc.center,
-		arc.r.valueOf(),
-		arc.endAngle,
-		arc.startAngle,
-		!arc.counterClockwise
+	return copyEntityBaseProperties(
+		entity,
+		new ArcEntity(arc.center, arc.r.valueOf(), arc.endAngle, arc.startAngle, !arc.counterClockwise)
 	);
 }
 
@@ -161,4 +165,78 @@ export function chainSegments(segments: StartAndEndpointEntity[]): StartAndEndpo
 		chain.push(isPointEqual(next.getStartPoint(), currentEnd) ? next : flipEntity(next));
 	}
 	return [...chain, ...remaining];
+}
+
+interface OrientedSegment {
+	/** The segment as it was passed in */
+	original: StartAndEndpointEntity;
+	/** The segment or a flipped copy of it, so it follows the direction of the chain */
+	oriented: StartAndEndpointEntity;
+}
+
+function touchesPoint(segment: StartAndEndpointEntity, point: Point): boolean {
+	return isPointEqual(segment.getStartPoint(), point) || isPointEqual(segment.getEndPoint(), point);
+}
+
+/**
+ * Grows a chain from the first segment in both directions, by adding the remaining segments that connect to one of its ends
+ * The segments that are added to the chain are removed from the remaining segments
+ */
+function growChain(
+	first: StartAndEndpointEntity,
+	remaining: StartAndEndpointEntity[]
+): OrientedSegment[] {
+	const chain: OrientedSegment[] = [{ original: first, oriented: first }];
+	while (remaining.length) {
+		const chainStart = chain[0].oriented.getStartPoint();
+		const chainEnd = (chain.at(-1) as OrientedSegment).oriented.getEndPoint();
+		if (chain.length > 1 && isPointEqual(chainStart, chainEnd)) {
+			// The chain is a closed loop, nothing else can be attached to it
+			break;
+		}
+		const nextIndex = remaining.findIndex((segment) => touchesPoint(segment, chainEnd));
+		if (nextIndex !== -1) {
+			const next = remaining.splice(nextIndex, 1)[0];
+			chain.push({
+				original: next,
+				oriented: isPointEqual(next.getStartPoint(), chainEnd) ? next : flipEntity(next),
+			});
+			continue;
+		}
+		const previousIndex = remaining.findIndex((segment) => touchesPoint(segment, chainStart));
+		if (previousIndex === -1) {
+			break;
+		}
+		const previous = remaining.splice(previousIndex, 1)[0];
+		chain.unshift({
+			original: previous,
+			oriented: isPointEqual(previous.getEndPoint(), chainStart) ? previous : flipEntity(previous),
+		});
+	}
+	return chain;
+}
+
+/**
+ * Joins lines and arcs that connect end to end into one chain, like the JOIN command in AutoCAD
+ * Every segment of the chain starts where the previous one ends
+ * When the segments form several separate chains, the chain with the most segments is used,
+ * the segments of the other chains are returned as unconnected
+ */
+export function joinConnectedSegments(segments: StartAndEndpointEntity[]): {
+	chain: StartAndEndpointEntity[];
+	unconnected: StartAndEndpointEntity[];
+} {
+	const remaining = [...segments];
+	let longestChain: OrientedSegment[] = [];
+	while (remaining.length) {
+		const chain = growChain(remaining.shift() as StartAndEndpointEntity, remaining);
+		if (chain.length > longestChain.length) {
+			longestChain = chain;
+		}
+	}
+	const joinedSegments = new Set(longestChain.map((segment) => segment.original));
+	return {
+		chain: longestChain.map((segment) => segment.oriented),
+		unconnected: segments.filter((segment) => !joinedSegments.has(segment)),
+	};
 }

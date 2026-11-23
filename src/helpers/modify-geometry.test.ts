@@ -516,6 +516,20 @@ describe('createCorner with an arc', () => {
 			expect((result.connector?.getShape() as Arc).sweep).toBeLessThan(Math.PI);
 		});
 
+		it('keeps the angles of the trimmed arc less than a full circle apart, so it is not drawn as a circle', () => {
+			for (const radius of [0, 10]) {
+				const result = createCorner(
+					{ edge: line, clickPoint: lineClick },
+					{ edge: shortArc, clickPoint: new Point(762.4, 686.78) },
+					CornerType.FILLET,
+					radius
+				);
+				if ('error' in result) throw new Error(result.error);
+				const { startAngle, endAngle } = result.edges[1].getShape() as Arc;
+				expect(Math.abs(endAngle - startAngle)).toBeLessThan(2 * Math.PI);
+			}
+		});
+
 		it('reports a radius that is too large for the arc instead of looping a fillet around it', () => {
 			for (const radius of [50, 100, 300]) {
 				const result = createCorner(

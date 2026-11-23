@@ -6,6 +6,7 @@ import { LineEntity } from '../entities/LineEntity';
 import { PolyLineEntity } from '../entities/PolyLineEntity';
 import { copyEntityBaseProperties } from './copy-entity-base-properties';
 import { explodeEntity } from './explode-entity';
+import { normaliseAngleRadians } from './normalise-angle';
 
 export enum CornerType {
 	FILLET = 'FILLET',
@@ -746,9 +747,12 @@ function keepEdge(
 	if (keptSweep <= EPSILON || extension > (2 * Math.PI - originalSweep) / 2 + EPSILON) {
 		return null;
 	}
+	// Both angles between 0 and 2π, eg: -0.66 and 5.94 are more than a full circle apart and are drawn as a circle
+	const newCornerAngle = normaliseAngleRadians(cornerAngle);
+	const newKeptAngle = normaliseAngleRadians(keptAngle);
 	const newArc = keepsEnd
-		? new ArcEntity(center, radius, cornerAngle, keptAngle, arc.counterClockwise)
-		: new ArcEntity(center, radius, keptAngle, cornerAngle, arc.counterClockwise);
+		? new ArcEntity(center, radius, newCornerAngle, newKeptAngle, arc.counterClockwise)
+		: new ArcEntity(center, radius, newKeptAngle, newCornerAngle, arc.counterClockwise);
 	const entity = copyEntityBaseProperties(edge, newArc);
 	entity.id = edge.id;
 	return { entity, length: keptSweep * radius };

@@ -9,6 +9,7 @@ import type { Edge } from '../App.types.ts';
 import type { PolyLineEntity } from '../entities/PolyLineEntity.ts';
 import { getAngleWithXAxis } from '../helpers/get-angle-with-x-axis.ts';
 import { mapNumberRange } from '../helpers/map-number-range.ts';
+import { normaliseAngleRadians } from '../helpers/normalise-angle.ts';
 import { StateVariable } from '../helpers/undo-stack.ts';
 import { requestRedraw, triggerReactUpdate } from '../state.ts';
 import { DEFAULT_TEXT_OPTIONS, type DrawController } from './DrawController';
@@ -308,6 +309,13 @@ export class ScreenCanvasDrawController implements DrawController {
 	) {
 		const screenCenterPoint = this.worldToTarget(centerPoint);
 		const screenRadius = radius * this.screenScale;
+		// The canvas draws a full circle when the angles are more than 2π apart, eg: -0.66 to 5.94
+		// An arc only goes around once, so draw the part between the angles, like the svg export does
+		const span = counterClockWise ? endAngle - startAngle : startAngle - endAngle;
+		if (span < 0 || span > 2 * Math.PI) {
+			const sweep = normaliseAngleRadians(span);
+			endAngle = startAngle + (counterClockWise ? sweep : -sweep);
+		}
 		// Flip angles over the x-axis, because we go from world to screen coordinates which flips the y-axis direction
 		this.drawArcScreen(screenCenterPoint, screenRadius, -startAngle, -endAngle, counterClockWise);
 	}

@@ -47,6 +47,7 @@ import {
 	type MouseClickEvent,
 	type NumberInputEvent,
 	type RelativePointInputEvent,
+	type StateEvent,
 	type TextInputEvent,
 } from '../tools/tool.types.ts';
 import { zoomIn, zoomOut, zoomToBounds } from '../tools/zoom-tool.helpers.ts';
@@ -92,8 +93,13 @@ function activeToolAcceptsTextInput(): boolean {
 /**
  * Whether the active tool's current state reacts to this event, eg: the arrow keys in the polygon tool
  */
-function activeToolHandlesEvent(type: ActorEvent.ARROW_UP | ActorEvent.ARROW_DOWN): boolean {
-	return !!getActiveToolActor()?.getSnapshot()?.can({ type });
+function activeToolHandlesEvent(event: StateEvent): boolean {
+	try {
+		return !!getActiveToolActor()?.getSnapshot()?.can(event);
+	} catch {
+		// A guard can throw for input that doesn't fit the current step, the tool can't use that input either
+		return false;
+	}
 }
 
 /**
@@ -464,7 +470,9 @@ export class InputController {
 			this.handleEnterKey();
 		} else if (
 			(evt.key === 'ArrowUp' || evt.key === 'ArrowDown') &&
-			activeToolHandlesEvent(evt.key === 'ArrowUp' ? ActorEvent.ARROW_UP : ActorEvent.ARROW_DOWN)
+			activeToolHandlesEvent({
+				type: evt.key === 'ArrowUp' ? ActorEvent.ARROW_UP : ActorEvent.ARROW_DOWN,
+			})
 		) {
 			// The active tool uses the up and down arrows, eg: to change the number of sides in the polygon tool
 			evt.preventDefault();
@@ -593,39 +601,58 @@ export class InputController {
 
 			case 'number':
 				// User entered a number. eg: 100
-				activeTool?.send({
-					type: ActorEvent.NUMBER_INPUT,
-					value: command.value,
-					worldMouseLocation:
-						getSnapPointOnAngleGuide()?.point ||
-						getSnapPoint()?.point ||
-						getScreenCanvasDrawController().getWorldMouseLocation(),
-				} as NumberInputEvent);
+				this.sendInputToActiveTool(
+					{
+						type: ActorEvent.NUMBER_INPUT,
+						value: command.value,
+						worldMouseLocation:
+							getSnapPointOnAngleGuide()?.point ||
+							getSnapPoint()?.point ||
+							getScreenCanvasDrawController().getWorldMouseLocation(),
+					} as NumberInputEvent,
+					text
+				);
 				break;
 
 			case 'absolutePoint':
-				// User entered coordinates to an absolute point on the canvas. eg: 100, 200
-				activeTool?.send({
-					type: ActorEvent.ABSOLUTE_POINT_INPUT,
-					value: new Point(command.x, command.y),
-				} as AbsolutePointInputEvent);
+				// User entered coordinates to an absolute point on the canvas. eg: 100, 200 or 100<45
+				this.sendInputToActiveTool(
+					{
+						type: ActorEvent.ABSOLUTE_POINT_INPUT,
+						value: new Point(command.x, command.y),
+					} as AbsolutePointInputEvent,
+					text
+				);
 				break;
 
 			case 'relativePoint':
-				// User entered coordinates relative to the last point. eg: @100, 200
-				activeTool?.send({
-					type: ActorEvent.RELATIVE_POINT_INPUT,
-					value: new Point(command.x, command.y),
-				} as RelativePointInputEvent);
+				// User entered coordinates relative to the last point. eg: @100, 200 or @100<45
+				this.sendInputToActiveTool(
+					{
+						type: ActorEvent.RELATIVE_POINT_INPUT,
+						value: new Point(command.x, command.y),
+					} as RelativePointInputEvent,
+					text
+				);
 				break;
 
 			case 'text':
-				activeTool?.send({
-					type: ActorEvent.TEXT_INPUT,
-					value: command.value,
-				} as TextInputEvent);
+				// The text is not a command and the active tool doesn't ask for text, keep the tool as it is
+				toast.warn(`Unknown command: ${command.value}`);
 				break;
 		}
+	}
+
+	/**
+	 * Send typed input to the active tool, or tell the user when the tool can't use it right now
+	 * eg: a relative point before there is a point to be relative to
+	 */
+	private sendInputToActiveTool(event: StateEvent, text: string): void {
+		if (!activeToolHandlesEvent(event)) {
+			toast.warn(`Invalid input: ${text.trim()}`);
+			return;
+		}
+		getActiveToolActor()?.send(event);
 	}
 
 	public handleUndo(evt?: KeyboardEvent) {

@@ -1,13 +1,17 @@
-import { Point, Vector } from '@flatten-js/core';
+import { Matrix, Point, Vector } from '@flatten-js/core';
 import type { Entities as DxfEntities } from 'dxf';
 import { uniqBy } from 'es-toolkit';
 import { toast } from 'react-toastify';
 import type { Layer } from '../../App.types.ts';
 import { ArcEntity } from '../../entities/ArcEntity.ts';
 import { CircleEntity } from '../../entities/CircleEntity.ts';
+import { EllipseEntity } from '../../entities/EllipseEntity.ts';
 import type { Entity } from '../../entities/Entity.ts';
+import { FillEntity } from '../../entities/FillEntity.ts';
 import { LineEntity } from '../../entities/LineEntity.ts';
+import { PointEntity } from '../../entities/PointEntity.ts';
 import { PolyLineEntity } from '../../entities/PolyLineEntity.ts';
+import { SplineEntity } from '../../entities/SplineEntity.ts';
 import { TextEntity } from '../../entities/TextEntity.ts';
 import {
 	getActiveLineColor,
@@ -20,6 +24,7 @@ import {
 import { zoomToBounds } from '../../tools/zoom-tool.helpers.ts';
 import { getNewLayer } from '../get-new-layer.ts';
 import { toHex } from '../rgb-to-hex-color.ts';
+import { transformEntity } from './transform-entity.ts';
 
 /**
  * Subset of the dxf library that is needed to convert a file, so it can be loaded lazily
@@ -36,13 +41,32 @@ export interface DxfLibrary {
 
 interface DxfLayerTable {
 	name: string;
+	/**
+	 * A negative color means the layer is turned off
+	 */
 	colorNumber?: number;
+	flags?: number;
 }
+
+const FROZEN_LAYER_FLAG = 1;
+const LOCKED_LAYER_FLAG = 4;
 
 interface DxfVertex {
 	x: number;
 	y: number;
 	bulge?: number;
+}
+
+/**
+ * Transformation of a block insert, the dxf library adds them to the entities of the block
+ */
+interface DxfTransform {
+	x?: number;
+	y?: number;
+	scaleX?: number;
+	scaleY?: number;
+	rotation?: number;
+	extrusionZ?: number;
 }
 
 /**
@@ -54,7 +78,18 @@ interface DxfEntity {
 	colorNumber?: number;
 	visible?: boolean;
 	paperSpace?: number;
+	extrusionZ?: number;
+	/**
+	 * Transformations of the blocks the entity is inserted with, starting with the innermost block
+	 */
+	transforms?: DxfTransform[];
 	[key: string]: unknown;
+}
+
+interface DxfBlock {
+	x?: number;
+	y?: number;
+	entities?: DxfEntity[];
 }
 
 const BY_BLOCK_COLOR = 0;
@@ -88,6 +123,73 @@ function getLayerTables(parsed: unknown): DxfLayerTable[] {
 		return [];
 	}
 	return (Array.isArray(layers) ? layers : Object.values(layers)) as DxfLayerTable[];
+}
+
+/**
+ * Entities whose coordinates are in their object coordinate system (OCS) instead of the world coordinate system
+ */
+const OCS_ENTITY_TYPES = ['ARC', 'CIRCLE', 'LWPOLYLINE', 'POLYLINE', 'TEXT', 'SOLID'];
+
+/**
+ * Converts the object coordinate system of a 2d entity to world coordinates
+ * Entities that are mirrored in AutoCAD get an extrusion direction pointing down, which mirrors their x axis
+ */
+function getObjectCoordinateSystemMatrix(extrusionZ: number | undefined): Matrix {
+	return extrusionZ !== undefined && extrusionZ < 0 ? new Matrix(-1, 0, 0, 1, 0, 0) : new Matrix();
+}
+
+/**
+ * Combines the transformations of the blocks an entity is inserted with
+ * Each insert scales, rotates and moves the block to its insertion point, which is in the object coordinate system of the insert
+ */
+function getInsertMatrix(transforms: DxfTransform[] = []): Matrix {
+	return transforms.reduce((matrix, transform) => {
+		// A missing scale is 1, the dxf library treats a scale of 0 the same way
+		const insertMatrix = getObjectCoordinateSystemMatrix(transform.extrusionZ)
+			.translate(transform.x ?? 0, transform.y ?? 0)
+			.rotate(((transform.rotation ?? 0) * Math.PI) / 180)
+			.scale(transform.scaleX || 1, transform.scaleY || 1);
+		return insertMatrix.multiply(matrix);
+	}, new Matrix());
+}
+
+/**
+ * The dxf library moves the lines, polylines, circles, ellipses, arcs and splines of a block relative to the base point of the block,
+ * but not its texts, points, solids and nested inserts, so those are moved here before the library inserts the blocks
+ */
+function moveBlockEntitiesToBasePoint(parsed: unknown): void {
+	const blocks = (parsed as { blocks?: DxfBlock[] } | null)?.blocks ?? [];
+	for (const block of blocks) {
+		const baseX = block.x ?? 0;
+		const baseY = block.y ?? 0;
+		if (!baseX && !baseY) {
+			continue;
+		}
+		const move = (target: Record<string, unknown>, xKey: string, yKey: string) => {
+			if (typeof target[xKey] === 'number' && typeof target[yKey] === 'number') {
+				target[xKey] = (target[xKey] as number) - baseX;
+				target[yKey] = (target[yKey] as number) - baseY;
+			}
+		};
+		for (const entity of block.entities ?? []) {
+			switch (entity.type) {
+				case 'TEXT':
+					move(entity, 'x', 'y');
+					move(entity, 'x2', 'y2');
+					break;
+				case 'MTEXT':
+				case 'POINT':
+				case 'INSERT':
+					move(entity, 'x', 'y');
+					break;
+				case 'SOLID':
+					for (const corner of (entity.corners as Record<string, unknown>[] | undefined) ?? []) {
+						move(corner, 'x', 'y');
+					}
+					break;
+			}
+		}
+	}
 }
 
 /**
@@ -138,6 +240,153 @@ function convertVertices(vertices: DxfVertex[], closed: boolean): Entity | null 
 }
 
 /**
+ * Largest angle between two points that are used to approximate a partial ellipse with a spline
+ */
+const ELLIPSE_SAMPLE_ANGLE = Math.PI / 16;
+
+/**
+ * Number of points per knot span that are used to approximate a dxf spline
+ */
+const SPLINE_SAMPLES_PER_SPAN = 8;
+
+/**
+ * EllipseEntity is always a full ellipse, so a partial ellipse becomes a spline through points on the ellipse
+ * Ellipses are in world coordinates, a downward extrusion direction only makes their parameter go clockwise
+ */
+function convertEllipse(dxfEntity: DxfEntity): Entity | null {
+	const number = (key: string): number => Number(dxfEntity[key] ?? 0);
+	const center = new Point(number('x'), number('y'));
+	const majorAxis = new Vector(number('majorX'), number('majorY'));
+	const ratio = number('axisRatio');
+	if (majorAxis.length === 0 || !(ratio > 0)) {
+		return null;
+	}
+	const startParameter = Number(dxfEntity.startAngle ?? 0);
+	const endParameter = Number(dxfEntity.endAngle ?? 2 * Math.PI);
+	let sweep = (endParameter - startParameter) % (2 * Math.PI);
+	if (sweep <= 1e-9) {
+		sweep += 2 * Math.PI;
+	}
+	if (sweep >= 2 * Math.PI - 1e-9) {
+		return new EllipseEntity(center, center.translate(majorAxis), ratio);
+	}
+	const minorAxis = (
+		dxfEntity.extrusionZ !== undefined && dxfEntity.extrusionZ < 0
+			? majorAxis.rotate90CW()
+			: majorAxis.rotate90CCW()
+	).multiply(ratio);
+	const stepCount = Math.max(2, Math.ceil(sweep / ELLIPSE_SAMPLE_ANGLE));
+	return new SplineEntity(
+		Array.from({ length: stepCount + 1 }, (_, index) => {
+			const parameter = startParameter + (sweep * index) / stepCount;
+			return center
+				.translate(majorAxis.multiply(Math.cos(parameter)))
+				.translate(minorAxis.multiply(Math.sin(parameter)));
+		})
+	);
+}
+
+/**
+ * Point on a (rational) b-spline at parameter u, using de Boor's algorithm
+ * The control points are combined in homogeneous coordinates, so their weights pull the curve towards them
+ */
+function getBSplinePoint(
+	u: number,
+	degree: number,
+	controlPoints: Point[],
+	weights: number[],
+	knots: number[]
+): Point {
+	// Knot span that contains u, at the end of the spline this is the last span
+	let span = degree;
+	while (span < controlPoints.length - 1 && u >= knots[span + 1]) {
+		span++;
+	}
+	const points = Array.from({ length: degree + 1 }, (_, index) => {
+		const controlPointIndex = span - degree + index;
+		const weight = weights[controlPointIndex] ?? 1;
+		const { x, y } = controlPoints[controlPointIndex];
+		return [x * weight, y * weight, weight];
+	});
+	for (let level = 1; level <= degree; level++) {
+		for (let index = degree; index >= level; index--) {
+			const knotIndex = span - degree + index;
+			const knotDistance = knots[knotIndex + degree - level + 1] - knots[knotIndex];
+			const alpha = knotDistance === 0 ? 0 : (u - knots[knotIndex]) / knotDistance;
+			points[index] = points[index].map(
+				(value, coordinate) => (1 - alpha) * points[index - 1][coordinate] + alpha * value
+			);
+		}
+	}
+	const [x, y, weight] = points[degree];
+	return new Point(x / weight, y / weight);
+}
+
+/**
+ * SplineEntity goes through its points, but a dxf spline only follows its control points,
+ * so the spline becomes a SplineEntity through points on the dxf spline
+ */
+function convertSpline(dxfEntity: DxfEntity): Entity | null {
+	const controlPoints = ((dxfEntity.controlPoints as DxfVertex[] | undefined) ?? []).map(
+		(controlPoint) => new Point(controlPoint.x, controlPoint.y)
+	);
+	const knots = (dxfEntity.knots as number[] | undefined) ?? [];
+	const degree = Number(dxfEntity.degree ?? 0);
+	const dxfWeights = (dxfEntity.weights as number[] | undefined) ?? [];
+	const weights = dxfWeights.length === controlPoints.length ? dxfWeights : [];
+	if (
+		degree < 1 ||
+		controlPoints.length <= degree ||
+		knots.length !== controlPoints.length + degree + 1
+	) {
+		return null;
+	}
+	if (degree === 1) {
+		return convertVertices(controlPoints, false);
+	}
+	const points: Point[] = [];
+	for (let span = degree; span < controlPoints.length; span++) {
+		const spanStart = knots[span];
+		const spanEnd = knots[span + 1];
+		if (!(spanEnd > spanStart)) {
+			continue;
+		}
+		for (let step = 0; step < SPLINE_SAMPLES_PER_SPAN; step++) {
+			const u = spanStart + ((spanEnd - spanStart) * step) / SPLINE_SAMPLES_PER_SPAN;
+			points.push(getBSplinePoint(u, degree, controlPoints, weights, knots));
+		}
+	}
+	points.push(getBSplinePoint(knots[controlPoints.length], degree, controlPoints, weights, knots));
+	return points.length >= 2 ? new SplineEntity(points) : null;
+}
+
+/**
+ * A solid is a filled triangle or quadrilateral, its outline goes from the first to the second, fourth and third corner
+ */
+function convertSolid(dxfEntity: DxfEntity): FillEntity | null {
+	const corners = ((dxfEntity.corners as Partial<DxfVertex>[] | undefined) ?? [])
+		.filter(
+			(corner): corner is DxfVertex => typeof corner.x === 'number' && typeof corner.y === 'number'
+		)
+		.map((corner) => new Point(corner.x, corner.y));
+	const outline = corners.length === 4 ? [corners[0], corners[1], corners[3], corners[2]] : corners;
+	// Triangles repeat their last corner
+	const uniqueCorners = outline.filter(
+		(corner, index) => !corner.equalTo(outline[(index + 1) % outline.length])
+	);
+	if (uniqueCorners.length < 3) {
+		return null;
+	}
+	return new FillEntity(
+		new PolyLineEntity(
+			uniqueCorners.map(
+				(corner, index) => new LineEntity(corner, uniqueCorners[(index + 1) % uniqueCorners.length])
+			)
+		)
+	);
+}
+
+/**
  * Removes MTEXT formatting codes, eg: {\fArial;Hello}\PWorld => Hello World
  */
 export function stripMTextFormatting(text: string): string {
@@ -149,24 +398,116 @@ export function stripMTextFormatting(text: string): string {
 		.trim();
 }
 
+type TextAlign = 'left' | 'center' | 'right';
+
+/**
+ * Creates a text from its alignment point in the dxf file
+ * TextEntity draws its text vertically centered on its base point,
+ * so the alignment point is moved up or down by a part of the text height, eg: 0.5 moves a baseline to the middle of the text
+ */
 function createText(
 	label: string,
-	basePoint: Point,
+	alignmentPoint: Point,
 	height: number,
-	rotationRadians: number,
-	textAlign: 'left' | 'center' | 'right'
+	direction: Vector,
+	textAlign: TextAlign,
+	heightsToMiddle: number
 ): TextEntity | null {
 	if (!label || !(height > 0)) {
 		return null;
 	}
-	return new TextEntity(label, basePoint, {
-		fontSize: height,
-		textAlign,
-		textDirection: new Vector(Math.cos(rotationRadians), Math.sin(rotationRadians)),
-	});
+	const textDirection = direction.normalize();
+	return new TextEntity(
+		label,
+		alignmentPoint.translate(textDirection.rotate90CCW().multiply(heightsToMiddle * height)),
+		{ fontSize: height, textAlign, textDirection }
+	);
 }
 
-const TEXT_ALIGNMENTS: ('left' | 'center' | 'right')[] = ['left', 'center', 'right'];
+const TEXT_ALIGNMENTS: TextAlign[] = ['left', 'center', 'right'];
+
+const ALIGNED_TEXT = 3;
+const MIDDLE_TEXT = 4;
+const FIT_TEXT = 5;
+
+/**
+ * Distance from the vertical alignment of a text to its middle, relative to the text height
+ * Baseline and bottom are treated the same, since the descent of the letters is small and depends on the font
+ */
+const TEXT_HEIGHTS_TO_MIDDLE: Record<number, number> = {
+	0: 0.5, // Baseline
+	1: 0.5, // Bottom
+	2: 0, // Middle
+	3: -0.5, // Top
+};
+
+/**
+ * Single line dxf text, its horizontal (72) and vertical (73) alignment decide which point positions the text:
+ * - left aligned on the baseline: the first point
+ * - aligned and fit: the baseline between the first and the second point, the text is stretched to fit
+ * - middle: the second point is the center of the text
+ * - otherwise: the second point, eg: the right end of the text at the top of the letters
+ */
+function convertText(dxfEntity: DxfEntity): TextEntity | null {
+	const number = (key: string): number => Number(dxfEntity[key] ?? 0);
+	const label = String(dxfEntity.string ?? '');
+	const height = number('textHeight');
+	const hAlign = number('hAlign');
+	const vAlign = number('vAlign');
+	const firstPoint = new Point(number('x'), number('y'));
+	const secondPoint =
+		dxfEntity.x2 !== undefined && dxfEntity.y2 !== undefined
+			? new Point(number('x2'), number('y2'))
+			: null;
+	const rotation = (number('rotation') * Math.PI) / 180;
+	const direction = new Vector(Math.cos(rotation), Math.sin(rotation));
+
+	if (
+		(hAlign === ALIGNED_TEXT || hAlign === FIT_TEXT) &&
+		secondPoint &&
+		!secondPoint.equalTo(firstPoint)
+	) {
+		// The text can't be stretched, so it is centered on the baseline between both points
+		const middle = new Point(
+			(firstPoint.x + secondPoint.x) / 2,
+			(firstPoint.y + secondPoint.y) / 2
+		);
+		return createText(label, middle, height, new Vector(firstPoint, secondPoint), 'center', 0.5);
+	}
+	if (hAlign === MIDDLE_TEXT) {
+		return createText(label, secondPoint ?? firstPoint, height, direction, 'center', 0);
+	}
+	const usesFirstPoint = (hAlign === 0 && vAlign === 0) || !secondPoint;
+	return createText(
+		label,
+		usesFirstPoint ? firstPoint : secondPoint,
+		height,
+		direction,
+		TEXT_ALIGNMENTS[hAlign] ?? 'left',
+		TEXT_HEIGHTS_TO_MIDDLE[vAlign] ?? 0.5
+	);
+}
+
+/**
+ * Multi line dxf text, its attachment point (71) from 1 to 9 is top left, top center, top right, middle left, ..., bottom right
+ */
+function convertMText(dxfEntity: DxfEntity): TextEntity | null {
+	const number = (key: string): number => Number(dxfEntity[key] ?? 0);
+	const attachmentPoint = number('attachmentPoint') || 1;
+	const direction =
+		dxfEntity.xAxisX !== undefined
+			? new Vector(number('xAxisX'), number('xAxisY'))
+			: new Vector(1, 0);
+	const verticalAlignment = Math.floor((attachmentPoint - 1) / 3);
+	return createText(
+		stripMTextFormatting(String(dxfEntity.string ?? '')),
+		new Point(number('x'), number('y')),
+		number('nominalTextHeight'),
+		direction.length > 0 ? direction : new Vector(1, 0),
+		TEXT_ALIGNMENTS[(attachmentPoint - 1) % 3],
+		[-0.5, 0, 0.5][verticalAlignment] ?? 0
+	);
+}
 
 function convertEntity(dxfEntity: DxfEntity): Entity | null {
 	const number = (key: string): number => Number(dxfEntity[key] ?? 0);
@@ -198,33 +539,18 @@ function convertEntity(dxfEntity: DxfEntity): Entity | null {
 				(dxfEntity.vertices as DxfVertex[] | undefined) ?? [],
 				!!dxfEntity.closed
 			);
-		case 'TEXT': {
-			const hAlign = number('hAlign');
-			// Aligned texts are positioned at their second alignment point
-			const useAlignmentPoint = hAlign > 0 && dxfEntity.x2 !== undefined;
-			return createText(
-				String(dxfEntity.string ?? ''),
-				new Point(
-					useAlignmentPoint ? number('x2') : number('x'),
-					useAlignmentPoint ? number('y2') : number('y')
-				),
-				number('textHeight'),
-				(number('rotation') * Math.PI) / 180,
-				TEXT_ALIGNMENTS[hAlign] ?? 'left'
-			);
-		}
-		case 'MTEXT': {
-			const attachmentPoint = number('attachmentPoint') || 1;
-			const rotation =
-				dxfEntity.xAxisX !== undefined ? Math.atan2(number('xAxisY'), number('xAxisX')) : 0;
-			return createText(
-				stripMTextFormatting(String(dxfEntity.string ?? '')),
-				new Point(number('x'), number('y')),
-				number('nominalTextHeight'),
-				rotation,
-				TEXT_ALIGNMENTS[(attachmentPoint - 1) % 3]
-			);
-		}
+		case 'POINT':
+			return new PointEntity(new Point(number('x'), number('y')));
+		case 'ELLIPSE':
+			return convertEllipse(dxfEntity);
+		case 'SPLINE':
+			return convertSpline(dxfEntity);
+		case 'SOLID':
+			return convertSolid(dxfEntity);
+		case 'TEXT':
+			return convertText(dxfEntity);
+		case 'MTEXT':
+			return convertMText(dxfEntity);
 		default:
 			return null;
 	}
@@ -240,6 +566,8 @@ export function convertDxfToEntities(
 	existingLayers: Layer[]
 ): DxfConversionResult {
 	const helper = new dxfLibrary.Helper(contents);
+	// The blocks have to be corrected before the library inserts them, which happens the first time denormalised is read
+	moveBlockEntitiesToBasePoint(helper.parsed);
 	const dxfEntities = (helper.denormalised ?? []) as unknown as DxfEntity[];
 	const layerTables = getLayerTables(helper.parsed);
 
@@ -252,10 +580,15 @@ export function convertDxfToEntities(
 			return existingLayerId;
 		}
 		const layerTable = layerTables.find((table) => table.name === layerName);
+		const layerColorNumber = layerTable?.colorNumber ?? 0;
+		const layerFlags = layerTable?.flags ?? 0;
 		const newLayer: Layer = {
 			...getNewLayer(layers),
 			name: layerName,
-			color: aciToHex(dxfLibrary.colors, Math.abs(layerTable?.colorNumber ?? 0)) ?? undefined,
+			// Layers that are turned off or frozen aren't shown in cad applications, so they start hidden
+			isVisible: layerColorNumber >= 0 && !(layerFlags & FROZEN_LAYER_FLAG),
+			isLocked: !!(layerFlags & LOCKED_LAYER_FLAG),
+			color: aciToHex(dxfLibrary.colors, Math.abs(layerColorNumber)) ?? undefined,
 		};
 		layers.push(newLayer);
 		newLayers.push(newLayer);
@@ -269,11 +602,18 @@ export function convertDxfToEntities(
 		if (dxfEntity.paperSpace || dxfEntity.visible === false) {
 			continue; // Only import what is visible in model space
 		}
-		const entity = convertEntity(dxfEntity);
-		if (!entity) {
+		const convertedEntity = convertEntity(dxfEntity);
+		if (!convertedEntity) {
 			unsupportedTypes.add(dxfEntity.type);
 			continue;
 		}
+		const objectMatrix = OCS_ENTITY_TYPES.includes(dxfEntity.type)
+			? getObjectCoordinateSystemMatrix(dxfEntity.extrusionZ)
+			: new Matrix();
+		const entity = transformEntity(
+			convertedEntity,
+			getInsertMatrix(dxfEntity.transforms).multiply(objectMatrix)
+		);
 		const layerName = dxfEntity.layer ?? '0';
 		entity.layerId = getLayerId(layerName);
 		const layerColorNumber = layerTables.find((table) => table.name === layerName)?.colorNumber;
@@ -283,6 +623,9 @@ export function convertDxfToEntities(
 				: null) ??
 			aciToHex(dxfLibrary.colors, Math.abs(layerColorNumber ?? 0)) ??
 			getActiveLineColor();
+		if (entity instanceof FillEntity) {
+			entity.fillColor = entity.lineColor;
+		}
 		entity.lineWidth = getActiveLineWidth();
 		entities.push(entity);
 	}
@@ -322,6 +665,14 @@ export const importEntitiesFromDxfFile = async (file?: File): Promise<void> => {
 		setEntities([...getEntities(), ...entities], true);
 		zoomToBounds();
 		toast.success(`Imported ${entities.length} entities from ${file.name}`);
+		const hiddenLayerNames = newLayers
+			.filter((layer) => !layer.isVisible)
+			.map((layer) => layer.name);
+		if (hiddenLayerNames.length) {
+			toast.info(
+				`These layers are turned off in the DXF file and are hidden: ${hiddenLayerNames.join(', ')}`
+			);
+		}
 		if (unsupportedTypes.length) {
 			toast.info(`Skipped unsupported DXF entities: ${unsupportedTypes.join(', ')}`);
 		}

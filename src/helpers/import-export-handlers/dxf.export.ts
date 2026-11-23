@@ -1,15 +1,20 @@
-import type { Arc, Circle, Point, Polygon, Segment } from '@flatten-js/core';
+import type { Arc, Circle, Point, Polygon, Segment, Vector } from '@flatten-js/core';
 import { saveAs } from 'file-saver';
 import { toast } from 'react-toastify';
+import { MEASUREMENT_FONT_SIZE } from '../../App.consts.ts';
 import type { Layer } from '../../App.types.ts';
 import type { CurveEntity } from '../../entities/CurveEntity.ts';
 import { type Entity, EntityName } from '../../entities/Entity.ts';
+import type { FillEntity } from '../../entities/FillEntity.ts';
 import { flattenGroups } from '../../entities/GroupEntity.ts';
+import type { MeasurementEntity } from '../../entities/MeasurementEntity.ts';
+import type { PointEntity } from '../../entities/PointEntity.ts';
 import type { PolyLineEntity } from '../../entities/PolyLineEntity.ts';
 import type { TextEntity } from '../../entities/TextEntity.ts';
-import { getLayers, getVisibleEntities } from '../../state.ts';
+import { getEntities, getLayers } from '../../state.ts';
 import { chainSegments } from '../order-edge-boundary.ts';
 import { fromHex } from '../rgb-to-hex-color.ts';
+import { getFillPolylines } from './fill-polylines.ts';
 
 const TO_DEGREES = 180 / Math.PI;
 const WHITE_COLOR = 7;
@@ -129,18 +134,76 @@ function polylinePairs(
 	];
 }
 
+const TEXT_ALIGNMENTS = { left: 0, center: 1, right: 2 };
+
+/**
+ * Single line text that is vertically centered on its base point, like TextEntity draws it
+ */
+function textPairs(
+	line: string,
+	basePoint: Point,
+	fontSize: number,
+	direction: Vector,
+	textAlign: keyof typeof TEXT_ALIGNMENTS,
+	commonPairs: DxfPairs
+): DxfPairs {
+	return [
+		0,
+		'TEXT',
+		...commonPairs,
+		...pointPairs(basePoint),
+		40,
+		formatNumber(fontSize),
+		1,
+		line,
+		50,
+		formatNumber(Math.atan2(direction.y, direction.x) * TO_DEGREES),
+		72,
+		TEXT_ALIGNMENTS[textAlign],
+		// The middle alignment (73 = 2) positions the text at its second point
+		...pointPairs(basePoint, 11),
+		73,
+		2,
+	];
+}
+
+function linePairs(start: Point, end: Point, commonPairs: DxfPairs): DxfPairs {
+	return [0, 'LINE', ...commonPairs, ...pointPairs(start), ...pointPairs(end, 11)];
+}
+
+/**
+ * Dxf dimensions need a block with their geometry, so a dimension is exported as its lines and its label
+ * The arrow heads are left out, since their size depends on the zoom level of the screen
+ */
+function measurementPairs(measurement: MeasurementEntity, commonPairs: DxfPairs): DxfPairs | null {
+	const drawPoints = measurement.getDrawPoints();
+	if (!drawPoints) {
+		return null;
+	}
+	const label = measurement.getLabel(drawPoints);
+	return [
+		...linePairs(drawPoints.offsetStartPoint, drawPoints.offsetEndPoint, commonPairs),
+		...linePairs(drawPoints.offsetStartPointMargin, drawPoints.offsetStartPointExtend, commonPairs),
+		...linePairs(drawPoints.offsetEndPointMargin, drawPoints.offsetEndPointExtend, commonPairs),
+		...textPairs(
+			label.text,
+			label.basePoint,
+			MEASUREMENT_FONT_SIZE,
+			label.textDirection,
+			'center',
+			commonPairs
+		),
+	];
+}
+
 function entityPairs(entity: Entity, commonPairs: DxfPairs): DxfPairs | null {
 	switch (entity.getType()) {
 		case EntityName.Line: {
 			const segment = entity.getShape() as Segment;
-			return [
-				0,
-				'LINE',
-				...commonPairs,
-				...pointPairs(segment.start),
-				...pointPairs(segment.end, 11),
-			];
+			return linePairs(segment.start, segment.end, commonPairs);
 		}
+		case EntityName.Point:
+			return [0, 'POINT', ...commonPairs, ...pointPairs((entity as PointEntity).point)];
 		case EntityName.Circle: {
 			const circle = entity.getShape() as Circle;
 			return [
@@ -195,26 +258,29 @@ function entityPairs(entity: Entity, commonPairs: DxfPairs): DxfPairs | null {
 			// Dxf R12 texts have a single line, a multi-line text becomes a text per line
 			const text = entity as TextEntity;
 			const options = text.getOptions();
-			const horizontalAlignment = { left: 0, center: 1, right: 2 }[options.textAlign];
 			const lineBasePoints = text.getLineBasePoints();
-			return text.getLines().flatMap((line, index) => [
-				0,
-				'TEXT',
-				...commonPairs,
-				...pointPairs(lineBasePoints[index]),
-				40,
-				formatNumber(text.getFontSize()),
-				1,
-				line,
-				50,
-				formatNumber(Math.atan2(options.textDirection.y, options.textDirection.x) * TO_DEGREES),
-				72,
-				horizontalAlignment,
-				// The text is vertically centered on its base point
-				...pointPairs(lineBasePoints[index], 11),
-				73,
-				2,
-			]);
+			return text
+				.getLines()
+				.flatMap((line, index) =>
+					textPairs(
+						line,
+						lineBasePoints[index],
+						text.getFontSize(),
+						options.textDirection,
+						options.textAlign,
+						commonPairs
+					)
+				);
+		}
+		case EntityName.Measurement:
+			return measurementPairs(entity as MeasurementEntity, commonPairs);
+		case EntityName.Fill: {
+			// R12 solids only have 3 or 4 corners, so the outline and the holes of a fill are exported as polylines
+			const polylinePairsList = getFillPolylines(entity as FillEntity).flatMap((polyLine) => {
+				const { vertices, closed } = getPolyLineVertices(polyLine);
+				return vertices.length >= 2 ? polylinePairs(vertices, closed, commonPairs) : [];
+			});
+			return polylinePairsList.length ? polylinePairsList : null;
 		}
 		default:
 			return null;
@@ -289,23 +355,33 @@ export function convertEntitiesToDxf(
 		'ENDTAB',
 	];
 
+	const layerEntries = layers.map((layer) => ({
+		name: layerNameById.get(layer.id) ?? '0',
+		isLocked: layer.isLocked,
+		isVisible: layer.isVisible,
+		color: layer.color ?? '#ffffff',
+	}));
+	// Some cad applications require layer 0, entities whose layer doesn't exist are exported on it as well
+	if (!layerEntries.some((layer) => layer.name === '0')) {
+		layerEntries.push({ name: '0', isLocked: false, isVisible: true, color: '#ffffff' });
+	}
 	const layerTable: DxfPairs = [
 		0,
 		'TABLE',
 		2,
 		'LAYER',
 		70,
-		layers.length,
-		...layers.flatMap((layer) => [
+		layerEntries.length,
+		...layerEntries.flatMap((layer) => [
 			0,
 			'LAYER',
 			2,
-			layerNameById.get(layer.id) ?? '0',
+			layer.name,
 			70,
 			layer.isLocked ? 4 : 0,
 			// A negative color hides the layer
 			62,
-			(layer.isVisible ? 1 : -1) * hexToAci(layer.color ?? '#ffffff', aciColors),
+			(layer.isVisible ? 1 : -1) * hexToAci(layer.color, aciColors),
 			6,
 			'CONTINUOUS',
 		]),
@@ -315,11 +391,14 @@ export function convertEntitiesToDxf(
 
 	// Dxf R12 has no groups, export their members instead
 	const entityPairsList: DxfPairs = flattenGroups(entities).flatMap((entity) => {
+		// A fill shows its fill color, its line color is only used to highlight it
+		const color =
+			entity.getType() === EntityName.Fill ? (entity as FillEntity).fillColor : entity.lineColor;
 		const commonPairs: DxfPairs = [
 			8,
 			layerNameById.get(entity.layerId) ?? '0',
 			62,
-			hexToAci(entity.lineColor, aciColors),
+			hexToAci(color, aciColors),
 		];
 		const pairs = entityPairs(entity, commonPairs);
 		if (!pairs) {
@@ -367,12 +446,13 @@ export function convertEntitiesToDxf(
 }
 
 /**
- * Saves the visible entities of the drawing as a dxf file
+ * Saves the entities of the drawing as a dxf file
+ * The entities of hidden layers are exported too, their layer is turned off in the dxf file
  */
 export async function exportEntitiesToDxfFile(): Promise<void> {
 	const { colors } = await import('dxf');
 	const { dxf, skippedTypes } = convertEntitiesToDxf(
-		getVisibleEntities(),
+		getEntities(),
 		getLayers(),
 		colors as unknown as number[][]
 	);

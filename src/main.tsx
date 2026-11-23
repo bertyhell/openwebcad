@@ -9,6 +9,7 @@ import { HtmlEvent } from './App.types.ts';
 import { ScreenCanvasDrawController } from './drawControllers/screenCanvas.drawController';
 import { draw } from './helpers/draw';
 import { getNewLayer } from './helpers/get-new-layer.ts';
+import { getDefaultActiveLayerId } from './helpers/import-export-handlers/json.import.ts';
 import type { JsonDrawingFileDeserialized } from './helpers/import-export-handlers/json.types.ts';
 import { localStorageExport } from './helpers/import-export-handlers/local-storage.export.ts';
 import { getEntitiesAndLayersFromLocalStorage } from './helpers/import-export-handlers/local-storage.import.ts';
@@ -146,7 +147,7 @@ function initApplication() {
 			}
 			setEntities(file.entities);
 			setLayers(layers);
-			setActiveLayerId(layers[0].id);
+			setActiveLayerId(getDefaultActiveLayerId(layers));
 			resetUndoHistory();
 
 			// Save every change automatically, only after loading, so an empty drawing never overwrites the saved one

@@ -6,7 +6,7 @@ import type { JsonDrawingFileSerialized } from './json.types.ts';
 export async function exportEntitiesToJsonFile() {
 	const json = await exportEntitiesAndLayersToJsonString();
 
-	const blob = new Blob([json], { type: 'text/json;charset=utf-8' });
+	const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
 	saveAs(blob, 'open-web-cad--drawing.json');
 }
 

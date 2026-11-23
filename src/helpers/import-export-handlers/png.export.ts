@@ -1,6 +1,6 @@
 import { saveAs } from 'file-saver';
 import { getVisibleEntities } from '../../state';
-import { convertEntitiesToSvgString } from './svg.export.ts';
+import { convertEntitiesToSvgString, hasEntitiesToExport } from './svg.export.ts';
 
 /**
  * Takes an svg string and converts it to a png data uri
@@ -55,6 +55,9 @@ export function convertSvgToPngBlob(
 
 export async function exportEntitiesToPngFile() {
 	const entities = getVisibleEntities();
+	if (!hasEntitiesToExport(entities)) {
+		return;
+	}
 
 	const svg = convertEntitiesToSvgString(entities);
 	const pngDataBlob: Blob = await convertSvgToPngBlob(svg.svgLines, svg.width, svg.height, 20);

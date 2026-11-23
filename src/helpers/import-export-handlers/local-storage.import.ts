@@ -3,14 +3,14 @@ import { LOCAL_STORAGE_KEY } from '../../App.types.ts';
 import { setActiveLayerId, setEntities, setLayers } from '../../state.ts';
 import { zoomToBounds } from '../../tools/zoom-tool.helpers.ts';
 import { getNewLayer } from '../get-new-layer.ts';
-import { getEntitiesAndLayersFromJsonString } from './json.import.ts';
+import { getDefaultActiveLayerId, getEntitiesAndLayersFromJsonString } from './json.import.ts';
 import type { JsonDrawingFileDeserialized } from './json.types.ts';
 
 export async function importEntitiesAndLayersFromLocalStorage(): Promise<void> {
 	const file = await getEntitiesAndLayersFromLocalStorage();
 	setEntities(file.entities);
 	setLayers(file.layers, true, true);
-	setActiveLayerId(file.layers[0].id);
+	setActiveLayerId(getDefaultActiveLayerId(file.layers));
 	zoomToBounds();
 }
 

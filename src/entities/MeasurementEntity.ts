@@ -534,6 +534,7 @@ export class MeasurementEntity implements Entity {
 			type: EntityName.Measurement,
 			lineColor: this.lineColor,
 			lineWidth: this.lineWidth,
+			lineDash: this.lineDash,
 			layerId: this.layerId,
 			shapeData: {
 				startPoint: { x: this.startPoint.x, y: this.startPoint.y },
@@ -563,6 +564,10 @@ export class MeasurementEntity implements Entity {
 		measurementEntity.id = jsonEntity.id;
 		measurementEntity.lineColor = jsonEntity.lineColor;
 		measurementEntity.lineWidth = jsonEntity.lineWidth;
+		// Drawings saved before the line dash was stored keep the default line dash
+		if (jsonEntity.lineDash) {
+			measurementEntity.lineDash = [...jsonEntity.lineDash];
+		}
 		return measurementEntity;
 	}
 }

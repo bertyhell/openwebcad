@@ -151,6 +151,7 @@ export class FillEntity implements Entity {
 			layerId: this.layerId,
 			lineColor: this.lineColor,
 			lineWidth: this.lineWidth,
+			lineDash: this.lineDash,
 			shapeData: {
 				fillColor: this.fillColor,
 				fillBorderPolyline: fillBorderJson as JsonEntity<PolyLineJsonData>,
@@ -185,6 +186,10 @@ export class FillEntity implements Entity {
 		fillEntity.id = jsonEntity.id;
 		fillEntity.lineColor = jsonEntity.lineColor;
 		fillEntity.lineWidth = jsonEntity.lineWidth;
+		// Drawings saved before the line dash was stored keep the default line dash
+		if (jsonEntity.lineDash) {
+			fillEntity.lineDash = [...jsonEntity.lineDash];
+		}
 		fillEntity.fillColor = jsonEntity.shapeData.fillColor;
 		return fillEntity;
 	}

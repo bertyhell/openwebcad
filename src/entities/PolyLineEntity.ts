@@ -161,6 +161,7 @@ export class PolyLineEntity implements Entity {
 			type: EntityName.PolyLine,
 			lineColor: this.lineColor,
 			lineWidth: this.lineWidth,
+			lineDash: this.lineDash,
 			layerId: this.layerId,
 			shapeData: null,
 			children: compact(await mapLimit(this.entities, 20, (entity) => entity.toJson())),
@@ -213,6 +214,10 @@ export class PolyLineEntity implements Entity {
 		polyLineEntity.id = jsonEntity.id;
 		polyLineEntity.lineColor = jsonEntity.lineColor;
 		polyLineEntity.lineWidth = jsonEntity.lineWidth;
+		// Drawings saved before the line dash was stored keep the default line dash
+		if (jsonEntity.lineDash) {
+			polyLineEntity.lineDash = [...jsonEntity.lineDash];
+		}
 		return polyLineEntity;
 	}
 }

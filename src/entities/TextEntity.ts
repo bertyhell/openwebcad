@@ -216,6 +216,7 @@ export class TextEntity implements Entity {
 			type: EntityName.Text,
 			lineColor: this.lineColor,
 			lineWidth: this.lineWidth,
+			lineDash: this.lineDash,
 			layerId: this.layerId,
 			shapeData: {
 				label: this.label,
@@ -256,6 +257,10 @@ export class TextEntity implements Entity {
 		textEntity.id = jsonEntity.id;
 		textEntity.lineColor = jsonEntity.lineColor;
 		textEntity.lineWidth = jsonEntity.lineWidth;
+		// Drawings saved before the line dash was stored keep the default line dash
+		if (jsonEntity.lineDash) {
+			textEntity.lineDash = [...jsonEntity.lineDash];
+		}
 		return textEntity;
 	}
 }

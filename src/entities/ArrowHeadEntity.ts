@@ -145,6 +145,7 @@ export class ArrowHeadEntity implements Entity {
 			type: EntityName.ArrowHead,
 			lineColor: this.lineColor,
 			lineWidth: this.lineWidth,
+			lineDash: this.lineDash,
 			layerId: this.layerId,
 			shapeData: {
 				p1: { x: this.p1.x, y: this.p1.y },
@@ -168,6 +169,10 @@ export class ArrowHeadEntity implements Entity {
 		lineEntity.id = jsonEntity.id;
 		lineEntity.lineColor = jsonEntity.lineColor;
 		lineEntity.lineWidth = jsonEntity.lineWidth;
+		// Drawings saved before the line dash was stored keep the default line dash
+		if (jsonEntity.lineDash) {
+			lineEntity.lineDash = [...jsonEntity.lineDash];
+		}
 		return lineEntity;
 	}
 }

@@ -169,6 +169,7 @@ export class CircleEntity implements Entity {
 			type: EntityName.Circle,
 			lineColor: this.lineColor,
 			lineWidth: this.lineWidth,
+			lineDash: this.lineDash,
 			layerId: this.layerId,
 			shapeData: {
 				center: { x: this.circle.center.x, y: this.circle.center.y },
@@ -188,6 +189,10 @@ export class CircleEntity implements Entity {
 		circleEntity.id = jsonEntity.id;
 		circleEntity.lineColor = jsonEntity.lineColor;
 		circleEntity.lineWidth = jsonEntity.lineWidth;
+		// Drawings saved before the line dash was stored keep the default line dash
+		if (jsonEntity.lineDash) {
+			circleEntity.lineDash = [...jsonEntity.lineDash];
+		}
 		return circleEntity;
 	}
 

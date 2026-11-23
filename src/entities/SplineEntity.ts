@@ -57,6 +57,7 @@ export class SplineEntity extends CurveEntity {
 			type: EntityName.Spline,
 			lineColor: this.lineColor,
 			lineWidth: this.lineWidth,
+			lineDash: this.lineDash,
 			layerId: this.layerId,
 			shapeData: {
 				fitPoints: this.fitPoints.map((point) => ({ x: point.x, y: point.y })),
@@ -75,6 +76,10 @@ export class SplineEntity extends CurveEntity {
 		splineEntity.id = jsonEntity.id;
 		splineEntity.lineColor = jsonEntity.lineColor;
 		splineEntity.lineWidth = jsonEntity.lineWidth;
+		// Drawings saved before the line dash was stored keep the default line dash
+		if (jsonEntity.lineDash) {
+			splineEntity.lineDash = [...jsonEntity.lineDash];
+		}
 		return splineEntity;
 	}
 }

@@ -230,6 +230,7 @@ export class ArcEntity implements Entity, StartAndEndpointEntity {
 			type: EntityName.Arc,
 			lineColor: this.lineColor,
 			lineWidth: this.lineWidth,
+			lineDash: this.lineDash,
 			layerId: this.layerId,
 			shapeData: {
 				center: { x: this.arc.center.x, y: this.arc.center.y },
@@ -261,6 +262,10 @@ export class ArcEntity implements Entity, StartAndEndpointEntity {
 		arcEntity.id = jsonEntity.id;
 		arcEntity.lineColor = jsonEntity.lineColor;
 		arcEntity.lineWidth = jsonEntity.lineWidth;
+		// Drawings saved before the line dash was stored keep the default line dash
+		if (jsonEntity.lineDash) {
+			arcEntity.lineDash = [...jsonEntity.lineDash];
+		}
 		return arcEntity;
 	}
 

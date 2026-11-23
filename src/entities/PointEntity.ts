@@ -129,6 +129,7 @@ export class PointEntity implements Entity {
 			type: EntityName.Point,
 			lineColor: this.lineColor,
 			lineWidth: this.lineWidth,
+			lineDash: this.lineDash,
 			layerId: this.layerId,
 			shapeData: {
 				point: {
@@ -149,6 +150,10 @@ export class PointEntity implements Entity {
 		lineEntity.id = jsonEntity.id;
 		lineEntity.lineColor = jsonEntity.lineColor;
 		lineEntity.lineWidth = jsonEntity.lineWidth;
+		// Drawings saved before the line dash was stored keep the default line dash
+		if (jsonEntity.lineDash) {
+			lineEntity.lineDash = [...jsonEntity.lineDash];
+		}
 		return lineEntity;
 	}
 }

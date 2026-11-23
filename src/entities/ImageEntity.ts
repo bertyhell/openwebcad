@@ -215,6 +215,7 @@ export class ImageEntity implements Entity {
 			type: EntityName.Image,
 			lineColor: this.lineColor,
 			lineWidth: this.lineWidth,
+			lineDash: this.lineDash,
 			layerId: this.layerId,
 			shapeData: {
 				points: this.polygon.vertices.map((vertex) => ({
@@ -243,6 +244,10 @@ export class ImageEntity implements Entity {
 		rectangleEntity.id = jsonEntity.id;
 		rectangleEntity.lineColor = jsonEntity.lineColor;
 		rectangleEntity.lineWidth = jsonEntity.lineWidth;
+		// Drawings saved before the line dash was stored keep the default line dash
+		if (jsonEntity.lineDash) {
+			rectangleEntity.lineDash = [...jsonEntity.lineDash];
+		}
 		return rectangleEntity;
 	}
 }

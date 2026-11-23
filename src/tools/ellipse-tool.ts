@@ -1,5 +1,7 @@
 import { type Point, Vector } from '@flatten-js/core';
+import { toast } from 'react-toastify';
 import { Actor, assign, createMachine } from 'xstate';
+import { EPSILON } from '../App.consts.ts';
 import { EllipseEntity } from '../entities/EllipseEntity.ts';
 import { pointDistance } from '../helpers/distance-between-points.ts';
 import { getPointFromEvent } from '../helpers/get-point-from-event.ts';
@@ -53,6 +55,61 @@ function getSecondAxisLength(center: Point, majorAxisEnd: Point, point: Point): 
 	const toPoint = new Vector(center, point);
 	return Math.abs(axisDirection.cross(toPoint));
 }
+
+/**
+ * Second axis length from a typed half length or from a point at that distance from the first axis
+ */
+function getSecondAxisLengthFromEvent(
+	center: Point,
+	majorAxisEnd: Point,
+	event: StateEvent
+): number {
+	if (event.type === 'NUMBER_INPUT') {
+		return Math.abs((event as NumberInputEvent).value);
+	}
+	return getSecondAxisLength(
+		center,
+		majorAxisEnd,
+		getPointFromEvent(center, event as PointInputEvent)
+	);
+}
+
+/**
+ * Draw the ellipse, or keep the center and the first axis and wait for another point
+ * when the second axis has no length, eg: the user clicked on the line through the first axis
+ */
+const finishEllipseTransitions = [
+	{
+		guard: ({ context, event }: { context: EllipseContext; event: StateEvent }) =>
+			!!context.center &&
+			!!context.majorAxisEnd &&
+			getSecondAxisLengthFromEvent(context.center, context.majorAxisEnd, event) > EPSILON,
+		actions: EllipseAction.DRAW_FINAL_ELLIPSE,
+		target: EllipseState.INIT,
+	},
+	{
+		actions: () => {
+			toast.info('The second axis needs a length, select a point next to the first axis');
+		},
+	},
+];
+
+/**
+ * Record the first axis, or keep waiting when it has no length, since the second axis is measured from it
+ */
+const recordFirstAxisTransitions = [
+	{
+		guard: ({ context, event }: { context: EllipseContext; event: StateEvent }) =>
+			hasLength(context.center, event),
+		actions: EllipseAction.RECORD_FIRST_AXIS,
+		target: EllipseState.WAITING_FOR_SECOND_AXIS,
+	},
+	{
+		actions: () => {
+			toast.info('The first axis needs a length, select a point away from the center');
+		},
+	},
+];
 
 function createEllipse(
 	center: Point,
@@ -121,26 +178,10 @@ export const ellipseToolStateMachine = createMachine(
 					DRAW: {
 						actions: EllipseAction.DRAW_TEMP_FIRST_AXIS,
 					},
-					MOUSE_CLICK: {
-						guard: ({ context, event }) => hasLength(context.center, event),
-						actions: EllipseAction.RECORD_FIRST_AXIS,
-						target: EllipseState.WAITING_FOR_SECOND_AXIS,
-					},
-					NUMBER_INPUT: {
-						guard: ({ context, event }) => hasLength(context.center, event),
-						actions: EllipseAction.RECORD_FIRST_AXIS,
-						target: EllipseState.WAITING_FOR_SECOND_AXIS,
-					},
-					ABSOLUTE_POINT_INPUT: {
-						guard: ({ context, event }) => hasLength(context.center, event),
-						actions: EllipseAction.RECORD_FIRST_AXIS,
-						target: EllipseState.WAITING_FOR_SECOND_AXIS,
-					},
-					RELATIVE_POINT_INPUT: {
-						guard: ({ context, event }) => hasLength(context.center, event),
-						actions: EllipseAction.RECORD_FIRST_AXIS,
-						target: EllipseState.WAITING_FOR_SECOND_AXIS,
-					},
+					MOUSE_CLICK: recordFirstAxisTransitions,
+					NUMBER_INPUT: recordFirstAxisTransitions,
+					ABSOLUTE_POINT_INPUT: recordFirstAxisTransitions,
+					RELATIVE_POINT_INPUT: recordFirstAxisTransitions,
 					ESC: {
 						target: EllipseState.INIT,
 					},
@@ -155,18 +196,9 @@ export const ellipseToolStateMachine = createMachine(
 					DRAW: {
 						actions: EllipseAction.DRAW_TEMP_ELLIPSE,
 					},
-					MOUSE_CLICK: {
-						actions: EllipseAction.DRAW_FINAL_ELLIPSE,
-						target: EllipseState.INIT,
-					},
-					NUMBER_INPUT: {
-						actions: EllipseAction.DRAW_FINAL_ELLIPSE,
-						target: EllipseState.INIT,
-					},
-					ABSOLUTE_POINT_INPUT: {
-						actions: EllipseAction.DRAW_FINAL_ELLIPSE,
-						target: EllipseState.INIT,
-					},
+					MOUSE_CLICK: finishEllipseTransitions,
+					NUMBER_INPUT: finishEllipseTransitions,
+					ABSOLUTE_POINT_INPUT: finishEllipseTransitions,
 					ESC: {
 						target: EllipseState.INIT,
 					},
@@ -225,15 +257,11 @@ export const ellipseToolStateMachine = createMachine(
 			},
 			[EllipseAction.DRAW_FINAL_ELLIPSE]: ({ context, event }) => {
 				if (!context.center || !context.majorAxisEnd) return;
-				const secondAxisLength =
-					event.type === 'NUMBER_INPUT'
-						? Math.abs((event as NumberInputEvent).value)
-						: getSecondAxisLength(
-								context.center,
-								context.majorAxisEnd,
-								getPointFromEvent(context.center, event as PointInputEvent)
-							);
-				if (secondAxisLength === 0) return;
+				const secondAxisLength = getSecondAxisLengthFromEvent(
+					context.center,
+					context.majorAxisEnd,
+					event
+				);
 				addEntities([createEllipse(context.center, context.majorAxisEnd, secondAxisLength)], true);
 			},
 			[EllipseAction.SWITCH_TO_SELECT_TOOL]: () => {

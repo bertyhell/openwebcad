@@ -1,7 +1,7 @@
 import { Point } from '@flatten-js/core';
 import { compact, round } from 'es-toolkit';
 import { toast } from 'react-toastify';
-import { Actor } from 'xstate';
+import { Actor, type AnyActorRef } from 'xstate';
 import {
 	CANVAS_INPUT_FIELD_BACKGROUND_COLOR,
 	CANVAS_INPUT_FIELD_HEIGHT,
@@ -22,6 +22,8 @@ import {
 	getActiveToolActor,
 	getCanvas,
 	getEditableEntities,
+	getEditableSelectedEntities,
+	getEntities,
 	getGridSettings,
 	getLastStateInstructions,
 	getPanStartLocation,
@@ -33,6 +35,7 @@ import {
 	redo,
 	requestRedraw,
 	setActiveToolActor,
+	setEntities,
 	setGhostHelperEntities,
 	setGridSettings,
 	setPanStartLocation,
@@ -40,6 +43,7 @@ import {
 	setShouldDrawCursor,
 	undo,
 } from '../state.ts';
+import { SelectState } from '../tools/select-tool.ts';
 import { TOOL_STATE_MACHINES } from '../tools/tool.consts.ts';
 import {
 	type AbsolutePointInputEvent,
@@ -82,12 +86,47 @@ function shouldLetElementHandleKey(evt: KeyboardEvent): boolean {
 }
 
 /**
+ * Ctrl, or Cmd on macOS, is held for a keyboard shortcut
+ * Windows reports AltGr as Ctrl+Alt, keyboard layouts like AZERTY need AltGr to type characters like @ and [
+ */
+function isShortcutModifierPressed(evt: KeyboardEvent): boolean {
+	const isAltGraph = !!evt.getModifierState?.('AltGraph') || (evt.ctrlKey && evt.altKey);
+	return (evt.ctrlKey || evt.metaKey) && !isAltGraph;
+}
+
+/**
+ * Letters that do something in the drawing together with Ctrl or Cmd
+ * Other Ctrl or Cmd shortcuts are left to the browser, eg: Ctrl+C, Ctrl+P or Ctrl+R
+ */
+const CTRL_SHORTCUT_KEYS = ['z', 'y', 'a', 's', 'v'];
+
+/**
  * Whether the active tool is asking for text, eg: the label of a text or a zoom option
  */
 function activeToolAcceptsTextInput(): boolean {
 	const activeToolSnapshot = getActiveToolActor()?.getSnapshot();
 	const activeToolState = activeToolSnapshot?.value;
 	return !!activeToolSnapshot?.machine?.states?.[activeToolState]?.config?.on?.TEXT_INPUT;
+}
+
+/**
+ * Whether the active tool is asking for any text, eg: the label of a text
+ * A tool that only offers single key options, eg: [I]nvert in the arc tool, doesn't,
+ * so keys like space, + and [ keep their own meaning there
+ */
+function activeToolWantsFreeText(): boolean {
+	return activeToolAcceptsTextInput() && getActiveToolInstantOptions().length === 0;
+}
+
+/**
+ * The select tool that the active tool runs while it waits for a selection, eg: MOVE before anything is selected
+ */
+function getSelectToolInsideActiveTool(): AnyActorRef | undefined {
+	const children: Record<string, AnyActorRef | undefined> =
+		getActiveToolActor()?.getSnapshot()?.children ?? {};
+	return Object.values(children).find(
+		(child) => child?.getSnapshot()?.context?.type === Tool.SELECT
+	);
 }
 
 /**
@@ -112,6 +151,18 @@ function getActiveToolInstantOptions(): string[] {
 }
 
 /**
+ * Whether the text is a single key option that the active tool can apply right now
+ * An option that isn't possible yet is typed like other text instead. eg: [C]lose in the line tool needs 2 segments
+ */
+function activeToolTakesInstantOption(text: string): boolean {
+	const option = text.trim().toUpperCase();
+	return (
+		getActiveToolInstantOptions().includes(option) &&
+		activeToolHandlesEvent({ type: ActorEvent.TEXT_INPUT, value: option })
+	);
+}
+
+/**
  * Whether the active tool is waiting for its first input, eg: the line tool waiting for the start point
  * The first waiting state is the one the INIT state moves to
  */
@@ -121,6 +172,14 @@ function activeToolIsAtStart(): boolean {
 	const machine = activeToolSnapshot?.machine;
 	if (!machine || typeof activeToolState !== 'string') {
 		return false;
+	}
+	// A tool that waits for a selection is at its start until the user starts a selection window,
+	// eg: MOVE, which also goes back to waiting for a selection after every move
+	const selectToolInsideActiveTool = getSelectToolInsideActiveTool();
+	if (selectToolInsideActiveTool) {
+		return (
+			selectToolInsideActiveTool.getSnapshot().value === SelectState.WAITING_FOR_FIRST_SELECT_POINT
+		);
 	}
 	const initialState = machine.config.initial;
 	if (typeof initialState !== 'string') {
@@ -169,10 +228,30 @@ export class InputController {
 	private isSpaceHeld = false;
 
 	/**
+	 * The last tool the user started from the command line or the sidebar, ENTER at the idle prompt starts it again
+	 */
+	private lastTool: Tool | null = null;
+
+	/**
 	 * Text the user is typing in the input field next to the cursor
 	 */
 	public getText(): string {
 		return this.text;
+	}
+
+	/**
+	 * Remember the tool the user started, so ENTER at the idle prompt can repeat it
+	 */
+	public rememberLastTool(tool: Tool): void {
+		// Repeating the select tool does nothing, and the image import tool needs a file from the file picker
+		if (tool === Tool.SELECT || tool === Tool.IMAGE_IMPORT) {
+			return;
+		}
+		this.lastTool = tool;
+	}
+
+	public getLastTool(): Tool | null {
+		return this.lastTool;
 	}
 
 	constructor() {
@@ -401,7 +480,14 @@ export class InputController {
 		if (shouldLetElementHandleKey(evt)) {
 			return;
 		}
-		if (evt.key === ' ' && this.text === '' && !activeToolAcceptsTextInput()) {
+		// Cmd on macOS behaves like Ctrl on other platforms
+		const isCtrl = isShortcutModifierPressed(evt);
+		const key = evt.key?.toLowerCase() ?? '';
+		if (isCtrl && key.length === 1 && !CTRL_SHORTCUT_KEYS.includes(key)) {
+			// Leave other shortcuts to the browser, they never type text or pick an option of the active tool. eg: Ctrl+C
+			return;
+		}
+		if (evt.key === ' ' && this.text === '' && !activeToolWantsFreeText()) {
 			// Space without typed text starts panning with the left mouse button, instead of typing a space
 			evt.preventDefault();
 			this.setSpaceHeld(true);
@@ -427,16 +513,13 @@ export class InputController {
 		}
 		evt.preventDefault();
 		evt.stopPropagation();
-		// Cmd on macOS behaves like Ctrl on other platforms
-		const isCtrl = evt.ctrlKey || evt.metaKey;
-		const key = evt.key.toLowerCase();
 		if (isCtrl && key === 'v') {
 			// User wants to paste the clipboard
 		} else if (isCtrl && key === 's') {
 			// User wants to save the drawing to local storage
 			localStorageExport().then((isSaved) => isSaved && toast.success('Saved'));
-		} else if (evt.key === '[' && this.text === '') {
-			// User wants to collapse or expand the sidebar
+		} else if (evt.key === '[' && this.text === '' && !activeToolWantsFreeText()) {
+			// User wants to collapse or expand the sidebar, a tool that asks for text gets the [ instead. eg: TEXT
 			window.dispatchEvent(new CustomEvent(HtmlEvent.TOGGLE_SIDEBAR));
 		} else if (isCtrl && !evt.shiftKey && key === 'z') {
 			// User wants to undo the last action
@@ -457,9 +540,7 @@ export class InputController {
 		} else if (evt.key === 'Delete') {
 			// User wants to delete the current selection
 			evt.preventDefault();
-			getActiveToolActor()?.send({
-				type: ActorEvent.DELETE,
-			});
+			this.handleDeleteKey();
 		} else if (evt.key === 'Escape') {
 			// User wants to cancel the current action
 			this.handleEscapeKey();
@@ -491,14 +572,14 @@ export class InputController {
 		} else if (evt.key === 'ArrowRight') {
 			// Move the screen right
 			getScreenCanvasDrawController().setScreenOffset(this.getScreenPanStep('right', evt.shiftKey));
-		} else if (evt.key === '+' && this.text === '' && !activeToolAcceptsTextInput()) {
+		} else if (evt.key === '+' && this.text === '' && !activeToolWantsFreeText()) {
 			// Zoom in around the center of the screen
 			zoomIn();
 		} else if (
 			evt.key === '-' &&
 			this.text === '' &&
 			!getShouldDrawHelpers() &&
-			!activeToolAcceptsTextInput()
+			!activeToolWantsFreeText()
 		) {
 			// Zoom out around the center of the screen
 			// While picking points, minus starts a negative number instead
@@ -512,11 +593,7 @@ export class InputController {
 		} else if (evt.key === 'Home') {
 			// Zoom to show the whole drawing
 			zoomToBounds();
-		} else if (
-			evt.key?.length === 1 &&
-			this.text === '' &&
-			getActiveToolInstantOptions().includes(evt.key.toUpperCase())
-		) {
+		} else if (evt.key?.length === 1 && this.text === '' && activeToolTakesInstantOption(evt.key)) {
 			// The active tool has a single key option, apply it instantly instead of typing it
 			getActiveToolActor()?.send({
 				type: ActorEvent.TEXT_INPUT,
@@ -528,26 +605,78 @@ export class InputController {
 		}
 	}
 
+	/**
+	 * ESC cancels one thing at a time, the most recent first:
+	 * 1. the typed text
+	 * 2. the step the active tool is busy with, eg: a selection window or the line that follows the mouse
+	 * 3. the selection
+	 * 4. the active tool, the select tool takes over
+	 */
 	public handleEscapeKey() {
+		if (this.text !== '') {
+			// Clear the input field
+			this.text = '';
+			return;
+		}
+
+		const activeTool = getActiveToolActor();
+		const selectToolInsideActiveTool = getSelectToolInsideActiveTool();
+		if (
+			selectToolInsideActiveTool?.getSnapshot().value ===
+			SelectState.WAITING_FOR_SECOND_SELECT_POINT
+		) {
+			// The tools that wait for a selection don't pass ESC on to their select tool, so cancel the selection window here
+			selectToolInsideActiveTool.send({ type: ActorEvent.ESC });
+			return;
+		}
+
+		if (!activeToolIsAtStart() && activeToolHandlesEvent({ type: ActorEvent.ESC })) {
+			// Cancel the step the active tool is busy with
+			activeTool?.send({ type: ActorEvent.ESC });
+			return;
+		}
+
 		if (getSelectedEntities().length > 0) {
 			// Deselect entities
 			setSelectedEntityIds([]);
-		} else if (
-			this.text === '' &&
-			getActiveToolActor()?.getSnapshot()?.context.type !== Tool.SELECT &&
-			activeToolIsAtStart()
-		) {
+			return;
+		}
+
+		if (activeTool?.getSnapshot()?.context.type !== Tool.SELECT) {
 			// Nothing to cancel in the active tool, go back to selecting
 			setActiveToolActor(new Actor(TOOL_STATE_MACHINES[Tool.SELECT]));
-		} else if (this.text === '') {
-			// Cancel tool action
-			getActiveToolActor()?.send({
-				type: ActorEvent.ESC,
-			});
-		} else {
-			// clear the input field
-			this.text = '';
+			return;
 		}
+
+		// Let the select tool clear what is left of its previews
+		activeTool?.send({ type: ActorEvent.ESC });
+	}
+
+	/**
+	 * DELETE erases the selection in every tool, eg: after selecting everything with Ctrl+A while drawing lines
+	 */
+	public handleDeleteKey() {
+		const selectedEntities = getEditableSelectedEntities();
+		if (selectedEntities.length === 0) {
+			getActiveToolActor()?.send({ type: ActorEvent.DELETE });
+			return;
+		}
+		// Erase all selected entities in a single undo step
+		const selectedIds = new Set(selectedEntities.map((entity) => entity.id));
+		setEntities(
+			getEntities().filter((entity) => !selectedIds.has(entity.id)),
+			true
+		);
+		setSelectedEntityIds([]);
+	}
+
+	/**
+	 * Start a tool, eg: after typing its name
+	 */
+	public startTool(tool: Tool): void {
+		getActiveToolActor()?.stop();
+		setActiveToolActor(new Actor(TOOL_STATE_MACHINES[tool]));
+		this.rememberLastTool(tool);
 	}
 
 	public handleEnterKey() {
@@ -558,6 +687,14 @@ export class InputController {
 		this.text = '';
 
 		if (text === '') {
+			if (activeTool?.getSnapshot()?.context.type === Tool.SELECT) {
+				// ENTER at the idle prompt repeats the last command, like in AutoCAD.
+				// The select tool doesn't get the ENTER, that would finish it, so it would stop selecting
+				if (this.lastTool && activeToolIsAtStart()) {
+					this.startTool(this.lastTool);
+				}
+				return;
+			}
 			// Send the ENTER event to the active tool
 			activeTool?.send({
 				type: ActorEvent.ENTER,
@@ -571,7 +708,7 @@ export class InputController {
 		// A tool that only asks for single key options gets those options, other text is a command. eg: AREA => [O]bject
 		const instantOptions = getActiveToolInstantOptions();
 		const isOtherThanInstantOption =
-			instantOptions.length > 0 && !instantOptions.includes(text.trim().toUpperCase());
+			instantOptions.length > 0 && !activeToolTakesInstantOption(text);
 		if (
 			activeToolCanHandleTextInput &&
 			!isNumberForTool &&
@@ -590,8 +727,7 @@ export class InputController {
 		switch (command.type) {
 			case 'tool':
 				// User entered a command. eg: L or LINE
-				activeTool?.stop();
-				setActiveToolActor(new Actor(TOOL_STATE_MACHINES[command.tool]));
+				this.startTool(command.tool);
 				break;
 
 			case 'action':

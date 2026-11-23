@@ -7,7 +7,6 @@ import { getNewLayer } from '../../helpers/get-new-layer.ts';
 import { imageImport } from '../../helpers/import-export-handlers/image.import.ts';
 import {
 	getActiveLayerId,
-	getActiveToolActor,
 	getEditableEntities,
 	getEditableSelectedEntities,
 	getEntities,
@@ -23,14 +22,13 @@ import {
 	setSelectedEntityIds,
 } from '../../state.ts';
 import { imageImportToolStateMachine } from '../../tools/image-import-tool.ts';
-import { TOOL_STATE_MACHINES } from '../../tools/tool.consts.ts';
 import { ActorEvent } from '../../tools/tool.types.ts';
 import { zoomToBounds, zoomToScale } from '../../tools/zoom-tool.helpers.ts';
 import type { Tool } from '../../tools.ts';
 
 export function activateTool(tool: Tool): void {
-	getActiveToolActor()?.stop();
-	setActiveToolActor(new Actor(TOOL_STATE_MACHINES[tool]));
+	// ENTER at the idle prompt repeats the last tool, also when it was started from the sidebar
+	getInputController().startTool(tool);
 }
 
 export async function startImageImport(file: File | undefined): Promise<void> {

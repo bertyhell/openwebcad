@@ -21,14 +21,14 @@ export function isBreakable(entity: Entity): boolean {
 	return BREAKABLE_TYPES.includes(entity.getType());
 }
 
-function getPathLength(edges: Edge[]): number {
+export function getPathLength(edges: Edge[]): number {
 	return edges.reduce((length, edge) => length + edge.length, 0);
 }
 
 /**
  * Part of an edge from its start up to the point
  */
-function getLengthUpToPoint(edge: Edge, point: Point): number {
+export function getLengthUpToPoint(edge: Edge, point: Point): number {
 	if (edge instanceof Segment) {
 		return edge.start.distanceTo(point)[0];
 	}
@@ -84,7 +84,7 @@ export function getSubPath(edges: Edge[], from: number, to: number): Edge[] {
 	return subPath;
 }
 
-function edgesToEntity(edges: Edge[], original: Entity): Entity | null {
+export function edgesToEntity(edges: Edge[], original: Entity): Entity | null {
 	const entities = edges.map((edge) =>
 		edge instanceof Segment ? new LineEntity(edge) : new ArcEntity(edge)
 	);
@@ -95,7 +95,7 @@ function edgesToEntity(edges: Edge[], original: Entity): Entity | null {
 	return copyEntityBaseProperties(original, entity);
 }
 
-function isClosedPath(edges: Edge[]): boolean {
+export function isClosedPath(edges: Edge[]): boolean {
 	return edges.length > 0 && isPointEqual(edges[0].start, (edges.at(-1) as Edge).end);
 }
 

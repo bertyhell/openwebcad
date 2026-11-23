@@ -166,7 +166,10 @@ export class LineEntity implements Entity, StartAndEndpointEntity {
 		// Until length - 2, so we can combine start points with endpoints
 		for (let i = 0; i < sortLinesByDistanceToStartPoint.length - 1; i++) {
 			lineSegments.push(
-				new LineEntity(sortLinesByDistanceToStartPoint[i], sortLinesByDistanceToStartPoint[i + 1])
+				copyEntityBaseProperties(
+					this,
+					new LineEntity(sortLinesByDistanceToStartPoint[i], sortLinesByDistanceToStartPoint[i + 1])
+				)
 			);
 		}
 		return lineSegments;

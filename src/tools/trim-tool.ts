@@ -1,13 +1,12 @@
-import type { Point, Polygon } from '@flatten-js/core';
+import type { Point } from '@flatten-js/core';
+import { toast } from 'react-toastify';
 import { assign, createMachine } from 'xstate';
 import { CURSOR_SIZE, HIGHLIGHT_LINE_STYLE } from '../App.consts';
 import type { ArcEntity } from '../entities/ArcEntity';
 import type { CircleEntity } from '../entities/CircleEntity';
 import { EntityName } from '../entities/Entity';
-import { LineEntity } from '../entities/LineEntity';
-import type { RectangleEntity } from '../entities/RectangleEntity';
+import type { LineEntity } from '../entities/LineEntity';
 import { findClosestEntity } from '../helpers/find-closest-entity';
-import { polygonToSegments } from '../helpers/polygon-to-segments';
 import {
 	getEditableEntities,
 	getEntities,
@@ -27,6 +26,7 @@ import {
 	trimArcSegment,
 	trimCircleSegment,
 	trimLineSegment,
+	trimPathSegment,
 } from './trim-tool.helpers';
 
 export interface TrimContext extends ToolContext {
@@ -100,15 +100,17 @@ export const trimToolStateMachine = createMachine(
 );
 
 /**
- * Calculates which part of the entity under the mouse would be removed by the trim tool
+ * Either the parts that a trim would remove and keep, or the reason why the entity under the mouse can't be trimmed
+ */
+type TrimOutcome = { trimResult: TrimResult } | { message: string };
+
+/**
+ * Calculates what trimming the entity under the mouse would do
  * Returns null when no editable entity is within the cursor size of the mouse
  * @param worldMouseLocation the mouse location in world coordinates
  * @param maxDistance the max distance in world units between the mouse and the entity
  */
-export function getTrimResult(
-	worldMouseLocation: Point,
-	maxDistance: number = getMaxTrimDistance()
-): TrimResult | null {
+function getTrimOutcome(worldMouseLocation: Point, maxDistance: number): TrimOutcome | null {
 	const editableEntities = getEditableEntities();
 	if (!editableEntities.length) {
 		return null;
@@ -118,73 +120,64 @@ export function getTrimResult(
 		return null;
 	}
 
+	const entity = closestEntity.entity;
 	const clickedPointOnShape = closestEntity.segment.start;
 
-	// Find entities that intersect with the closest entity
-	const intersections = getAllIntersectionPoints(closestEntity.entity, getVisibleEntities());
-
-	const entityType = closestEntity.entity.getType();
+	const entityType = entity.getType();
 	switch (entityType) {
 		case EntityName.Line:
-			return trimLineSegment(
-				closestEntity.entity as LineEntity,
-				clickedPointOnShape,
-				intersections
-			);
-
-		case EntityName.Circle:
-			return trimCircleSegment(
-				closestEntity.entity as CircleEntity,
-				clickedPointOnShape,
-				intersections
-			);
-
-		case EntityName.Arc:
-			return trimArcSegment(closestEntity.entity as ArcEntity, clickedPointOnShape, intersections);
-
-		case EntityName.Rectangle: {
-			const rectangle = closestEntity.entity as RectangleEntity;
-			const segments = polygonToSegments(rectangle.getShape() as Polygon);
-			const segmentEntities = segments.map((segment) =>
-				Object.assign(new LineEntity(segment), {
-					lineColor: rectangle.lineColor,
-					lineWidth: rectangle.lineWidth,
-				})
-			);
-
-			// Find the closest segment to the clicked point
-			const closestSegment = findClosestEntity<LineEntity>(
-				worldMouseLocation,
-				segmentEntities
-			).entity;
-			const otherSegments = segmentEntities.filter((segment) => segment !== closestSegment);
-
-			// The rectangle is replaced by its 4 lines, so intersect with those instead of with the rectangle
-			const lineIntersections = getAllIntersectionPoints(closestSegment, [
-				...getVisibleEntities().filter((entity) => entity.id !== rectangle.id),
-				...otherSegments,
-			]);
-			const lineTrimResult = trimLineSegment(
-				closestSegment,
-				clickedPointOnShape,
-				lineIntersections
-			);
-
-			// Replace the rectangle by 4 lines and remove (a segment) of the line closest to the cursor
 			return {
-				original: [rectangle],
-				remaining: [...otherSegments, ...lineTrimResult.remaining],
-				removed: lineTrimResult.removed,
+				trimResult: trimLineSegment(
+					entity as LineEntity,
+					clickedPointOnShape,
+					getAllIntersectionPoints(entity, getVisibleEntities())
+				),
 			};
+
+		case EntityName.Circle: {
+			const trimResult = trimCircleSegment(
+				entity as CircleEntity,
+				clickedPointOnShape,
+				getAllIntersectionPoints(entity, getVisibleEntities())
+			);
+			return trimResult
+				? { trimResult }
+				: { message: 'A circle can only be trimmed where it crosses other entities at two points' };
 		}
 
-		case EntityName.Image:
-			// TODO implement image eraser
-			// Switch to rectangle entity and delete the image and the line that was closest to the cursor
-			return null;
-	}
+		case EntityName.Arc:
+			return {
+				trimResult: trimArcSegment(
+					entity as ArcEntity,
+					clickedPointOnShape,
+					getAllIntersectionPoints(entity, getVisibleEntities())
+				),
+			};
 
-	return null;
+		case EntityName.Rectangle:
+		case EntityName.PolyLine: {
+			// Only the clicked segment is trimmed, the rest of the rectangle or polyline is kept as one or two polylines
+			const trimResult = trimPathSegment(entity, clickedPointOnShape, getVisibleEntities());
+			return trimResult ? { trimResult } : null;
+		}
+
+		default:
+			return { message: `Trim is not supported for ${entityType.toLowerCase()}` };
+	}
+}
+
+/**
+ * Calculates which part of the entity under the mouse would be removed by the trim tool
+ * Returns null when no editable entity is within the cursor size of the mouse or when it can't be trimmed
+ * @param worldMouseLocation the mouse location in world coordinates
+ * @param maxDistance the max distance in world units between the mouse and the entity
+ */
+export function getTrimResult(
+	worldMouseLocation: Point,
+	maxDistance: number = getMaxTrimDistance()
+): TrimResult | null {
+	const trimOutcome = getTrimOutcome(worldMouseLocation, maxDistance);
+	return trimOutcome && 'trimResult' in trimOutcome ? trimOutcome.trimResult : null;
 }
 
 /**
@@ -213,13 +206,21 @@ function drawTrimPreview(worldMouseLocation: Point): void {
 	setGhostHelperEntities([...trimResult.remaining, ...removedEntities]);
 }
 
-export function handleMouseClick(worldMouseLocation: Point, maxDistance?: number) {
-	const trimResult = getTrimResult(worldMouseLocation, maxDistance);
-	if (!trimResult) {
+export function handleMouseClick(
+	worldMouseLocation: Point,
+	maxDistance: number = getMaxTrimDistance()
+) {
+	const trimOutcome = getTrimOutcome(worldMouseLocation, maxDistance);
+	if (!trimOutcome) {
+		return;
+	}
+	if ('message' in trimOutcome) {
+		// Only explain on click, the preview runs on every mouse move
+		toast.info(trimOutcome.message);
 		return;
 	}
 
-	applyTrimResult(trimResult);
+	applyTrimResult(trimOutcome.trimResult);
 	setDimmedEntityIds([]);
 	setGhostHelperEntities([]);
 

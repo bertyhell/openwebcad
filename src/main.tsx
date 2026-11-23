@@ -6,6 +6,7 @@ import { Actor, type MachineSnapshot } from 'xstate';
 import { AUTOSAVE_DELAY, HOVERED_SNAP_POINT_TIME, SNAP_POINT_DISTANCE } from './App.consts';
 import App from './App.tsx';
 import { HtmlEvent } from './App.types.ts';
+import { getFirstEditableLayer } from './components/sidebar/sidebar.actions.ts';
 import { ScreenCanvasDrawController } from './drawControllers/screenCanvas.drawController';
 import { draw } from './helpers/draw';
 import { getNewLayer } from './helpers/get-new-layer.ts';
@@ -152,7 +153,8 @@ function initApplication() {
 			}
 			setEntities(file.entities);
 			setLayers(layers);
-			setActiveLayerId(layers[0].id);
+			// New entities on a hidden or locked layer would be invisible or impossible to change
+			setActiveLayerId((getFirstEditableLayer(layers) ?? layers[0]).id);
 			resetUndoHistory();
 
 			// Save every change automatically, only after loading, so an empty drawing never overwrites the saved one

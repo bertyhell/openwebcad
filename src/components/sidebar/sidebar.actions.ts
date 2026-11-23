@@ -1,3 +1,4 @@
+import { toast } from 'react-toastify';
 import { Actor } from 'xstate';
 import type { Layer } from '../../App.types.ts';
 import { type Entity, EntityName } from '../../entities/Entity.ts';
@@ -80,18 +81,69 @@ function updateLayer(layerId: string, update: Partial<Layer>): Layer | undefined
 	return updatedLayer;
 }
 
+function isLayerEditable(layer: Layer | undefined): boolean {
+	return !!layer && layer.isVisible && !layer.isLocked;
+}
+
+/**
+ * The layer that should become active when the active layer can't be used, eg: when the drawing is loaded
+ * A hidden or locked layer would make new entities invisible or impossible to change
+ */
+export function getFirstEditableLayer(layers: Layer[]): Layer | undefined {
+	return layers.find(isLayerEditable) ?? layers[0];
+}
+
+/**
+ * Tell the user when new entities end up on a hidden or locked layer, because there is no other layer to put them on
+ */
+function warnWhenActiveLayerIsNotEditable(): void {
+	const activeLayer = getLayers().find((layer) => layer.id === getActiveLayerId());
+	if (!activeLayer || isLayerEditable(activeLayer)) {
+		return;
+	}
+	if (!activeLayer.isVisible) {
+		toast.warn(`Layer ${activeLayer.name} is hidden, show it to see what you draw`);
+	} else {
+		toast.warn(`Layer ${activeLayer.name} is locked, unlock it to change what you draw`);
+	}
+}
+
 /**
  * Hidden or locked layers can't receive new entities, so move the active layer to another layer
  */
 function ensureActiveLayerIsEditable(): void {
 	const activeLayer = getLayers().find((layer) => layer.id === getActiveLayerId());
-	if (activeLayer?.isVisible && !activeLayer.isLocked) {
+	if (isLayerEditable(activeLayer)) {
 		return;
 	}
-	const editableLayer = getLayers().find((layer) => layer.isVisible && !layer.isLocked);
+	const editableLayer = getLayers().find(isLayerEditable);
 	if (editableLayer) {
 		setActiveLayerId(editableLayer.id);
+	} else {
+		warnWhenActiveLayerIsNotEditable();
 	}
+}
+
+/**
+ * Make the layer the one that new entities are added to
+ * A hidden or locked layer can't be made active, new entities on it would be invisible or impossible to change
+ * @returns whether the layer is active now
+ */
+export function activateLayer(layerId: string): boolean {
+	const layer = getLayers().find((layer) => layer.id === layerId);
+	if (!layer) {
+		return false;
+	}
+	if (!layer.isVisible) {
+		toast.info(`Show layer ${layer.name} to draw on it`);
+		return false;
+	}
+	if (layer.isLocked) {
+		toast.info(`Unlock layer ${layer.name} to draw on it`);
+		return false;
+	}
+	setActiveLayerId(layerId);
+	return true;
 }
 
 /**
@@ -162,7 +214,8 @@ export function deleteLayer(layerId: string): void {
 	setEntities(getEntities().filter((entity) => entity.layerId !== layerId));
 	setLayers(remainingLayers, true, true);
 	if (getActiveLayerId() === layerId) {
-		setActiveLayerId(remainingLayers[0].id);
+		setActiveLayerId((getFirstEditableLayer(remainingLayers) ?? remainingLayers[0]).id);
+		warnWhenActiveLayerIsNotEditable();
 	}
 }
 

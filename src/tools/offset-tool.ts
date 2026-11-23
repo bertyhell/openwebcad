@@ -55,6 +55,11 @@ export enum OffsetAction {
 const INSIDE_OPTION = 'I';
 const OUTSIDE_OPTION = 'O';
 
+/**
+ * The distance of the last offset is used again the next time the tool starts, like AutoCAD does
+ */
+let lastDistance: number | null = null;
+
 const isValidDistance = ({ event }: { event: StateEvent }) => (event as NumberInputEvent).value > 0;
 
 const isSideOption = ({ event }: { event: StateEvent }) =>
@@ -104,7 +109,12 @@ export const offsetToolStateMachine = createMachine(
 			[OffsetState.WAITING_FOR_DISTANCE]: {
 				description: 'Type the offset distance',
 				meta: {
-					instructions: 'Type the offset distance, then ENTER',
+					// A getter, so the instructions show the distance that is remembered at the moment they are read
+					get instructions() {
+						return lastDistance
+							? `Type the offset distance, then ENTER, or ENTER to use the last distance: ${lastDistance}`
+							: 'Type the offset distance, then ENTER';
+					},
 				},
 				on: {
 					NUMBER_INPUT: {
@@ -112,11 +122,18 @@ export const offsetToolStateMachine = createMachine(
 						actions: OffsetAction.RECORD_DISTANCE,
 						target: OffsetState.CHECK_SELECTION,
 					},
-					ENTER: {
-						// Reuse the last distance
-						guard: ({ context }) => !!context.distance,
-						target: OffsetState.CHECK_SELECTION,
-					},
+					ENTER: [
+						{
+							// Reuse the last distance
+							guard: ({ context }) => !!context.distance,
+							target: OffsetState.CHECK_SELECTION,
+						},
+						{
+							actions: () => {
+								toast.info('Type the offset distance first');
+							},
+						},
+					],
 				},
 			},
 			[OffsetState.CHECK_SELECTION]: {
@@ -135,7 +152,9 @@ export const offsetToolStateMachine = createMachine(
 			[OffsetState.WAITING_FOR_ENTITY]: {
 				description: 'Select the entity to offset',
 				meta: {
-					instructions: 'Select the entity to offset, or type a new distance',
+					get instructions() {
+						return `Select the entity to offset, or type a new distance (distance: ${lastDistance})`;
+					},
 				},
 				on: {
 					DRAW: {
@@ -195,12 +214,15 @@ export const offsetToolStateMachine = createMachine(
 				setHighlightedEntityIds([]);
 				setAngleGuideOriginPoint(null);
 				return {
+					// The context starts over for every use of the tool, the remembered distance doesn't
+					distance: lastDistance,
 					entities: [],
 				};
 			}),
 			[OffsetAction.RECORD_DISTANCE]: assign(({ event }) => {
+				lastDistance = (event as NumberInputEvent).value;
 				return {
-					distance: (event as NumberInputEvent).value,
+					distance: lastDistance,
 				};
 			}),
 			[OffsetAction.HIGHLIGHT_ENTITY]: ({ event }) => {

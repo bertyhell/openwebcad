@@ -26,6 +26,11 @@ import type {
  */
 export const DEFAULT_TEXT_HEIGHT = 20;
 
+/**
+ * The height of the last text is used again the next time the tool starts, like AutoCAD does
+ */
+let lastTextHeight = DEFAULT_TEXT_HEIGHT;
+
 export interface TextContext extends ToolContext {
 	basePoint: Point | null;
 	height: number;
@@ -79,7 +84,10 @@ export const textToolStateMachine = createMachine(
 			[TextState.WAITING_FOR_BASE_POINT]: {
 				description: 'Select where the text starts',
 				meta: {
-					instructions: 'Select where the text starts, or type the text height',
+					// A getter, so the instructions show the height that is remembered at the moment they are read
+					get instructions() {
+						return `Select where the text starts, or type the text height (height: ${lastTextHeight})`;
+					},
 				},
 				on: {
 					NUMBER_INPUT: {
@@ -121,12 +129,13 @@ export const textToolStateMachine = createMachine(
 				setSelectedEntityIds([]);
 				setGhostHelperEntities([]);
 				setAngleGuideOriginPoint(null);
-				return { basePoint: null };
+				// The context starts over for every use of the tool, the remembered height doesn't
+				return { basePoint: null, height: lastTextHeight };
 			}),
 			[TextAction.RECORD_HEIGHT]: assign(({ event }) => {
-				const height = (event as NumberInputEvent).value;
-				toast.info(`Text height: ${height}`);
-				return { height };
+				lastTextHeight = (event as NumberInputEvent).value;
+				toast.info(`Text height: ${lastTextHeight}`);
+				return { height: lastTextHeight };
 			}),
 			[TextAction.RECORD_BASE_POINT]: assign(({ event }) => {
 				setShouldDrawHelpers(false);

@@ -106,6 +106,12 @@ function getCorner(context: CornerContext, cornerType: CornerType, secondClickPo
  * The lines are trimmed or extended to the corner, which is rounded (fillet) or cut off (chamfer)
  */
 function createCornerToolStateMachine(tool: Tool, cornerType: CornerType, valueName: string) {
+	/**
+	 * The radius or distance of the last corner is used again the next time the tool starts, like AutoCAD does
+	 * Every corner tool remembers its own value, a fillet radius is not a chamfer distance
+	 */
+	let lastValue = 0;
+
 	return createMachine(
 		{
 			types: {} as {
@@ -130,7 +136,10 @@ function createCornerToolStateMachine(tool: Tool, cornerType: CornerType, valueN
 				[CornerState.WAITING_FOR_FIRST_LINE]: {
 					description: 'Select the first line',
 					meta: {
-						instructions: `Select the first line, drag a box over the corners, or type the ${valueName}`,
+						// A getter, so the instructions show the value that is remembered at the moment they are read
+						get instructions() {
+							return `Select the first line, drag a box over the corners, or type the ${valueName} (${valueName}: ${lastValue})`;
+						},
 					},
 					on: {
 						DRAW: { actions: CornerAction.HIGHLIGHT_LINE },
@@ -189,12 +198,13 @@ function createCornerToolStateMachine(tool: Tool, cornerType: CornerType, valueN
 					setGhostHelperEntities([]);
 					setHighlightedEntityIds([]);
 					setAngleGuideOriginPoint(null);
-					return { firstLine: null, boxStartPoint: null };
+					// The context starts over for every use of the tool, the remembered value doesn't
+					return { value: lastValue, firstLine: null, boxStartPoint: null };
 				}),
 				[CornerAction.RECORD_VALUE]: assign(({ event }) => {
-					const value = (event as NumberInputEvent).value;
-					toast.info(`${valueName[0].toUpperCase()}${valueName.slice(1)}: ${value}`);
-					return { value };
+					lastValue = (event as NumberInputEvent).value;
+					toast.info(`${valueName[0].toUpperCase()}${valueName.slice(1)}: ${lastValue}`);
+					return { value: lastValue };
 				}),
 				[CornerAction.HIGHLIGHT_LINE]: ({ event }) => {
 					const line = pickLine((event as DrawEvent).drawController.getWorldMouseLocation());

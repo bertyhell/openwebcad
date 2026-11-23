@@ -1,4 +1,5 @@
-import type { Point } from '@flatten-js/core';
+import type { Box, Point } from '@flatten-js/core';
+import { toast } from 'react-toastify';
 import { Actor, assign, createMachine } from 'xstate';
 import { ImageEntity } from '../entities/ImageEntity';
 import { RectangleEntity } from '../entities/RectangleEntity';
@@ -15,13 +16,16 @@ import {
 	setShouldDrawHelpers,
 } from '../state';
 import { Tool } from '../tools';
-import { getContainRectangleInsideRectangle } from './image-import-tool.helpers';
+import {
+	getContainRectangleInsideRectangle,
+	getImageEndPointFromWidth,
+} from './image-import-tool.helpers';
 import { selectToolStateMachine } from './select-tool';
 import {
 	ActorEvent,
 	type DrawEvent,
 	type FileSelectedEvent,
-	type MouseClickEvent,
+	type NumberInputEvent,
 	type PointInputEvent,
 	type StateEvent,
 	type ToolContext,
@@ -47,6 +51,62 @@ export enum ImageImportAction {
 	DRAW_FINAL_IMAGE_IMPORT = 'DRAW_FINAL_IMAGE_IMPORT',
 	SWITCH_TO_SELECT_TOOL = 'SWITCH_TO_SELECT_TOOL',
 }
+
+/**
+ * The box of the image for the second corner the user clicked or typed
+ * A typed number is the width of the image, the height follows from the aspect ratio of the image
+ * Returns null when the image would have no size
+ */
+function getImageBox(context: ImageImportContext, event: StateEvent): Box | null {
+	const { startPoint, imageElement } = context;
+	if (!startPoint || !imageElement) {
+		return null;
+	}
+	let endPoint: Point;
+	if (event.type === ActorEvent.NUMBER_INPUT) {
+		const numberEvent = event as NumberInputEvent;
+		if (numberEvent.value <= 0) {
+			return null;
+		}
+		endPoint = getImageEndPointFromWidth(
+			startPoint,
+			numberEvent.worldMouseLocation,
+			numberEvent.value,
+			imageElement.naturalWidth / imageElement.naturalHeight
+		);
+	} else {
+		endPoint = getPointFromEvent(startPoint, event as PointInputEvent);
+	}
+	return getContainRectangleInsideRectangle(
+		imageElement.naturalWidth,
+		imageElement.naturalHeight,
+		startPoint,
+		endPoint
+	);
+}
+
+/**
+ * Place the image and go back to selecting,
+ * or keep waiting for the second corner when the image would have no width or height
+ */
+const finishImageImportTransitions = [
+	{
+		guard: ({ context, event }: { context: ImageImportContext; event: StateEvent }) =>
+			!!getImageBox(context, event),
+		actions: [
+			ImageImportAction.DRAW_FINAL_IMAGE_IMPORT,
+			ImageImportAction.INIT_IMAGE_IMPORT_TOOL,
+			ImageImportAction.SWITCH_TO_SELECT_TOOL,
+		],
+	},
+	{
+		actions: () => {
+			toast.info(
+				'Select a second corner that is not level with the first corner, or type a width larger than 0'
+			);
+		},
+	},
+];
 
 export const imageImportToolStateMachine = createMachine(
 	{
@@ -97,6 +157,9 @@ export const imageImportToolStateMachine = createMachine(
 						actions: ImageImportAction.RECORD_START_POINT,
 						target: ImageImportState.WAITING_FOR_END_POINT,
 					},
+					ESC: {
+						actions: ImageImportAction.SWITCH_TO_SELECT_TOOL,
+					},
 				},
 			},
 			[ImageImportState.WAITING_FOR_END_POINT]: {
@@ -108,34 +171,10 @@ export const imageImportToolStateMachine = createMachine(
 					DRAW: {
 						actions: ImageImportAction.DRAW_TEMP_IMAGE_IMPORT,
 					},
-					MOUSE_CLICK: {
-						actions: [
-							ImageImportAction.DRAW_FINAL_IMAGE_IMPORT,
-							ImageImportAction.INIT_IMAGE_IMPORT_TOOL,
-							ImageImportAction.SWITCH_TO_SELECT_TOOL,
-						],
-					},
-					NUMBER_INPUT: {
-						actions: [
-							ImageImportAction.DRAW_FINAL_IMAGE_IMPORT,
-							ImageImportAction.INIT_IMAGE_IMPORT_TOOL,
-							ImageImportAction.SWITCH_TO_SELECT_TOOL,
-						],
-					},
-					ABSOLUTE_POINT_INPUT: {
-						actions: [
-							ImageImportAction.DRAW_FINAL_IMAGE_IMPORT,
-							ImageImportAction.INIT_IMAGE_IMPORT_TOOL,
-							ImageImportAction.SWITCH_TO_SELECT_TOOL,
-						],
-					},
-					RELATIVE_POINT_INPUT: {
-						actions: [
-							ImageImportAction.DRAW_FINAL_IMAGE_IMPORT,
-							ImageImportAction.INIT_IMAGE_IMPORT_TOOL,
-							ImageImportAction.SWITCH_TO_SELECT_TOOL,
-						],
-					},
+					MOUSE_CLICK: finishImageImportTransitions,
+					NUMBER_INPUT: finishImageImportTransitions,
+					ABSOLUTE_POINT_INPUT: finishImageImportTransitions,
+					RELATIVE_POINT_INPUT: finishImageImportTransitions,
 					ESC: {
 						actions: ImageImportAction.SWITCH_TO_SELECT_TOOL,
 					},
@@ -221,13 +260,8 @@ export const imageImportToolStateMachine = createMachine(
 					);
 				}
 
-				const containRectangle = getContainRectangleInsideRectangle(
-					context.imageElement.naturalWidth,
-					context.imageElement.naturalHeight,
-					context.startPoint,
-					(event as MouseClickEvent).worldMouseLocation
-				);
-
+				// Typed corners and widths are converted the same way as in the guard
+				const containRectangle = getImageBox(context, event);
 				if (!containRectangle) {
 					return;
 				}

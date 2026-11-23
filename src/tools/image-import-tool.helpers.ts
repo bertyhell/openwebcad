@@ -1,4 +1,4 @@
-import { Box, type Point } from '@flatten-js/core';
+import { Box, Point } from '@flatten-js/core';
 
 export function getContainRectangleInsideRectangle(
 	imageWidth: number,
@@ -43,4 +43,26 @@ export function getContainRectangleInsideRectangle(
 			: rectangleStartPoint.y - newHeight;
 
 	return new Box(drawX, drawY, drawX + width, drawY + newHeight);
+}
+
+/**
+ * Opposite corner of an image with the given width that keeps the aspect ratio of the image
+ * The image is placed on the side of the start point where the mouse is, so the user can choose the direction
+ * @param startPoint the first corner of the image
+ * @param mouseLocation decides the direction, right and up when the mouse is on the start point
+ * @param width width of the image in world units
+ * @param aspectRatio width divided by the height of the image
+ */
+export function getImageEndPointFromWidth(
+	startPoint: Point,
+	mouseLocation: Point,
+	width: number,
+	aspectRatio: number
+): Point {
+	const directionX = mouseLocation.x < startPoint.x ? -1 : 1;
+	const directionY = mouseLocation.y < startPoint.y ? -1 : 1;
+	return new Point(
+		startPoint.x + directionX * width,
+		startPoint.y + (directionY * width) / aspectRatio
+	);
 }

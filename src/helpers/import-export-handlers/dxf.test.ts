@@ -285,6 +285,77 @@ describe('dxf import of mirrored entities', () => {
 	});
 });
 
+describe('dxf import of texts', () => {
+	// TextEntity draws its text vertically centered on its base point, the text height is 2 in these tests
+	function importText(alignmentPairs: (string | number)[]): TextEntity {
+		const dxf = createDxf([0, 'TEXT', 8, '0', 40, 2, 1, 'Label', ...alignmentPairs]);
+		return convertDxfToEntities(dxf, library, []).entities[0] as TextEntity;
+	}
+
+	function expectText(
+		text: TextEntity,
+		basePoint: [number, number],
+		textAlign: 'left' | 'center' | 'right',
+		direction: [number, number] = [1, 0]
+	) {
+		expectPoint(text.getBasePoint(), ...basePoint);
+		expect(text.getOptions().textAlign).toBe(textAlign);
+		expectPoint(
+			new Point(text.getOptions().textDirection.x, text.getOptions().textDirection.y),
+			...direction
+		);
+	}
+
+	it('places left aligned texts above their baseline', () => {
+		expectText(importText([10, 3, 20, 4]), [3, 5], 'left');
+	});
+
+	it('places rotated texts next to their baseline', () => {
+		expectText(importText([10, 0, 20, 0, 50, 90]), [-1, 0], 'left', [0, 1]);
+	});
+
+	it('uses the alignment point for centered, right aligned and vertically aligned texts', () => {
+		expectText(importText([10, 0, 20, 0, 11, 10, 21, 0, 72, 1]), [10, 1], 'center');
+		expectText(importText([10, 0, 20, 0, 11, 10, 21, 0, 72, 2, 73, 3]), [10, -1], 'right');
+		expectText(importText([10, 0, 20, 0, 11, 10, 21, 0, 72, 0, 73, 2]), [10, 0], 'left');
+	});
+
+	it('centers aligned and fit texts between their two points', () => {
+		expectText(importText([10, 0, 20, 0, 11, 10, 21, 0, 72, 3]), [5, 1], 'center');
+		expectText(importText([10, 0, 20, 0, 11, 0, 21, 10, 72, 5]), [-1, 5], 'center', [0, 1]);
+	});
+
+	it('centers middle aligned texts on their alignment point', () => {
+		expectText(importText([10, 0, 20, 0, 11, 20, 21, 20, 72, 4]), [20, 20], 'center');
+	});
+
+	it('aligns mtexts vertically to their attachment point', () => {
+		const importMText = (attachmentPoint: number) =>
+			convertDxfToEntities(
+				createDxf([0, 'MTEXT', 8, '0', 10, 0, 20, 10, 40, 2, 71, attachmentPoint, 1, 'Label']),
+				library,
+				[]
+			).entities[0] as TextEntity;
+		expectText(importMText(1), [0, 9], 'left');
+		expectText(importMText(5), [0, 10], 'center');
+		expectText(importMText(9), [0, 11], 'right');
+	});
+
+	it('keeps the place of left, centered and right aligned texts when exporting and importing them', () => {
+		const layer = createTestLayer('layer');
+		const texts = (['left', 'center', 'right'] as const).map((textAlign, index) => {
+			const text = new TextEntity('Label', new Point(index * 10, 5), { fontSize: 2, textAlign });
+			text.layerId = layer.id;
+			return text;
+		});
+		const { dxf } = convertEntitiesToDxf(texts, [layer], aciColors);
+		const importedTexts = convertDxfToEntities(dxf, library, []).entities as TextEntity[];
+		expectText(importedTexts[0], [0, 5], 'left');
+		expectText(importedTexts[1], [10, 5], 'center');
+		expectText(importedTexts[2], [20, 5], 'right');
+	});
+});
+
 describe('dxf import of layers', () => {
 	it('hides layers that are off or frozen, and locks locked layers', () => {
 		const layer = (name: string, flags: number, color: number) => [

@@ -247,24 +247,116 @@ export function stripMTextFormatting(text: string): string {
 		.trim();
 }
 
+type TextAlign = 'left' | 'center' | 'right';
+
+/**
+ * Creates a text from its alignment point in the dxf file
+ * TextEntity draws its text vertically centered on its base point,
+ * so the alignment point is moved up or down by a part of the text height, eg: 0.5 moves a baseline to the middle of the text
+ */
 function createText(
 	label: string,
-	basePoint: Point,
+	alignmentPoint: Point,
 	height: number,
-	rotationRadians: number,
-	textAlign: 'left' | 'center' | 'right'
+	direction: Vector,
+	textAlign: TextAlign,
+	heightsToMiddle: number
 ): TextEntity | null {
 	if (!label || !(height > 0)) {
 		return null;
 	}
-	return new TextEntity(label, basePoint, {
-		fontSize: height,
-		textAlign,
-		textDirection: new Vector(Math.cos(rotationRadians), Math.sin(rotationRadians)),
-	});
+	const textDirection = direction.normalize();
+	return new TextEntity(
+		label,
+		alignmentPoint.translate(textDirection.rotate90CCW().multiply(heightsToMiddle * height)),
+		{ fontSize: height, textAlign, textDirection }
+	);
 }
 
-const TEXT_ALIGNMENTS: ('left' | 'center' | 'right')[] = ['left', 'center', 'right'];
+const TEXT_ALIGNMENTS: TextAlign[] = ['left', 'center', 'right'];
+
+const ALIGNED_TEXT = 3;
+const MIDDLE_TEXT = 4;
+const FIT_TEXT = 5;
+
+/**
+ * Distance from the vertical alignment of a text to its middle, relative to the text height
+ * Baseline and bottom are treated the same, since the descent of the letters is small and depends on the font
+ */
+const TEXT_HEIGHTS_TO_MIDDLE: Record<number, number> = {
+	0: 0.5, // Baseline
+	1: 0.5, // Bottom
+	2: 0, // Middle
+	3: -0.5, // Top
+};
+
+/**
+ * Single line dxf text, its horizontal (72) and vertical (73) alignment decide which point positions the text:
+ * - left aligned on the baseline: the first point
+ * - aligned and fit: the baseline between the first and the second point, the text is stretched to fit
+ * - middle: the second point is the center of the text
+ * - otherwise: the second point, eg: the right end of the text at the top of the letters
+ */
+function convertText(dxfEntity: DxfEntity): TextEntity | null {
+	const number = (key: string): number => Number(dxfEntity[key] ?? 0);
+	const label = String(dxfEntity.string ?? '');
+	const height = number('textHeight');
+	const hAlign = number('hAlign');
+	const vAlign = number('vAlign');
+	const firstPoint = new Point(number('x'), number('y'));
+	const secondPoint =
+		dxfEntity.x2 !== undefined && dxfEntity.y2 !== undefined
+			? new Point(number('x2'), number('y2'))
+			: null;
+	const rotation = (number('rotation') * Math.PI) / 180;
+	const direction = new Vector(Math.cos(rotation), Math.sin(rotation));
+
+	if (
+		(hAlign === ALIGNED_TEXT || hAlign === FIT_TEXT) &&
+		secondPoint &&
+		!secondPoint.equalTo(firstPoint)
+	) {
+		// The text can't be stretched, so it is centered on the baseline between both points
+		const middle = new Point(
+			(firstPoint.x + secondPoint.x) / 2,
+			(firstPoint.y + secondPoint.y) / 2
+		);
+		return createText(label, middle, height, new Vector(firstPoint, secondPoint), 'center', 0.5);
+	}
+	if (hAlign === MIDDLE_TEXT) {
+		return createText(label, secondPoint ?? firstPoint, height, direction, 'center', 0);
+	}
+	const usesFirstPoint = (hAlign === 0 && vAlign === 0) || !secondPoint;
+	return createText(
+		label,
+		usesFirstPoint ? firstPoint : secondPoint,
+		height,
+		direction,
+		TEXT_ALIGNMENTS[hAlign] ?? 'left',
+		TEXT_HEIGHTS_TO_MIDDLE[vAlign] ?? 0.5
+	);
+}
+
+/**
+ * Multi line dxf text, its attachment point (71) from 1 to 9 is top left, top center, top right, middle left, ..., bottom right
+ */
+function convertMText(dxfEntity: DxfEntity): TextEntity | null {
+	const number = (key: string): number => Number(dxfEntity[key] ?? 0);
+	const attachmentPoint = number('attachmentPoint') || 1;
+	const direction =
+		dxfEntity.xAxisX !== undefined
+			? new Vector(number('xAxisX'), number('xAxisY'))
+			: new Vector(1, 0);
+	const verticalAlignment = Math.floor((attachmentPoint - 1) / 3);
+	return createText(
+		stripMTextFormatting(String(dxfEntity.string ?? '')),
+		new Point(number('x'), number('y')),
+		number('nominalTextHeight'),
+		direction.length > 0 ? direction : new Vector(1, 0),
+		TEXT_ALIGNMENTS[(attachmentPoint - 1) % 3],
+		[-0.5, 0, 0.5][verticalAlignment] ?? 0
+	);
+}
 
 function convertEntity(dxfEntity: DxfEntity): Entity | null {
 	const number = (key: string): number => Number(dxfEntity[key] ?? 0);
@@ -296,33 +388,10 @@ function convertEntity(dxfEntity: DxfEntity): Entity | null {
 				(dxfEntity.vertices as DxfVertex[] | undefined) ?? [],
 				!!dxfEntity.closed
 			);
-		case 'TEXT': {
-			const hAlign = number('hAlign');
-			// Aligned texts are positioned at their second alignment point
-			const useAlignmentPoint = hAlign > 0 && dxfEntity.x2 !== undefined;
-			return createText(
-				String(dxfEntity.string ?? ''),
-				new Point(
-					useAlignmentPoint ? number('x2') : number('x'),
-					useAlignmentPoint ? number('y2') : number('y')
-				),
-				number('textHeight'),
-				(number('rotation') * Math.PI) / 180,
-				TEXT_ALIGNMENTS[hAlign] ?? 'left'
-			);
-		}
-		case 'MTEXT': {
-			const attachmentPoint = number('attachmentPoint') || 1;
-			const rotation =
-				dxfEntity.xAxisX !== undefined ? Math.atan2(number('xAxisY'), number('xAxisX')) : 0;
-			return createText(
-				stripMTextFormatting(String(dxfEntity.string ?? '')),
-				new Point(number('x'), number('y')),
-				number('nominalTextHeight'),
-				rotation,
-				TEXT_ALIGNMENTS[(attachmentPoint - 1) % 3]
-			);
-		}
+		case 'TEXT':
+			return convertText(dxfEntity);
+		case 'MTEXT':
+			return convertMText(dxfEntity);
 		default:
 			return null;
 	}
